@@ -1,0 +1,60 @@
+/* =============================================================
+   CHATBOT REPORTS (subadmin/chatbot_reports.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (.adm-card/.adm-table)
+   and assets/css/analytics_reports.css (breadcrumb/KPI-row/footer-notice,
+   all reused here). Everything new here is "cbr-" prefixed.
+   ============================================================= */
+
+/* -- Section intro (title + subtitle above the KPI row) -- */
+.cbr-section-intro{ margin-bottom: 18px; }
+.cbr-section-intro h2{ font-size: 19px; font-weight: 700; color: var(--adm-text); margin: 0 0 4px; }
+.cbr-section-intro p{ font-size: 13px; color: var(--adm-text-muted); margin: 0; }
+
+/* -- 4-up override of analytics_reports.css's 5-up .arp-kpi-row grid. -- */
+.cbr-kpi-row-4{ grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 1199.98px){ .cbr-kpi-row-4{ grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 575.98px){ .cbr-kpi-row-4{ grid-template-columns: 1fr; } }
+
+/* -- "Needs Your Answer" / "Most Asked Questions" cards -- */
+.cbr-card{ margin-bottom: 22px; }
+.cbr-card .adm-card-header h2{ display: flex; align-items: center; gap: 8px; }
+.cbr-card-subtitle{ font-size: 12.5px; color: var(--adm-text-muted); margin: -10px 0 16px; }
+.cbr-question-cell{ max-width: 420px; }
+.cbr-reason-badge{
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600; border-radius: 6px;
+  padding: 3px 8px; white-space: nowrap; margin: 2px 4px 2px 0;
+}
+.cbr-reason-badge.flagged{ background: var(--adm-red-bg); color: var(--adm-red); }
+.cbr-reason-badge.missed{ background: var(--adm-orange-bg); color: var(--adm-orange); }
+.cbr-empty{
+  display: flex; align-items: center; gap: 8px;
+  padding: 24px 4px; font-size: 13px; color: var(--adm-text-muted);
+}
+.cbr-empty i{ font-size: 16px; color: var(--adm-green); }
+
+/* -- "Answer" button (per Needs-Your-Answer row) -- */
+.cbr-answer-btn{
+  font-size: 12px; font-weight: 600; color: var(--adm-red-bright);
+  background: var(--adm-card); border: 1px solid var(--adm-red-bright);
+  border-radius: 8px; padding: 6px 14px; cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.cbr-answer-btn:hover{ background: var(--adm-red-bright); color: #fff; }
+
+/* -- Answer modal -- */
+#cbrAnswerModal .modal-title{ display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; }
+.cbr-modal-label{ display: block; font-size: 12.5px; font-weight: 600; color: var(--adm-text-muted); margin: 0 0 6px; }
+.cbr-modal-question{
+  font-size: 13.5px; font-weight: 600; color: var(--adm-text);
+  background: var(--adm-bg); border-radius: 10px; padding: 10px 12px; margin: 0 0 16px;
+}
+.cbr-modal-error{ font-size: 12.5px; color: var(--adm-red); margin-top: 8px; min-height: 1em; }
+.cbr-save-answer-btn{
+  font-size: 13px; font-weight: 600; color: #fff; background: var(--adm-red-bright);
+  border: none; border-radius: 8px; padding: 8px 18px; cursor: pointer;
+  transition: background .15s ease;
+}
+.cbr-save-answer-btn:hover{ background: var(--adm-red-bright-hover); }
+.cbr-save-answer-btn:disabled{ opacity: .6; cursor: default; }

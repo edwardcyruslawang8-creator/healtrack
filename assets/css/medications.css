@@ -1,0 +1,112 @@
+/* =============================================================
+   PATIENT MEDICATIONS (subadmin/medications.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell:
+   .adm-card/.adm-table) and assets/css/patient_profile.css
+   (breadcrumb + profile header card, reused verbatim here).
+   Everything here is specific to this page — the summary cards,
+   medications table, and history timeline — and is "mdc-"
+   prefixed (MeDiCations). Deliberately distinct from
+   assets/css/medicine.css's unrelated "med-" prefix (Medicine &
+   Vaccine Inventory) even though the two are never loaded together.
+   ============================================================= */
+
+/* -- Section header (title + subtitle) -- */
+.mdc-section-header{ margin-bottom: 18px; }
+.mdc-section-header h2{ font-size: 19px; font-weight: 800; color: var(--adm-text); margin: 0 0 4px; }
+.mdc-section-header p{ font-size: 13px; color: var(--adm-text-muted); margin: 0; }
+
+/* -- Summary cards row -- */
+.mdc-summary-row{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+.mdc-summary-card{ display: flex; align-items: center; gap: 16px; }
+.mdc-summary-icon{
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.mdc-summary-text{ display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.mdc-summary-label{ font-size: 12.5px; color: var(--adm-text-muted); font-weight: 500; }
+.mdc-summary-value{ font-size: 26px; font-weight: 800; color: var(--adm-text); line-height: 1.1; }
+.mdc-summary-value-sm{ font-size: 17px; font-weight: 700; }
+.mdc-summary-sub{ font-size: 12.5px; font-weight: 600; color: var(--adm-text-muted); }
+
+/* -- Medications List heading + table -- */
+.mdc-list-header{ margin-bottom: 14px; }
+.mdc-list-header h3{ font-size: 16px; font-weight: 700; color: var(--adm-text); margin: 0 0 4px; }
+.mdc-list-header p{ font-size: 13px; color: var(--adm-text-muted); margin: 0; }
+
+.mdc-table-card{ margin-bottom: 18px; }
+
+.mdc-name-cell{ display: flex; flex-direction: column; gap: 1px; }
+.mdc-strong{ font-weight: 600; color: var(--adm-text); }
+.mdc-category{ font-size: 12px; color: var(--adm-text-muted); }
+.mdc-end-note{ font-size: 12px; color: var(--adm-text-muted); }
+.mdc-notes-cell{ color: var(--adm-text-muted); max-width: 200px; }
+
+/* -- Medication History timeline -- */
+.mdc-history-card{ padding-bottom: 30px; }
+.mdc-card-header{ display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }
+.mdc-card-header i{ font-size: 16px; color: #1A73E8; }
+.mdc-card-header h3{ font-size: 16px; font-weight: 700; color: var(--adm-text); margin: 0; }
+.mdc-history-sub{ font-size: 13px; color: var(--adm-text-muted); margin: 0 0 22px 26px; }
+
+.mdc-timeline{ list-style: none; margin: 0; padding: 0 0 0 6px; }
+.mdc-timeline-item{ display: flex; gap: 18px; }
+.mdc-timeline-marker{ display: flex; flex-direction: column; align-items: center; }
+.mdc-timeline-dot{
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.mdc-dot-green{ background: #1E8E3E; }
+.mdc-dot-blue{ background: #1A73E8; }
+.mdc-dot-gray{ background: var(--adm-text-soft); }
+
+.mdc-timeline-line{
+  width: 2px;
+  flex: 1;
+  min-height: 36px;
+  background: var(--adm-border);
+  margin-top: 4px;
+}
+.mdc-timeline-content{ display: flex; flex-direction: column; gap: 2px; padding-bottom: 24px; }
+.mdc-timeline-date{ font-size: 12.5px; font-weight: 700; color: var(--adm-text-muted); }
+.mdc-timeline-event{ font-size: 14px; font-weight: 700; color: var(--adm-text); }
+.mdc-timeline-detail{ font-size: 12.5px; color: var(--adm-text-soft); }
+
+/* -- Actions column — a text button rather than .adm-action-btn's
+      fixed 30x30px icon square, which "View Details" wouldn't fit. -- */
+.mdc-view-details-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--adm-border);
+  background: var(--adm-card);
+  color: var(--adm-blue);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background .15s ease;
+}
+.mdc-view-details-btn:hover{ background: var(--adm-hover-bg); }
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 991.98px){
+  .mdc-summary-row{ grid-template-columns: 1fr; }
+}

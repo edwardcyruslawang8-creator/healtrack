@@ -1,0 +1,165 @@
+/* =============================================================
+   STOCK REQUESTS (subadmin/stock_requests.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell:
+   .adm-card/.adm-table/.adm-pagination). This page is a top-level
+   Sub-Admin section, not part of the patient profile family, so it
+   doesn't load assets/css/patient_profile.css — the breadcrumb
+   below is its own self-contained equivalent (same approach as
+   assets/css/medicine_vaccine_inventory.css). Everything here is
+   "srq-" prefixed.
+   ============================================================= */
+
+/* -- Breadcrumb -- */
+.srq-breadcrumb{ font-size: 12.5px; color: var(--adm-text-muted); margin-top: 6px; }
+.srq-breadcrumb a{ color: var(--adm-text-muted); }
+.srq-breadcrumb a:hover{ color: var(--adm-red-bright); text-decoration: underline; }
+.srq-breadcrumb-sep{ margin: 0 6px; color: var(--adm-text-soft); }
+.srq-breadcrumb-current{ color: var(--adm-text); font-weight: 600; }
+
+/* -- Summary cards -- */
+.srq-summary-row{
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+.srq-summary-card{ display: flex; align-items: center; gap: 16px; }
+.srq-summary-icon{
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.srq-summary-text{ display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.srq-summary-label{ font-size: 12.5px; color: var(--adm-text-muted); font-weight: 500; }
+.srq-summary-value{ font-size: 26px; font-weight: 800; color: var(--adm-text); line-height: 1.1; }
+.srq-summary-sub{ font-size: 12px; color: var(--adm-text-muted); }
+
+/* -- Filter & action toolbar -- */
+.srq-toolbar{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.srq-filter-select{
+  width: auto;
+  min-width: 160px;
+  background-color: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 10px 34px 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--adm-text);
+  box-shadow: var(--adm-shadow);
+}
+.srq-filter-btn{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--adm-text);
+  white-space: nowrap;
+  box-shadow: var(--adm-shadow);
+}
+.srq-filter-btn:hover{ background: var(--adm-hover-bg); }
+.srq-filter-caret{ font-size: 11px; color: var(--adm-text-muted); margin-left: 4px; }
+
+.srq-search{
+  flex: 1;
+  min-width: 240px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.srq-search i{ position: absolute; left: 14px; color: var(--adm-text-soft); font-size: 14px; }
+.srq-search input{
+  width: 100%;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 10px 14px 10px 38px;
+  font-size: 13px;
+  color: var(--adm-text);
+  box-shadow: var(--adm-shadow);
+}
+.srq-search input:focus{ outline: none; border-color: #1A73E8; }
+
+.srq-btn-add{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #1A73E8;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background .15s ease;
+}
+.srq-btn-add:hover{ background: #1558B0; color: #fff; }
+
+/* -- Stock requests table -- */
+.srq-table-card{ margin-bottom: 18px; }
+.srq-strong{ font-weight: 600; color: var(--adm-text); white-space: nowrap; }
+
+.srq-pharmacist-cell{ display: flex; align-items: center; gap: 10px; }
+.srq-avatar{
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--adm-hover-bg);
+  color: var(--adm-text-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.srq-pharmacist-text{ display: flex; flex-direction: column; gap: 1px; }
+.srq-pharmacist-name{ font-size: 13px; font-weight: 600; color: var(--adm-text); }
+.srq-pharmacist-role{ font-size: 12px; color: var(--adm-text-muted); }
+
+.srq-datetime{ white-space: nowrap; color: var(--adm-text-muted); font-size: 12.5px; }
+.srq-dot{ width: 4px; height: 4px; border-radius: 50%; background: var(--adm-text-soft); display: inline-block; margin: 0 2px; }
+
+.srq-items-cell{ display: flex; flex-direction: column; gap: 2px; }
+.srq-view-items{ font-size: 12px; font-weight: 600; color: #1A73E8; }
+.srq-view-items:hover{ text-decoration: underline; }
+
+.srq-badge{
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.srq-more-btn{ color: var(--adm-text-muted); }
+.srq-page-ellipsis{ pointer-events: none; color: var(--adm-text-soft); }
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 767.98px){
+  .srq-summary-row{ grid-template-columns: 1fr; }
+  .srq-toolbar{ flex-direction: column; align-items: stretch; }
+  .srq-filter-select{ min-width: 0; width: 100%; }
+  .srq-btn-add{ justify-content: center; }
+}

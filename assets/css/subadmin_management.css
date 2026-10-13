@@ -1,0 +1,229 @@
+/* =============================================================
+   SUB-ADMINISTRATOR MANAGEMENT (admin/subadmin_management.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell:
+   sidebar, topbar, tabs, table, pagination, avatar — all "adm-"
+   prefixed). Everything here is specific to this page — the
+   search+add toolbar, stat cards, role/status badges, and legend —
+   and is "sam-" prefixed (Sub-Administrator Management).
+   ============================================================= */
+
+/* -- Search + Add Sub-Administrator (sits below the bell/profile row
+   inside .adm-topbar-right, which is already a right-aligned column) -- */
+.sam-toolbar-row{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.sam-search{
+  position: relative;
+  width: 280px;
+  max-width: 100%;
+}
+.sam-search i{
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--adm-text-soft);
+  font-size: 14px;
+}
+.sam-search input{
+  width: 100%;
+  border: 1px solid var(--adm-border);
+  background: var(--adm-card);
+  border-radius: 10px;
+  padding: 10px 14px 10px 40px;
+  font-size: 13px;
+  color: var(--adm-text);
+  box-shadow: var(--adm-shadow);
+}
+.sam-search input:focus{
+  outline: none;
+  border-color: var(--adm-red-bright);
+  box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.12);
+}
+.sam-search input::placeholder{ color: var(--adm-text-soft); }
+
+.btn-add-subadmin{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--adm-red-bright);
+  color: #fff;
+  border: none;
+  padding: 11px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--adm-shadow);
+  transition: background .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.btn-add-subadmin:hover{
+  background: var(--adm-red-bright-hover);
+  color: #fff;
+  box-shadow: var(--adm-shadow-hover);
+  transform: translateY(-1px);
+}
+
+/* -- Summary stat cards -- */
+.sam-stats-row{
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.sam-stat-card{
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-lg);
+  box-shadow: var(--adm-shadow);
+  padding: 20px;
+  display: flex;
+  gap: 14px;
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.sam-stat-card:hover{ box-shadow: var(--adm-shadow-hover); transform: translateY(-2px); }
+.sam-stat-icon{
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  flex-shrink: 0;
+}
+.sam-stat-label{ font-size: 11.5px; color: var(--adm-text-muted); font-weight: 500; margin-bottom: 4px; }
+.sam-stat-value{ font-size: 23px; font-weight: 800; color: var(--adm-text); line-height: 1.1; margin-bottom: 4px; }
+.sam-stat-sub{ font-size: 11px; color: var(--adm-text-soft); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.sam-stat-growth{ color: var(--adm-green); font-weight: 600; display: inline-flex; align-items: center; }
+
+/* -- Tabs row: red-underline tabs (left) + Filter/Sort (right) -- */
+.sam-tabs-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.sam-tabs{ flex: 1; margin-bottom: 0; border-bottom: none; }
+.sam-tabs-actions{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+}
+.sam-filter-btn,
+.sam-sort-btn{
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 9px;
+  padding: 8px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+  white-space: nowrap;
+}
+.sam-filter-btn:hover,
+.sam-sort-btn:hover{ background: var(--adm-hover-bg); }
+
+/* -- Table card + page-specific cells -- */
+.sam-table-card{ margin-top: 4px; }
+.sam-table th, .sam-table td{ vertical-align: middle; }
+
+.sam-facility-cell{ display: flex; flex-direction: column; gap: 3px; }
+.sam-facility-name{ font-weight: 500; color: var(--adm-text); }
+.sam-facility-location{
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--adm-text-soft);
+}
+
+.sam-role-badge{
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+
+.sam-status-badge{
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 50px;
+}
+.sam-status-badge.active{   background: var(--adm-green-bg);  color: var(--adm-green); }
+.sam-status-badge.inactive{ background: var(--adm-orange-bg); color: var(--adm-orange); }
+.sam-status-badge.locked{   background: var(--adm-red-bg);    color: var(--adm-red); }
+.sam-status-badge.pending{  background: var(--adm-purple-bg); color: var(--adm-purple); }
+
+/* -- Legend -- */
+.sam-legend{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 22px;
+  padding: 16px 22px;
+  margin-top: 18px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-lg);
+  box-shadow: var(--adm-shadow);
+  font-size: 12px;
+  color: var(--adm-text-muted);
+}
+.sam-legend-item{ display: inline-flex; align-items: center; gap: 8px; }
+.sam-legend-dot{ width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.sam-legend-dot.active{   background: var(--adm-green); }
+.sam-legend-dot.inactive{ background: var(--adm-orange); }
+.sam-legend-dot.locked{   background: var(--adm-red); }
+.sam-legend-dot.pending{  background: var(--adm-purple); }
+
+/* -- View Sub-Administrator modal (read-only rows) -- */
+.sam-view-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--adm-border);
+}
+.sam-view-row:last-child{ border-bottom: none; padding-bottom: 0; }
+.sam-view-row:first-child{ padding-top: 0; }
+.sam-view-label{ font-size: 12.5px; color: var(--adm-text-muted); font-weight: 600; }
+.sam-view-value{ font-size: 13.5px; color: var(--adm-text); font-weight: 500; text-align: right; }
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 1399.98px){
+  .sam-stats-row{ grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 991.98px){
+  .adm-topbar-right{ width: 100%; }
+  .sam-toolbar-row{ width: 100%; justify-content: flex-start; }
+  .sam-search{ width: 100%; }
+}
+@media (max-width: 767.98px){
+  .sam-stats-row{ grid-template-columns: repeat(2, 1fr); }
+  .sam-tabs-row{ flex-direction: column; align-items: stretch; }
+  .sam-tabs-actions{ justify-content: flex-end; padding-bottom: 0; margin-bottom: 14px; }
+}
+@media (max-width: 575.98px){
+  .sam-stats-row{ grid-template-columns: 1fr; }
+  .sam-legend{ flex-direction: column; align-items: flex-start; gap: 10px; }
+}

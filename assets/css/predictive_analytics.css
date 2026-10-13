@@ -1,0 +1,53 @@
+/* =============================================================
+   PREDICTIVE ANALYTICS (admin/facility_management.php)
+   ---------------------------------------------------------------
+   Loaded alongside admin-dashboard.css (shared "adm-" shell) and
+   facility_analytics.css (its "an-" cards/tiles/reco components are
+   reused here directly — Prediction cards = .an-forecast-tile,
+   Forecast charts/Trend graphs = .an-card, Recommendation cards =
+   .an-reco-card — since this section needs the exact same visual
+   language, not a second copy of it). Risk/Alert Indicators reuse
+   admin-dashboard.css's .adm-status-list/.adm-status-row (the same
+   component the dashboard's own "Account Status Overview" uses).
+   Only what's genuinely new for this section — "pn-" prefixed
+   (PredictioN) — lives here.
+   ============================================================= */
+
+.pn-section{ margin-bottom: 28px; }
+.pn-section-head{ margin-bottom: 14px; }
+.pn-section-head h2{ font-size: 18px; font-weight: 700; color: var(--adm-text); margin: 0 0 2px; }
+.pn-section-head p{ font-size: 12.5px; color: var(--adm-text-muted); margin: 0; }
+
+/* Small colored severity pill next to each Risk/Alert Indicator row —
+   .adm-status-row's own "number" slot is a plain count, so this sits
+   alongside it as the tier label. */
+.pn-severity{
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+.pn-severity.critical{ background: var(--adm-red-bg); color: var(--adm-red); }
+.pn-severity.elevated{ background: var(--adm-orange-bg); color: var(--adm-orange); }
+.pn-severity.watch{ background: var(--adm-blue-bg); color: var(--adm-blue); }
+
+/* Barangay ranked list (Tab 4) — .an-inv-row plus a trend arrow after the value. */
+.pn-trend-arrow{ font-size: 13px; margin-left: 4px; }
+.pn-trend-arrow.up{ color: var(--adm-green); }
+.pn-trend-arrow.down{ color: var(--adm-red); }
+.pn-trend-arrow.flat{ color: var(--adm-text-soft); }
+
+.pn-empty{
+  text-align: center;
+  padding: 30px 16px;
+  color: var(--adm-text-soft);
+}
+.pn-empty i{ font-size: 26px; display: block; margin-bottom: 8px; color: var(--adm-green); }
+.pn-empty p{ margin: 0; font-size: 12.5px; }
+
+.pn-note{ font-size: 11.5px; color: var(--adm-text-soft); margin: 0 0 12px; }

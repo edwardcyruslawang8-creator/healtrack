@@ -1,0 +1,137 @@
+/* =============================================================
+   VACCINATION RECORD DETAILS (subadmin/vaccination_record_details.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell:
+   .adm-card/.adm-table) and assets/css/patient_profile.css
+   (breadcrumb + profile header card, reused verbatim here). This
+   page has no tab strip — its "Back" control sits inline with the
+   page title instead. Everything here is "vrd-" prefixed
+   (Vaccination Record Details).
+   ============================================================= */
+
+/* -- Back + Title row -- */
+.vrd-title-row{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 6px;
+}
+.vrd-title-row h1{ margin: 0; }
+
+.vrd-back-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--adm-text-muted);
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  padding: 7px 14px;
+  white-space: nowrap;
+  transition: background .15s ease, color .15s ease;
+}
+.vrd-back-btn:hover{ background: var(--adm-hover-bg); color: var(--adm-text); }
+
+/* -- Shared card header -- */
+.vrd-card-header{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.vrd-card-header i{ font-size: 16px; color: #1A73E8; }
+.vrd-card-header h3{ font-size: 15px; font-weight: 700; color: var(--adm-text); margin: 0; }
+
+/* -- Vaccine Information card -- */
+.vrd-vaccine-card{ margin-top: 18px; }
+
+.vrd-vaccine-hero{
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--adm-border);
+}
+.vrd-vaccine-icon{
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  flex-shrink: 0;
+}
+.vrd-vaccine-hero-text{ flex: 1; min-width: 0; padding-top: 6px; }
+.vrd-vaccine-name-row{ display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.vrd-vaccine-name-row h2{ font-size: 20px; font-weight: 800; color: var(--adm-text); margin: 0; }
+.vrd-vaccine-description{ font-size: 13.5px; color: var(--adm-text-muted); line-height: 1.6; margin: 0; max-width: 640px; }
+
+/* -- Status / result badges -- */
+.vrd-badge{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* -- Two-column field grid -- */
+.vrd-details-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+.vrd-details-col{ display: flex; flex-direction: column; gap: 18px; }
+.vrd-field{
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+}
+.vrd-field-label{ width: 170px; flex-shrink: 0; font-size: 13px; color: var(--adm-text-muted); font-weight: 500; }
+.vrd-field-value{ font-size: 13.5px; color: var(--adm-text); font-weight: 700; text-align: left; }
+
+/* -- Vaccination History table -- */
+.vrd-history-card{ margin-top: 18px; }
+.vrd-strong{ font-weight: 600; color: var(--adm-text); }
+
+/* -- Back to Vaccination Records button -- */
+.vrd-footer-actions{
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+.vrd-btn-back{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+  box-shadow: var(--adm-shadow);
+  transition: background .15s ease;
+}
+.vrd-btn-back:hover{ background: var(--adm-hover-bg); color: var(--adm-text); }
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 991.98px){
+  .vrd-details-grid{ grid-template-columns: 1fr; gap: 16px; }
+}
+@media (max-width: 767.98px){
+  .vrd-title-row{ flex-wrap: wrap; }
+  .vrd-vaccine-hero{ flex-direction: column; align-items: flex-start; }
+  .vrd-field{ flex-direction: column; align-items: flex-start; gap: 4px; }
+  .vrd-field-label{ width: auto; }
+}

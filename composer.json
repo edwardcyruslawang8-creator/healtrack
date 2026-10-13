@@ -1,0 +1,7 @@
+{
+    "require": {
+        "kreait/firebase-php": "^7.0",
+        "pragmarx/google2fa": "^9.0",
+        "phpmailer/phpmailer": "^7.1"
+    }
+}

@@ -1,0 +1,274 @@
+/* =============================================================
+   MEDICAL TECHNICIAN DASHBOARD (medical_technician/dashboard.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell:
+   sidebar, topbar, .adm-card, .adm-donut-*, .adm-table, "adm-"
+   prefixed). Everything here is specific to this page — the 5-card
+   stat row, chart cards, specimen-alerts list, notifications list,
+   and schedule/type badges — and is "mt-" prefixed (Medical
+   Technician). Structurally identical to
+   assets/css/pharmacist_dashboard.css's "phm-" rules (same page
+   built for a different role) — kept as its own file rather than
+   reused directly so the two dashboards' styling can diverge later
+   without one role's tweak silently affecting the other.
+   ============================================================= */
+
+/* -- Notification count pill inside a nav row -- */
+.mt-nav-badge{
+  margin-left: auto;
+  background: #fff;
+  color: var(--adm-red-bright);
+  font-size: 10.5px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* -- Topbar date / facility select buttons -- */
+.mt-topbar-select-btn{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 9px 16px;
+  box-shadow: var(--adm-shadow);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+  white-space: nowrap;
+}
+.mt-topbar-select-btn i{ color: var(--adm-text-soft); }
+.mt-topbar-select-btn:hover{ background: var(--adm-hover-bg); }
+/* This class is shared by real <button> actions (Print Form, Proceed
+   to Doctor, etc.) AND plain <div> display-only badges (the topbar's
+   date/facility pills) — browsers give <button> a default cursor of
+   "default", not "pointer", unlike <a>, so without this override an
+   actual clickable button here can look inert on hover. Scoped to the
+   button tag only so the non-interactive <div> badges stay as-is. */
+button.mt-topbar-select-btn{ cursor: pointer; }
+
+/* -- Summary stat cards (5-up) -- */
+.mt-stats-row{
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.mt-stat-card{
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-lg);
+  box-shadow: var(--adm-shadow);
+  padding: 20px;
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.mt-stat-card:hover{ box-shadow: var(--adm-shadow-hover); transform: translateY(-2px); }
+.mt-stat-icon{
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  margin-bottom: 14px;
+}
+.mt-stat-label{ font-size: 12px; color: var(--adm-text-muted); font-weight: 500; margin-bottom: 4px; }
+.mt-stat-value{ font-size: 24px; font-weight: 800; color: var(--adm-text); line-height: 1.1; margin-bottom: 6px; }
+.mt-stat-sub{ font-size: 11.5px; display: flex; align-items: center; gap: 3px; font-weight: 600; }
+.mt-stat-sub.up{ color: var(--adm-green); }
+.mt-stat-sub.down{ color: var(--adm-red); }
+.mt-stat-link{ display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--adm-red-bright); }
+.mt-stat-link:hover{ color: var(--adm-red-bright-hover); }
+
+/* -- 3-column chart row (Tests Trend / Tests by Type / Result Status) -- */
+.mt-row-3{
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 22px;
+  align-items: stretch;
+}
+/* -- 4-column row (Specimen Alerts / Review Status / Today's Tests / Notifications) -- */
+.mt-row-4{
+  display: grid;
+  /* minmax(0, Nfr), not plain Nfr: the schedule table's white-space:nowrap
+     cells otherwise force that track to its full unwrapped content width,
+     blowing out the row and pushing the last card (Notifications)
+     off-screen behind a horizontal scrollbar. */
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr) minmax(0, 1.35fr) minmax(0, 1.05fr);
+  gap: 18px;
+  margin-bottom: 22px;
+  align-items: stretch;
+}
+.mt-chart-card{ display: flex; flex-direction: column; min-width: 0; }
+
+.mt-card-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.mt-card-header h2{ font-size: 15.5px; font-weight: 700; color: var(--adm-text); margin: 0; }
+
+.mt-range-btn{
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--adm-text);
+}
+
+/* Chart.js's responsive:true + maintainAspectRatio:false sizes the
+   canvas to fill its parent's MEASURED size — without this wrapper
+   having its own definite height, that creates a circular sizing loop. */
+.mt-canvas-box{ position: relative; width: 100%; height: 220px; flex: 1; }
+
+.mt-chart-legend{
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 12px;
+  color: var(--adm-text-muted);
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.mt-chart-legend .dot{ width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+
+/* -- Doughnut legend (result status / review status) -- */
+.mt-donut-legend{ display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.mt-legend-row{ display: flex; align-items: center; gap: 9px; font-size: 12.5px; }
+.mt-legend-dot{ width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.mt-legend-label{ flex: 1; color: var(--adm-text-muted); }
+.mt-legend-value{ font-weight: 600; color: var(--adm-text); white-space: nowrap; }
+.mt-legend-total{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--adm-border);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--adm-text);
+}
+
+/* -- Specimen & Equipment Alerts list -- */
+.mt-followup-list{ display: flex; flex-direction: column; flex: 1; }
+.mt-followup-row{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--adm-border);
+}
+.mt-followup-row:last-child{ border-bottom: none; }
+.mt-followup-avatar{
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--adm-red-bg);
+  color: var(--adm-red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+.mt-followup-body{ flex: 1; min-width: 0; }
+.mt-followup-name{ font-size: 13px; font-weight: 600; color: var(--adm-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mt-followup-meta{ font-size: 11.5px; color: var(--adm-text-muted); margin-top: 1px; }
+.mt-followup-meta .sep{ margin: 0 4px; color: var(--adm-text-soft); }
+.mt-followup-cal{ color: var(--adm-text-soft); font-size: 15px; flex-shrink: 0; }
+
+/* -- Type / status badges -- */
+.mt-badge{
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+
+/* -- Today's Pending Tests table -- */
+.mt-schedule-table{ width: 100%; border-collapse: collapse; }
+.mt-schedule-table thead th{
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--adm-text-muted);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--adm-border);
+  white-space: nowrap;
+}
+.mt-schedule-table tbody td{
+  padding: 11px 10px;
+  border-bottom: 1px solid var(--adm-border);
+  font-size: 12.5px;
+  color: var(--adm-text);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.mt-schedule-table tbody tr:last-child td{ border-bottom: none; }
+.mt-schedule-table tbody tr:hover{ background: var(--adm-hover-bg); }
+
+/* -- Recent Notifications list -- */
+.mt-notif-list{ display: flex; flex-direction: column; flex: 1; }
+.mt-notif-row{
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--adm-border);
+}
+.mt-notif-row:last-child{ border-bottom: none; }
+.mt-notif-icon{
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.mt-notif-body{ flex: 1; min-width: 0; }
+.mt-notif-title{ font-size: 12.5px; font-weight: 600; color: var(--adm-text); }
+.mt-notif-desc{ font-size: 11.5px; color: var(--adm-text-muted); margin-top: 1px; }
+.mt-notif-time{ font-size: 10.5px; color: var(--adm-text-soft); margin-top: 3px; }
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 1399.98px){
+  .mt-stats-row{ grid-template-columns: repeat(3, 1fr); }
+  .mt-row-3{ grid-template-columns: 1fr; }
+  .mt-row-4{ grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+@media (max-width: 767.98px){
+  /* Confirmed via headless-Chrome screenshot at 991px that the old
+     991.98px breakpoint here was too wide — it stacked the date pill/
+     facility pill/bell/profile onto separate lines well before the
+     page was actually narrow. Matches the app's one real mobile
+     breakpoint (the same width the sidebar itself collapses at). */
+  .adm-topbar-right{ width: 100%; }
+  .adm-topbar-actions{ flex-wrap: wrap; row-gap: 10px; justify-content: flex-end; }
+  .mt-stats-row{ grid-template-columns: repeat(2, 1fr); }
+  .mt-row-4{ grid-template-columns: minmax(0, 1fr); }
+  .mt-topbar-select-btn{ flex: 1 1 160px; justify-content: center; }
+}
+@media (max-width: 575.98px){
+  .mt-stats-row{ grid-template-columns: 1fr; }
+}

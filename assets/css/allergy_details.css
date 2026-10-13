@@ -1,0 +1,132 @@
+/* =============================================================
+   ALLERGY DETAILS (subadmin/allergy_details.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell:
+   .adm-card/.adm-table) and assets/css/patient_profile.css
+   (breadcrumb + profile header card, reused verbatim here). This
+   page has no tab strip — its "Back" control sits inline with the
+   page title instead. Everything here is "ald-" prefixed
+   (ALlergy Details).
+   ============================================================= */
+
+/* -- Back + Title row -- */
+.ald-title-row{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 6px;
+}
+.ald-title-row h1{ margin: 0; }
+
+.ald-back-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--adm-text-muted);
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  padding: 7px 14px;
+  white-space: nowrap;
+  transition: background .15s ease, color .15s ease;
+}
+.ald-back-btn:hover{ background: var(--adm-hover-bg); color: var(--adm-text); }
+
+/* -- Shared card header -- */
+.ald-card-header{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.ald-card-header i{ font-size: 16px; color: #1A73E8; }
+.ald-card-header h3{ font-size: 15px; font-weight: 700; color: var(--adm-text); margin: 0; }
+
+/* -- Status / severity badges -- */
+.ald-badge{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+  width: fit-content;
+}
+
+/* -- Field rows: fixed-width label + left-aligned value -- */
+.ald-field{ display: flex; align-items: baseline; gap: 16px; }
+.ald-field-label{ width: 120px; flex-shrink: 0; font-size: 13px; color: var(--adm-text-muted); font-weight: 500; }
+.ald-field-value{ font-size: 13.5px; color: var(--adm-text); font-weight: 700; }
+.ald-field-stacked{ flex-direction: column; align-items: flex-start; gap: 6px; }
+.ald-field-stacked .ald-field-value{ font-weight: 600; line-height: 1.5; }
+
+/* -- Allergy Overview card -- */
+.ald-overview-card{ margin-top: 18px; }
+
+.ald-overview-grid{
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1.1fr;
+  gap: 28px;
+}
+.ald-overview-identity{ display: flex; align-items: flex-start; gap: 20px; }
+.ald-overview-icon{
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  flex-shrink: 0;
+}
+.ald-overview-text{ flex: 1; min-width: 0; padding-top: 4px; }
+.ald-overview-name-row{ display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.ald-overview-name-row h2{ font-size: 20px; font-weight: 800; color: var(--adm-text); margin: 0; }
+.ald-overview-type{ font-size: 13.5px; font-weight: 600; color: var(--adm-text-muted); margin: 0 0 8px; }
+.ald-overview-summary{ font-size: 13px; color: var(--adm-text-muted); line-height: 1.6; margin: 0; }
+
+.ald-overview-col{ display: flex; flex-direction: column; gap: 16px; padding-left: 24px; border-left: 1px solid var(--adm-border); }
+.ald-overview-col .ald-field-label{ width: 96px; }
+
+/* -- Detailed Information card -- */
+.ald-detail-card{ margin-top: 18px; }
+.ald-detail-grid{
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 30px;
+  align-items: start;
+}
+.ald-detail-fields{ display: flex; flex-direction: column; gap: 16px; }
+
+.ald-symptoms-panel{
+  background: #E8F0FE;
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+.ald-symptoms-panel h4{ font-size: 14px; font-weight: 700; color: #1A73E8; margin: 0 0 10px; }
+.ald-symptoms-panel ul{ margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.ald-symptoms-panel li{ font-size: 13px; color: var(--adm-text); line-height: 1.5; }
+
+/* -- Allergy History table -- */
+.ald-history-card{ margin-top: 18px; }
+.ald-strong{ font-weight: 600; color: var(--adm-text); white-space: nowrap; }
+.ald-event-cell{ font-weight: 600; color: #1A73E8; white-space: nowrap; }
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 1199.98px){
+  .ald-overview-grid{ grid-template-columns: 1fr; }
+  .ald-overview-col{ padding-left: 0; border-left: none; border-top: 1px solid var(--adm-border); padding-top: 16px; }
+  .ald-detail-grid{ grid-template-columns: 1fr; }
+}
+@media (max-width: 767.98px){
+  .ald-title-row{ flex-wrap: wrap; }
+  .ald-overview-identity{ flex-direction: column; align-items: flex-start; }
+  .ald-field{ flex-direction: column; align-items: flex-start; gap: 4px; }
+  .ald-field-label{ width: auto; }
+}

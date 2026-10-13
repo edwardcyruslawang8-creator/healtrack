@@ -1,0 +1,159 @@
+/* =============================================================
+   PATIENT PROFILE (subadmin/patient_profile.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell:
+   sidebar, topbar, .adm-card, .adm-tabs, "adm-" prefixed) and
+   assets/css/subadmin_dashboard.css (topbar select buttons + nav
+   badge). Everything here is specific to this page — the breadcrumb,
+   profile header card, and overview cards — and is "ppf-" prefixed
+   (Patient PrOFile). This page's accent color is blue (matching the
+   reference design) rather than the app's usual maroon, used only
+   for this page's card links (Patient ID, "View All", "View Full
+   History", etc.).
+   ============================================================= */
+
+.ppf-title-sep{ color: var(--adm-text-soft); font-weight: 400; margin: 0 2px; }
+
+/* -- Breadcrumb -- */
+.ppf-breadcrumb{ font-size: 12.5px; color: var(--adm-text-muted); margin-top: 6px; }
+.ppf-breadcrumb a{ color: var(--adm-text-muted); }
+.ppf-breadcrumb a:hover{ color: var(--adm-red-bright); text-decoration: underline; }
+.ppf-breadcrumb-sep{ margin: 0 6px; color: var(--adm-text-soft); }
+.ppf-breadcrumb-current{ color: var(--adm-text); font-weight: 600; }
+
+/* -- Profile header card -- */
+.ppf-profile-card{
+  display: flex;
+  align-items: flex-start;
+  gap: 28px;
+  flex-wrap: wrap;
+  padding: 28px;
+}
+.ppf-identity{ flex: 1.5; min-width: 220px; }
+.ppf-name{ font-size: 22px; font-weight: 800; color: var(--adm-text); margin: 0 0 4px; }
+.ppf-meta{ font-size: 13.5px; color: var(--adm-text-muted); margin: 0 0 10px; }
+.ppf-contact-row{ display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--adm-text); margin-bottom: 6px; flex-wrap: wrap; }
+.ppf-contact-row i{ color: var(--adm-text-soft); }
+.ppf-contact-sep{ width: 1px; height: 14px; background: var(--adm-border); margin: 0 10px; }
+
+.ppf-info-col{ display: flex; flex-direction: column; gap: 16px; min-width: 130px; }
+.ppf-info-item{ display: flex; flex-direction: column; gap: 3px; }
+.ppf-info-label{ font-size: 11.5px; color: var(--adm-text-soft); }
+.ppf-info-value{ font-size: 13.5px; font-weight: 700; color: var(--adm-text); }
+
+/* -- Overview: 3-column card rows -- */
+.ppf-row-3{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 18px;
+  align-items: stretch;
+}
+.ppf-ov-card{ display: flex; flex-direction: column; }
+.ppf-ov-header{ display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.ppf-ov-header i{ font-size: 17px; color: var(--adm-red-bright); }
+.ppf-ov-header h3{ font-size: 14.5px; font-weight: 700; color: var(--adm-text); margin: 0; }
+.ppf-ov-header.with-action{ justify-content: space-between; }
+.ppf-ov-header.with-action > div{ display: flex; align-items: center; gap: 10px; }
+
+.ppf-view-all{ font-size: 12px; font-weight: 600; color: #1A73E8; }
+.ppf-view-all:hover{ color: #135BB5; text-decoration: underline; }
+
+.ppf-card-link{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1A73E8;
+  margin-top: auto;
+  padding-top: 14px;
+}
+.ppf-card-link:hover{ color: #135BB5; text-decoration: underline; }
+
+/* Summary card */
+.ppf-summary-list{ display: flex; flex-direction: column; gap: 12px; flex: 1; }
+.ppf-summary-row{ display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--adm-text-muted); }
+.ppf-summary-row strong{ font-size: 14px; color: var(--adm-text); }
+
+/* Active Medical Conditions card */
+.ppf-condition-chip{
+  display: inline-block;
+  align-self: flex-start;
+  background: var(--adm-red-bg);
+  color: var(--adm-red-bright);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 50px;
+  margin-bottom: 12px;
+}
+.ppf-condition-meta{ display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--adm-text-muted); flex: 1; }
+.ppf-status-active{ color: var(--adm-green); }
+
+/* Latest Consultation card */
+.ppf-consult-datetime{ font-size: 13px; font-weight: 700; color: var(--adm-text); margin: 0 0 12px; }
+.ppf-consult-line{ font-size: 12.5px; color: var(--adm-text-muted); margin: 0 0 10px; line-height: 1.5; }
+.ppf-consult-line span{ color: var(--adm-text-soft); }
+
+/* Recent Laboratory Results / Vaccination History lists */
+.ppf-list{ display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.ppf-list-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--adm-border);
+}
+.ppf-list-row:last-child{ border-bottom: none; }
+.ppf-list-title{ font-size: 13px; font-weight: 600; color: var(--adm-text); }
+.ppf-list-sub{ font-size: 11.5px; color: var(--adm-text-soft); margin-top: 2px; }
+.ppf-badge{
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 50px;
+  flex-shrink: 0;
+}
+
+/* Recent X-ray Results */
+.ppf-xray-row{ display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px; }
+.ppf-xray-thumb{
+  width: 64px;
+  height: 64px;
+  border-radius: var(--adm-radius-md);
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  color: var(--adm-text-soft);
+  flex-shrink: 0;
+}
+.ppf-xray-row .ppf-badge{ margin-top: 6px; }
+
+/* Placeholder for tabs with no content yet */
+.ppf-tab-placeholder{
+  background: var(--adm-card);
+  border: 1px dashed var(--adm-border);
+  border-radius: var(--adm-radius-lg);
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--adm-text-soft);
+}
+.ppf-tab-placeholder i{ font-size: 32px; display: block; margin-bottom: 10px; }
+.ppf-tab-placeholder p{ margin: 0; font-size: 13.5px; }
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 1199.98px){
+  .ppf-row-3{ grid-template-columns: 1fr; }
+}
+@media (max-width: 767.98px){
+  .ppf-profile-card{ flex-direction: column; }
+}

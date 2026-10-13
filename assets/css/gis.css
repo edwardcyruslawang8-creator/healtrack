@@ -1,0 +1,578 @@
+/* =============================================================
+   GIS MAPPING PAGE (patient/gis.php)
+   ---------------------------------------------------------------
+   Loaded only by patient/gis.php, after base.css and Leaflet's own
+   CSS (leaflet.css, loaded from CDN in header.php only for this
+   page). Shared atoms like .page-header and .med-notice live in
+   base.css instead.
+
+   Also loaded by admin/gis_mapping.php (the same real GIS content,
+   inside the admin dark-sidebar shell instead of the patient one — see
+   that page's own header comment) — the rule below is the one place
+   this file reaches into admin-dashboard.css's ".adm-topbar h1" (every
+   other admin page's title stays plain black; this is the one page
+   meant to visually read as "the same GIS Mapping feature" as the
+   homepage/patient page, whose own .page-header h1 is this same
+   maroon). Harmless on patient/gis.php itself since that page's
+   markup has no .adm-topbar at all. */
+.adm-topbar h1{ color: var(--adm-red-bright); }
+
+/* ===================================================================
+   ADMIN-ONLY: real values for every patient-side token this file uses
+   throughout (--card-white, --border-soft, --shadow-card, --radius-lg,
+   --text-dark/-muted/-soft, --maroon(-dark), --red/--green/--blue and
+   their *-bg pairs, --dark-bg, --bg-light). admin/gis_mapping.php never
+   loads base.css (where these are actually defined for patient/gis.php)
+   so every one of those properties was resolving to an undefined custom
+   property and being dropped — every info card, the map card, the
+   search field, and the search button were rendering with NO
+   background/border/shadow/radius/color at all, which is why the page
+   looked flat/unstyled next to the homepage. Aliasing onto
+   admin-dashboard.css's own --adm-* tokens (scoped to .adm-body so
+   patient/gis.php itself is untouched) fixes that and keeps dark mode
+   working for free, since those already have their own
+   :root[data-bs-theme="dark"] overrides. */
+.adm-body{
+  --card-white: var(--adm-card);
+  --border-soft: var(--adm-border);
+  --shadow-card: var(--adm-shadow);
+  --shadow-card-hover: var(--adm-shadow-hover);
+  --radius-lg: var(--adm-radius-lg);
+  --text-dark: var(--adm-text);
+  --text-muted: var(--adm-text-muted);
+  --text-soft: var(--adm-text-soft);
+  --maroon: var(--adm-red-bright);
+  --maroon-dark: var(--adm-red-bright-hover);
+  --red: var(--adm-red);
+  --red-bg: var(--adm-red-bg);
+  --green: var(--adm-green);
+  --green-bg: var(--adm-green-bg);
+  --blue: var(--adm-blue);
+  --blue-bg: var(--adm-blue-bg);
+  --dark-bg: var(--adm-hover-bg);
+  --bg-light: var(--adm-bg);
+}
+
+/* Date Range dropdown button — replaces the native <select> only on
+   admin/gis_mapping.php (see that page's own comment on why); visually
+   matches the .filter-select pill it replaces (same padding/border/
+   shadow/font), just without the manual .chevron icon since
+   dropdown-toggle already draws its own caret. */
+.adm-body .gis-daterange-dropdown{ flex: 0 0 auto; }
+.adm-body .gis-daterange-btn{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 170px;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 11px 16px;
+  box-shadow: var(--shadow-card);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+.adm-body .gis-daterange-btn:hover{ background: var(--bg-light); }
+.adm-body .gis-daterange-btn i{ color: var(--text-soft); font-size: 13px; }
+
+/* -- Filter toolbar -- */
+.gis-toolbar{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.gis-search-field-wrap{
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+.gis-search-row{
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.gis-search-field{
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 11px 16px;
+  box-shadow: var(--shadow-card);
+}
+.gis-search-field i.bi-search{ color: var(--text-soft); font-size: 15px; flex-shrink: 0; }
+.gis-search-field input{
+  border: none;
+  background: transparent;
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  outline: none;
+  color: var(--text-dark);
+}
+.gis-search-field input::placeholder{ color: var(--text-soft); }
+.gis-search-field.no-match{ border-color: var(--maroon); }
+.btn-gis-search{
+  background: var(--maroon);
+  color: #fff;
+  border: none;
+  padding: 0 22px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background .15s ease;
+}
+.btn-gis-search:hover{ background: var(--maroon-dark); }
+/* Filled in only when a search finds no reasonably close barangay match
+   (assets/js/gis.js) — takes no layout space otherwise. */
+.gis-search-feedback{
+  font-size: 11.5px;
+  color: var(--maroon);
+  margin: 6px 0 0 4px;
+}
+.gis-search-feedback:empty{ display: none; }
+
+.gis-toolbar .filter-select-wrap{
+  position: relative;
+  flex: 0 0 auto;
+}
+.gis-toolbar select.filter-select{
+  width: auto;
+  min-width: 170px;
+  padding: 11px 34px 11px 16px;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+}
+.gis-toolbar .filter-select-wrap i.leading-icon{
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: var(--text-soft);
+  pointer-events: none;
+}
+.gis-toolbar .filter-select-wrap.has-icon select.filter-select{ padding-left: 36px; }
+.gis-toolbar .filter-select-wrap i.chevron{
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--text-soft);
+  pointer-events: none;
+}
+
+/* -- Two-column layout: ~30% info panel / ~70% map -- */
+.gis-layout{
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+.gis-side{
+  flex: 0 0 30%;
+  max-width: 30%;
+  min-width: 0;
+}
+.gis-map-col{
+  flex: 1;
+  min-width: 0;
+}
+
+/* -- Generic info card shell used by the left-panel cards -- */
+.info-card{
+  background: var(--card-white);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.info-card:last-child{ margin-bottom: 0; }
+.info-card-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.info-card-header h2{
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.info-card-header i.info-hint{ color: var(--text-soft); font-size: 14px; }
+
+/* -- Disease Cases by Barangay: legend list -- */
+.legend-list{ display: flex; flex-direction: column; gap: 12px; }
+.legend-row{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-dark);
+}
+.legend-row .dot{
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.legend-row .range{ color: var(--text-muted); font-size: 12.5px; }
+.legend-row .trend-icon-box{
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.legend-row .trend-icon-box.red{   background: var(--red-bg); color: var(--red); }
+.legend-row .trend-icon-box.green{ background: var(--green-bg); color: var(--green); }
+.legend-row .trend-icon-box.gray{  background: var(--dark-bg); color: var(--text-muted); }
+
+/* -- Health Trend card (real monthly line chart) -- */
+.health-trend-badge{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 50px;
+  flex-shrink: 0;
+}
+.health-trend-badge.up{     background: var(--red-bg);   color: var(--red); }
+.health-trend-badge.down{   background: var(--green-bg); color: var(--green); }
+.health-trend-badge.stable{ background: var(--dark-bg);  color: var(--text-muted); }
+.health-trend-canvas-box{ position: relative; width: 100%; height: 160px; margin-top: 4px; }
+.health-trend-caption{ font-size: 11px; color: var(--text-soft); margin: 10px 0 0; }
+
+/* -- Summary card -- */
+.summary-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.summary-stat-box{ display: flex; align-items: flex-start; gap: 12px; }
+.summary-stat-box .icon-circle{
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.summary-stat-box .icon-circle.red{  background: var(--red-bg); color: var(--red); }
+.summary-stat-box .icon-circle.blue{ background: var(--blue-bg); color: var(--blue); }
+.summary-stat-box .stat-label{ font-size: 11.5px; color: var(--text-muted); margin-bottom: 3px; }
+.summary-stat-box .stat-value-row{
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.summary-stat-box .stat-value{ font-size: 19px; font-weight: 700; color: var(--text-dark); }
+.summary-stat-box .stat-trend{ font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 2px; }
+.summary-stat-box .stat-trend.up{ color: var(--red); }
+.summary-stat-box .stat-trend.down{ color: var(--green); }
+.summary-stat-box .stat-sub{ font-size: 11px; color: var(--text-soft); margin-top: 2px; }
+
+/* -- Top 5 Diseases card -- */
+.mini-select{
+  font-size: 11.5px;
+  padding: 6px 28px 6px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-dark);
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.mini-select-wrap{ position: relative; }
+.mini-select-wrap i{
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px;
+  color: var(--text-soft);
+  pointer-events: none;
+}
+
+.disease-rank-list{ display: flex; flex-direction: column; }
+.disease-rank-row{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+.disease-rank-row:last-child{ border-bottom: none; padding-bottom: 0; }
+.disease-rank-row:first-child{ padding-top: 0; }
+.disease-rank-row .rank-badge{
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--bg-light);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.disease-rank-row .disease-name{
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-dark);
+  min-width: 0;
+}
+.disease-rank-row .disease-cases{
+  font-size: 12.5px;
+  color: var(--text-dark);
+  white-space: nowrap;
+}
+.disease-rank-row .disease-trend{
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 52px;
+  justify-content: flex-end;
+}
+.disease-rank-row .disease-trend.up{ color: var(--red); }
+.disease-rank-row .disease-trend.down{ color: var(--green); }
+
+/* -- Map card -- */
+.map-card{
+  background: var(--card-white);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.map-container{
+  position: relative;
+  width: 100%;
+  height: 560px;
+  background: #EDEBE3;
+}
+#gisMap{ width: 100%; height: 100%; }
+
+/* Floating "Legend" toggle button, upper-right of the map */
+.map-legend-btn{
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 500;
+  background: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+  box-shadow: var(--shadow-card-hover);
+  transition: background .15s ease;
+}
+.map-legend-btn:hover{ background: var(--bg-light); }
+
+/* Compact in-map legend panel, toggled by .map-legend-btn */
+.map-legend-panel{
+  position: absolute;
+  top: 62px;
+  right: 16px;
+  z-index: 500;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: var(--shadow-card-hover);
+  padding: 14px 16px;
+  font-size: 12px;
+  display: none;
+  min-width: 170px;
+}
+.map-legend-panel.show{ display: block; }
+.map-legend-panel .legend-row{ font-size: 12px; margin-bottom: 8px; }
+.map-legend-panel .legend-row:last-child{ margin-bottom: 0; }
+
+/* Barangay marker (Leaflet divIcon) */
+.barangay-marker{
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 15px;
+}
+.barangay-label-tooltip{
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  font-family: 'Poppins', sans-serif;
+  text-align: center;
+  line-height: 1.25;
+  pointer-events: none;
+}
+.barangay-label-tooltip .bl-name{ font-weight: 700; font-size: 12.5px; color: var(--text-dark); }
+.barangay-label-tooltip .bl-cases{ font-size: 11px; color: var(--text-dark); }
+.barangay-label-tooltip::before{ display: none; }
+
+/* Hover tooltip on the barangay SHAPE itself (not the permanent marker
+   label above) — shows that barangay's real case count the instant the
+   cursor is over its polygon, no click needed. A normal (non-permanent)
+   Leaflet tooltip, so it follows the usual show-on-hover/hide-on-leave
+   behavior automatically. */
+.barangay-hover-tooltip{
+  background: var(--card-white, #fff);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-card);
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  padding: 6px 10px;
+}
+.barangay-hover-tooltip .bht-name{ font-weight: 700; font-size: 12.5px; color: var(--text-dark); }
+.barangay-hover-tooltip .bht-cases{ font-size: 11.5px; color: var(--text-dark); }
+.bht-breakdown{ font-size: 11px; color: var(--text-muted, #6B7280); }
+
+/* -- North Super Health Center's own map pin — a distinct maroon
+      hospital icon (rather than the round colored dots used for
+      barangay case-density markers), so the facility itself always
+      reads as visually different from a barangay data point. -- */
+.facility-marker{
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--maroon, #5B0A0A);
+  border: 3px solid #fff;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 18px;
+}
+.facility-label-tooltip{
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  font-family: 'Poppins', sans-serif;
+  text-align: center;
+  pointer-events: none;
+}
+.facility-label-tooltip .bl-name{ font-weight: 700; font-size: 12.5px; color: var(--maroon, #5B0A0A); }
+.facility-label-tooltip::before{ display: none; }
+
+/* Leaflet default control overrides to match the theme */
+.leaflet-control-zoom{
+  border: none !important;
+  box-shadow: var(--shadow-card-hover) !important;
+}
+.leaflet-control-zoom a{
+  width: 40px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  color: var(--text-dark) !important;
+  font-size: 18px !important;
+}
+.leaflet-control-zoom a:first-child{ border-radius: 10px 10px 0 0 !important; }
+.leaflet-control-zoom a:last-child{ border-radius: 0 0 10px 10px !important; }
+.leaflet-bar{ border-radius: 10px !important; overflow: hidden; }
+
+.locate-control-btn{
+  width: 40px;
+  height: 40px;
+  background: #fff;
+  border: none;
+  border-radius: 10px;
+  box-shadow: var(--shadow-card-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dark);
+  font-size: 16px;
+  margin-top: 8px;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+.locate-control-btn:hover{ background: var(--bg-light); }
+
+/* -- Bottom legend bar (full width, under the map) -- */
+.map-bottom-legend{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px 22px;
+  border-top: 1px solid var(--border-soft);
+  flex-wrap: wrap;
+}
+.legend-group{ display: flex; flex-direction: column; gap: 10px; }
+.legend-group-title{ font-size: 13px; font-weight: 600; color: var(--text-dark); }
+.legend-group-items{
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.legend-item{
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-dark);
+  white-space: nowrap;
+}
+.legend-item .dot{ width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.legend-item .range{ color: var(--text-soft); font-size: 11px; }
+.legend-item .trend-icon-box{
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.legend-item .trend-icon-box.red{   background: var(--red-bg); color: var(--red); }
+.legend-item .trend-icon-box.green{ background: var(--green-bg); color: var(--green); }
+.legend-item .trend-icon-box.gray{  background: var(--dark-bg); color: var(--text-muted); }
+
+/* -- Responsive -- */
+@media (max-width: 991.98px){
+  .gis-layout{ flex-direction: column; }
+  .gis-side{ flex: 1 1 100%; max-width: 100%; }
+  .map-container{ height: 480px; }
+}
+@media (max-width: 767.98px){
+  .gis-toolbar{ flex-direction: column; align-items: stretch; }
+  .gis-toolbar select.filter-select{ width: 100%; min-width: 0; }
+  .summary-grid{ grid-template-columns: 1fr; }
+  .map-bottom-legend{ flex-direction: column; }
+}

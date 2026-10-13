@@ -1,0 +1,340 @@
+/* =============================================================
+   ADD PATIENT MODAL — multi-step intake wizard
+   (medical-staff/patient_management.php)
+   ---------------------------------------------------------------
+   Reuses the same CSS custom properties as assets/css/admin-
+   dashboard.css (--adm-red-bright, --adm-border, --adm-text, ...)
+   so it automatically follows the app's red/white theme and the
+   existing light/dark mode overrides — no new color tokens.
+   "apm-" prefix ("Add Patient Modal") to stay collision-free with
+   the generic "adm-" atoms and every other page's own prefix.
+   ============================================================= */
+
+.apm-modal .modal-dialog{
+  max-width: 1000px;
+}
+.apm-modal .modal-content{
+  border: none;
+  border-radius: var(--adm-radius-lg);
+  box-shadow: var(--adm-shadow-hover);
+}
+.apm-modal .modal-header{
+  border-bottom: 1px solid var(--adm-border);
+  padding: 20px 28px;
+}
+.apm-modal .modal-title{
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--adm-text);
+}
+.apm-modal .modal-body{
+  padding: 0 28px 22px;
+  max-height: 76vh;
+  overflow-y: auto;
+}
+.apm-modal .modal-footer{
+  border-top: 1px solid var(--adm-border);
+  padding: 16px 28px;
+  gap: 10px;
+}
+
+/* ---------------- Stepper ---------------- */
+.apm-stepper{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 0 16px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--adm-border);
+  overflow-x: auto;
+}
+.apm-step{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px 14px;
+  border-bottom: 3px solid transparent;
+  color: var(--adm-text-soft);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: default;
+}
+.apm-step i{ font-size: 15px; }
+.apm-step.active{
+  color: var(--adm-red-bright);
+  border-bottom-color: var(--adm-red-bright);
+}
+.apm-step.done{ color: var(--adm-text); cursor: pointer; }
+.apm-step.done i{ color: #1E8E3E; }
+.apm-step.done span::after{
+  content: "\2713";
+  margin-left: 6px;
+  color: #1E8E3E;
+  font-weight: 700;
+}
+
+/* ---------------- Steps / sections ---------------- */
+.apm-step-panel{ display: none; }
+.apm-step-panel.active{ display: block; }
+
+.apm-section-title{
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--adm-text);
+  margin: 0 0 14px;
+}
+.apm-section + .apm-section{ margin-top: 24px; }
+.apm-section-subtitle{
+  font-size: 12.5px;
+  color: var(--adm-text-muted);
+  margin: -8px 0 14px;
+}
+
+.apm-grid{
+  display: grid;
+  gap: 16px 18px;
+  margin-bottom: 4px;
+}
+.apm-grid-2{ grid-template-columns: repeat(2, 1fr); }
+.apm-grid-3{ grid-template-columns: repeat(3, 1fr); }
+
+.apm-field label{
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text-muted);
+  margin-bottom: 6px;
+}
+.apm-field label .req{ color: var(--adm-red-bright); margin-left: 2px; }
+
+.apm-modal .form-control,
+.apm-modal .form-select{
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  color: var(--adm-text);
+  background-color: var(--adm-card);
+  width: 100%;
+}
+.apm-modal .form-control:focus,
+.apm-modal .form-select:focus{
+  outline: none;
+  border-color: var(--adm-red-bright);
+  box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.12);
+}
+.apm-modal .form-control[readonly]{
+  background: var(--adm-hover-bg);
+  color: var(--adm-text-muted);
+}
+.apm-modal .invalid-feedback{ font-size: 11.5px; }
+.apm-modal .is-invalid{ border-color: #D93025 !important; }
+
+.apm-field-help{
+  font-size: 11.5px;
+  color: var(--adm-text-soft);
+  margin-top: 6px;
+}
+
+/* Blood Pressure split input (Systolic / Diastolic) */
+.apm-bp-row{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.apm-bp-row .form-control{ flex: 1; min-width: 0; }
+.apm-bp-sep{
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--adm-text-soft);
+}
+
+/* Unit-suffixed inputs (°C / kg / cm) */
+.apm-suffix-wrap{ position: relative; }
+.apm-suffix-wrap .form-control{ padding-right: 42px; }
+.apm-suffix{
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text-soft);
+  pointer-events: none;
+}
+
+/* Hide the native number spinner arrows for a cleaner look, matching
+   the flat single-line inputs elsewhere in this modal. */
+.apm-modal input[type="number"]::-webkit-outer-spin-button,
+.apm-modal input[type="number"]::-webkit-inner-spin-button{
+  -webkit-appearance: none;
+  margin: 0;
+}
+.apm-modal input[type="number"]{ appearance: textfield; -moz-appearance: textfield; }
+
+/* ---------------- Consent block ---------------- */
+.apm-consent-box{
+  background: var(--adm-hover-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+.apm-consent-help{
+  font-size: 12.5px;
+  color: var(--adm-text-muted);
+  margin: 2px 0 10px;
+}
+.apm-consent-note{
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--adm-text-soft);
+  margin-top: 10px;
+}
+.apm-consent-note i{ margin-top: 1px; }
+
+/* ---------------- Repeatable rows (medications) ---------------- */
+.apm-repeat-row{
+  display: grid;
+  grid-template-columns: 1fr 1fr 140px 32px;
+  gap: 10px;
+  align-items: start;
+  margin-bottom: 10px;
+}
+.apm-repeat-row.apm-repeat-row-2col{
+  grid-template-columns: 1fr 1fr 1fr 32px;
+}
+
+/* ---------------- History / Allergies tables (Medical History, Surgical
+   History, Allergies — Step 3) ---------------- */
+.apm-hist-row{ grid-template-columns: 30px 1fr 1fr 32px; }
+.apm-allergy-row{ grid-template-columns: 30px 1fr 130px 1fr 32px; }
+.apm-med-row{ grid-template-columns: 30px 1.3fr 0.85fr 1.1fr 1fr 1fr 32px; }
+
+.apm-table-head{
+  display: grid;
+  gap: 10px;
+  padding: 0 0 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--adm-text-soft);
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+.apm-row-num{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text-soft);
+}
+.apm-cell{ min-width: 0; }
+
+/* Color-code the Allergy Severity <select> by its chosen value, set via
+   assets/js/add-patient.js (data-severity mirrors the <select> value). */
+.apm-allergy-row select[data-field="severity"][data-severity="mild"]{ color: #1E8E3E; font-weight: 600; }
+.apm-allergy-row select[data-field="severity"][data-severity="moderate"]{ color: #E8710A; font-weight: 600; }
+.apm-allergy-row select[data-field="severity"][data-severity="severe"]{ color: #D93025; font-weight: 600; }
+
+.apm-row-remove{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 38px;
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  background: var(--adm-card);
+  color: var(--adm-text-soft);
+}
+.apm-row-remove:hover{ background: #FCE4E4; color: #D93025; border-color: #FCE4E4; }
+
+.apm-add-row-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px dashed var(--adm-border);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-red-bright);
+  margin-bottom: 6px;
+}
+.apm-add-row-btn:hover{ background: var(--adm-hover-bg); }
+.apm-add-row-btn-block{
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 12px 14px;
+  margin-top: 4px;
+}
+
+.apm-char-counter{
+  text-align: right;
+  font-size: 11.5px;
+  color: var(--adm-text-soft);
+  margin-top: 6px;
+}
+
+.apm-none-check{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--adm-text-muted);
+  margin: 6px 0 20px;
+}
+
+/* ---------------- Footer buttons ---------------- */
+.apm-btn-cancel{
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  color: var(--adm-text-muted);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.apm-btn-cancel:hover{ background: var(--adm-hover-bg); }
+.apm-btn-back{
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  color: var(--adm-text);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.apm-btn-back:hover{ background: var(--adm-hover-bg); }
+.apm-btn-next,
+.apm-btn-submit{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--adm-red-bright);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 22px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background .15s ease;
+  margin-left: auto;
+}
+.apm-btn-next:hover,
+.apm-btn-submit:hover{ background: var(--adm-red-bright-hover); color: #fff; }
+.apm-footer-spacer{ flex: 1; }
+
+@media (max-width: 767.98px){
+  .apm-grid-2, .apm-grid-3{ grid-template-columns: 1fr; }
+  .apm-repeat-row, .apm-repeat-row.apm-repeat-row-2col,
+  .apm-hist-row, .apm-allergy-row, .apm-med-row{ grid-template-columns: 1fr; }
+  .apm-table-head{ display: none; }
+}

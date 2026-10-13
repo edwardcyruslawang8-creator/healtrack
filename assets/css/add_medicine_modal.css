@@ -1,0 +1,183 @@
+/* =============================================================
+   ADD MEDICINE / ADD VACCINE MODAL
+   (pharmacist/medicine_vaccine_inventory.php)
+   ---------------------------------------------------------------
+   "am-" prefix ("Add Medicine"). Follows the same modal-styling
+   conventions as the rest of the app (see assets/css/consultations.css'
+   .cns-modal for the pattern this mirrors).
+   ============================================================= */
+
+.am-modal .modal-content{
+  border: none;
+  border-radius: var(--adm-radius-lg);
+  box-shadow: var(--adm-shadow-hover);
+}
+.am-modal .modal-header{
+  border-bottom: 1px solid var(--adm-border);
+  padding: 20px 24px;
+}
+.am-modal .modal-title{
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--adm-text);
+}
+.am-modal .modal-body{
+  padding: 22px 24px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.am-modal .modal-footer{
+  border-top: 1px solid var(--adm-border);
+  padding: 16px 24px;
+  gap: 10px;
+}
+
+.am-form-label{
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+  margin-bottom: 6px;
+  display: block;
+}
+.am-form-help{
+  font-size: 11.5px;
+  color: var(--adm-text-soft);
+  margin-top: 6px;
+}
+.am-form-control{
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  color: var(--adm-text);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  width: 100%;
+}
+.am-modal select.am-form-control{ background-color: var(--adm-bg); }
+.am-form-control:focus{
+  outline: none;
+  border-color: #1A73E8;
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.12);
+}
+
+.am-btn-cancel{
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  color: var(--adm-text-muted);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.am-btn-cancel:hover{ background: var(--adm-hover-bg); }
+.am-btn-submit{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #1A73E8;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background .15s ease;
+}
+.am-btn-submit:hover{ background: #1558B0; color: #fff; }
+
+/* View Details modal's read-only field list. */
+.am-detail-list{ margin: 0; }
+.am-detail-row{
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--adm-border);
+}
+.am-detail-row:last-child{ border-bottom: none; }
+.am-detail-row dt{
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text-soft);
+}
+.am-detail-row dd{
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--adm-text);
+  text-align: right;
+}
+
+/* Adjust Stock modal's +/- amount input group. */
+#adjustStockModal .input-group .btn{
+  border-color: var(--adm-border);
+  color: var(--adm-text-muted);
+  font-weight: 700;
+}
+#adjustStockModal .input-group .btn:hover{ background: var(--adm-hover-bg); }
+
+/* New Stock Request modal's repeatable item rows (item select + qty + remove). */
+.nsr-item-row{
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.nsr-item-row .nsr-item-name{ flex: 1 1 auto; min-width: 0; }
+.nsr-item-row .nsr-item-qty{ flex: 0 0 90px; }
+.nsr-item-row .nsr-remove-item-btn{
+  flex: 0 0 auto;
+  background: none;
+  border: 1px solid var(--adm-border);
+  color: var(--adm-text-soft);
+  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nsr-item-row .nsr-remove-item-btn:hover{ background: var(--adm-red-bg, #FCE4E4); color: var(--adm-red-bright, #A32A22); border-color: transparent; }
+.nsr-item-row .nsr-remove-item-btn:disabled{ opacity: .4; cursor: not-allowed; }
+
+/* View Request modal's item list (name + qty). */
+.am-detail-items-table{ font-size: 13px; margin-bottom: 0; }
+.am-detail-items-table th{
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--adm-text-soft);
+  border-bottom-color: var(--adm-border);
+}
+.am-detail-items-table td{
+  color: var(--adm-text);
+  border-bottom-color: var(--adm-border);
+  vertical-align: middle;
+}
+
+/* "Print Request" — #srqPrintArea (includes/subadmin/stock_request_view_modal.php)
+   stays invisible on screen; @media print flips it to the only thing
+   printed, hiding the sidebar/topbar/table/everything else. */
+#srqPrintArea{ display: none; }
+@media print{
+  body *{ visibility: hidden; }
+  #srqPrintArea, #srqPrintArea *{ visibility: visible; }
+  #srqPrintArea{
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 24px;
+  }
+  #srqPrintArea h2{ font-size: 20px; margin-bottom: 16px; }
+  #srqPrintArea h3{ font-size: 15px; margin: 20px 0 8px; }
+  .srq-print-table{ width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  .srq-print-table th, .srq-print-table td{
+    text-align: left;
+    padding: 6px 8px;
+    border: 1px solid #999;
+    font-size: 13px;
+  }
+  .srq-print-table th{ width: 160px; background: #f2f2f2; }
+  .srq-print-items th{ background: #f2f2f2; width: auto; }
+}

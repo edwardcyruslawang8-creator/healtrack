@@ -1,0 +1,206 @@
+/* =============================================================
+   SUB-ADMIN DASHBOARD (subadmin/dashboard.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell:
+   sidebar, topbar, .adm-card, .adm-donut-*, .adm-table, "adm-"
+   prefixed). Everything here is specific to this page — the nav
+   notification badge, topbar select buttons, 5-card stat row, chart
+   cards, condition bars, lab/x-ray widget, and status badges — and is
+   "sad-" prefixed (Sub-Admin Dashboard).
+   ============================================================= */
+
+/* -- Notification count pill inside a nav row (e.g. "Notifications  5") -- */
+.sad-nav-badge{
+  margin-left: auto;
+  background: #fff;
+  color: var(--adm-red-bright);
+  font-size: 10.5px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* -- Topbar date / facility select buttons -- */
+.sad-topbar-select-btn{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 9px 16px;
+  box-shadow: var(--adm-shadow);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+  white-space: nowrap;
+}
+.sad-topbar-select-btn i{ color: var(--adm-text-soft); }
+.sad-topbar-select-btn:hover{ background: var(--adm-hover-bg); }
+
+/* -- Summary stat cards (5-up) -- */
+.sad-stats-row{
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.sad-stat-card{
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-lg);
+  box-shadow: var(--adm-shadow);
+  padding: 20px;
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.sad-stat-card:hover{ box-shadow: var(--adm-shadow-hover); transform: translateY(-2px); }
+.sad-stat-icon{
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  margin-bottom: 14px;
+}
+.sad-stat-label{ font-size: 12px; color: var(--adm-text-muted); font-weight: 500; margin-bottom: 4px; }
+.sad-stat-value{ font-size: 24px; font-weight: 800; color: var(--adm-text); line-height: 1.1; margin-bottom: 6px; }
+.sad-stat-sub{ font-size: 11.5px; display: flex; align-items: center; gap: 3px; font-weight: 600; }
+.sad-stat-sub.up{ color: var(--adm-green); }
+.sad-stat-sub.down{ color: var(--adm-red); }
+.sad-stat-breakdown{ display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--adm-text-muted); }
+.sad-stat-link{ display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--adm-red-bright); }
+.sad-stat-link:hover{ color: var(--adm-red-bright-hover); }
+
+/* -- 3-column chart rows -- */
+.sad-row-3{
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 22px;
+  align-items: stretch;
+}
+/* Same min-width:auto overflow issue as .adm-grid-70-30
+   (assets/css/admin-dashboard.css) — a wide table cell in any column
+   can force that column's track past its fr share, overflowing the
+   card to the viewport edge. min-width:0 lets each column actually
+   shrink to its allotted share. */
+.sad-row-3 > *{ min-width: 0; }
+
+.sad-chart-card{ display: flex; flex-direction: column; }
+
+/* Top 5 Common Health Conditions now stands alone as a full-width card
+   (its former row partner, Laboratory & X-ray Summary, was removed),
+   so it needs its own bottom margin that the row wrapper used to provide. */
+.sad-chart-card[data-dashboard-card="healthConditions"]{ margin-bottom: 22px; }
+
+.sad-card-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.sad-card-header h2{ font-size: 15.5px; font-weight: 700; color: var(--adm-text); margin: 0; }
+
+.sad-range-btn{
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--adm-text);
+}
+
+/* Chart.js's responsive:true + maintainAspectRatio:false sizes the
+   canvas to fill its parent's MEASURED size — without this wrapper
+   having its own definite height, that creates a circular sizing loop
+   (see assets/css/facility_analytics.css's .an-sparkline-box for the
+   same fix applied to a different chart). */
+.sad-canvas-box{ position: relative; width: 100%; height: 220px; flex: 1; }
+.sad-canvas-box.tall{ height: 260px; }
+
+.sad-chart-legend{
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 12px;
+  color: var(--adm-text-muted);
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.sad-chart-legend .dot{ width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.sad-chart-legend .dot.dashed{ width: 14px; height: 0; border-top: 2px dashed; border-radius: 0; vertical-align: middle; }
+
+/* -- Doughnut legend (gender / consultations by type) -- */
+.sad-donut-legend{ display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.sad-legend-row{ display: flex; align-items: center; gap: 9px; font-size: 12.5px; }
+.sad-legend-dot{ width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.sad-legend-label{ flex: 1; color: var(--adm-text-muted); }
+.sad-legend-value{ font-weight: 600; color: var(--adm-text); white-space: nowrap; }
+.sad-legend-total{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--adm-border);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--adm-text);
+}
+
+/* -- Top 5 Common Health Conditions (horizontal bars) -- */
+.sad-condition-list{ display: flex; flex-direction: column; gap: 14px; flex: 1; justify-content: center; }
+.sad-condition-row{ display: flex; align-items: center; gap: 12px; }
+.sad-condition-label{ width: 42%; flex-shrink: 0; font-size: 12px; color: var(--adm-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sad-condition-bar-track{ flex: 1; height: 10px; border-radius: 50px; background: var(--adm-bg); overflow: hidden; }
+.sad-condition-bar-fill{ height: 100%; border-radius: 50px; background: var(--adm-red-bright); }
+.sad-condition-value{ width: 34px; flex-shrink: 0; text-align: right; font-size: 12px; font-weight: 700; color: var(--adm-text); }
+.sad-condition-axis{
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-left: 42%;
+  font-size: 10.5px;
+  color: var(--adm-text-soft);
+}
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 1399.98px){
+  .sad-stats-row{ grid-template-columns: repeat(3, 1fr); }
+  .sad-row-3{ grid-template-columns: 1fr; }
+}
+@media (max-width: 991.98px){
+  .adm-grid-70-30{ grid-template-columns: 1fr; }
+}
+@media (max-width: 767.98px){
+  /* Confirmed via headless-Chrome screenshot at 991px that the old
+     991.98px breakpoint here was too wide — it stacked the date pill/
+     facility pill/bell/profile onto separate lines well before the
+     page was actually narrow. Matches the app's one real mobile
+     breakpoint (the same width the sidebar itself collapses at). */
+  .adm-topbar-right{ width: 100%; }
+  .adm-topbar-actions{ flex-wrap: wrap; row-gap: 10px; justify-content: flex-end; }
+  .sad-stats-row{ grid-template-columns: repeat(2, 1fr); }
+  .sad-topbar-select-btn{ flex: 1 1 160px; justify-content: center; }
+}
+@media (max-width: 575.98px){
+  .sad-stats-row{ grid-template-columns: 1fr; }
+  .sad-condition-label{ width: 34%; }
+}
+
+/* Brief dim while a card's own filter dropdown (assets/js/
+   subadmin-dashboard-filters.js) is fetching a new range — the card
+   stays in place and interactive underneath, it just isn't a jarring
+   instant swap. */
+.sad-card-loading{ opacity: 0.55; transition: opacity 0.15s ease; pointer-events: none; }

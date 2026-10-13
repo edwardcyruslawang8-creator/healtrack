@@ -1,0 +1,199 @@
+/* =============================================================
+   FACILITY MANAGEMENT (admin/facility_management.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css, the same way
+   patient-side pages layer a page.css on top of base.css. The
+   shared shell (sidebar, topbar, pagination, "adm-" prefixed atoms)
+   lives there; this file only has what's unique to this page's
+   toolbar + facility card grid ("fac-" prefixed).
+   ============================================================= */
+
+/* -- Search + Add Facility toolbar -- */
+.fac-toolbar{
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.fac-search{
+  flex: 1;
+  min-width: 240px;
+  position: relative;
+}
+.fac-search i{
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--adm-text-soft);
+  font-size: 15px;
+}
+.fac-search input{
+  width: 100%;
+  border: 1px solid var(--adm-border);
+  background: var(--adm-card);
+  border-radius: 12px;
+  padding: 13px 18px 13px 44px;
+  font-size: 13.5px;
+  color: var(--adm-text);
+  box-shadow: var(--adm-shadow);
+}
+.fac-search input:focus{
+  outline: none;
+  border-color: var(--adm-red-bright);
+  box-shadow: 0 0 0 3px rgba(210, 37, 28, 0.12);
+}
+.fac-search input::placeholder{ color: var(--adm-text-soft); }
+
+.btn-add-facility-lg{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--adm-red-bright);
+  color: #fff;
+  border: none;
+  padding: 13px 22px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--adm-shadow);
+  transition: background .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.btn-add-facility-lg:hover{
+  background: var(--adm-red-bright-hover);
+  color: #fff;
+  box-shadow: var(--adm-shadow-hover);
+  transform: translateY(-1px);
+}
+
+/* -- Facility card grid -- */
+.fac-grid{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  margin-bottom: 22px;
+}
+
+.fac-card{
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-lg);
+  box-shadow: var(--adm-shadow);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.fac-card:hover{ box-shadow: var(--adm-shadow-hover); transform: translateY(-2px); }
+
+.fac-card-top{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.fac-icon{
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--adm-red-bg);
+  color: var(--adm-red-bright);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.fac-badge{
+  display: inline-flex;
+  align-items: center;
+  background: var(--adm-red-bg);
+  color: var(--adm-red-bright);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 13px;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+
+.fac-name{
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--adm-text);
+  margin: 0 0 8px;
+  line-height: 1.3;
+}
+.fac-location{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--adm-text-muted);
+  margin-bottom: 18px;
+}
+.fac-location i{ color: var(--adm-text-soft); }
+
+.fac-stats{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.fac-stat-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+.fac-stat-row .fac-stat-label{ color: var(--adm-text-muted); }
+.fac-stat-row .fac-stat-value{ font-weight: 700; color: var(--adm-text); }
+
+.btn-view-analytics{
+  margin-top: auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--adm-red-bright);
+  color: #fff;
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  box-shadow: var(--adm-shadow);
+  transition: background .15s ease, box-shadow .15s ease;
+}
+/* No transform here on purpose — this button lives inside .fac-card, which
+   already lifts (-2px) on hover. Adding the button's own translateY on top
+   of that double-fires (hovering the button also triggers the card's
+   :hover) and made it visibly jitter, so this only changes color/shadow
+   and lets the card's lift be the sole motion. */
+.btn-view-analytics:hover{
+  background: var(--adm-red-bright-hover);
+  color: #fff;
+  box-shadow: var(--adm-shadow-hover);
+}
+
+/* -- Card grid footer (reuses .adm-table-footer / .adm-pagination atoms) -- */
+.fac-footer{
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-lg);
+  box-shadow: var(--adm-shadow);
+  padding: 18px 22px;
+}
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 1199.98px){
+  .fac-grid{ grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 767.98px){
+  .fac-grid{ grid-template-columns: 1fr; }
+  .fac-toolbar{ flex-direction: column; align-items: stretch; }
+  .btn-add-facility-lg{ justify-content: center; }
+}

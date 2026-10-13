@@ -1,0 +1,121 @@
+/* =============================================================
+   REGISTRATION PAGE (register.php)
+   ---------------------------------------------------------------
+   Loaded after base.css + login.css — reuses login.css's shell
+   (.login-page/.login-left/.login-right/.login-card/.login-field/
+   .login-input-wrap/.btn-sign-in/...) and only adds what's different
+   about the registration form: a two-column field grid, the Role
+   <select>, and the Terms checkbox row. "reg-" prefixed.
+   ============================================================= */
+
+/* Registration card is wider than the login card (more fields) and
+   the right panel scrolls if the viewport is short, since this form
+   is taller than login.php's. */
+.reg-right{ align-items: flex-start; padding-top: 72px; padding-bottom: 40px; overflow-y: auto; }
+.reg-card{ max-width: 620px; }
+
+.reg-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+/* Role <select> reuses .login-input-wrap's icon layout; a plain
+   <select> needs its own padding/appearance rules since it can't
+   share <input>'s styling automatically. */
+.reg-select{
+  width: 100%;
+  padding: 13px 36px 13px 44px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  font-size: 13.5px;
+  color: var(--text-dark);
+  background: #fff;
+  outline: none;
+  appearance: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.reg-select:invalid{ color: var(--text-soft); }
+.reg-select:focus{
+  border-color: var(--maroon);
+  box-shadow: 0 0 0 3px rgba(91,10,10,0.08);
+}
+.login-input-wrap .reg-select{ position: relative; }
+.login-input-wrap:has(.reg-select)::after{
+  content: "\F282";
+  font-family: "bootstrap-icons";
+  position: absolute;
+  right: 14px;
+  color: var(--text-soft);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+/* "Back to filling out the form manually" — shown only after a
+   successful "Sign up with Google" (assets/js/register.js), directly
+   under that button, undoing it. Plain text-link styling (same size/
+   color as login.css's .login-forgot-row a) rather than another full
+   button, since this is a secondary "never mind" action, not a second
+   primary choice next to "Sign up with Google" itself. */
+.reg-google-back-btn{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 8px 0 4px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--maroon);
+}
+.reg-google-back-btn:hover{ text-decoration: underline; }
+
+/* Terms & conditions checkbox row */
+.reg-terms{
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 4px 0 16px;
+}
+.reg-terms input[type="checkbox"]{
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: var(--maroon);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.reg-terms label{
+  font-size: 12.5px;
+  color: var(--text-dark);
+  cursor: pointer;
+  margin: 0;
+  line-height: 1.5;
+}
+.reg-terms a{
+  color: var(--maroon);
+  font-weight: 600;
+  text-decoration: underline;
+}
+.reg-terms a:hover{ color: var(--maroon-dark); }
+
+/* Pending-review note shown above the submit button */
+.reg-pending-note{
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  background: var(--bg-light);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0 0 18px;
+}
+.reg-pending-note i{ margin-top: 1px; color: var(--maroon); flex-shrink: 0; }
+
+@media (max-width: 575.98px){
+  .reg-grid{ grid-template-columns: 1fr; }
+}

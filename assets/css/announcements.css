@@ -1,0 +1,251 @@
+/* =============================================================
+   ANNOUNCEMENTS (patient/announcements.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/base.css (shared: --maroon/--green/etc
+   variables, .page-header, .pagination-custom, .status-badge — the
+   page's title block is plain .page-header, no page-specific header
+   row needed). This page does NOT load assets/css/medicine.css
+   (includes/header.php's $pageCss only supports one file), so the
+   .tab-btn pill and .med-row-icon circle rules below are copied in
+   full from medicine.css rather than just overridden on top of it —
+   an earlier version assumed those classes' base styles existed here
+   already and only added small overrides, which silently did nothing
+   (the pills/icons rendered as plain unstyled buttons/text). Everything
+   new here is "ann-" prefixed.
+   ============================================================= */
+
+/* -- Category filter pills (copied from assets/css/medicine.css's
+      .tab-btn, not overridden on top of it — see header comment) -- */
+.ann-filter-pills{ display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+.ann-filter-pills .tab-btn{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 50px;
+  font-size: 13.5px;
+  font-weight: 600;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  color: var(--text-dark);
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.ann-filter-pills .tab-btn:hover{ border-color: var(--maroon); }
+.ann-filter-pills .tab-btn.active{
+  background: var(--maroon);
+  border-color: var(--maroon);
+  color: #fff;
+}
+
+/* -- Announcement icon circle (copied from assets/css/medicine.css's
+      .med-name-cell .med-row-icon — that selector requires a
+      .med-name-cell ancestor this page's markup doesn't have, on top
+      of medicine.css not being loaded here at all, so it never
+      applied; see header comment) -- */
+.ann-card .med-row-icon{
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  flex-shrink: 0;
+}
+.ann-card .med-row-icon.blue{   background: var(--blue-bg); color: var(--blue); }
+.ann-card .med-row-icon.green{  background: var(--green-bg); color: var(--green); }
+.ann-card .med-row-icon.purple{ background: var(--purple-bg); color: var(--purple); }
+.ann-card .med-row-icon.orange{ background: var(--orange-bg); color: var(--orange); }
+.ann-card .med-row-icon.red{    background: var(--red-bg); color: var(--red); }
+.ann-card .med-row-icon.amber{  background: var(--amber-bg); color: var(--amber); }
+
+/* -- Two-column layout: announcement list + right rail -- */
+.ann-layout{
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 22px;
+  align-items: start;
+}
+
+/* -- Toolbar: search box + category filter pills -- */
+.ann-toolbar{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.ann-search-box{
+  flex: 1 1 260px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 11px 16px;
+  box-shadow: var(--shadow-card);
+}
+.ann-search-box i{ color: var(--text-soft); font-size: 15px; flex-shrink: 0; }
+.ann-search-box input{
+  border: none;
+  background: transparent;
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  outline: none;
+  color: var(--text-dark);
+}
+.ann-search-box input::placeholder{ color: var(--text-soft); }
+
+/* -- Announcement card -- */
+.ann-card{
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+  margin-bottom: 14px;
+  transition: box-shadow .15s ease;
+}
+.ann-card:hover{ box-shadow: var(--shadow-card-hover); }
+.ann-card-body{ flex: 1; min-width: 0; }
+.ann-card-top{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.ann-card-top h3{ font-size: 16px; font-weight: 700; color: var(--text-dark); margin: 0; }
+.ann-card-top .ann-date{ font-size: 12px; color: var(--text-soft); white-space: nowrap; flex-shrink: 0; }
+.ann-card-body p{ font-size: 13px; color: var(--text-muted); line-height: 1.55; margin: 0 0 12px; }
+.ann-card-tags{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ann-tag{
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 50px;
+}
+.ann-tag.general{ background: var(--green-bg); color: var(--green); }
+.ann-tag.alert{   background: var(--red-bg);   color: var(--red); }
+.ann-tag.event{   background: var(--blue-bg);  color: var(--blue); }
+.ann-tag.important{ background: var(--red-bg); color: var(--red); }
+.ann-menu-btn{
+  background: none;
+  border: none;
+  color: var(--text-soft);
+  font-size: 16px;
+  padding: 4px;
+  flex-shrink: 0;
+}
+.ann-menu-btn:hover{ color: var(--text-dark); }
+
+.ann-empty{
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+/* -- List footer: "Showing X of Y" + pagination -- */
+.ann-list-footer{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 6px;
+}
+.ann-list-footer .ann-showing-text{ font-size: 12.5px; color: var(--text-muted); }
+.ann-list-footer .pagination-custom{ margin-top: 0; }
+
+/* -- Right rail -- */
+.ann-sidebar-col{ display: flex; flex-direction: column; gap: 18px; }
+
+.ann-categories-card{
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+}
+.ann-categories-card h3{ font-size: 14.5px; font-weight: 700; color: var(--text-dark); margin: 0 0 14px; }
+.ann-category-row{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  font-size: 13px;
+  color: var(--text-dark);
+  text-decoration: none;
+}
+.ann-category-row:hover{ color: var(--maroon); }
+.ann-category-row .dot{ width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.ann-category-row .dot.dark{   background: var(--text-dark); }
+.ann-category-row .dot.green{  background: var(--green); }
+.ann-category-row .dot.red{    background: var(--red); }
+.ann-category-row .dot.blue{   background: var(--blue); }
+.ann-category-row .label{ flex: 1; }
+.ann-category-row .count{ font-weight: 700; color: var(--text-dark); font-size: 12.5px; }
+.ann-category-row.active .label{ color: var(--maroon); font-weight: 600; }
+
+.ann-reminder-card{
+  background: var(--blue-bg);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+.ann-reminder-card .icon{ color: var(--blue); font-size: 20px; margin-bottom: 10px; }
+.ann-reminder-card h4{ font-size: 14px; font-weight: 700; color: var(--text-dark); margin: 0 0 8px; }
+.ann-reminder-card p{ font-size: 12.5px; color: var(--text-muted); line-height: 1.6; margin: 0; }
+
+.ann-report-card{
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+}
+.ann-report-card h4{ font-size: 14px; font-weight: 700; color: var(--text-dark); margin: 0 0 6px; }
+.ann-report-card p{ font-size: 12.5px; color: var(--text-muted); line-height: 1.6; margin: 0 0 16px; }
+.ann-report-btn{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  background: var(--bg-light);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+  transition: background .15s ease;
+}
+.ann-report-btn:hover{ background: var(--dark-bg); color: var(--text-dark); }
+.ann-report-btn .bi-flag-fill{ color: var(--purple); margin-right: 8px; }
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 1199.98px){
+  .ann-layout{ grid-template-columns: 1fr; }
+  .ann-sidebar-col{ flex-direction: row; flex-wrap: wrap; }
+  .ann-sidebar-col > *{ flex: 1 1 260px; }
+}
+@media (max-width: 767.98px){
+  .ann-toolbar{ flex-direction: column; align-items: stretch; }
+  .ann-card{ flex-wrap: wrap; }
+  .ann-card-top{ flex-direction: column; gap: 4px; }
+  .ann-sidebar-col{ flex-direction: column; }
+}

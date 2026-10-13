@@ -1,0 +1,356 @@
+/* =============================================================
+   LOGIN PAGE (login.php)
+   ---------------------------------------------------------------
+   Loaded only by login.php, after base.css (for shared CSS
+   variables/fonts). Login has its own layout entirely — it doesn't
+   use the dashboard sidebar/header chrome, since it's the shared
+   pre-login page for every role (admin, sub-admin, staff, patient).
+   ============================================================= */
+
+html, body{ height: 100%; }
+
+.login-page{
+  min-height: 100vh;
+  display: flex;
+}
+
+/* =============================================================
+   LEFT PANEL — brand / illustration
+   ============================================================= */
+.login-left{
+  flex: 1 1 50%;
+  background: linear-gradient(160deg, #5E0B0B 0%, #4B0000 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 48px 56px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* -- Logo area -- */
+.login-logo-row{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.login-logo-row .logo-badge{
+  width: 52px;
+  height: 52px;
+  background: #fff;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.login-logo-row .logo-badge i{ font-size: 24px; color: #5B0A0A; }
+.login-logo-row .login-brand-text h1{
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin: 0;
+  line-height: 1.3;
+}
+.login-logo-row .login-brand-text p{
+  font-size: 11px;
+  color: rgba(255,255,255,0.65);
+  margin: 3px 0 0;
+}
+
+.login-divider{
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.18);
+  margin: 0 0 32px;
+}
+
+/* -- Heading + description -- */
+.login-left h2{
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0 0 16px;
+  max-width: 420px;
+}
+.login-left .login-left-desc{
+  font-size: 14px;
+  color: rgba(255,255,255,0.75);
+  line-height: 1.7;
+  max-width: 400px;
+  margin: 0;
+}
+
+/* -- Illustration --
+   flex:1 gives this box whatever vertical space is left after the
+   logo/heading/description above and the tagline below, so the image
+   naturally occupies the lower portion of the panel. The img itself
+   fills that box (width/height:100%) but object-fit:contain scales it
+   down proportionally to whichever dimension is the tighter fit,
+   so it's never cropped or stretched — just centered within the space,
+   anchored to the bottom edge (closest to the tagline). */
+.login-illustration{
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 220px;
+  margin-top: 32px;
+}
+.login-illustration img{
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  opacity: 0.95;
+}
+
+/* -- Bottom tagline -- */
+.login-tagline{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.8);
+  margin-top: 20px;
+}
+.login-tagline i{ font-size: 15px; color: rgba(255,255,255,0.9); }
+
+/* =============================================================
+   RIGHT PANEL — login form
+   ============================================================= */
+.login-right{
+  flex: 1 1 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 48px 40px;
+}
+
+/* -- Language selector -- */
+.lang-selector{
+  position: absolute;
+  top: 28px;
+  right: 32px;
+}
+.lang-selector .btn-lang{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  color: var(--text-dark);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.lang-selector .btn-lang:hover{ background: var(--bg-light); }
+.lang-selector .btn-lang i.bi-globe2{ color: var(--maroon); }
+
+/* -- Login card -- */
+.login-card{
+  width: 100%;
+  max-width: 440px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 10px 40px rgba(43, 34, 35, 0.10);
+  border: 1px solid var(--border-soft);
+  padding: 38px 36px;
+}
+.login-card h2{
+  font-size: 23px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0 0 8px;
+}
+.login-card .login-card-subtitle{
+  font-size: 13.5px;
+  color: var(--text-muted);
+  margin: 0 0 26px;
+  line-height: 1.6;
+}
+
+/* -- Inputs -- */
+.login-field{ margin-bottom: 20px; }
+.login-field label{
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+.login-input-wrap{
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.login-input-wrap i.field-icon{
+  position: absolute;
+  left: 16px;
+  color: var(--text-soft);
+  font-size: 15px;
+  pointer-events: none;
+}
+.login-input-wrap input{
+  width: 100%;
+  padding: 13px 16px 13px 44px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  font-size: 13.5px;
+  color: var(--text-dark);
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.login-input-wrap input:focus{
+  border-color: var(--maroon);
+  box-shadow: 0 0 0 3px rgba(91,10,10,0.08);
+}
+.login-input-wrap input::placeholder{ color: var(--text-soft); }
+.login-input-wrap input.has-toggle{ padding-right: 44px; }
+.login-toggle-btn{
+  position: absolute;
+  right: 14px;
+  background: none;
+  border: none;
+  color: var(--text-soft);
+  font-size: 15px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+.login-toggle-btn:hover{ color: var(--text-dark); }
+
+/* -- Forgot password row -- */
+.login-forgot-row{
+  display: flex;
+  justify-content: flex-end;
+  margin: -8px 0 18px;
+}
+.login-forgot-row a{
+  font-size: 12.5px;
+  color: var(--maroon);
+  font-weight: 500;
+}
+.login-forgot-row a:hover{ text-decoration: underline; }
+
+/* -- Remember me -- */
+.login-remember{
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 26px;
+}
+.login-remember input[type="checkbox"]{
+  width: 16px;
+  height: 16px;
+  accent-color: var(--maroon);
+  cursor: pointer;
+}
+.login-remember label{
+  font-size: 13px;
+  color: var(--text-dark);
+  cursor: pointer;
+  margin: 0;
+}
+
+/* -- Sign In button -- */
+.btn-sign-in{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  background: var(--maroon);
+  color: #fff;
+  border: none;
+  padding: 13px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  transition: background .15s ease, transform .15s ease;
+}
+.btn-sign-in:hover{ background: var(--maroon-dark); transform: translateY(-1px); }
+.btn-sign-in:active{ transform: translateY(0); }
+
+/* -- "OR" divider between the email/password form and Google sign-in
+   (login.php, register.php) -- */
+.login-or-divider{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.login-or-divider::before, .login-or-divider::after{
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border-soft);
+}
+
+/* -- "Continue with Google" / "Sign up with Google" button -- */
+.btn-google-signin{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #fff;
+  color: var(--text-dark);
+  border: 1px solid var(--border-soft);
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: background .15s ease, border-color .15s ease;
+}
+.btn-google-signin:hover{ background: #F8F9FA; border-color: #C7CBD1; }
+.btn-google-signin:disabled{ opacity: .65; cursor: not-allowed; }
+.btn-google-signin svg{ width: 18px; height: 18px; flex-shrink: 0; }
+
+/* -- Footer -- */
+.login-card-divider{
+  border: none;
+  border-top: 1px solid var(--border-soft);
+  margin: 28px 0 20px;
+}
+.login-footer-text{
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+}
+.login-footer-text a{
+  color: var(--maroon);
+  font-weight: 600;
+}
+.login-footer-text a:hover{ text-decoration: underline; }
+
+/* =============================================================
+   RESPONSIVE — stack left panel above the form on tablet/mobile
+   ============================================================= */
+@media (max-width: 991.98px){
+  .login-page{ flex-direction: column; }
+  .login-left{
+    flex: none;
+    padding: 36px 32px;
+  }
+  .login-illustration{ display: none; }
+  .login-right{ padding: 40px 24px; }
+  .login-card{ padding: 36px 28px; }
+}
+
+@media (max-width: 575.98px){
+  .login-left{ padding: 28px 24px; }
+  .login-left h2{ font-size: 24px; }
+  .lang-selector{ top: 16px; right: 16px; }
+  .login-card{ padding: 28px 20px; border-radius: 14px; }
+}

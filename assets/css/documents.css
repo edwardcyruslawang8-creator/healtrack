@@ -1,0 +1,93 @@
+/* =============================================================
+   PATIENT DOCUMENTS (subadmin/documents.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell:
+   .adm-card/.adm-table/.adm-pagination) and assets/css/patient_profile.css
+   (breadcrumb + profile header card, reused verbatim here).
+   Everything here is specific to this page — the summary cards,
+   documents table, and upload panel — and is "doc-" prefixed.
+   ============================================================= */
+
+/* -- Section header (title + subtitle) -- */
+.doc-section-header{ margin-bottom: 18px; }
+.doc-section-header h2{ font-size: 19px; font-weight: 800; color: var(--adm-text); margin: 0 0 4px; }
+.doc-section-header p{ font-size: 13px; color: var(--adm-text-muted); margin: 0; }
+
+/* -- Summary cards row -- */
+.doc-summary-row{
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+.doc-summary-card{ display: flex; align-items: center; gap: 16px; }
+.doc-summary-icon{
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.doc-summary-text{ display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.doc-summary-label{ font-size: 12.5px; color: var(--adm-text-muted); font-weight: 500; }
+.doc-summary-value{ font-size: 26px; font-weight: 800; color: var(--adm-text); line-height: 1.1; }
+.doc-summary-value-sm{ font-size: 17px; font-weight: 700; }
+.doc-summary-sub{ font-size: 12.5px; font-weight: 600; color: var(--adm-text-muted); }
+
+/* -- Documents List heading + table -- */
+.doc-list-header{ margin-bottom: 14px; }
+.doc-list-header h3{ font-size: 16px; font-weight: 700; color: var(--adm-text); margin: 0; }
+
+.doc-table-card{ margin-bottom: 24px; }
+
+.doc-name-cell{ display: flex; align-items: center; gap: 10px; }
+.doc-file-icon{ font-size: 18px; flex-shrink: 0; }
+.doc-file-name{ font-weight: 600; color: #1A73E8; }
+.doc-strong{ font-weight: 600; color: var(--adm-text); }
+.doc-datetime{ white-space: nowrap; color: var(--adm-text-muted); font-size: 12.5px; }
+.doc-dot{ width: 4px; height: 4px; border-radius: 50%; background: var(--adm-text-soft); display: inline-block; margin: 0 2px; }
+.doc-desc-cell{ color: var(--adm-text-muted); max-width: 220px; }
+
+.doc-badge{
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.doc-download-btn{ color: var(--adm-text-muted); }
+
+/* -- Upload Document panel -- */
+.doc-upload-panel{
+  background: var(--adm-card);
+  border: 2px dashed var(--adm-border);
+  border-radius: 18px;
+  padding: 44px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+.doc-upload-panel:hover,
+.doc-upload-panel.doc-upload-dragover{
+  background: var(--adm-hover-bg);
+  border-color: #1A73E8;
+}
+.doc-upload-icon{ font-size: 34px; color: #1A73E8; margin-bottom: 10px; }
+.doc-upload-panel h3{ font-size: 16px; font-weight: 700; color: var(--adm-text); margin: 0 0 8px; }
+.doc-upload-instruction{ font-size: 13.5px; color: var(--adm-text-muted); margin: 0 0 6px; }
+.doc-upload-browse{ color: #1A73E8; font-weight: 600; cursor: pointer; }
+.doc-upload-formats{ font-size: 12px; color: var(--adm-text-soft); margin: 0; }
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 767.98px){
+  .doc-summary-row{ grid-template-columns: 1fr; }
+  .doc-upload-panel{ padding: 32px 16px; }
+}

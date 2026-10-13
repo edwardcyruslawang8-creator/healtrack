@@ -1,0 +1,245 @@
+/* =============================================================
+   NOTIFICATIONS (subadmin/notifications.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell:
+   .adm-card/.adm-table/.adm-pagination/.adm-action-btn — reused
+   verbatim). Everything new here is "ntf-" prefixed.
+   ============================================================= */
+
+/* -- Category tabs row (tabs + "Mark all as read" on the far right) -- */
+.ntf-tabs-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--adm-border);
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.ntf-tabs{ display: flex; gap: 28px; flex-wrap: wrap; }
+.ntf-tabs .nav-link{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 10px 2px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--adm-text-muted);
+  background: none;
+  white-space: nowrap;
+}
+.ntf-tabs .nav-link.active{ color: var(--adm-red-bright); border-bottom-color: var(--adm-red-bright); font-weight: 700; }
+
+.ntf-tab-badge{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--adm-red-bright);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ntf-mark-all-link{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--adm-red-bright);
+  font-size: 13px;
+  font-weight: 600;
+  padding-bottom: 12px;
+  white-space: nowrap;
+}
+.ntf-mark-all-link:hover{ text-decoration: underline; }
+
+/* -- Search & filter toolbar -- */
+.ntf-toolbar{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.ntf-search{
+  flex: 1;
+  min-width: 220px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.ntf-search i{ position: absolute; left: 14px; color: var(--adm-text-soft); font-size: 14px; }
+.ntf-search input{
+  width: 100%;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 10px 14px 10px 38px;
+  font-size: 13px;
+  color: var(--adm-text);
+  box-shadow: var(--adm-shadow);
+}
+.ntf-search input:focus{ outline: none; border-color: var(--adm-red-bright); }
+
+.ntf-filter-select{
+  width: auto;
+  min-width: 160px;
+  background-color: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 10px 34px 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--adm-text);
+  box-shadow: var(--adm-shadow);
+}
+
+/* -- Notifications table -- */
+.ntf-table-card{ margin-bottom: 18px; }
+
+.ntf-notif-cell{ display: flex; align-items: flex-start; gap: 12px; }
+.ntf-notif-icon{
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+.ntf-notif-text{ display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ntf-notif-title-row{ display: flex; align-items: center; gap: 8px; }
+.ntf-notif-title{ font-size: 13.5px; font-weight: 700; color: var(--adm-text); }
+.ntf-notif-desc{ font-size: 12.5px; color: var(--adm-text-muted); }
+
+.ntf-datetime{ white-space: nowrap; color: var(--adm-text-muted); font-size: 12.5px; }
+.ntf-dot{ width: 4px; height: 4px; border-radius: 50%; background: var(--adm-text-soft); display: inline-block; margin: 0 2px; }
+
+.ntf-badge{
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* -- Unread/Read indicator — a real badge for BOTH states (not just a
+      dot that appears only when unread), kept in sync by
+      assets/js/notifications.js's markRowRead(). -- */
+.ntf-read-badge{
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.ntf-read-badge.unread{ background: var(--adm-red-bg); color: var(--adm-red); }
+.ntf-read-badge.read{ background: var(--adm-border); color: var(--adm-text-muted); }
+
+/* Rows are clickable (open the Notification Details modal) — but not
+   when the click landed on an action button, see assets/js/notifications.js. */
+.ntf-row{ cursor: pointer; }
+
+/* -- Notification Details modal -- */
+.ntf-details-modal{ border-radius: 18px; border: none; overflow: hidden; }
+.ntf-details-modal .modal-body{ padding: 24px 28px; }
+.ntf-details-header{ display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.ntf-notif-icon-lg{ width: 48px; height: 48px; font-size: 20px; }
+.ntf-details-title{ font-size: 16px; font-weight: 700; color: var(--adm-text); }
+.ntf-details-datetime{ font-size: 12.5px; color: var(--adm-text-muted); margin-top: 2px; }
+.ntf-details-desc{ font-size: 13.5px; color: var(--adm-text); line-height: 1.6; margin: 0 0 18px; }
+.ntf-details-grid{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--adm-border);
+}
+.ntf-detail-field{ display: flex; flex-direction: column; gap: 4px; }
+.ntf-detail-label{ font-size: 12px; color: var(--adm-text-muted); font-weight: 500; }
+.ntf-detail-value{ font-size: 13.5px; color: var(--adm-text); font-weight: 600; }
+.ntf-details-modal .modal-footer{ border-top: none; padding: 0 28px 24px; }
+.ntf-details-modal .ntf-modal-btn-cancel{ flex: none; width: 100%; }
+
+.ntf-modal-btn-cancel{
+  flex: 1;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 11px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+}
+.ntf-modal-btn-cancel:hover{ background: var(--adm-hover-bg); }
+
+/* -- Actions column — text buttons rather than .adm-action-btn's
+      fixed 30x30px icon square, which "View Details"/"Archive" wouldn't
+      fit. "View Details" is outlined in the app's own brand red (same
+      treatment as subadmin/user_management.php's "Manage User" button)
+      rather than the blue ".mdc-view-details-btn" pattern elsewhere,
+      since it's this row's primary action now that Delete is gone.
+      Archive/Unarchive is a plain neutral-bordered secondary action —
+      Archive isn't "destructive" the way the old Delete was, so it
+      doesn't get a red treatment; Unarchive is a real "restore" action
+      so it picks up the same green the app already uses for that
+      elsewhere (subadmin/user_management.php's Reactivate/Unlock). -- */
+.ntf-view-details-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--adm-red-bright);
+  background: var(--adm-card);
+  color: var(--adm-red-bright);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background .15s ease, color .15s ease;
+}
+.ntf-view-details-btn:hover{ background: var(--adm-red-bright); color: #fff; }
+
+.ntf-archive-btn,
+.ntf-unarchive-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  background: var(--adm-card);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background .15s ease, color .15s ease;
+}
+.ntf-archive-btn{ border: 1px solid var(--adm-border); color: var(--adm-text-muted); }
+.ntf-archive-btn:hover{ background: var(--adm-hover-bg); }
+.ntf-unarchive-btn{ border: 1px solid var(--adm-green); color: var(--adm-green); }
+.ntf-unarchive-btn:hover{ background: var(--adm-green); color: #fff; }
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 767.98px){
+  .ntf-tabs-row{ flex-direction: column; align-items: stretch; }
+  .ntf-toolbar{ flex-direction: column; align-items: stretch; }
+  .ntf-filter-select{ min-width: 0; width: 100%; }
+  .ntf-details-grid{ grid-template-columns: 1fr; }
+}

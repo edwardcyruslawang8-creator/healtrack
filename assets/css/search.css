@@ -1,0 +1,257 @@
+/* =============================================================
+   SEARCH PAGE (patient/search.php)
+   ---------------------------------------------------------------
+   Loaded only by patient/search.php, after base.css. Shared atoms
+   like .page-header, .search-page-bar, .filter-select, .sort-select,
+   .status-badge, and .pagination-custom live in base.css instead.
+   ============================================================= */
+
+/* -- Popular searches -- */
+.popular-searches{
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.popular-searches .popular-label{
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-right: 2px;
+}
+.chip{
+  font-size: 12px;
+  color: var(--text-dark);
+  background: var(--bg-light);
+  border: 1px solid var(--border-soft);
+  padding: 6px 16px;
+  border-radius: 50px;
+  font-weight: 500;
+  transition: background .15s ease, border-color .15s ease;
+}
+.chip:hover{ background: #ECE7E8; border-color: #ddd; }
+
+/* -- Shell: filters + results -- */
+.search-shell{
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  background: var(--card-white);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+/* -- Filters panel (~25%) -- */
+.filters-panel{
+  flex: 0 0 26%;
+  max-width: 26%;
+  padding: 22px;
+  border-right: 1px solid var(--border-soft);
+}
+.filters-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.filters-header h2{
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.filters-header h2 i{ color: var(--maroon); }
+.filters-header .clear-all{
+  font-size: 12.5px;
+  color: var(--red);
+  font-weight: 500;
+}
+.filters-header .clear-all:hover{ text-decoration: underline; }
+
+.filter-group-title{
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 18px 0 10px;
+}
+.filter-group-title:first-of-type{ margin-top: 0; }
+
+.filter-checkbox-item{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  cursor: pointer;
+}
+.filter-checkbox-item input[type="checkbox"]{
+  width: 16px;
+  height: 16px;
+  accent-color: var(--maroon);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.filter-checkbox-item .cat-icon{
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.filter-checkbox-item .cat-icon.dark{   background: var(--dark-bg); color: var(--text-dark); }
+.filter-checkbox-item .cat-icon.blue{   background: var(--blue-bg); color: var(--blue); }
+.filter-checkbox-item .cat-icon.green{  background: var(--green-bg); color: var(--green); }
+.filter-checkbox-item .cat-icon.purple{ background: var(--purple-bg); color: var(--purple); }
+.filter-checkbox-item .cat-icon.orange{ background: var(--orange-bg); color: var(--orange); }
+.filter-checkbox-item .cat-icon.red{    background: var(--red-bg); color: var(--red); }
+.filter-checkbox-item label{
+  font-size: 13px;
+  color: var(--text-dark);
+  cursor: pointer;
+}
+
+.date-range-input{
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.date-range-input input{
+  width: 100%;
+  padding: 10px 36px 10px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  color: var(--text-dark);
+  outline: none;
+}
+.date-range-input input::placeholder{ color: var(--text-soft); }
+.date-range-input i{
+  position: absolute;
+  right: 12px;
+  color: var(--text-soft);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* -- Results panel (~75%) -- */
+.results-panel{
+  flex: 1;
+  min-width: 0;
+  padding: 22px;
+}
+.results-toolbar{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.results-toolbar h2{
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0;
+}
+.results-toolbar .results-count{
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.result-card{
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+  transition: box-shadow .15s ease, transform .15s ease;
+  text-decoration: none;
+  color: inherit;
+}
+.results-empty{
+  padding: 24px 14px;
+  text-align: center;
+  color: var(--text-soft);
+  font-size: 14px;
+}
+.result-card:last-child{ margin-bottom: 0; }
+.result-card:hover{
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-1px);
+}
+.result-card .result-icon{
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 21px;
+  flex-shrink: 0;
+}
+.result-card .result-icon.blue{   background: var(--blue-bg); color: var(--blue); }
+.result-card .result-icon.green{  background: var(--green-bg); color: var(--green); }
+.result-card .result-icon.purple{ background: var(--purple-bg); color: var(--purple); }
+.result-card .result-icon.orange{ background: var(--orange-bg); color: var(--orange); }
+.result-card .result-icon.red{    background: var(--red-bg); color: var(--red); }
+.result-card .result-icon.amber{  background: var(--amber-bg); color: var(--amber); }
+
+.result-card .result-info{ flex: 1; min-width: 0; }
+.result-card .result-title{
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 2px;
+}
+.result-card .result-category{
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: block;
+}
+.result-card .result-category.blue{   color: var(--blue); }
+.result-card .result-category.green{  color: var(--green); }
+.result-card .result-category.purple{ color: var(--purple); }
+.result-card .result-category.orange{ color: var(--orange); }
+.result-card .result-category.red{    color: var(--red); }
+.result-card .result-desc{
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin: 0;
+}
+.result-card .result-status{
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.result-card .result-status.status-badge.service{ background: var(--blue-bg); color: var(--blue); }
+.result-card .result-chevron{
+  color: var(--text-soft);
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-left: 14px;
+}
+
+/* -- Search page responsive -- */
+@media (max-width: 991.98px){
+  .search-shell{ flex-direction: column; }
+  .filters-panel{
+    flex: 1 1 100%;
+    max-width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-soft);
+  }
+}
+@media (max-width: 575.98px){
+  .results-toolbar{ flex-direction: column; align-items: flex-start; }
+}

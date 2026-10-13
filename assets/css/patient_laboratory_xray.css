@@ -1,0 +1,123 @@
+/* =============================================================
+   PATIENT LABORATORY & X-RAY (subadmin/patient_laboratory_xray.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell:
+   .adm-card/.adm-table/.adm-pagination) and assets/css/patient_profile.css
+   (breadcrumb + profile header card, reused verbatim here). Everything
+   here is specific to this page — the section header, filter toolbar,
+   and result tables — and is "plx-" prefixed (Patient Laboratory & X-ray).
+   ============================================================= */
+
+.plx-section-card{ padding: 24px; }
+.plx-section-header{ display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.plx-section-header i{ font-size: 18px; color: #7C3AED; }
+.plx-section-header h3{ font-size: 16px; font-weight: 700; color: var(--adm-text); margin: 0; }
+
+/* -- Filter toolbar -- */
+.plx-filter-row{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.plx-daterange-btn{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+  white-space: nowrap;
+}
+.plx-daterange-btn i{ color: var(--adm-text-soft); }
+.plx-daterange-btn:hover{ background: var(--adm-hover-bg); }
+.plx-dot{ width: 4px; height: 4px; border-radius: 50%; background: var(--adm-text-soft); display: inline-block; }
+
+.plx-filter-select{
+  width: auto;
+  min-width: 150px;
+  border: 1px solid var(--adm-border);
+  background-color: var(--adm-card);
+  color: var(--adm-text);
+  border-radius: 10px;
+  padding: 10px 34px 10px 14px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.plx-filter-select:focus{
+  outline: none;
+  border-color: var(--adm-red-bright);
+  box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.12);
+}
+
+.plx-search{
+  flex: 1;
+  min-width: 180px;
+  position: relative;
+}
+.plx-search i{
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--adm-text-soft);
+  font-size: 13px;
+}
+.plx-search input{
+  width: 100%;
+  border: 1px solid var(--adm-border);
+  background: var(--adm-card);
+  border-radius: 10px;
+  padding: 10px 14px 10px 36px;
+  font-size: 12.5px;
+  color: var(--adm-text);
+}
+.plx-search input:focus{
+  outline: none;
+  border-color: var(--adm-red-bright);
+  box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.12);
+}
+.plx-search input::placeholder{ color: var(--adm-text-soft); }
+
+.plx-btn-filter{
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+  white-space: nowrap;
+}
+.plx-btn-filter:hover{ background: var(--adm-hover-bg); }
+
+/* -- Result tables -- */
+.plx-table th{ white-space: nowrap; }
+.plx-datetime{ white-space: nowrap; color: var(--adm-text-muted); font-size: 12.5px; }
+.plx-datetime .plx-dot{ margin: 0 2px; }
+.plx-strong{ font-weight: 600; }
+.plx-badge{
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 991.98px){
+  .plx-filter-row{ flex-direction: column; align-items: stretch; }
+  .plx-daterange-btn, .plx-filter-select, .plx-btn-filter{ width: 100%; justify-content: center; }
+}

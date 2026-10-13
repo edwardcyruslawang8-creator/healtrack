@@ -1,0 +1,98 @@
+/* =============================================================
+   HOMEPAGE SETTINGS (subadmin/homepage_settings.php)
+   ---------------------------------------------------------------
+   The repeatable-row styles (Operating Hours) and the Save
+   Confirmation modal — everything else reuses
+   assets/css/profile_settings.css's existing .prf-section/.prf-field
+   atoms verbatim.
+   ============================================================= */
+.hps-repeat-rows{ display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.hps-repeat-row{
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+.hps-row-remove{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--adm-border, #ECEDF3);
+  background: var(--adm-card, #fff);
+  color: #D93025;
+  border-radius: 8px;
+  flex-shrink: 0;
+  transition: background .15s ease;
+}
+.hps-row-remove:hover{ background: #FCE4E4; }
+
+.hps-row-add{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px dashed var(--adm-red-bright, #D93025);
+  color: var(--adm-red-bright, #D93025);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: background .15s ease;
+}
+.hps-row-add:hover{ background: #FCE4E4; }
+
+@media (max-width: 575.98px){
+  .hps-repeat-row{ grid-template-columns: 1fr; }
+  .hps-row-remove{ width: 100%; }
+}
+
+/* -- Save Confirmation modal — same shape as subadmin/user_management.php's
+      own .usm-delete-modal family. Uses this app's own brand maroon
+      (--adm-red-bright, same token this page's actual "Save Changes"
+      button and every other primary action button already use) rather
+      than a one-off blue, and every color here is a theme-aware --adm-*
+      variable (with the hardcoded value only as a no-var fallback) so
+      dark mode is handled automatically, same as the rest of this page. -- */
+.hps-confirm-modal{ border-radius: 18px; border: none; overflow: hidden; }
+.hps-confirm-modal .modal-body{ text-align: center; padding: 32px 28px 20px; }
+.hps-confirm-icon{
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--adm-red-bg, #FCE4E4);
+  color: var(--adm-red-bright, #5B0A0A);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin: 0 auto 16px;
+}
+.hps-confirm-modal h5{ font-size: 17px; font-weight: 700; color: var(--adm-text); margin-bottom: 8px; }
+.hps-confirm-modal p{ font-size: 13.5px; color: var(--adm-text-muted); margin: 0; }
+.hps-confirm-modal .modal-footer{ border-top: none; padding: 0 28px 28px; justify-content: center; gap: 10px; }
+
+.hps-modal-btn-cancel{
+  flex: 1;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 11px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+}
+.hps-modal-btn-cancel:hover{ background: var(--adm-hover-bg); }
+
+.hps-modal-btn-save{
+  flex: 1;
+  background: var(--adm-red-bright, #5B0A0A);
+  border: none;
+  border-radius: 10px;
+  padding: 11px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+}
+.hps-modal-btn-save:hover{ background: var(--adm-red-bright-hover, #3D0707); }

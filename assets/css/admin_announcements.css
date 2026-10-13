@@ -1,0 +1,159 @@
+/* =============================================================
+   ANNOUNCEMENTS (admin/announcements.php)
+   ---------------------------------------------------------------
+   Page-specific styles only — stat cards, table badges, and the
+   "Send a Note" composer/list. Reuses .adm-card/.adm-table/
+   .adm-table-wrap/.adm-table-footer/.adm-pagination from
+   admin-dashboard.css for everything else, same as every other real
+   admin table page this session.
+   ============================================================= */
+
+/* -- Stat cards -- */
+.ann-adm-stats-row{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 22px;
+}
+.ann-adm-stat-card{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+}
+.ann-adm-stat-icon{
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  flex-shrink: 0;
+}
+.ann-adm-stat-label{ font-size: 12px; color: var(--adm-text-muted); margin-bottom: 2px; }
+.ann-adm-stat-value{ font-size: 22px; font-weight: 700; color: var(--adm-text); }
+
+/* -- Section headers between cards -- */
+.ann-adm-section-title{ font-size: 15px; font-weight: 700; color: var(--adm-text); margin: 28px 0 12px; }
+.ann-adm-section-title:first-of-type{ margin-top: 0; }
+
+/* -- Pending queue table -- */
+.ann-adm-badge{
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+.ann-adm-action-btns{ display: flex; align-items: center; gap: 8px; }
+.ann-adm-btn-approve, .ann-adm-btn-reject{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: background .15s ease;
+}
+.ann-adm-btn-approve{ background: var(--adm-green-bg); color: var(--adm-green); }
+.ann-adm-btn-approve:hover{ background: var(--adm-green); color: #fff; }
+.ann-adm-btn-reject{ background: var(--adm-red-bg); color: var(--adm-red); }
+.ann-adm-btn-reject:hover{ background: var(--adm-red); color: #fff; }
+.ann-adm-btn-approve:disabled, .ann-adm-btn-reject:disabled{ opacity: .6; cursor: not-allowed; }
+
+/* -- Send a Note composer -- */
+.ann-adm-note-form{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  padding: 22px;
+}
+.ann-adm-note-form .ann-adm-field{ display: flex; flex-direction: column; gap: 6px; }
+.ann-adm-note-form .ann-adm-field.full{ grid-column: 1 / -1; }
+.ann-adm-note-form label{ font-size: 12.5px; font-weight: 600; color: var(--adm-text); }
+.ann-adm-note-form input[type="text"],
+.ann-adm-note-form select,
+.ann-adm-note-form textarea{
+  border: 1px solid var(--adm-border);
+  background: var(--adm-card);
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 13.5px;
+  color: var(--adm-text);
+}
+.ann-adm-note-form input[type="text"]:focus,
+.ann-adm-note-form select:focus,
+.ann-adm-note-form textarea:focus{
+  outline: none;
+  border-color: var(--adm-red-bright);
+  box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.10);
+}
+.ann-adm-note-form textarea{ resize: vertical; min-height: 84px; }
+.ann-adm-note-submit{
+  grid-column: 1 / -1;
+  justify-self: start;
+  background: var(--adm-red-bright);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 24px;
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: background .15s ease;
+}
+.ann-adm-note-submit:hover{ background: var(--adm-red-bright-hover); }
+.ann-adm-note-submit:disabled{ opacity: .6; cursor: not-allowed; }
+.ann-adm-note-feedback{ grid-column: 1 / -1; font-size: 12.5px; }
+.ann-adm-note-feedback.error{ color: var(--adm-red); }
+.ann-adm-note-feedback.success{ color: var(--adm-green); }
+.ann-adm-note-feedback:empty{ display: none; }
+
+/* -- Sent notes list -- */
+.ann-adm-note-list{ display: flex; flex-direction: column; }
+.ann-adm-note-row{
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--adm-border);
+}
+.ann-adm-note-row:last-child{ border-bottom: none; }
+.ann-adm-note-icon{
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--adm-purple-bg);
+  color: var(--adm-purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.ann-adm-note-body{ flex: 1; min-width: 0; }
+.ann-adm-note-title-row{ display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.ann-adm-note-title{ font-size: 13.5px; font-weight: 700; color: var(--adm-text); }
+.ann-adm-note-meta{ font-size: 11.5px; color: var(--adm-text-soft); white-space: nowrap; }
+.ann-adm-note-message{ font-size: 13px; color: var(--adm-text-muted); line-height: 1.5; margin-top: 4px; }
+.ann-adm-note-facility{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--adm-blue);
+  background: var(--adm-blue-bg);
+  padding: 3px 10px;
+  border-radius: 50px;
+  margin-top: 6px;
+}
+
+@media (max-width: 767.98px){
+  .ann-adm-stats-row{ grid-template-columns: 1fr; }
+  .ann-adm-note-form{ grid-template-columns: 1fr; }
+}

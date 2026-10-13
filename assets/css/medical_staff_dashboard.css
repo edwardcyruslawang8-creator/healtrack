@@ -1,0 +1,281 @@
+/* =============================================================
+   MEDICAL STAFF DASHBOARD (medical-staff/dashboard.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell:
+   sidebar, topbar, .adm-card, .adm-donut-*, .adm-table, "adm-"
+   prefixed). Everything here is specific to this page — the 5-card
+   stat row, chart cards, follow-up list, notifications list, and
+   schedule/priority badges — and is "mst-" prefixed (Medical Staff
+   Dashboard).
+   ============================================================= */
+
+/* -- Notification count pill inside a nav row -- */
+.mst-nav-badge{
+  margin-left: auto;
+  background: #fff;
+  color: var(--adm-red-bright);
+  font-size: 10.5px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* -- Topbar date / facility select buttons -- */
+.mst-topbar-select-btn{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 9px 16px;
+  box-shadow: var(--adm-shadow);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+  white-space: nowrap;
+}
+.mst-topbar-select-btn i{ color: var(--adm-text-soft); }
+.mst-topbar-select-btn:hover{ background: var(--adm-hover-bg); }
+
+/* -- Topbar "Add Patient" quick action -- */
+.mst-add-patient-btn{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--adm-red-bright);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background .15s ease;
+}
+.mst-add-patient-btn:hover{ background: var(--adm-red-bright-hover); color: #fff; }
+
+/* -- Summary stat cards (5-up) -- */
+.mst-stats-row{
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.mst-stat-card{
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-lg);
+  box-shadow: var(--adm-shadow);
+  padding: 20px;
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.mst-stat-card:hover{ box-shadow: var(--adm-shadow-hover); transform: translateY(-2px); }
+.mst-stat-icon{
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  margin-bottom: 14px;
+}
+.mst-stat-label{ font-size: 12px; color: var(--adm-text-muted); font-weight: 500; margin-bottom: 4px; }
+.mst-stat-value{ font-size: 24px; font-weight: 800; color: var(--adm-text); line-height: 1.1; margin-bottom: 6px; }
+.mst-stat-sub{ font-size: 11.5px; display: flex; align-items: center; gap: 3px; font-weight: 600; }
+.mst-stat-sub.up{ color: var(--adm-green); }
+.mst-stat-sub.down{ color: var(--adm-red); }
+.mst-stat-sub.muted{ color: var(--adm-text-soft); }
+.mst-stat-link{ display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--adm-red-bright); }
+.mst-stat-link:hover{ color: var(--adm-red-bright-hover); }
+
+/* -- 3-column chart row (Consultations Trend / Age Group / Gender) -- */
+.mst-row-3{
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 22px;
+  align-items: stretch;
+}
+/* -- 4-column row (Follow-ups / Consultation Status / Schedule / Notifications) -- */
+.mst-row-4{
+  display: grid;
+  /* minmax(0, Nfr), not plain Nfr: the schedule table's white-space:nowrap
+     cells otherwise force that track to its full unwrapped content width,
+     blowing out the row and pushing the last card (Notifications)
+     off-screen behind a horizontal scrollbar. */
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr) minmax(0, 1.35fr) minmax(0, 1.05fr);
+  gap: 18px;
+  margin-bottom: 22px;
+  align-items: stretch;
+}
+.mst-chart-card{ display: flex; flex-direction: column; min-width: 0; }
+
+.mst-card-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.mst-card-header h2{ font-size: 15.5px; font-weight: 700; color: var(--adm-text); margin: 0; }
+
+.mst-range-btn{
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--adm-text);
+}
+
+/* Chart.js's responsive:true + maintainAspectRatio:false sizes the
+   canvas to fill its parent's MEASURED size — without this wrapper
+   having its own definite height, that creates a circular sizing loop. */
+.mst-canvas-box{ position: relative; width: 100%; height: 220px; flex: 1; }
+
+.mst-chart-legend{
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 12px;
+  color: var(--adm-text-muted);
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.mst-chart-legend .dot{ width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+
+/* -- Doughnut legend (gender / consultation status) -- */
+.mst-donut-legend{ display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.mst-legend-row{ display: flex; align-items: center; gap: 9px; font-size: 12.5px; }
+.mst-legend-dot{ width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.mst-legend-label{ flex: 1; color: var(--adm-text-muted); }
+.mst-legend-value{ font-weight: 600; color: var(--adm-text); white-space: nowrap; }
+.mst-legend-total{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--adm-border);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--adm-text);
+}
+
+/* -- Upcoming Follow-up Patients list -- */
+.mst-followup-list{ display: flex; flex-direction: column; flex: 1; }
+.mst-followup-row{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--adm-border);
+}
+.mst-followup-row:last-child{ border-bottom: none; }
+.mst-followup-avatar{
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--adm-red-bg);
+  color: var(--adm-red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+.mst-followup-body{ flex: 1; min-width: 0; }
+.mst-followup-name{ font-size: 13px; font-weight: 600; color: var(--adm-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mst-followup-meta{ font-size: 11.5px; color: var(--adm-text-muted); margin-top: 1px; }
+.mst-followup-meta .sep{ margin: 0 4px; color: var(--adm-text-soft); }
+.mst-followup-cal{ color: var(--adm-text-soft); font-size: 15px; flex-shrink: 0; }
+
+/* -- Priority / status badges -- */
+.mst-badge{
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+
+/* -- Today's Consultation Schedule table -- */
+.mst-schedule-table{ width: 100%; border-collapse: collapse; }
+.mst-schedule-table thead th{
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--adm-text-muted);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--adm-border);
+  white-space: nowrap;
+}
+.mst-schedule-table tbody td{
+  padding: 11px 10px;
+  border-bottom: 1px solid var(--adm-border);
+  font-size: 12.5px;
+  color: var(--adm-text);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.mst-schedule-table tbody tr:last-child td{ border-bottom: none; }
+.mst-schedule-table tbody tr:hover{ background: var(--adm-hover-bg); }
+
+/* -- Recent Notifications list -- */
+.mst-notif-list{ display: flex; flex-direction: column; flex: 1; }
+.mst-notif-row{
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--adm-border);
+}
+.mst-notif-row:last-child{ border-bottom: none; }
+.mst-notif-icon{
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.mst-notif-body{ flex: 1; min-width: 0; }
+.mst-notif-title{ font-size: 12.5px; font-weight: 600; color: var(--adm-text); }
+.mst-notif-desc{ font-size: 11.5px; color: var(--adm-text-muted); margin-top: 1px; }
+.mst-notif-time{ font-size: 10.5px; color: var(--adm-text-soft); margin-top: 3px; }
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 1399.98px){
+  .mst-stats-row{ grid-template-columns: repeat(3, 1fr); }
+  .mst-row-3{ grid-template-columns: 1fr; }
+  .mst-row-4{ grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+@media (max-width: 767.98px){
+  /* Confirmed via headless-Chrome screenshot at 991px that the old
+     991.98px breakpoint here was too wide — it stacked the date pill/
+     facility pill/bell/profile onto separate lines well before the
+     page was actually narrow. Matches the app's one real mobile
+     breakpoint (the same width the sidebar itself collapses at). */
+  .adm-topbar-right{ width: 100%; }
+  .adm-topbar-actions{ flex-wrap: wrap; row-gap: 10px; justify-content: flex-end; }
+  .mst-stats-row{ grid-template-columns: repeat(2, 1fr); }
+  .mst-row-4{ grid-template-columns: minmax(0, 1fr); }
+  .mst-topbar-select-btn{ flex: 1 1 160px; justify-content: center; }
+}
+@media (max-width: 575.98px){
+  .mst-stats-row{ grid-template-columns: 1fr; }
+}

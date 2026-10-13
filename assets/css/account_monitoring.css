@@ -1,0 +1,196 @@
+/* =============================================================
+   ACCOUNT MONITORING (admin/account_monitoring.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell:
+   sidebar, topbar, .adm-card, .adm-donut-*, .adm-table, .adm-grid-70-30,
+   all "adm-" prefixed). Everything here is specific to this page — the
+   date filter, stat cards, the 3-column analytics row, the donut
+   legends, the trend chart, activity badges, and the attention panel —
+   and is "acm-" prefixed (ACcount Monitoring).
+   ============================================================= */
+
+/* -- Date filter dropdown (sits where the datetime widget sits on other
+   pages, but as a single-value dropdown toggle instead of a static pill) -- */
+.acm-date-filter{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 9px 16px;
+  box-shadow: var(--adm-shadow);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+}
+.acm-date-filter i{ color: var(--adm-text-soft); }
+.acm-date-filter:hover{ background: var(--adm-hover-bg); }
+
+/* -- Summary stat cards -- */
+.acm-stats-row{
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.acm-stat-card{
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-lg);
+  box-shadow: var(--adm-shadow);
+  padding: 20px;
+  display: flex;
+  gap: 14px;
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.acm-stat-card:hover{ box-shadow: var(--adm-shadow-hover); transform: translateY(-2px); }
+.acm-stat-icon{
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  flex-shrink: 0;
+}
+.acm-stat-label{ font-size: 11.5px; color: var(--adm-text-muted); font-weight: 500; margin-bottom: 4px; }
+.acm-stat-value{ font-size: 23px; font-weight: 800; color: var(--adm-text); line-height: 1.1; margin-bottom: 4px; }
+.acm-stat-sub{ font-size: 11px; color: var(--adm-text-soft); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.acm-stat-growth{ font-weight: 600; display: inline-flex; align-items: center; }
+.acm-stat-growth.up{ color: var(--adm-green); }
+.acm-stat-growth.down{ color: var(--adm-red); }
+
+/* -- 3-column analytics row: Account Status Overview | Accounts Over Time | Account Distribution by Role -- */
+.acm-analytics-row{
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 18px;
+  align-items: stretch;
+  margin-bottom: 0; /* .adm-card children already carry their own margin-bottom */
+}
+.acm-analytics-row .adm-card{ display: flex; flex-direction: column; }
+
+/* -- Vertical donut legend (Account Status Overview / Distribution by Role) -- */
+.acm-donut-legend{ display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.acm-legend-row{ display: flex; align-items: center; gap: 9px; font-size: 12.5px; }
+.acm-legend-dot{ width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.acm-legend-label{ flex: 1; color: var(--adm-text-muted); }
+.acm-legend-value{ font-weight: 600; color: var(--adm-text); white-space: nowrap; }
+
+/* -- Accounts Over Time trend chart -- */
+.acm-trend-card{ display: flex; flex-direction: column; }
+.acm-range-btn{
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--adm-text);
+}
+.acm-trend-legend{
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 11.5px;
+  color: var(--adm-text-muted);
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.acm-trend-legend .dot{ width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+.acm-trend-canvas-box{ position: relative; flex: 1; min-height: 210px; }
+
+/* -- Recent activity badges -- */
+.acm-activity-badge{
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+
+/* -- Accounts Needing Attention panel -- */
+.acm-attention-list{ display: flex; flex-direction: column; gap: 4px; }
+.acm-attention-row{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--adm-border);
+}
+.acm-attention-row:last-child{ border-bottom: none; }
+.acm-attention-icon{
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.acm-attention-body{ flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.acm-attention-title{ font-size: 13.5px; font-weight: 600; color: var(--adm-text); }
+.acm-attention-desc{ font-size: 11.5px; color: var(--adm-text-muted); line-height: 1.4; }
+.acm-attention-count{ font-size: 20px; font-weight: 800; color: var(--adm-text); flex-shrink: 0; }
+.acm-attention-view{
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-red-bright);
+  flex-shrink: 0;
+}
+.acm-attention-view:hover{ color: var(--adm-red-bright-hover); text-decoration: underline; }
+
+/* -- All User Accounts table -- */
+.acm-accounts-card{ margin-bottom: 24px; }
+/* AJAX search/filter/pagination crossfade (assets/js/account-monitoring-ajax.js)
+   — same pattern assets/css/medicine_vaccine_inventory.css's own
+   .mvi-table-fade-out/-in uses: #acmAccountsResults always transitions
+   opacity, .acm-results-fade-out dims it the instant a filter/page
+   change is requested, and .acm-results-fade-in starts the freshly
+   swapped-in content at opacity:0 for the JS to then animate up from. */
+#acmAccountsResults{ transition: opacity .18s ease; }
+.acm-results-fade-out{ opacity: .35; pointer-events: none; }
+.acm-results-fade-in{ opacity: 0; }
+.acm-account-status-badge{
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+.acm-account-status-badge.active{   background: var(--adm-green-bg);  color: var(--adm-green); }
+.acm-account-status-badge.inactive{ background: var(--adm-orange-bg); color: var(--adm-orange); }
+.acm-account-status-badge.locked{   background: var(--adm-red-bg);    color: var(--adm-red); }
+.acm-account-status-badge.pending{  background: var(--adm-purple-bg); color: var(--adm-purple); }
+
+/* -- Footnote -- */
+.acm-footnote{ font-size: 11.5px; color: var(--adm-text-soft); margin: -6px 0 0; }
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 1399.98px){
+  .acm-stats-row{ grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 1199.98px){
+  .acm-analytics-row{ grid-template-columns: 1fr; }
+}
+@media (max-width: 991.98px){
+  .adm-topbar-right{ width: 100%; }
+}
+@media (max-width: 767.98px){
+  .acm-stats-row{ grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 575.98px){
+  .acm-stats-row{ grid-template-columns: 1fr; }
+  .acm-attention-row{ flex-wrap: wrap; }
+  .acm-attention-count{ order: 3; }
+  .acm-attention-view{ order: 4; margin-left: auto; }
+}

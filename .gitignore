@@ -1,0 +1,27 @@
+# --- Real secrets: never commit these. Each has a .example.php sibling
+# that IS committed, documenting the structure with placeholder values.
+config/gemini.php
+config/mail.php
+
+# --- Composer dependencies & tooling: regenerate with `composer install`
+# (composer.lock IS committed so installs stay pinned to the same versions).
+/vendor/
+composer.phar
+
+# --- Uploaded patient documents: real PII, never belongs in git. The
+# .htaccess guarding this folder is kept (see the negated rule below).
+storage/patient_documents/*
+!storage/patient_documents/.htaccess
+
+# --- Local Claude Code tool state (session scratch, local permissions) —
+# not part of the application.
+.claude/
+
+# --- Editor / OS cruft
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# --- PHP / session artifacts, logs
+*.log

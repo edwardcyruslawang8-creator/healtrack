@@ -1,0 +1,122 @@
+/* =============================================================
+   PATIENT ALLERGIES (subadmin/allergies.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell:
+   .adm-card/.adm-table) and assets/css/patient_profile.css
+   (breadcrumb + profile header card, reused verbatim here).
+   Everything here is specific to this page — the summary cards,
+   allergy table, and expandable details panel — and is "alg-"
+   prefixed (ALlerGies).
+   ============================================================= */
+
+/* -- Section header (title + subtitle) -- */
+.alg-section-header{ margin-bottom: 18px; }
+.alg-section-header h2{ font-size: 19px; font-weight: 800; color: var(--adm-text); margin: 0 0 4px; }
+.alg-section-header p{ font-size: 13px; color: var(--adm-text-muted); margin: 0; }
+
+/* -- Summary cards row -- */
+.alg-summary-row{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+.alg-summary-card{ display: flex; align-items: center; gap: 14px; }
+.alg-summary-icon{
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.alg-summary-text{ display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.alg-summary-label{ font-size: 12.5px; color: var(--adm-text-muted); font-weight: 500; }
+.alg-summary-value{ font-size: 24px; font-weight: 800; color: var(--adm-text); line-height: 1.1; }
+.alg-summary-value-sm{ font-size: 16px; font-weight: 700; }
+.alg-summary-sub{ font-size: 12px; font-weight: 600; }
+
+/* -- Status / severity badges -- */
+.alg-badge{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+  width: fit-content;
+}
+
+/* -- Allergy List heading + table -- */
+.alg-list-header{ margin-bottom: 14px; }
+.alg-list-header h3{ font-size: 16px; font-weight: 700; color: var(--adm-text); margin: 0; }
+
+.alg-table-card{ margin-bottom: 18px; }
+
+.alg-name-cell{ display: flex; align-items: center; gap: 10px; }
+.alg-type-icon{
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.alg-name-text{ display: flex; flex-direction: column; gap: 1px; }
+.alg-strong{ font-weight: 600; color: var(--adm-text); }
+.alg-subtype{ font-size: 12px; color: var(--adm-text-muted); }
+.alg-notes-cell{ color: var(--adm-text-muted); max-width: 220px; }
+
+/* -- Allergy Details (expandable panel) -- */
+.alg-details-card{ padding: 0; overflow: hidden; }
+
+.alg-details-toggle{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: none;
+  border: none;
+  padding: 22px 26px;
+  text-align: left;
+}
+.alg-details-title{ display: flex; align-items: center; gap: 12px; }
+.alg-details-title h3{ font-size: 16px; font-weight: 700; color: var(--adm-text); margin: 0; }
+
+.alg-chevron{ font-size: 16px; color: var(--adm-text-muted); transition: transform .2s ease; }
+.alg-details-toggle[aria-expanded="false"] .alg-chevron{ transform: rotate(180deg); }
+
+.alg-details-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.3fr;
+  gap: 28px;
+  padding: 0 26px 26px;
+}
+.alg-details-col{ display: flex; flex-direction: column; gap: 18px; }
+.alg-field{ display: flex; align-items: baseline; gap: 16px; }
+.alg-field-label{ width: 110px; flex-shrink: 0; font-size: 13px; color: var(--adm-text-muted); font-weight: 500; }
+.alg-field-value{ font-size: 13.5px; color: var(--adm-text); font-weight: 700; }
+.alg-field-stacked{ flex-direction: column; align-items: flex-start; gap: 6px; }
+.alg-field-stacked .alg-field-value{ font-weight: 600; line-height: 1.5; }
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 1199.98px){
+  .alg-summary-row{ grid-template-columns: repeat(2, 1fr); }
+  .alg-details-grid{ grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 767.98px){
+  .alg-summary-row{ grid-template-columns: 1fr; }
+  .alg-details-grid{ grid-template-columns: 1fr; gap: 18px; padding: 0 18px 18px; }
+  .alg-details-toggle{ padding: 18px; }
+  .alg-field{ flex-direction: column; align-items: flex-start; gap: 4px; }
+  .alg-field-label{ width: auto; }
+}

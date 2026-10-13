@@ -1,0 +1,263 @@
+/* =============================================================
+   DOCTOR DASHBOARD (doctor/dashboard.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell:
+   sidebar, topbar, .adm-card, .adm-donut-*, .adm-table, "adm-"
+   prefixed). Everything here is specific to this page — the 5-card
+   stat row, chart cards, follow-up list, notifications list, and
+   schedule/priority badges — and is "doc-" prefixed (Doctor
+   Dashboard). Near-identical to assets/css/medical_staff_dashboard.css
+   by design (same visual system, different role/data scope — see
+   doctor/dashboard.php's header comment).
+   ============================================================= */
+
+/* -- Notification count pill inside a nav row -- */
+.doc-nav-badge{
+  margin-left: auto;
+  background: #fff;
+  color: var(--adm-red-bright);
+  font-size: 10.5px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* -- Topbar date / facility select buttons -- */
+.doc-topbar-select-btn{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 9px 16px;
+  box-shadow: var(--adm-shadow);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+  white-space: nowrap;
+}
+.doc-topbar-select-btn i{ color: var(--adm-text-soft); }
+.doc-topbar-select-btn:hover{ background: var(--adm-hover-bg); }
+
+/* -- Summary stat cards (4-up) -- */
+.doc-stats-row{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.doc-stat-card{
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-lg);
+  box-shadow: var(--adm-shadow);
+  padding: 20px;
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.doc-stat-card:hover{ box-shadow: var(--adm-shadow-hover); transform: translateY(-2px); }
+.doc-stat-icon{
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  margin-bottom: 14px;
+}
+.doc-stat-label{ font-size: 12px; color: var(--adm-text-muted); font-weight: 500; margin-bottom: 4px; }
+.doc-stat-value{ font-size: 24px; font-weight: 800; color: var(--adm-text); line-height: 1.1; margin-bottom: 6px; }
+.doc-stat-sub{ font-size: 11.5px; display: flex; align-items: center; gap: 3px; font-weight: 600; }
+.doc-stat-sub.up{ color: var(--adm-green); }
+.doc-stat-sub.down{ color: var(--adm-red); }
+.doc-stat-sub.muted{ color: var(--adm-text-soft); }
+.doc-stat-link{ display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--adm-red-bright); }
+.doc-stat-link:hover{ color: var(--adm-red-bright-hover); }
+
+/* -- 3-column chart row (Consultations Trend / Age Group / Gender) -- */
+.doc-row-3{
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 22px;
+  align-items: stretch;
+}
+/* -- 4-column row (Follow-ups / Consultation Status / Schedule / Notifications) -- */
+.doc-row-4{
+  display: grid;
+  /* minmax(0, Nfr), not plain Nfr: the schedule table's white-space:nowrap
+     cells otherwise force that track to its full unwrapped content width,
+     blowing out the row and pushing the last card (Notifications)
+     off-screen behind a horizontal scrollbar. */
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr) minmax(0, 1.35fr) minmax(0, 1.05fr);
+  gap: 18px;
+  margin-bottom: 22px;
+  align-items: stretch;
+}
+.doc-chart-card{ display: flex; flex-direction: column; min-width: 0; }
+
+.doc-card-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.doc-card-header h2{ font-size: 15.5px; font-weight: 700; color: var(--adm-text); margin: 0; }
+
+.doc-range-btn{
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--adm-text);
+}
+
+/* Chart.js's responsive:true + maintainAspectRatio:false sizes the
+   canvas to fill its parent's MEASURED size — without this wrapper
+   having its own definite height, that creates a circular sizing loop. */
+.doc-canvas-box{ position: relative; width: 100%; height: 220px; flex: 1; }
+
+.doc-chart-legend{
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 12px;
+  color: var(--adm-text-muted);
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.doc-chart-legend .dot{ width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+
+/* -- Doughnut legend (gender / consultation status) -- */
+.doc-donut-legend{ display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.doc-legend-row{ display: flex; align-items: center; gap: 9px; font-size: 12.5px; }
+.doc-legend-dot{ width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.doc-legend-label{ flex: 1; color: var(--adm-text-muted); }
+.doc-legend-value{ font-weight: 600; color: var(--adm-text); white-space: nowrap; }
+.doc-legend-total{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--adm-border);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--adm-text);
+}
+
+/* -- Upcoming Follow-up Patients list -- */
+.doc-followup-list{ display: flex; flex-direction: column; flex: 1; }
+.doc-followup-row{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--adm-border);
+}
+.doc-followup-row:last-child{ border-bottom: none; }
+.doc-followup-avatar{
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--adm-red-bg);
+  color: var(--adm-red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+.doc-followup-body{ flex: 1; min-width: 0; }
+.doc-followup-name{ font-size: 13px; font-weight: 600; color: var(--adm-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.doc-followup-meta{ font-size: 11.5px; color: var(--adm-text-muted); margin-top: 1px; }
+.doc-followup-meta .sep{ margin: 0 4px; color: var(--adm-text-soft); }
+.doc-followup-cal{ color: var(--adm-text-soft); font-size: 15px; flex-shrink: 0; }
+
+/* -- Priority / status badges -- */
+.doc-badge{
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+
+/* -- Today's Consultation Schedule table -- */
+.doc-schedule-table{ width: 100%; border-collapse: collapse; }
+.doc-schedule-table thead th{
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--adm-text-muted);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--adm-border);
+  white-space: nowrap;
+}
+.doc-schedule-table tbody td{
+  padding: 11px 10px;
+  border-bottom: 1px solid var(--adm-border);
+  font-size: 12.5px;
+  color: var(--adm-text);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.doc-schedule-table tbody tr:last-child td{ border-bottom: none; }
+.doc-schedule-table tbody tr:hover{ background: var(--adm-hover-bg); }
+
+/* -- Recent Notifications list -- */
+.doc-notif-list{ display: flex; flex-direction: column; flex: 1; }
+.doc-notif-row{
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--adm-border);
+}
+.doc-notif-row:last-child{ border-bottom: none; }
+.doc-notif-icon{
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.doc-notif-body{ flex: 1; min-width: 0; }
+.doc-notif-title{ font-size: 12.5px; font-weight: 600; color: var(--adm-text); }
+.doc-notif-desc{ font-size: 11.5px; color: var(--adm-text-muted); margin-top: 1px; }
+.doc-notif-time{ font-size: 10.5px; color: var(--adm-text-soft); margin-top: 3px; }
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 1399.98px){
+  .doc-stats-row{ grid-template-columns: repeat(2, 1fr); }
+  .doc-row-3{ grid-template-columns: 1fr; }
+  .doc-row-4{ grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+@media (max-width: 767.98px){
+  /* Confirmed via headless-Chrome screenshot at 991px that the old
+     991.98px breakpoint here was too wide — it stacked the date pill/
+     facility pill/bell/profile onto separate lines well before the
+     page was actually narrow. Matches the app's one real mobile
+     breakpoint (the same width the sidebar itself collapses at). */
+  .adm-topbar-right{ width: 100%; }
+  .adm-topbar-actions{ flex-wrap: wrap; row-gap: 10px; justify-content: flex-end; }
+  .doc-stats-row{ grid-template-columns: 1fr; }
+  .doc-row-4{ grid-template-columns: minmax(0, 1fr); }
+  .doc-topbar-select-btn{ flex: 1 1 160px; justify-content: center; }
+}

@@ -1,0 +1,279 @@
+/* =============================================================
+   QUICK SEARCH DROPDOWN (assets/js/quick-search.js)
+   ---------------------------------------------------------------
+   Styles the live typeahead dropdown under any [data-quick-search]
+   input. Two wrapper shapes in use across the app:
+     - Staff pages (subadmin/medical-staff/doctor Patient Management,
+       subadmin/pharmacist Medicine Inventory): the search icon+input
+       already sit in their own dedicated wrapper div (.pmg-search,
+       .mvi-search) with position:relative and nothing else inside
+       it — quick-search.js just uses that div directly.
+     - Public pages (index.php's hero search, patient/medicine.php,
+       patient/announcements.php, patient/search.php): the icon+input
+       are flex children of the <form> ALONGSIDE a visible "Search"
+       submit button — appending the dropdown/clear-button straight
+       into that form would visually collide with the button. Those
+       pages instead wrap just the icon+input pair in a ".qs-field"
+       div (this file's second rule below gives it position:relative
+       + matching flex behavior), which quick-search.js prefers when
+       present.
+
+   Every color below is a var(--adm-*) WITH an explicit fallback value
+   (e.g. var(--adm-text-muted, #6B7280)) rather than relying on the
+   variable alone — the public pages above never load
+   assets/css/admin-dashboard.css (the only place --adm-* variables
+   are actually defined), so without a fallback those properties would
+   silently resolve to nothing there, making this same component look
+   inconsistent between the staff and public sides. The fallback
+   values match admin-dashboard.css's real light-mode values exactly,
+   so the staff-side look is what every page gets by default.
+
+   "qs-" prefixed throughout (Quick Search).
+   ============================================================= */
+
+/* Wraps just the search icon + input on pages whose search bar also
+   has a visible submit button alongside them (see header comment) —
+   keeps the dropdown/clear-button scoped to the input's own width
+   instead of the whole form. */
+.qs-field{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+/* Guarantees correct dropdown/clear-button positioning regardless of
+   which page's existing wrapper class quick-search.js resolved to
+   (.pmg-search, .mvi-search, .ann-search-box, .qs-field, or a bare
+   parentElement fallback) — added here so no page needs its own
+   position:relative rule just to host this component. */
+.qs-wrapper{
+  position: relative;
+}
+
+.qs-wrapper input{
+  padding-right: 38px; /* room for the clear button, added on top of .pmg-search's own padding */
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+/* Search box gets a visible neutral-gray ring while the dropdown is
+   open, so it's obvious the input is actively driving a live result
+   list — no red, just a stronger border + soft gray glow. */
+.qs-wrapper.qs-active input{
+  border-color: var(--adm-text-soft, #9AA0AC) !important;
+  box-shadow: 0 0 0 3px rgba(154, 160, 172, 0.18);
+}
+.qs-wrapper.qs-active i.bi-search{
+  color: var(--adm-text-muted, #6B7280);
+}
+
+/* -- Clear ("x") button — ".qs-wrapper .qs-clear-btn" (2 classes)
+   rather than plain ".qs-clear-btn" (1 class) is deliberate: on pages
+   where this button gets appended inside a real <form> that also has
+   its own generic "button" styling (e.g. base.css's
+   ".search-page-bar button" / ".hero-search button", both 1 class +
+   1 element = higher specificity than a single class alone), that
+   page rule would otherwise win and repaint this as a maroon
+   full-size submit button instead of a small gray "x". Same reasoning
+   applies to every other button-shaped element below. -- */
+.qs-wrapper .qs-clear-btn{
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  color: var(--adm-text-soft, #9AA0AC);
+  font-size: 15px;
+  font-weight: 400;
+  padding: 3px;
+  line-height: 1;
+  white-space: normal;
+  transition: color .15s ease, background-color .15s ease, transform .15s ease;
+}
+.qs-wrapper .qs-clear-btn:hover{
+  color: var(--adm-red-bright, #A32A22);
+  background: var(--adm-red-bg, #FCE4E4);
+  transform: translateY(-50%) scale(1.12);
+}
+
+/* -- Dropdown panel — plain white, thin neutral border + soft shadow
+   (not colored) so it reads as a normal floating card. -- */
+.qs-dropdown{
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--adm-border, #E5E7EB);
+  border-radius: 14px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14);
+  z-index: 40;
+  overflow: hidden;
+  animation: qsDropdownIn .14s ease-out;
+}
+@keyframes qsDropdownIn{
+  from{ opacity: 0; transform: translateY(-4px); }
+  to{ opacity: 1; transform: translateY(0); }
+}
+
+.qs-header{
+  padding: 12px 16px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--adm-text-muted, #6B7280);
+  background: #fff;
+}
+
+/* Results list scrolls internally past ~5 rows instead of pushing the
+   dropdown (and "View all results" footer) off the bottom of the
+   viewport — the footer/header stay fixed, only this middle section
+   scrolls. */
+.qs-results-list{
+  max-height: 296px;
+  overflow-y: auto;
+}
+
+.qs-empty{
+  padding: 20px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--adm-text-muted, #6B7280);
+  text-align: center;
+}
+
+/* -- Result row — plain white by default; hover/focus gets a soft red
+   highlight plus a slight slide and avatar pop for tactile feedback. -- */
+.qs-dropdown .qs-result-row{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  margin: 0;
+  text-decoration: none;
+  color: inherit;
+  background: #fff;
+  border: none;
+  border-radius: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  white-space: normal;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  flex-shrink: 1;
+  transition: background-color .12s ease, transform .12s ease;
+}
+/* Divider between rows — the adjacent-sibling combinator naturally
+   skips the first row (no divider above it) without needing a
+   separate :last-of-type exception. */
+.qs-dropdown .qs-result-row + .qs-result-row{
+  border-top: 1px solid var(--adm-border, #E5E7EB);
+}
+.qs-dropdown .qs-result-row:hover,
+.qs-dropdown .qs-result-row:focus-visible{
+  background: var(--adm-red-bg, #FCE4E4);
+  transform: translateX(3px);
+}
+
+.qs-avatar{
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--adm-orange-bg, #FDECDD);
+  color: var(--adm-orange, #E8710A);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  transition: transform .12s ease;
+}
+.qs-result-row:hover .qs-avatar{
+  transform: scale(1.08);
+}
+/* Cycles the avatar's tint per row so a row of results doesn't read
+   as one flat block of color — same idea as this app's other
+   per-row avatar palettes (e.g. subadmin/user_management.php). */
+.qs-result-row:nth-of-type(3n+2) .qs-avatar{ background: var(--adm-blue-bg, #E8F0FE); color: var(--adm-blue, #1A73E8); }
+.qs-result-row:nth-of-type(3n+3) .qs-avatar{ background: var(--adm-purple-bg, #EFE7FB); color: var(--adm-purple, #7C3AED); }
+
+.qs-result-body{
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.qs-result-name{
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--adm-text, #1F2430);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color .12s ease;
+}
+.qs-dropdown .qs-result-row:hover .qs-result-name,
+.qs-dropdown .qs-result-row:focus-visible .qs-result-name{
+  color: var(--adm-red-bright, #A32A22);
+}
+.qs-result-meta{
+  font-size: 11.5px;
+  color: var(--adm-text-muted, #6B7280);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qs-result-view{
+  flex-shrink: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text, #1F2430);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 2px;
+  transition: color .12s ease, text-decoration-color .12s ease;
+}
+.qs-dropdown .qs-result-row:hover .qs-result-view,
+.qs-dropdown .qs-result-row:focus-visible .qs-result-view{
+  color: var(--adm-red-bright, #A32A22);
+  text-decoration-color: currentColor;
+}
+
+/* -- "View all results" footer -- */
+.qs-dropdown .qs-view-all{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px;
+  margin: 0;
+  border: none;
+  border-top: 1px solid var(--adm-border, #E5E7EB);
+  border-radius: 0;
+  background: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: normal;
+  color: var(--adm-text, #1F2430);
+  text-align: left;
+  cursor: pointer;
+  flex-shrink: 1;
+  transition: background-color .12s ease, color .12s ease;
+}
+.qs-dropdown .qs-view-all i.bi-search,
+.qs-dropdown .qs-view-all i.bi-chevron-right{ color: var(--adm-text-soft, #9AA0AC); transition: color .12s ease, transform .12s ease; }
+.qs-dropdown .qs-view-all:hover{ background: var(--adm-red-bg, #FCE4E4); color: var(--adm-red-bright, #A32A22); }
+.qs-dropdown .qs-view-all:hover i.bi-search,
+.qs-dropdown .qs-view-all:hover i.bi-chevron-right{ color: var(--adm-red-bright, #A32A22); }
+.qs-dropdown .qs-view-all:hover i.bi-chevron-right{ transform: translateX(2px); }
+.qs-dropdown .qs-view-all span{ display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

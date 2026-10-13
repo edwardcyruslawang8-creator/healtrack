@@ -1,0 +1,111 @@
+/* =============================================================
+   PATIENT REPORTS (subadmin/patient_reports.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell:
+   .adm-card/.adm-table/.adm-donut-*/.adm-pagination),
+   assets/css/subadmin_dashboard.css (chart-card/legend/canvas-box
+   patterns, "sad-" prefixed), and assets/css/analytics_reports.css
+   (breadcrumb/tabs/footer-notice, "arp-" prefixed — this page reuses
+   those verbatim since it's a sibling tab of analytics_reports.php).
+   Everything new here — the section intro, filter toolbar, and 6-up
+   stat-row grid override — is "prp-" prefixed (Patient Reports Page).
+
+   NOTE: this file has repeatedly failed to take effect when loaded via
+   its <link> tag in testing (see subadmin/patient_reports.php's <head>
+   — its rules are duplicated there in an inline <style> block as a
+   working fallback). Keep the two in sync if you edit this file. */
+
+/* -- Breadcrumb current-page override: unlike analytics_reports.php's
+      dark-navy current crumb, this page's reference design highlights
+      the current tab in the red brand accent instead. -- */
+.prp-breadcrumb-current-red{ color: var(--adm-red-bright) !important; }
+
+/* -- Section intro (title + subtitle above the filter toolbar) -- */
+.prp-section-intro{ margin-bottom: 18px; }
+.prp-section-intro h2{ font-size: 19px; font-weight: 700; color: var(--adm-text); margin: 0 0 4px; }
+.prp-section-intro p{ font-size: 13px; color: var(--adm-text-muted); margin: 0; }
+
+/* -- Filter toolbar --
+   All 5 controls (4 filters + Export) share the same min-height/padding
+   so they line up on one consistent baseline instead of each sizing to
+   its own text. */
+.prp-filter-bar{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.prp-filter-bar .dropdown{ flex: 0 0 auto; }
+.prp-filter-select{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 9px 14px;
+  box-shadow: var(--adm-shadow);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+  white-space: nowrap;
+  transition: background .15s ease, border-color .15s ease;
+}
+.prp-filter-select i:first-child{ color: var(--adm-text-soft); font-size: 13.5px; }
+.prp-filter-select:hover{ background: var(--adm-hover-bg); }
+.prp-filter-select:focus,
+.prp-filter-select.show{ border-color: var(--adm-red-bright); }
+.prp-filter-spacer{ flex: 1 1 auto; }
+.prp-export-btn{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-red-bright);
+  color: var(--adm-red-bright);
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background .15s ease, color .15s ease;
+}
+.prp-export-btn:hover{ background: var(--adm-red-bright); color: #fff; }
+
+/* -- Summary stat cards (6-up) --
+   These reuse analytics_reports.css's .arp-kpi-row/.arp-kpi-card/
+   .arp-kpi-icon/.arp-kpi-text/... classes directly (see the PHP
+   template) rather than a separate look, so icon shape, font sizes,
+   and spacing are pixel-identical to the Overview tab's KPI row. The
+   only thing specific to this page is the column count — Overview's
+   .arp-kpi-row is a 5-up grid, this page needs 6 — so this modifier
+   class overrides just grid-template-columns, at the same breakpoints
+   analytics_reports.css already collapses at. */
+.prp-stats-row-6{ grid-template-columns: repeat(6, 1fr); }
+@media (max-width: 1399.98px){ .prp-stats-row-6{ grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 991.98px){ .prp-stats-row-6{ grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 575.98px){ .prp-stats-row-6{ grid-template-columns: 1fr; } }
+
+/* Bottom row (New Patient Registrations / Top 5 Diagnoses) and the Top 5
+   Diagnoses ranking itself now reuse admin-dashboard.css's
+   .adm-grid-70-30 and subadmin_dashboard.css's .sad-condition-list —
+   the same widgets Overview uses — so there are no page-specific rules
+   left for either here. */
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 991.98px){
+  .prp-filter-bar{ align-items: stretch; }
+  .prp-filter-spacer{ display: none; }
+  .prp-export-btn{ width: 100%; justify-content: center; }
+}
+@media (max-width: 767.98px){
+  .prp-filter-bar .dropdown{ flex: 1 1 45%; }
+  .prp-filter-select{ width: 100%; justify-content: center; }
+}

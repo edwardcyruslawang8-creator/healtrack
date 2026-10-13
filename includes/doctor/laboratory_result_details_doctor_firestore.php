@@ -1,0 +1,90 @@
+<?php
+/**
+ * =====================================================================
+ * Laboratory Result Details (Doctor) — Data
+ * ---------------------------------------------------------------------
+ * Reached two ways: doctor/active_consultation.php's "Lab Results" card
+ * (the "View Full Result" link on each linked test — always a lab
+ * result, never sends &type=) and, now, doctor/patient_profile.php's
+ * "Laboratory & X-ray" tab (doctor/patient_laboratory_xray.php's View
+ * buttons, which DO send a real &type=lab|xray&recordId=) — same
+ * drill-down detail view as medical_technician's/medical-staff's/
+ * subadmin's own laboratory_result_details.php, resolved by the exact
+ * same includes/firestore/lab_results.php's hc_resolve_lab_result() and
+ * includes/firestore/xray_results.php's hc_resolve_xray_result() so
+ * there's only ever one place that logic lives.
+ *
+ * $patient is resolved directly from ?id= (the patientId), same
+ * reasoning as the medical technologist's copy: this isn't reached from
+ * a per-patient profile tab strip.
+ * =====================================================================
+ */
+
+require_once __DIR__ . '/../../config/firebase.php'; // $firestore
+require_once __DIR__ . '/../firestore/patients.php';
+require_once __DIR__ . '/../firestore/lab_results.php';
+require_once __DIR__ . '/../firestore/xray_results.php';
+
+$myUid = $_SESSION['uid'] ?? '';
+$myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
+
+$doctorProfile = [
+    'name'     => $_SESSION['name'] ?? 'Doctor',
+    'role'     => 'Doctor',
+    'facility' => $myDoc['facility'] ?? 'North Super Health Center',
+];
+
+$dashboardDateLabel = date('F j, Y');
+$facilityOptions = ['North Super Health Center', 'East Super Health Center', 'West Super Health Center'];
+
+$requestedPatientId = $_GET['id'] ?? '';
+$patient = hc_get_patient_profile($requestedPatientId) ?? hc_not_found_patient_profile($requestedPatientId);
+
+$statusMeta = [
+    'completed' => ['label' => 'Completed', 'bg' => '#E4F7EA', 'color' => '#1E8E3E'],
+    'pending'   => ['label' => 'Pending',   'bg' => '#FDECDD', 'color' => '#E8710A'],
+];
+
+$requestedRecordId = $_GET['recordId'] ?? '';
+// The consultation this result was linked from, if any — carried
+// through purely so "Back" can return to the exact workspace the
+// doctor came from instead of a generic page.
+$backConsultationId = $_GET['consultationId'] ?? '';
+
+// &type=lab|xray, sent by the new doctor/patient_laboratory_xray.php
+// tab's View buttons (see that page's own header comment) — missing/
+// empty (every pre-existing caller, e.g. active_consultation.php's "Lab
+// Results" card) still means "lab", exactly as this page behaved before
+// x-ray support existed here, so none of those links change behavior.
+$requestedType = $_GET['type'] ?? '';
+
+$labBundle = hc_resolve_lab_result($patient['id'], $requestedType !== 'xray', $requestedRecordId);
+$labTest = $labBundle['labTest'];
+$labResultBadge = $labBundle['labResultBadge'];
+$labResultGroups = $labBundle['labResultGroups'];
+$labInterpretation = $labBundle['labInterpretation'];
+
+$xrayBundle = hc_resolve_xray_result($patient['id'], $requestedType === 'xray', $requestedRecordId);
+$xrayExam = $xrayBundle['xrayExam'];
+$xrayFindings = $xrayBundle['xrayFindings'];
+$xrayImpression = $xrayBundle['xrayImpression'];
+
+// The real Lipa City Health Office paper-form URL for this test, if
+// one of the 4 exists (medical_technician/print_*.php — ?embed=1 has
+// both allow the doctor role and skip the auto window.print()/hide
+// the Print button, since this renders inside an <iframe> here, not
+// its own tab). Only these 4 tests have a real paper template; every
+// other test falls back to the plain field list below instead.
+$paperFormUrl = null;
+if ($labTest['testName'] === 'Urinalysis') {
+    $paperFormUrl = '../medical_technician/print_urinalysis.php';
+} elseif ($labTest['testName'] === 'CD4') {
+    $paperFormUrl = '../medical_technician/print_cd4_count.php';
+} elseif ($labTest['testName'] === 'Gram Stain') {
+    $paperFormUrl = '../medical_technician/print_gram_stain.php';
+} elseif (array_key_exists($labTest['testName'], hc_serology_rapid_test_catalog())) {
+    $paperFormUrl = '../medical_technician/print_serology_rapid_test.php';
+}
+if ($paperFormUrl !== null) {
+    $paperFormUrl .= '?embed=1&patientId=' . urlencode($patient['id']);
+}

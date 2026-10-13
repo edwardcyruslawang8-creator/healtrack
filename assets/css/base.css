@@ -1,0 +1,385 @@
+/* =============================================================
+   NORTH SUPER HEALTH CENTER — BASE STYLESHEET
+   ---------------------------------------------------------------
+   Loaded on every page. Contains:
+     - CSS variables (colors, radii, shadows) used everywhere
+     - Reset + base typography
+     - Sidebar, mobile off-canvas menu
+     - Layout shell (.main-wrapper / .main-content)
+     - Small UI atoms reused across 2+ pages (status badges, the
+       "big rounded search bar", generic dropdown/select, pagination,
+       page title block, info notice strip)
+
+   Page-specific look and feel lives in its own file instead:
+     - assets/css/home.css      → index.php
+     - assets/css/search.css    → patient/search.php
+     - assets/css/medicine.css  → patient/medicine.php
+     - assets/css/gis.css       → patient/gis.php
+   Keeping those separate makes it much faster to find and change
+   styles for one page without scrolling through everything else.
+   ============================================================= */
+
+:root{
+  --maroon:        #5B0A0A;
+  --maroon-dark:   #3D0707;
+  --maroon-light:  #7A1414;
+  --maroon-tint:   #F8E9E9;
+  --bg-light:      #F5F5F5;
+  --card-white:    #FFFFFF;
+  --text-dark:     #2B2223;
+  --text-muted:    #7A7478;
+  --text-soft:     #9A9498;
+  --border-soft:   #ECE7E8;
+
+  --green:   #1E8E3E;
+  --green-bg:#E5F6EA;
+  --red:     #D93025;
+  --red-bg:  #FCE8E6;
+  --orange:  #E8710A;
+  --orange-bg:#FDECDD;
+  --blue:    #1A73E8;
+  --blue-bg: #E8F0FE;
+  --purple:  #7C3AED;
+  --purple-bg:#F1E9FE;
+  --amber:   #B45309;
+  --amber-bg:#FDF3D8;
+  --dark-bg: #EDEBEA;
+
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --shadow-card: 0 2px 10px rgba(43, 34, 35, 0.06);
+  --shadow-card-hover: 0 6px 18px rgba(43, 34, 35, 0.10);
+
+  --sidebar-width: 240px;
+}
+
+*{ box-sizing: border-box; }
+html, body{ height: 100%; }
+
+body{
+  font-family: 'Poppins', 'Inter', sans-serif;
+  background: var(--bg-light);
+  color: var(--text-dark);
+  font-size: 14.5px;
+  -webkit-font-smoothing: antialiased;
+}
+a{ text-decoration: none; }
+button{ font-family: inherit; }
+
+/* =============================================================
+   SIDEBAR
+   ============================================================= */
+.sidebar{
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  height: 100vh;
+  background: linear-gradient(180deg, var(--maroon) 0%, var(--maroon-dark) 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 18px;
+  z-index: 1030;
+  overflow-y: auto;
+}
+.sidebar::-webkit-scrollbar{ width: 5px; }
+.sidebar::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.15); border-radius: 4px; }
+
+.sidebar-brand{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 4px 22px 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  margin-bottom: 18px;
+}
+.sidebar-brand .logo-badge{
+  width: 48px;
+  height: 48px;
+  background: #fff;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+.sidebar-brand .logo-badge i{ font-size: 23px; color: var(--maroon); }
+.sidebar-brand .brand-text h1{
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0;
+  letter-spacing: 0.2px;
+}
+.sidebar-brand .brand-text p{
+  font-size: 10.5px;
+  color: rgba(255,255,255,0.65);
+  margin: 4px 0 0;
+  font-weight: 400;
+}
+
+.sidebar-nav{
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sidebar-nav .nav-link{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: rgba(255,255,255,0.78);
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 11px 14px;
+  border-radius: 10px;
+  transition: background .15s ease, color .15s ease;
+}
+.sidebar-nav .nav-link i{ font-size: 16px; width: 18px; text-align: center; }
+.sidebar-nav .nav-link:hover{ background: rgba(255,255,255,0.08); color: #fff; }
+.sidebar-nav .nav-link.active{
+  background: #fff;
+  color: var(--maroon);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+.sidebar-hours{
+  margin-top: 18px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+.sidebar-hours .hours-title{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.sidebar-hours .hours-row{ font-size: 11.5px; margin-bottom: 8px; }
+.sidebar-hours .hours-row:last-child{ margin-bottom: 0; }
+.sidebar-hours .hours-day{ font-weight: 600; color: #fff; display: block; }
+.sidebar-hours .hours-time{ color: rgba(255,255,255,0.65); }
+.sidebar-hours .closed{ color: #ffb4ab; font-weight: 600; }
+
+/* Mobile off-canvas trigger (hidden on desktop) */
+.mobile-menu-btn{
+  display: none;
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 1040;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--maroon);
+  color: #fff;
+  border: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  box-shadow: var(--shadow-card-hover);
+}
+.sidebar-backdrop{
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 1025;
+}
+.sidebar-backdrop.show{ display: block; }
+
+/* =============================================================
+   LAYOUT SHELL
+   ============================================================= */
+.main-wrapper{
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+}
+.main-content{
+  padding: 26px;
+  /* Extra bottom clearance — the global floating chatbot widget
+     (includes/shared/chatbot_widget.php) is position:fixed in the
+     viewport's bottom-right corner on every one of these pages, so
+     without this, any page whose own content naturally reaches the
+     bottom of the viewport (e.g. patient/gis.php's map legend bar) gets
+     covered by it once scrolled all the way down. */
+  padding-bottom: 140px;
+}
+
+/* =============================================================
+   PAGE TITLE BLOCK (search.php, medicine.php, gis.php)
+   ============================================================= */
+.page-header{ margin-bottom: 20px; }
+.page-header h1{
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--maroon);
+  margin: 0 0 6px;
+}
+.page-header p{
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* =============================================================
+   BIG ROUNDED SEARCH BAR (search.php, medicine.php)
+   ============================================================= */
+.search-page-bar{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 6px;
+  padding-left: 18px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 16px;
+}
+.search-page-bar i.bi-search{ color: var(--text-soft); font-size: 16px; flex-shrink: 0; }
+.search-page-bar input{
+  border: none;
+  background: transparent;
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  outline: none;
+  color: var(--text-dark);
+  padding: 8px 0;
+}
+.search-page-bar input::placeholder{ color: var(--text-soft); }
+.search-page-bar button{
+  background: var(--maroon);
+  color: #fff;
+  border: none;
+  padding: 11px 28px;
+  border-radius: 7px;
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background .15s ease;
+}
+.search-page-bar button:hover{ background: var(--maroon-dark); }
+
+/* =============================================================
+   GENERIC DROPDOWN / SORT SELECT (search.php, medicine.php)
+   Page-specific files may override these with more specific
+   selectors (e.g. medicine.css restyles .filter-select inside
+   its own .filter-toolbar) — that's expected, not a conflict.
+   ============================================================= */
+.filter-select{
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  color: var(--text-dark);
+  outline: none;
+}
+.sort-select{
+  padding: 8px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12.5px;
+  color: var(--text-dark);
+  outline: none;
+}
+
+/* =============================================================
+   STATUS BADGES (home, search, medicine)
+   ============================================================= */
+.status-badge{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 50px;
+}
+.status-badge.available{ background: var(--green-bg); color: var(--green); }
+.status-badge.low{ background: var(--orange-bg); color: var(--orange); }
+.status-badge.unavailable{ background: var(--red-bg); color: var(--red); }
+
+/* =============================================================
+   INFO NOTICE STRIP (home, medicine, gis)
+   ============================================================= */
+.med-notice{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-light);
+  padding: 12px 20px;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-soft);
+}
+.med-notice i{ color: var(--blue); font-size: 14px; }
+
+/* =============================================================
+   PAGINATION (search.php, medicine.php)
+   ============================================================= */
+.pagination-custom{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+.pagination-custom .page-btn{
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  background: #fff;
+  color: var(--text-dark);
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s ease, color .15s ease;
+}
+.pagination-custom .page-btn:hover{ background: var(--bg-light); }
+.pagination-custom .page-btn.active{
+  background: var(--maroon);
+  border-color: var(--maroon);
+  color: #fff;
+}
+.pagination-custom .page-ellipsis{
+  color: var(--text-soft);
+  font-size: 13px;
+  padding: 0 4px;
+}
+
+/* =============================================================
+   BASE RESPONSIVE (sidebar / off-canvas — applies everywhere)
+   ============================================================= */
+@media (max-width: 767.98px){
+  .sidebar{
+    left: calc(-1 * var(--sidebar-width));
+    transition: left .25s ease;
+    box-shadow: 4px 0 16px rgba(0,0,0,0.15);
+  }
+  .sidebar.show{ left: 0; }
+  .main-wrapper{ margin-left: 0; }
+  .main-content{ padding-top: 70px; }
+  .mobile-menu-btn{ display: flex; }
+}
+
+@media (max-width: 575.98px){
+  .search-page-bar{ flex-wrap: wrap; }
+  .search-page-bar button{ width: 100%; margin-top: 6px; }
+}

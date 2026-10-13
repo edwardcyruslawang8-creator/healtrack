@@ -1,0 +1,674 @@
+/* =============================================================
+   HOME PAGE (index.php)
+   ---------------------------------------------------------------
+   Loaded only by index.php, after base.css. Everything here is
+   specific to the Home dashboard: the two-column grid, hero
+   section, the light stat cards, the mini GIS preview widget, the
+   chatbot widget, and the Medicine/Announcements list widgets.
+   ============================================================= */
+
+.dashboard-grid{
+  display: grid;
+  grid-template-columns: 3fr 1.1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* -- Shared white panel shell (Medicine & Vaccine / Announcements cards) -- */
+.section-title{
+  font-weight: 600;
+  font-size: 14.5px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+.card-header-bar{
+  background: linear-gradient(90deg, var(--maroon) 0%, var(--maroon-light) 100%);
+  padding: 14px 22px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-header-bar .view-all{
+  color: rgba(255,255,255,0.9);
+  font-size: 12.5px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color .15s ease;
+}
+.card-header-bar .view-all:hover{ color: #fff; }
+
+.panel{
+  background: var(--card-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-soft);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.panel:last-child{ margin-bottom: 0; }
+
+/* -- Hero -- */
+.hero-panel{
+  background: var(--card-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-soft);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.hero-inner{
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  min-height: 235px;
+}
+.hero-text{
+  position: relative;
+  z-index: 2;
+  flex: 1 1 58%;
+  padding: 32px 34px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.hero-text .eyebrow{
+  font-size: 19px;
+  color: var(--text-dark);
+  font-weight: 400;
+  margin-bottom: 2px;
+}
+.hero-text h1{
+  font-size: 33px;
+  font-weight: 700;
+  color: var(--maroon);
+  line-height: 1.15;
+  margin-bottom: 14px;
+}
+.hero-text p.lead-desc{
+  color: var(--text-muted);
+  font-size: 14px;
+  max-width: 460px;
+  margin-bottom: 22px;
+  line-height: 1.55;
+}
+
+.hero-search{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 5px;
+  padding-left: 14px;
+  max-width: 560px;
+  box-shadow: 0 2px 8px rgba(43,34,35,0.05);
+}
+.hero-search i.bi-search{ color: var(--text-soft); font-size: 15px; flex-shrink: 0; }
+.hero-search input{
+  border: none;
+  background: transparent;
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  outline: none;
+  color: var(--text-dark);
+}
+.hero-search input::placeholder{ color: var(--text-soft); }
+.hero-search button{
+  background: var(--maroon);
+  color: #fff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background .15s ease;
+}
+.hero-search button:hover{ background: var(--maroon-dark); }
+
+.hero-image{
+  flex: 1 1 42%;
+  position: relative;
+  overflow: hidden;
+  min-height: 235px;
+}
+.hero-image img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.hero-image::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 22%);
+  z-index: 1;
+}
+
+/* -- Stat cards (light) -- */
+.stat-mini-card{
+  background: var(--card-white);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 100%;
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.stat-mini-card:hover{
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+.stat-mini-card .icon-circle{
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--maroon-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.stat-mini-card .icon-circle i{ font-size: 22px; color: var(--maroon); }
+.stat-mini-card .stat-number{
+  font-size: 25px;
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1.1;
+}
+.stat-mini-card .stat-text{ font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+/* -- Mini GIS preview widget (the full map lives on patient/gis.php) -- */
+.gis-panel{
+  background: var(--card-white);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.gis-map-area{
+  position: relative;
+  background: #FBF6EC;
+  height: 280px;
+  overflow: hidden;
+}
+/* Real Leaflet map (home-gis-preview.js), not the old hand-drawn SVG —
+   dragging/zoom/scroll are all disabled (see that file's own comment)
+   so this reads as a static preview thumbnail, not a broken small map
+   a visitor might try to interact with. */
+#homeGisMap{ width: 100%; height: 100%; background: #FBF6EC; }
+.gis-map-area .leaflet-control-container{ display: none; }
+/* Name-only label per barangay hexagon (home-gis-preview.js) — no icon/
+   case-count, this card is too small for the full page's house-icon
+   markers + two-line tooltip. */
+.home-gis-label{
+  background: rgba(255,255,255,0.88);
+  border: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dark);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.home-gis-label::before{ display: none; }
+/* North Super Health Center's own pin on the mini preview map — a
+   smaller version of assets/css/gis.css's .facility-marker (the full
+   map's own version of this same real point). */
+.home-gis-facility-marker{
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--maroon, #5B0A0A);
+  border: 2px solid #fff;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+}
+.gis-legend-strip{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding: 12px 22px;
+  border-top: 1px solid var(--border-soft);
+  font-size: 11.5px;
+  color: var(--text-dark);
+}
+.gis-legend-strip .legend-item{ display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.gis-legend-strip .dot{ width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.gis-panel .panel-footer{ padding: 14px 22px; }
+.btn-view-map{
+  width: 100%;
+  background: var(--maroon);
+  color: #fff;
+  border: none;
+  padding: 11px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background .15s ease;
+}
+.btn-view-map:hover{ background: var(--maroon-dark); color: #fff; }
+
+/* -- Chatbot widget -- */
+.chatbot-panel{
+  background: var(--card-white);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.chatbot-status{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+}
+.chatbot-status .dot-online{
+  width: 8px;
+  height: 8px;
+  background: #3DDC84;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 0 3px rgba(61,220,132,0.25);
+}
+/* Fixed height + internal scroll — without this, every new question/
+   answer pair just kept growing the whole panel (and the page under
+   it) taller instead of staying put, which is disorienting once a
+   conversation goes on for more than a couple of turns. */
+.chatbot-body{
+  padding: 20px;
+  max-height: 340px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+.chatbot-body::-webkit-scrollbar{ width: 6px; }
+.chatbot-body::-webkit-scrollbar-thumb{ background: var(--border-soft); border-radius: 3px; }
+.chatbot-body::-webkit-scrollbar-thumb:hover{ background: var(--text-soft); }
+.chatbot-intro{
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  animation: hc-msg-in .3s ease both;
+}
+@keyframes hc-msg-in{
+  from{ opacity: 0; transform: translateY(6px); }
+  to{ opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce){
+  .chatbot-intro{ animation: none; }
+}
+
+/* "Typing…" indicator — three bouncing dots instead of plain text,
+   same idea as ChatGPT's own reply indicator. */
+.chatbot-typing-dots{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 0;
+}
+.chatbot-typing-dots span{
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: hc-typing-bounce 1.2s ease-in-out infinite;
+}
+.chatbot-typing-dots span:nth-child(2){ animation-delay: .15s; }
+.chatbot-typing-dots span:nth-child(3){ animation-delay: .3s; }
+@keyframes hc-typing-bounce{
+  0%, 60%, 100%{ transform: translateY(0); opacity: .5; }
+  30%{ transform: translateY(-5px); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce){
+  .chatbot-typing-dots span{ animation: none; opacity: .8; }
+}
+.chatbot-avatar{
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--maroon-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.chatbot-avatar i{ font-size: 22px; color: var(--maroon); }
+.chatbot-bubble{
+  background: var(--bg-light);
+  border-radius: 14px 14px 14px 4px;
+  padding: 12px 16px;
+  font-size: 12.5px;
+  color: var(--text-dark);
+  line-height: 1.5;
+  /* Preserves the \n line breaks the chatbot backend sends for
+     bulleted-style answers (medicine lists, services, etc.) — the
+     bubble's text is set via textContent, so without this, those
+     newlines would collapse into plain spaces. */
+  white-space: pre-line;
+}
+
+/* Wraps a bubble + (for a real assistant reply) its "👎 This didn't
+   answer my question" link right below it — see assets/js/home.js's
+   appendFeedbackControl(). */
+.chatbot-bubble-col{ display: flex; flex-direction: column; align-items: flex-start; }
+.chatbot-feedback{ margin-top: 4px; }
+.chatbot-feedback-link{
+  background: none; border: none; padding: 2px 4px; cursor: pointer;
+  font-size: 11px; color: var(--text-soft); display: inline-flex; align-items: center; gap: 5px;
+  transition: color .15s ease;
+}
+.chatbot-feedback-link:hover:not(:disabled){ color: var(--maroon); }
+.chatbot-feedback-link:disabled{ cursor: default; opacity: .75; }
+.chatbot-suggestions{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* Collapses smoothly once the patient starts chatting or a previous
+     conversation is restored (see assets/js/home.js + chatbot-history.js)
+     — same pattern as .suggestion-cards.is-collapsed in chatbot.css. A
+     plain [hidden]/display:none would work too, but wouldn't animate. */
+  overflow: hidden;
+  max-height: 400px;
+  transition: max-height .35s ease, opacity .25s ease;
+}
+.chatbot-suggestions.is-collapsed{
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.chatbot-suggestions .suggestion-chip{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-light);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: var(--text-dark);
+  width: 100%;
+  transition: background .15s ease;
+}
+.chatbot-suggestions .suggestion-chip:hover{ background: #ECE7E8; }
+.chatbot-suggestions .suggestion-chip .chip-left{ display: flex; align-items: center; gap: 10px; }
+.chatbot-suggestions .suggestion-chip i.chip-icon{ font-size: 13px; color: var(--maroon); }
+.chatbot-suggestions .suggestion-chip i.bi-chevron-right{ color: var(--text-soft); font-size: 11px; }
+.chatbot-input-row{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid var(--border-soft);
+  padding: 16px 20px;
+}
+.chatbot-input-row input{
+  flex: 1;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-light);
+  border-radius: 50px;
+  padding: 10px 16px;
+  font-size: 12.5px;
+  outline: none;
+}
+.chatbot-send-btn{
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--maroon);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s ease;
+}
+.chatbot-send-btn:hover{ background: var(--maroon-dark); }
+
+/* User's own messages, appended live by assets/js/home.js */
+.chatbot-intro.from-user{ flex-direction: row-reverse; }
+.chatbot-intro.from-user .chatbot-bubble-col{ align-items: flex-end; }
+.chatbot-intro.from-user .chatbot-bubble{
+  background: var(--maroon);
+  color: #fff;
+  border-radius: 14px 14px 4px 14px;
+}
+
+/* Reference links inside a reply (e.g. the CDC/WHO/DOH citations on
+   health-topic answers) — see assets/js/home.js's renderBubbleContent(). */
+.chatbot-bubble .chatbot-link{
+  color: var(--maroon);
+  text-decoration: underline;
+  word-break: break-all;
+}
+.chatbot-bubble .chatbot-link:hover{ color: var(--maroon-dark); }
+.chatbot-intro.from-user .chatbot-bubble .chatbot-link{ color: #fff; }
+.chatbot-avatar.user-avatar{ background: var(--dark-bg); }
+.chatbot-avatar.user-avatar i{ color: var(--text-dark); }
+
+/* -- Medicine & Vaccine Availability widget (home only; the full
+      searchable list lives on patient/medicine.php) -- */
+.med-item{
+  text-align: center;
+  padding: 18px 10px;
+  border-radius: var(--radius-md);
+  transition: background .15s ease;
+}
+.med-item:hover{ background: var(--bg-light); }
+.med-item .icon-circle{
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--maroon-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+}
+.med-item .icon-circle i{ font-size: 22px; color: var(--maroon); }
+.med-item .med-name{ font-size: 13.5px; font-weight: 600; color: var(--text-dark); margin-bottom: 10px; }
+
+/* -- Announcements widget -- */
+.announcement-item{
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.announcement-item:last-child{ border-bottom: none; }
+.announcement-item .ann-icon{
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+.announcement-item .ann-icon.blue{ background: var(--blue-bg); color: var(--blue); }
+.announcement-item .ann-icon.orange{ background: var(--orange-bg); color: var(--orange); }
+.announcement-item .ann-icon.green{ background: var(--green-bg); color: var(--green); }
+.announcement-item .ann-content{ flex: 1; }
+.announcement-item .ann-title{ font-size: 13.5px; font-weight: 600; color: var(--text-dark); margin-bottom: 3px; }
+.announcement-item .ann-desc{ font-size: 12px; color: var(--text-muted); margin: 0; }
+.announcement-item .ann-date{ font-size: 11.5px; color: var(--text-soft); white-space: nowrap; margin-left: 12px; }
+
+/* -- Home page responsive -- */
+@media (max-width: 1199.98px){
+  .dashboard-grid{ grid-template-columns: 1fr; }
+}
+@media (max-width: 991.98px){
+  .hero-inner{ flex-direction: column; }
+  .hero-image{ min-height: 180px; }
+  .hero-image::before{ display: none; }
+}
+@media (max-width: 767.98px){
+  .hero-text h1{ font-size: 26px; }
+}
+
+/* =============================================================
+   ABOUT US SECTION (id="about-us")
+   ============================================================= */
+.about-section{
+  margin-top: 24px;
+  padding: 32px;
+  background: var(--card-white);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  scroll-margin-top: 26px;
+}
+.about-section h2{
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--maroon);
+  margin: 0 0 14px;
+}
+.about-section .about-lead{
+  font-size: 14px;
+  color: var(--text-muted);
+  max-width: 780px;
+  line-height: 1.7;
+  margin: 0 0 26px;
+}
+.about-grid{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.about-item{
+  padding: 20px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.about-item:hover{ box-shadow: var(--shadow-card-hover); transform: translateY(-2px); }
+.about-item .about-icon{
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--maroon-tint);
+  color: var(--maroon);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 14px;
+}
+.about-item h3{
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0 0 8px;
+}
+.about-item p{
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* =============================================================
+   SITE FOOTER (id="site-footer" — Contact Us lives here)
+   ============================================================= */
+.site-footer{
+  background: linear-gradient(180deg, var(--maroon) 0%, var(--maroon-dark) 100%);
+  color: rgba(255,255,255,0.85);
+  scroll-margin-top: 0;
+}
+.footer-inner{
+  margin-left: var(--sidebar-width);
+  padding: 40px 26px 26px;
+}
+.footer-grid{
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 28px;
+  padding-bottom: 26px;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+.footer-col h4{
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.footer-col p{
+  font-size: 12.5px;
+  margin: 0 0 10px;
+  line-height: 1.6;
+}
+.footer-col p i{ margin-right: 8px; color: rgba(255,255,255,0.65); }
+.footer-col a{ color: rgba(255,255,255,0.8); transition: color .15s ease; }
+.footer-col a:hover{ color: #fff; text-decoration: underline; }
+
+.footer-logo{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.footer-logo span{
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.25;
+}
+.logo-badge-sm{
+  width: 36px;
+  height: 36px;
+  background: #fff;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.logo-badge-sm i{ font-size: 17px; color: var(--maroon); }
+.footer-brand p{ font-size: 12px; color: rgba(255,255,255,0.65); max-width: 260px; }
+
+.footer-bottom{
+  padding-top: 18px;
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.6);
+  text-align: center;
+}
+
+@media (max-width: 991.98px){
+  .about-grid{ grid-template-columns: 1fr; }
+  .footer-grid{ grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 767.98px){
+  .footer-inner{ margin-left: 0; padding: 30px 20px 20px; }
+  .footer-grid{ grid-template-columns: 1fr; }
+  .about-section{ padding: 22px; }
+}

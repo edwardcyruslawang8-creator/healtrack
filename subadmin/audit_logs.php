@@ -1,0 +1,351 @@
+<?php
+/**
+ * =====================================================================
+ * HEALTrack — Health Information System
+ * Audit Logs (subadmin/audit_logs.php)
+ * ---------------------------------------------------------------------
+ * Top-level Sub-Admin section (its own sidebar nav item) — same shape
+ * as subadmin/user_management.php and its siblings. Reuses the exact
+ * same sidebar/topbar shell as the rest of subadmin/*.php (280px
+ * dark-red gradient sidebar, "adm-" prefixed atoms,
+ * assets/css/admin-dashboard.css). Reuses assets/css/audit_logs.css
+ * directly (rather than a new page-specific stylesheet) since this
+ * page's search bar / filter toolbar / action+status badges / user
+ * cell are visually identical to admin/audit_logs.php's — the same
+ * "Audit Logs" pattern, just under a different sidebar. Audit Logs
+ * stays active in the sidebar, since this IS that page.
+ *
+ * UNLIKE most subadmin/*.php pages built this session, this one is
+ * NOT front-end only: $auditLogs reads LIVE from the same Firestore
+ * "audit_logs" collection admin/audit_logs.php reads (see
+ * includes/subadmin/subadmin_audit_logs_firestore.php's header comment for why this
+ * has its own data file instead of requiring that one directly). The
+ * search bar, filter dropdowns, date range/facility selectors, and
+ * pagination controls aren't wired up yet.
+ * =====================================================================
+ */
+session_start();
+
+require_once __DIR__ . '/../config/constants.php'; // BASE_URL, asset_url()
+require_once __DIR__ . '/../includes/shared/theme_helper.php'; // admin_theme_data_attr(), admin_theme_head_script()
+require_once __DIR__ . '/../includes/shared/i18n.php'; // t()
+
+// Only a signed-in sub-admin may view this page.
+if (($_SESSION['role'] ?? null) !== 'subadmin') {
+    header('Location: ' . BASE_URL . '/login.php');
+    exit;
+}
+
+require_once __DIR__ . '/../includes/subadmin/subadmin_audit_logs_firestore.php';
+// $adminProfile, $facilityOptions, $auditDateRangeLabel, $filterGroups,
+// $actionTypeMeta, $auditLogs, $auditLogsTotal, $auditLogsPerPage,
+// $auditLogsCurrentPage, $auditLogsTotalPages, resolveActionMeta()
+
+// Sidebar nav — same Sub-Admin nav list as subadmin/dashboard.php.
+// Audit Logs stays active (this IS that page).
+$adminNavItems = [
+    ['icon' => 'bi-grid-fill',              'label' => t('nav.dashboard'),                    'href' => 'dashboard.php'],
+    ['icon' => 'bi-person-lines-fill',      'label' => t('nav.patient_management'),           'href' => 'patient_management.php'],
+    ['icon' => 'bi-capsule',                'label' => t('nav.medicine_vaccine_inventory'), 'href' => 'medicine_vaccine_inventory.php'],
+    ['icon' => 'bi-box-seam-fill',          'label' => t('nav.stock_requests'),               'href' => 'stock_requests.php'],
+    ['icon' => 'bi-bar-chart-fill',         'label' => t('nav.analytics_reports'),          'href' => 'analytics_reports.php'],
+    ['icon' => 'bi-people-fill',            'label' => t('nav.user_management'),              'href' => 'user_management.php'],
+    ['icon' => 'bi-bell-fill',              'label' => t('nav.notifications'),                'href' => 'notifications.php', 'badge' => subadmin_unread_notification_count()],
+    [
+        'icon' => 'bi-clipboard-data-fill',
+        'label' => t('nav.audit_logs'),
+        'active' => true,
+        'open' => true,
+        'children' => [
+            ['label' => t('nav.audit_logs_doctor'),             'href' => 'audit_logs.php?role=doctor',             'active' => $auditRoleFilter === 'doctor'],
+            ['label' => t('nav.audit_logs_medstaff'),      'href' => 'audit_logs.php?role=healthcare_staff',   'active' => $auditRoleFilter === 'healthcare_staff'],
+            ['label' => t('nav.audit_logs_medtech'), 'href' => 'audit_logs.php?role=medical_technician', 'active' => $auditRoleFilter === 'medical_technician'],
+            ['label' => t('nav.audit_logs_pharmacist'),         'href' => 'audit_logs.php?role=pharmacist',         'active' => $auditRoleFilter === 'pharmacist'],
+        ],
+    ],
+    ['icon' => 'bi-file-earmark-lock-fill', 'label' => t('nav.consent_management'),           'href' => 'consent_management.php'],
+    ['icon' => 'bi-megaphone-fill',         'label' => t('nav.announcements'),                'href' => 'announcements.php'],
+    [
+        'icon' => 'bi-gear-fill',
+        'label' => t('nav.profile_settings'),
+        'id' => 'admNavProfileSettings',
+        'children' => [
+            ['label' => t('nav.profile_settings'), 'href' => 'profile_settings.php'],
+            ['label' => t('nav.homepage_settings'), 'href' => 'homepage_settings.php'],
+        ],
+    ],
+];
+?>
+<!DOCTYPE html>
+<html lang="en"<?= admin_theme_data_attr() ?>>
+<head>
+<?= admin_theme_head_script() ?>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audit Logs — HEALTrack</title>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<!-- Font Awesome (available per project spec; Bootstrap Icons cover this page's icons) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<!-- Shared admin shell (sidebar, topbar, cards, table, pagination, etc.) -->
+<link rel="stylesheet" href="<?= asset_url('/assets/css/admin-dashboard.css') ?>">
+<!-- Audit Logs page styles (sidebar facility chip, search bar, filter toolbar, action/status badges) -->
+<link rel="stylesheet" href="<?= asset_url('/assets/css/audit_logs.css') ?>">
+</head>
+<body class="adm-body">
+
+<!-- Mobile sidebar trigger -->
+<button class="adm-mobile-menu-btn" id="admSidebarToggle" aria-label="Open menu">
+    <i class="bi bi-list"></i>
+</button>
+<div class="adm-sidebar-backdrop" id="admSidebarBackdrop"></div>
+
+<!-- =============================================================
+     SIDEBAR
+     ============================================================= -->
+<aside class="adm-sidebar" id="admSidebar">
+
+    <!-- Brand -->
+    <div class="adm-brand">
+        <div class="adm-logo-badge"><i class="bi bi-heart-pulse-fill"></i></div>
+        <div class="adm-brand-text">
+            <h1>HEALTrack</h1>
+            <p><?= htmlspecialchars(t('app.tagline')) ?></p>
+        </div>
+    </div>
+
+    <hr class="adm-sidebar-divider">
+
+    <!-- Sub-admin profile -->
+    <div class="adm-profile">
+        <div class="adm-avatar"><i class="bi bi-person-circle"></i></div>
+        <div class="adm-profile-text">
+            <div class="adm-profile-name"><?= htmlspecialchars($adminProfile['name']) ?></div>
+            <div class="adm-profile-role"><?= htmlspecialchars($adminProfile['role']) ?></div>
+        </div>
+    </div>
+
+    <hr class="adm-sidebar-divider">
+
+    <!-- Navigation -->
+    <ul class="adm-nav">
+        <?php foreach ($adminNavItems as $item): ?>
+        <?php if (!empty($item['children'])): ?>
+        <li>
+            <a href="#<?= htmlspecialchars($item['id'] ?? 'admNavAuditLogs') ?>" class="adm-nav-link adm-nav-toggle <?= !empty($item['active']) ? 'active' : '' ?> <?= empty($item['open']) ? 'collapsed' : '' ?>" data-bs-toggle="collapse" role="button" aria-expanded="<?= !empty($item['open']) ? 'true' : 'false' ?>" aria-controls="<?= htmlspecialchars($item['id'] ?? 'admNavAuditLogs') ?>">
+                <i class="bi <?= htmlspecialchars($item['icon']) ?>"></i>
+                <span><?= htmlspecialchars($item['label']) ?></span>
+                <i class="bi bi-chevron-down adm-nav-caret"></i>
+            </a>
+            <div class="collapse <?= !empty($item['open']) ? 'show' : '' ?>" id="<?= htmlspecialchars($item['id'] ?? 'admNavAuditLogs') ?>">
+                <ul class="adm-nav-submenu">
+                    <?php foreach ($item['children'] as $child): ?>
+                    <li><a href="<?= htmlspecialchars($child['href']) ?>" class="adm-nav-sublink <?= !empty($child['active']) ? 'active' : '' ?>"><?= htmlspecialchars($child['label']) ?></a></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        </li>
+        <?php else: ?>
+        <li>
+            <a href="<?= htmlspecialchars($item['href']) ?>" class="adm-nav-link <?= !empty($item['active']) ? 'active' : '' ?>">
+                <i class="bi <?= htmlspecialchars($item['icon']) ?>"></i>
+                <span><?= htmlspecialchars($item['label']) ?></span>
+                <?php if (!empty($item['badge'])): ?>
+                <span class="sad-nav-badge"><?= (int) $item['badge'] ?></span>
+                <?php endif; ?>
+            </a>
+        </li>
+        <?php endif; ?>
+        <?php endforeach; ?>
+    </ul>
+
+    <div class="adm-nav-bottom">
+        <hr class="adm-sidebar-divider" style="margin-bottom:12px;">
+        <a href="<?= BASE_URL ?>/api/logout.php" class="adm-nav-link">
+            <i class="bi bi-box-arrow-right"></i>
+            <span><?= htmlspecialchars(t('nav.logout')) ?></span>
+        </a>
+    </div>
+</aside>
+
+<!-- =============================================================
+     MAIN CONTENT
+     ============================================================= -->
+<main class="adm-main">
+
+    <!-- ============ TOP HEADER ============ -->
+    <div class="adm-topbar">
+        <div>
+            <h1><?= htmlspecialchars(t('nav.audit_logs')) ?><?= $auditRoleFilterLabel !== '' ? ' — ' . htmlspecialchars($auditRoleFilterLabel) . ' Activity' : '' ?></h1>
+            <p class="adm-page-subtitle"><?= htmlspecialchars(t('page.sa_audit_logs.subtitle')) ?></p>
+        </div>
+
+        <div class="adm-topbar-right">
+            <div class="adm-topbar-actions">
+                <!-- Real — picking a range here re-filters $auditLogs for that
+                     window (?daterange=..., same param the filter toolbar's own
+                     Date Range dropdown below uses, so the two stay in sync). -->
+                <div class="dropdown">
+                    <button class="aud-topbar-select-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-calendar3"></i> <?= htmlspecialchars($auditDateRangeLabel) ?>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="?<?= hc_audit_query(['daterange' => 'All Date & Time', 'page' => 1]) ?>">All Time</a></li>
+                        <li><a class="dropdown-item" href="?<?= hc_audit_query(['daterange' => 'Today', 'page' => 1]) ?>">Today</a></li>
+                        <li><a class="dropdown-item" href="?<?= hc_audit_query(['daterange' => 'This Week', 'page' => 1]) ?>">This Week</a></li>
+                        <li><a class="dropdown-item" href="?<?= hc_audit_query(['daterange' => 'This Month', 'page' => 1]) ?>">This Month</a></li>
+                    </ul>
+                </div>
+
+                <!-- Fixed — shows only the facility this sub-admin is actually
+                     assigned to (their real users/{uid} doc's "facility" field);
+                     not a switcher, since a sub-admin can't reassign themselves. -->
+                <div class="aud-topbar-select-btn">
+                    <i class="bi bi-building"></i> <?= htmlspecialchars($adminProfile['facility']) ?>
+                </div>
+
+                <a href="notifications.php" class="adm-bell-btn" aria-label="Notifications">
+                    <i class="bi bi-bell-fill"></i>
+                    <?php if (subadmin_unread_notification_count() > 0): ?><span class="adm-badge-count"><?= subadmin_unread_notification_count() ?></span><?php endif; ?>
+                </a>
+
+                <div class="dropdown">
+                    <button class="adm-profile-dropdown dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="adm-topbar-avatar"><i class="bi bi-person-fill"></i></span>
+                        <span>
+                            <span class="d-block adm-topbar-name"><?= htmlspecialchars($adminProfile['name']) ?></span>
+                            <span class="d-block adm-topbar-role"><?= htmlspecialchars($adminProfile['role']) ?></span>
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="profile_settings.php"><i class="bi bi-gear me-2"></i>Profile / Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>/api/logout.php"><i class="bi bi-box-arrow-right me-2"></i><?= htmlspecialchars(t('nav.logout')) ?></a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ SEARCH BAR ============ -->
+    <form class="aud-search-bar" method="get" action="audit_logs.php">
+        <i class="bi bi-search"></i>
+        <!-- Real — fuzzy-matches user/action/module/details (hc_filter_audit_logs()),
+             same algorithm every other real search box in this app uses. Submits
+             on Enter; every active filter/page is preserved via the hidden inputs
+             below so searching never resets them. -->
+        <input type="text" id="auditSearchInput" name="q" value="<?= htmlspecialchars($auditSearchTerm) ?>" placeholder="Search by user, action, module, or details..." autocomplete="off">
+        <input type="hidden" name="user" value="<?= htmlspecialchars($auditUserFilter) ?>">
+        <input type="hidden" name="module" value="<?= htmlspecialchars($auditModuleFilter) ?>">
+        <input type="hidden" name="action" value="<?= htmlspecialchars($auditActionFilter) ?>">
+        <input type="hidden" name="status" value="<?= htmlspecialchars($auditStatusFilter) ?>">
+        <input type="hidden" name="daterange" value="<?= htmlspecialchars($auditDateRangeFilter) ?>">
+        <!-- Real user-name suggestions as you type (assets/js/audit-logs-search.js)
+             — clicking one filters the table to that person's own log,
+             same real name list (already locked to this sub-admin's own
+             facility) the User filter dropdown below uses. -->
+        <div class="aud-search-suggest" id="auditSearchSuggest" hidden></div>
+    </form>
+    <script>window.AUDIT_USER_LIST = <?= json_encode(array_keys($seenUsers)) ?>;</script>
+
+    <!-- ============ FILTER TOOLBAR ============ -->
+    <div class="aud-filter-toolbar">
+        <?php foreach ($filterGroups as $fg): ?>
+        <div class="dropdown">
+            <button class="aud-filter-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi <?= htmlspecialchars($fg['icon']) ?>"></i> <?= htmlspecialchars($fg['label']) ?>
+            </button>
+            <ul class="dropdown-menu">
+                <?php foreach ($fg['options'] as $opt): ?>
+                <li><a class="dropdown-item <?= $opt === $fg['label'] ? 'active' : '' ?>" href="?<?= hc_audit_query([$fg['key'] => $opt, 'page' => 1]) ?>"><?= htmlspecialchars($opt) ?></a></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+        <?php endforeach; ?>
+
+        <a href="audit_logs.php" class="aud-clear-filters-btn">
+            Clear Filters
+        </a>
+    </div>
+
+    <!-- ============ AUDIT LOGS TABLE ============ -->
+    <div class="adm-card aud-table-card">
+        <div class="adm-table-wrap">
+            <table class="adm-table aud-table">
+                <thead>
+                    <tr>
+                        <th>Date &amp; Time <i class="bi bi-arrow-down"></i></th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Module</th>
+                        <th>Details</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($auditLogs)): ?>
+                    <tr>
+                        <td colspan="6" class="adm-table-empty">No audit log entries yet.</td>
+                    </tr>
+                    <?php endif; ?>
+                    <?php foreach ($auditLogs as $log): $meta = resolveActionMeta($actionTypeMeta, $log['action']); ?>
+                    <tr>
+                        <td class="aud-datetime"><?= htmlspecialchars($log['datetime']) ?></td>
+                        <td>
+                            <div class="adm-activity-name-cell">
+                                <span class="adm-avatar-sm initials <?= htmlspecialchars($log['avatarColor']) ?>"><?= htmlspecialchars($log['initials']) ?></span>
+                                <span class="aud-user-cell">
+                                    <span class="aud-user-name"><?= htmlspecialchars($log['user']) ?></span>
+                                    <span class="aud-user-role"><?= htmlspecialchars($log['role']) ?></span>
+                                </span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="aud-action-badge" style="background:<?= htmlspecialchars($meta['bg']) ?>; color:<?= htmlspecialchars($meta['color']) ?>;">
+                                <i class="bi <?= htmlspecialchars($meta['icon']) ?>"></i> <?= htmlspecialchars($meta['label']) ?>
+                            </span>
+                        </td>
+                        <td><?= htmlspecialchars($log['module']) ?></td>
+                        <td class="aud-details"><?= htmlspecialchars($log['details']) ?></td>
+                        <td><span class="aud-status-badge <?= htmlspecialchars($log['status']) ?>"><?= ucfirst(htmlspecialchars($log['status'])) ?></span></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="adm-table-footer">
+            <span class="adm-showing-text"><?= $auditLogsTotal > 0 ? 'Showing ' . (($auditLogsCurrentPage - 1) * $auditLogsPerPage + 1) . ' to ' . min($auditLogsCurrentPage * $auditLogsPerPage, $auditLogsTotal) . ' of ' . number_format($auditLogsTotal) . ' entries' : 'No entries to show' ?></span>
+            <nav class="adm-pagination" aria-label="Audit log pages">
+                <a href="?<?= hc_audit_query(['page' => 1]) ?>" class="page-btn <?= $auditLogsCurrentPage <= 1 ? 'disabled' : '' ?>" aria-label="First page"><i class="bi bi-chevron-bar-left"></i></a>
+                <a href="?<?= hc_audit_query(['page' => max(1, $auditLogsCurrentPage - 1)]) ?>" class="page-btn <?= $auditLogsCurrentPage <= 1 ? 'disabled' : '' ?>" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <?php foreach ($auditPaginationWindow as $p): ?>
+                    <?php if ($p === '...'): ?>
+                    <span class="page-ellipsis">&hellip;</span>
+                    <?php else: ?>
+                    <a href="?<?= hc_audit_query(['page' => $p]) ?>" class="page-btn <?= $p === $auditLogsCurrentPage ? 'active' : '' ?>"><?= $p ?></a>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+                <a href="?<?= hc_audit_query(['page' => min($auditLogsTotalPages, $auditLogsCurrentPage + 1)]) ?>" class="page-btn <?= $auditLogsCurrentPage >= $auditLogsTotalPages ? 'disabled' : '' ?>" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                <a href="?<?= hc_audit_query(['page' => $auditLogsTotalPages]) ?>" class="page-btn <?= $auditLogsCurrentPage >= $auditLogsTotalPages ? 'disabled' : '' ?>" aria-label="Last page"><i class="bi bi-chevron-bar-right"></i></a>
+            </nav>
+        </div>
+    </div>
+
+</main>
+
+<!-- Bootstrap 5 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/audit-logs-search.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
+</body>
+</html>

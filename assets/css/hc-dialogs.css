@@ -1,0 +1,72 @@
+/* =============================================================
+   HEALTRACK — SHARED CONFIRM / ALERT DIALOG (assets/js/hc-dialogs.js)
+   ---------------------------------------------------------------
+   One reusable Bootstrap modal style for window.confirm()/alert()
+   replacements app-wide — both the admin-family pages (which theme
+   via [data-bs-theme] on <html>, see assets/css/admin-dashboard.css)
+   and the plain patient-facing pages (assets/css/base.css, no theme
+   switching). Brand maroon is hardcoded here rather than reusing
+   --adm-* variables, since patient pages never define those; the
+   [data-bs-theme="dark"] override below only ever matches on
+   admin-family pages, same condition that CSS already keys off, so
+   patient pages simply never hit it and stay on the light values.
+   ============================================================= */
+.hcd-modal-content{
+  border-radius: 18px;
+  border: none;
+  overflow: hidden;
+  background: #FFFFFF;
+}
+.hcd-modal-content .modal-body{ text-align: center; padding: 32px 28px 20px; }
+.hcd-icon{
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #FCE4E4;
+  color: #5B0A0A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin: 0 auto 16px;
+}
+.hcd-title{ font-size: 17px; font-weight: 700; color: #1F2430; margin-bottom: 8px; }
+.hcd-message{ font-size: 13.5px; color: #6B7280; margin: 0; white-space: pre-line; }
+.hcd-modal-content .modal-footer{ border-top: none; padding: 0 28px 28px; justify-content: center; gap: 10px; }
+
+.hcd-btn-cancel{
+  flex: 1;
+  background: #FFFFFF;
+  border: 1px solid #ECEDF3;
+  border-radius: 10px;
+  padding: 11px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1F2430;
+}
+.hcd-btn-cancel:hover{ background: #F8F9FC; }
+
+.hcd-btn-confirm{
+  flex: 1;
+  background: #5B0A0A;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+}
+.hcd-btn-confirm:hover{ background: #3D0707; }
+
+/* Admin-family dark mode — see header comment. */
+:root[data-bs-theme="dark"] .hcd-modal-content{ background: #1D2029; }
+:root[data-bs-theme="dark"] .hcd-title{ color: #E8E9ED; }
+:root[data-bs-theme="dark"] .hcd-message{ color: #A7ACB8; }
+:root[data-bs-theme="dark"] .hcd-btn-cancel{
+  background: #1D2029;
+  border-color: #2B2F3A;
+  color: #E8E9ED;
+}
+:root[data-bs-theme="dark"] .hcd-btn-cancel:hover{ background: #262A35; }
+:root[data-bs-theme="dark"] .hcd-btn-confirm{ background: #A32A22; }
+:root[data-bs-theme="dark"] .hcd-btn-confirm:hover{ background: #C33528; }

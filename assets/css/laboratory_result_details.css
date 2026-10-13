@@ -1,0 +1,199 @@
+/* =============================================================
+   LABORATORY RESULT DETAILS (subadmin/laboratory_result_details.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell:
+   .adm-card/.adm-table) and assets/css/patient_profile.css
+   (breadcrumb + profile header card, reused verbatim here). This
+   page has no tab strip — its "Back" control sits inline with the
+   page title instead. Everything here is "lrd-" prefixed
+   (Laboratory Result Details).
+   ============================================================= */
+
+/* -- Back + Title row (replaces the standalone .adm-back-link used
+      on sibling pages, since this page combines them on one line) -- */
+.lrd-title-row{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 6px;
+}
+.lrd-title-row h1{ margin: 0; }
+
+.lrd-back-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--adm-text-muted);
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  padding: 7px 14px;
+  white-space: nowrap;
+  transition: background .15s ease, color .15s ease;
+}
+.lrd-back-btn:hover{ background: var(--adm-hover-bg); color: var(--adm-text); }
+
+/* -- Two-column detail layout: left (test/exam details), right (results table) -- */
+.lrd-layout{
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 18px;
+  align-items: start;
+  margin-top: 18px;
+}
+.lrd-col{ display: flex; flex-direction: column; gap: 18px; }
+
+/* -- Shared card header -- */
+.lrd-card-header{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.lrd-card-header.with-action{ justify-content: space-between; }
+.lrd-card-header > div{ display: flex; align-items: center; gap: 10px; }
+.lrd-card-header i{ font-size: 16px; color: #1A73E8; }
+.lrd-card-header h3{ font-size: 15px; font-weight: 700; color: var(--adm-text); margin: 0; }
+
+/* -- Field list (label / value rows) -- */
+.lrd-field-list{ display: flex; flex-direction: column; gap: 12px; }
+.lrd-field{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.lrd-field-label{ font-size: 12.5px; color: var(--adm-text-muted); font-weight: 500; }
+.lrd-field-value{ font-size: 13px; color: var(--adm-text); font-weight: 600; text-align: right; }
+.lrd-dot{ width: 3px; height: 3px; border-radius: 50%; background: var(--adm-text-soft); display: inline-block; margin: 0 2px; }
+
+/* -- Status / result badges -- */
+.lrd-badge{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* -- Clinical notes box -- */
+.lrd-notes-box{
+  margin-top: 16px;
+  background: var(--adm-hover-bg);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.lrd-notes-title{ font-size: 12px; font-weight: 700; color: var(--adm-text-muted); margin-bottom: 4px; }
+.lrd-notes-box p{ font-size: 13px; color: var(--adm-text); margin: 0; line-height: 1.5; }
+
+/* -- Attached file row -- */
+.lrd-attached{ margin-top: 16px; }
+.lrd-attached-title{ font-size: 12px; font-weight: 700; color: var(--adm-text-muted); margin-bottom: 8px; }
+.lrd-file-row{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--adm-hover-bg);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.lrd-file-icon{ font-size: 22px; color: #D93025; flex-shrink: 0; }
+.lrd-file-info{ display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.lrd-file-name{ font-size: 12.5px; font-weight: 600; color: var(--adm-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lrd-file-size{ font-size: 11.5px; color: var(--adm-text-muted); }
+.lrd-download-btn{
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--adm-border);
+  background: var(--adm-card);
+  color: var(--adm-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s ease, color .15s ease;
+}
+.lrd-download-btn:hover{ background: #1A73E8; color: #fff; border-color: #1A73E8; }
+
+/* -- Laboratory Results table -- */
+.lrd-results-table .lrd-group-row td{
+  background: var(--adm-hover-bg);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--adm-text-muted);
+  padding: 8px 16px;
+}
+.lrd-strong{ font-weight: 700; color: var(--adm-text); }
+.lrd-interpretation-normal{ color: #1E8E3E; font-weight: 600; }
+
+/* -- Interpretation panel -- */
+.lrd-interpretation-panel{
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 16px;
+  background: #E8F0FE;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.lrd-interpretation-panel i{ font-size: 18px; color: #1A73E8; margin-top: 1px; }
+.lrd-interpretation-title{ font-size: 13px; font-weight: 700; color: var(--adm-text); margin-bottom: 2px; }
+.lrd-interpretation-panel p{ font-size: 13px; color: var(--adm-text-muted); margin: 0; line-height: 1.5; }
+
+/* -- X-ray Findings (full width) -- */
+.lrd-xray-findings-card{ margin-top: 18px; }
+.lrd-xray-findings-layout{
+  display: grid;
+  grid-template-columns: 0.9fr 2fr;
+  gap: 24px;
+  align-items: start;
+}
+.lrd-xray-image{
+  aspect-ratio: 4 / 3;
+  border-radius: 12px;
+  background: var(--adm-hover-bg);
+  border: 1px solid var(--adm-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--adm-text-soft);
+}
+.lrd-xray-image i{ font-size: 46px; }
+.lrd-xray-image span{ font-size: 12px; font-weight: 500; }
+
+.lrd-xray-details{ display: grid; grid-template-columns: 1.6fr 1fr; gap: 24px; }
+.lrd-xray-details-main{ display: flex; flex-direction: column; }
+.lrd-findings-title{ font-size: 13px; font-weight: 700; color: var(--adm-text); margin: 0 0 8px; }
+.lrd-findings-title:not(:first-child){ margin-top: 16px; }
+.lrd-findings-list{ margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.lrd-findings-list li{ font-size: 13px; color: var(--adm-text-muted); line-height: 1.5; }
+.lrd-impression{ font-size: 13px; color: var(--adm-text-muted); margin: 0; line-height: 1.5; }
+
+.lrd-xray-details-side{ display: flex; flex-direction: column; gap: 14px; }
+.lrd-xray-details-side .lrd-field{ flex-direction: column; align-items: flex-start; gap: 4px; }
+.lrd-xray-details-side .lrd-field-value{ text-align: left; }
+.lrd-xray-details-side .lrd-attached{ margin-top: 0; }
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 1199.98px){
+  .lrd-layout{ grid-template-columns: 1fr; }
+  .lrd-xray-findings-layout{ grid-template-columns: 1fr; }
+  .lrd-xray-details{ grid-template-columns: 1fr; }
+}
+@media (max-width: 767.98px){
+  .lrd-title-row{ flex-wrap: wrap; }
+  .lrd-field{ flex-direction: column; align-items: flex-start; gap: 4px; }
+  .lrd-field-value{ text-align: left; }
+}

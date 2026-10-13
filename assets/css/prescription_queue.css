@@ -1,0 +1,141 @@
+/* =============================================================
+   PRESCRIPTION QUEUE (pharmacist/prescription_queue.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell) and
+   assets/css/pharmacist_dashboard.css (reused here for the stat card
+   row + topbar select buttons, "phm-" prefixed). Everything here —
+   stats row override, filter toolbar, queue table specifics — is
+   specific to this page and "rxq-" prefixed (pRescription Queue),
+   structurally mirroring assets/css/medical_technician_lab_xray.css's
+   "lxr-"/"lxc-" atoms (same referral-inbox shape, different role) —
+   kept as its own file rather than reused directly so the two can
+   diverge later without one role's tweak silently affecting the other.
+   ============================================================= */
+
+.rxq-stats-row{ margin-bottom: 18px; grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 575.98px){
+  .rxq-stats-row{ grid-template-columns: 1fr; }
+}
+
+/* -- Filter toolbar card -- */
+.rxq-filter-card{ padding: 16px 20px; margin-bottom: 22px; }
+.rxq-filter-row{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.rxq-search{
+  position: relative;
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+.rxq-search i{
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--adm-text-soft);
+  font-size: 14px;
+}
+.rxq-search input{
+  width: 100%;
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 9px 14px 9px 38px;
+  font-size: 13px;
+  color: var(--adm-text);
+}
+.rxq-search input:focus{ outline: none; border-color: var(--adm-red-bright); }
+
+.rxq-daterange{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 7px 14px;
+  font-size: 13px;
+  color: var(--adm-text);
+}
+.rxq-daterange i{ color: var(--adm-text-soft); }
+.rxq-daterange input[type="date"]{
+  border: none;
+  background: none;
+  font-size: 12.5px;
+  color: var(--adm-text);
+  padding: 2px 0;
+}
+.rxq-daterange input[type="date"]:focus{ outline: none; }
+
+.rxq-btn-filter{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--adm-red-bright);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.rxq-btn-filter:hover{ background: var(--adm-red-bright-hover); }
+
+/* -- Queue table specifics -- */
+.rxq-strong{ font-weight: 600; color: var(--adm-text); }
+.rxq-patient-meta{ font-size: 11.5px; color: var(--adm-text-muted); margin-top: 2px; }
+.rxq-datetime{ white-space: nowrap; font-size: 12.5px; }
+.rxq-dot{
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--adm-text-soft);
+  margin: 0 6px;
+  vertical-align: middle;
+}
+
+.rxq-badge{
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+
+.rxq-btn-dispense{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--adm-green, #1E8E3E);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.rxq-btn-dispense:hover{ opacity: 0.9; }
+.rxq-btn-dispense:disabled{ opacity: 0.6; cursor: not-allowed; }
+
+.rxq-btn-view{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  color: var(--adm-blue, #2563EB);
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.rxq-btn-view:hover{ background: var(--adm-hover-bg, #F3F4F6); }

@@ -1,0 +1,50 @@
+<?php
+/**
+ * =====================================================================
+ * Query Helpers
+ * ---------------------------------------------------------------------
+ * hc_url_with_params(): builds a link to the CURRENT page with one or
+ * more query params overridden, preserving every other param already on
+ * the URL (other active filters, other tables' own page numbers, etc.)
+ * — used by every real filter-dropdown link and pagination link across
+ * the subadmin Analytics & Reports report pages, so switching one
+ * control never silently resets another.
+ * =====================================================================
+ */
+
+if (!function_exists('hc_url_with_params')) {
+    function hc_url_with_params(array $overrides): string
+    {
+        $params = array_merge($_GET, $overrides);
+        return '?' . http_build_query($params);
+    }
+}
+
+if (!function_exists('hc_matches_date_range_key')) {
+    /**
+     * True if $dateStr (any strtotime()-parseable date, e.g. medical
+     * records' own "M j, Y" formatted dates) falls within $rangeKey
+     * ('today'/'this_week'/'this_month'), or $rangeKey is anything else
+     * (no filter) — same logic as includes/shared/audit_log_writer.php's
+     * hc_audit_log_matches_date_range() but generic (not audit-log-
+     * specific), for the several other tables across the app whose date
+     * filters use this same Today/This Week/This Month/All Time shape.
+     */
+    function hc_matches_date_range_key(string $dateStr, string $rangeKey): bool
+    {
+        if ($dateStr === '' || !in_array($rangeKey, ['today', 'this_week', 'this_month'], true)) {
+            return true;
+        }
+        $ts = strtotime($dateStr);
+        if ($ts === false) {
+            return false;
+        }
+
+        return match ($rangeKey) {
+            'today' => date('Y-m-d', $ts) === date('Y-m-d'),
+            'this_week' => $ts >= strtotime('monday this week'),
+            'this_month' => date('Y-m', $ts) === date('Y-m'),
+            default => true,
+        };
+    }
+}

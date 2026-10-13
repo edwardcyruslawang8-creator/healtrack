@@ -1,0 +1,204 @@
+/* =============================================================
+   PATIENT MANAGEMENT (subadmin/patient_management.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (shared shell) and
+   assets/css/subadmin_dashboard.css (reused here for the topbar date/
+   facility select buttons + nav badge). Everything here is specific
+   to this page — the 4-card stat row, search/filter toolbar, and
+   patient table — and is "pmg-" prefixed (Patient ManaGement).
+   ============================================================= */
+
+/* -- Summary stat cards (4-up) -- */
+.pmg-stats-row{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 22px;
+}
+.pmg-stat-card{
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-lg);
+  box-shadow: var(--adm-shadow);
+  padding: 22px;
+  display: flex;
+  gap: 16px;
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.pmg-stat-card:hover{ box-shadow: var(--adm-shadow-hover); transform: translateY(-2px); }
+.pmg-stat-icon{
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 23px;
+  flex-shrink: 0;
+}
+.pmg-stat-label{ font-size: 12.5px; color: var(--adm-text-muted); font-weight: 500; margin-bottom: 4px; }
+.pmg-stat-value{ font-size: 26px; font-weight: 800; color: var(--adm-text); line-height: 1.1; margin-bottom: 6px; }
+.pmg-stat-sub{ font-size: 12px; font-weight: 600; color: var(--adm-red-bright); display: flex; align-items: center; gap: 2px; }
+.pmg-stat-sub.muted{ color: var(--adm-text-soft); font-weight: 500; }
+
+/* -- Search + filter toolbar -- */
+.pmg-toolbar{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.pmg-search{
+  flex: 1;
+  min-width: 240px;
+  position: relative;
+}
+.pmg-search i{
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--adm-text-soft);
+  font-size: 15px;
+}
+.pmg-search input{
+  width: 100%;
+  border: 1px solid var(--adm-border);
+  background: var(--adm-card);
+  border-radius: 12px;
+  padding: 13px 18px 13px 44px;
+  font-size: 13.5px;
+  color: var(--adm-text);
+  box-shadow: var(--adm-shadow);
+}
+.pmg-search input:focus{
+  outline: none;
+  border-color: var(--adm-red-bright);
+  box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.12);
+}
+.pmg-search input::placeholder{ color: var(--adm-text-soft); }
+
+.pmg-filter-select{
+  width: auto;
+  min-width: 170px;
+  border: 1px solid var(--adm-border);
+  background-color: var(--adm-card);
+  color: var(--adm-text);
+  border-radius: 12px;
+  padding: 12px 36px 12px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: var(--adm-shadow);
+}
+.pmg-filter-select:focus{
+  outline: none;
+  border-color: var(--adm-red-bright);
+  box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.12);
+}
+
+/* -- Patient table card -- */
+.pmg-table-card{ padding: 24px; }
+.pmg-table-title{ font-size: 15.5px; font-weight: 700; color: var(--adm-text); margin: 0 0 16px; }
+.pmg-table th, .pmg-table td{ vertical-align: middle; }
+.pmg-table td:first-child{ font-weight: 600; }
+
+/* -- "View Profile" row action (links to subadmin/patient_profile.php) -- */
+.pmg-btn-view-profile{
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--adm-red-bright);
+  color: #fff;
+  border: none;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background .15s ease;
+}
+.pmg-btn-view-profile:hover{ background: var(--adm-red-bright-hover); color: #fff; }
+
+/* -- "Request Access" row action — doctor/patient_management.php only,
+   shown in place of "View Profile" for a patient this doctor doesn't
+   yet have access to (see includes/shared/patient_access_requests.php) -- */
+.pmg-btn-request-access{
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #fff;
+  color: var(--adm-text-muted);
+  border: 1px solid var(--adm-border);
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: border-color .15s ease, color .15s ease;
+}
+.pmg-btn-request-access:hover{ border-color: var(--adm-red-bright); color: var(--adm-red-bright); }
+
+/* -- Pending Access Requests panel's inline Approve/Deny buttons -- */
+.pmg-access-decide-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pmg-access-deny-btn{ background: var(--adm-red-bg); color: var(--adm-red); }
+.pmg-access-deny-btn:hover{ background: var(--adm-red); color: #fff; }
+
+/* -- Toolbar "Search" submit button -- */
+.pmg-btn-search{
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--adm-red-bright);
+  color: #fff;
+  border: none;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background .15s ease;
+}
+.pmg-btn-search:hover{ background: var(--adm-red-bright-hover); color: #fff; }
+
+/* -- Previous/Next pagination (the real Firestore query path — see
+   includes/subadmin/patient_management_firestore.php's header comment
+   for why this list can't use numbered page-jump links) — wider than
+   the shared numbered .page-btn (fixed 32x32, sized for one digit),
+   since these carry a text label + icon. -- */
+.adm-pagination .page-btn-labeled{
+  width: auto;
+  padding: 0 14px;
+  gap: 6px;
+}
+.adm-pagination .page-btn-labeled.disabled{
+  opacity: .45;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 1199.98px){
+  .pmg-stats-row{ grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 767.98px){
+  .pmg-stats-row{ grid-template-columns: 1fr; }
+  .pmg-toolbar{ flex-direction: column; align-items: stretch; }
+  .pmg-filter-select{ width: 100%; }
+}
