@@ -49,7 +49,15 @@ $adminNavItems = [
     ['icon' => 'bi-person-lines-fill',      'label' => t('nav.patient_management'),           'href' => 'patient_management.php'],
     ['icon' => 'bi-capsule',                'label' => t('nav.medicine_vaccine_inventory'), 'href' => 'medicine_vaccine_inventory.php'],
     ['icon' => 'bi-box-seam-fill',          'label' => t('nav.stock_requests'),               'href' => 'stock_requests.php'],
-    ['icon' => 'bi-bar-chart-fill',         'label' => t('nav.analytics_reports'),          'href' => 'analytics_reports.php'],
+    [
+        'icon' => 'bi-bar-chart-fill',
+        'label' => t('nav.analytics_reports'),
+        'id' => 'admNavAnalyticsReports',
+        'children' => [
+            ['label' => t('nav.analytics_reports_facility'), 'href' => 'analytics_reports.php'],
+            ['label' => t('nav.analytics_reports_chatbot'),  'href' => 'chatbot_reports.php'],
+        ],
+    ],
     ['icon' => 'bi-people-fill',            'label' => t('nav.user_management'),              'href' => 'user_management.php'],
     ['icon' => 'bi-bell-fill',              'label' => t('nav.notifications'),                'href' => 'notifications.php', 'badge' => subadmin_unread_notification_count()],
     [
@@ -104,6 +112,7 @@ $adminNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/add_medicine_modal.css') ?>">
 <!-- "Notes from Admin" list styling, reused from admin/announcements.php's own note list (.ann-adm-note-*) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/admin_announcements.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -361,5 +370,7 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/announcements_subadmin.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
 </body>
 </html>

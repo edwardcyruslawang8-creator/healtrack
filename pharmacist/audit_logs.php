@@ -75,6 +75,7 @@ $staffNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/admin-dashboard.css') ?>">
 <!-- Audit Logs page styles (search bar, filter toolbar, action/status badges) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/audit_logs.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -274,5 +275,7 @@ $staffNavItems = [
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
 </body>
 </html>

@@ -94,6 +94,7 @@ $adminNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_management.css') ?>">
 <!-- Quick Search dropdown under the search box (live typeahead, shared with subadmin/doctor/medical-staff's Patient Management) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/quick-search.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -345,5 +346,7 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/quick-search.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
 </body>
 </html>

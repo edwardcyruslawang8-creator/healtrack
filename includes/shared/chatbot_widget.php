@@ -35,6 +35,12 @@ require_once __DIR__ . '/../public/chatbot-data.php'; // $chatSuggestionCards, $
     <div class="chatbot-idle-bubble" id="chatbotIdleBubble"></div>
     <button type="button" class="chatbot-fab" id="chatbotFabBtn" aria-label="Open chat with NSHC Assistant" aria-expanded="false">
         <img src="<?= asset_url('/assets/images/chatbot-mascot.png') ?>" alt="" class="chatbot-mascot-img">
+        <!-- Two small overlay "eyelids", positioned over the mascot's own
+             eyes (assets/images/chatbot-mascot.png) and animated closed/open
+             — see assets/css/chatbot-widget.css's hc-eye-blink keyframes.
+             Real eye-blink, not a whole-image flicker. -->
+        <span class="chatbot-eye-blink chatbot-eye-blink-l" aria-hidden="true"></span>
+        <span class="chatbot-eye-blink chatbot-eye-blink-r" aria-hidden="true"></span>
         <i class="bi bi-x-lg"></i>
     </button>
 </div>
@@ -43,7 +49,7 @@ require_once __DIR__ . '/../public/chatbot-data.php'; // $chatSuggestionCards, $
 <div class="chatbot-widget-panel" id="chatbotWidgetPanel" role="dialog" aria-modal="false" aria-label="Chat with NSHC Assistant">
 
     <div class="chatbot-widget-header">
-        <div class="chat-avatar-sm"><img src="<?= asset_url('/assets/images/chatbot-mascot.png') ?>" alt="" class="chatbot-mascot-img chatbot-mascot-img-avatar"></div>
+        <div class="chat-avatar-sm" aria-hidden="true"></div>
         <div class="chatbot-widget-header-text">
             <h2>NSHC Assistant</h2>
             <span class="chat-online-badge"><span class="dot-online"></span> Online</span>
@@ -65,7 +71,7 @@ require_once __DIR__ . '/../public/chatbot-data.php'; // $chatSuggestionCards, $
 
         <!-- Welcome message -->
         <div class="chat-message-row">
-            <div class="chat-avatar-sm"><img src="<?= asset_url('/assets/images/chatbot-mascot.png') ?>" alt="" class="chatbot-mascot-img chatbot-mascot-img-avatar"></div>
+            <div class="chat-avatar-sm" aria-hidden="true"></div>
             <div class="chat-bubble">
                 Hello! I'm <strong>NSHC Assistant</strong> 👋<br>How can I help you today?
             </div>

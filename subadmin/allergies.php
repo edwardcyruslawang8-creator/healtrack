@@ -50,7 +50,15 @@ $adminNavItems = [
     ['icon' => 'bi-person-lines-fill',      'label' => t('nav.patient_management'),           'href' => 'patient_management.php', 'active' => true],
     ['icon' => 'bi-capsule',                'label' => t('nav.medicine_vaccine_inventory'), 'href' => 'medicine_vaccine_inventory.php'],
     ['icon' => 'bi-box-seam-fill',          'label' => t('nav.stock_requests'),               'href' => 'stock_requests.php'],
-    ['icon' => 'bi-bar-chart-fill',         'label' => t('nav.analytics_reports'),          'href' => 'analytics_reports.php'],
+    [
+        'icon' => 'bi-bar-chart-fill',
+        'label' => t('nav.analytics_reports'),
+        'id' => 'admNavAnalyticsReports',
+        'children' => [
+            ['label' => t('nav.analytics_reports_facility'), 'href' => 'analytics_reports.php'],
+            ['label' => t('nav.analytics_reports_chatbot'),  'href' => 'chatbot_reports.php'],
+        ],
+    ],
     ['icon' => 'bi-people-fill',            'label' => t('nav.user_management'),              'href' => 'user_management.php'],
     ['icon' => 'bi-bell-fill',              'label' => t('nav.notifications'),                'href' => 'notifications.php', 'badge' => subadmin_unread_notification_count()],
     [
@@ -106,6 +114,7 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_profile.css') ?>">
 <!-- Allergies page styles (summary cards, table, details panel) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/allergies.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/view_details_modal.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -399,7 +408,7 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                         <td class="alg-notes-cell"><?= htmlspecialchars($alg['notes']) ?></td>
                         <td>
                             <div class="adm-action-btns">
-                                <a href="allergy_details.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($alg['id']) ?>" class="adm-action-btn view" aria-label="View"><i class="bi bi-eye"></i></a>
+                                <a href="allergy_details.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($alg['id']) ?>" class="adm-view-link-btn">View Details</a>
                             </div>
                         </td>
                     </tr>

@@ -3,23 +3,28 @@
  * =====================================================================
  * Update Stock Request (api/update-stock-request.php)
  * ---------------------------------------------------------------------
- * Called by assets/js/new-stock-request.js when a pharmacist submits
- * pharmacist/stock_requests.php's "+ New Stock Request" modal
- * (includes/pharmacist/new_stock_request_modal.php) in EDIT mode —
- * the same shared form api/create-stock-request.php's modal uses,
- * just pre-filled and posting here instead when an existing request's
- * "Edit Request" menu item opened it. Writes to the same real
- * "stock_requests" Firestore collection includes/firestore/stock_requests.php
- * reads.
+ * Called by assets/js/new-stock-request.js when a pharmacist OR
+ * sub-admin submits the "Edit Request" menu item's modal
+ * (includes/pharmacist/new_stock_request_modal.php, reused as-is on
+ * subadmin/stock_requests.php too) — the same shared form
+ * api/create-stock-request.php's modal uses, just pre-filled and
+ * posting here instead. Writes to the same real "stock_requests"
+ * Firestore collection includes/firestore/stock_requests.php reads.
  *
  * Two guardrails checked server-side, not just hidden in the UI:
  *   - Ownership: a pharmacist may only edit their OWN request
  *     (pharmacistUid must match the signed-in session) — the page only
  *     ever lists their own rows, but this endpoint doesn't trust that
- *     alone.
+ *     alone. A sub-admin is exempt from this check — unlike a
+ *     pharmacist, who only ever sees their own requests, a sub-admin
+ *     manages every pharmacist's requests at their facility, and can
+ *     edit any of them (a deliberate decision — see this app's
+ *     Medicine & Vaccine Inventory page for the same subadmin-can-
+ *     edit-what-pharmacist-created pattern).
  *   - Pending-only: once a request has been approved/rejected/
  *     released, editing it would silently change what a sub-admin
- *     already decided on — only "pending" requests can be edited.
+ *     already decided on — only "pending" requests can be edited,
+ *     regardless of who's editing.
  * pharmacistName/pharmacistUid/facility/status/requestedAt are all
  * preserved from the existing doc (read-merge-write), same reasoning
  * as api/update-medicine.php's header comment.
@@ -33,7 +38,8 @@ require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audi
 
 header('Content-Type: application/json');
 
-if (($_SESSION['role'] ?? null) !== 'pharmacist') {
+$role = $_SESSION['role'] ?? null;
+if (!in_array($role, ['pharmacist', 'subadmin'], true)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Not authorized.']);
     exit;
@@ -89,7 +95,7 @@ if ($existing === null) {
     echo json_encode(['success' => false, 'error' => 'This request no longer exists.']);
     exit;
 }
-if (($existing['pharmacistUid'] ?? '') !== ($_SESSION['uid'] ?? '')) {
+if ($role === 'pharmacist' && ($existing['pharmacistUid'] ?? '') !== ($_SESSION['uid'] ?? '')) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'You can only edit your own requests.']);
     exit;

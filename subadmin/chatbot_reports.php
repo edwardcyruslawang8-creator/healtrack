@@ -263,6 +263,7 @@ $adminNavItems = [
         <?php if (empty($chatbotNeedsAnswer)): ?>
         <div class="cbr-empty"><i class="bi bi-check-circle"></i> Nothing needs your attention right now.</div>
         <?php else: ?>
+        <div class="cbr-table-scroll">
         <table class="adm-table">
             <thead>
                 <tr>
@@ -296,6 +297,7 @@ $adminNavItems = [
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
         <?php endif; ?>
     </div>
 
@@ -328,14 +330,58 @@ $adminNavItems = [
         <?php endif; ?>
     </div>
 
+    <!-- ============ ANSWERED QUESTIONS ============
+         The other side of "Needs Your Answer" above — once a subadmin
+         answers a question there, includes/subadmin/chatbot_reports_firestore.php
+         excludes it from that table (same md5(questionNormalized) id
+         both filters key off) and it appears here instead, newest
+         first. Not a separate action, just a visible record of what the
+         chatbot has actually been taught. -->
+    <div class="adm-card cbr-card">
+        <div class="adm-card-header">
+            <h2><i class="bi bi-mortarboard-fill" style="color:#1E8E3E;"></i> Answered Questions</h2>
+        </div>
+        <p class="cbr-card-subtitle">Questions you've already taught the chatbot — matched automatically from now on, no Gemini call needed.</p>
+        <?php if (empty($chatbotAnsweredQuestions)): ?>
+        <div class="cbr-empty"><i class="bi bi-mortarboard"></i> Nothing taught yet — answer a question above and it'll show up here.</div>
+        <?php else: ?>
+        <div class="cbr-table-scroll">
+        <table class="adm-table">
+            <thead>
+                <tr>
+                    <th>Question</th>
+                    <th>Answer</th>
+                    <th>Taught By</th>
+                    <th>When</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($chatbotAnsweredQuestions as $row): ?>
+                <tr>
+                    <td class="cbr-question-cell"><?= htmlspecialchars($row['questionSample']) ?></td>
+                    <td class="cbr-answer-cell"><?= htmlspecialchars($row['answer']) ?></td>
+                    <td><?= htmlspecialchars($row['createdBy']) ?></td>
+                    <td><?= $row['answeredAt'] !== '' ? htmlspecialchars(date('M j, Y g:i A', strtotime($row['answeredAt']))) : '—' ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
+        <?php endif; ?>
+    </div>
+
     <!-- ============ FOOTER NOTICE ============ -->
     <div class="arp-footer-notice">
         <i class="bi bi-info-circle-fill"></i>
         <span>Chatbot activity is real-time and system-wide (not scoped to a single facility).</span>
     </div>
 
-    <!-- ============ ANSWER MODAL ============ -->
-    <div class="modal fade" id="cbrAnswerModal" tabindex="-1" aria-hidden="true">
+    <!-- ============ ANSWER MODAL ============
+         .adm-modal — the same shared modal theme used throughout the
+         admin side (see assets/css/admin-dashboard.css's .adm-modal
+         rules and e.g. includes/admin/add_facility_modal.php for
+         another real usage of it), not a bare Bootstrap default modal. -->
+    <div class="modal fade adm-modal" id="cbrAnswerModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -351,7 +397,7 @@ $adminNavItems = [
                     <div class="cbr-modal-error" id="cbrAnswerModalError"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="adm-modal-btn-cancel" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="cbr-save-answer-btn" id="cbrSaveAnswerBtn">Save Answer</button>
                 </div>
             </div>

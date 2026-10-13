@@ -73,6 +73,36 @@
 </div>
 
 <!-- =============================================================
+     STOCK HISTORY MODAL (read-only)
+     -------------------------------------------------------------
+     Triggered by each row's three-dot menu ("View Stock History").
+     Real data — api/get-medicine-stock-history.php, which reuses the
+     "audit_logs" collection every mutating api/*-medicine.php endpoint
+     already writes to (see that API's own header comment for how it's
+     matched to one item). Fetched on click, not server-rendered with
+     the rest of the page, since it's a per-row detail nobody needs
+     until they actually open it.
+     ============================================================= -->
+<div class="modal fade am-modal" id="stockHistoryModal" tabindex="-1" aria-labelledby="stockHistoryModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="stockHistoryModalLabel">Stock History — <span id="shItemName"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="shLoading" class="am-form-help">Loading…</div>
+        <div id="shEmpty" class="am-form-help d-none">No recorded history for this item yet.</div>
+        <ul class="am-history-list d-none" id="shList"></ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="am-btn-cancel" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =============================================================
      DISPENSE WITHOUT PRESCRIPTION MODAL
      -------------------------------------------------------------
      This health center gives out medicines/vaccines directly when a

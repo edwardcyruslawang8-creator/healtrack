@@ -24,6 +24,7 @@
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/stock_requests.php';
+require_once __DIR__ . '/../firestore/medicines.php'; // hc_get_inventory_items() — $medicineNames/$vaccineNames below
 require_once __DIR__ . '/../shared/fuzzy_search.php'; // hc_fuzzy_match()
 require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav(), hc_matches_date_range_key()
 
@@ -45,6 +46,13 @@ $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'We
 
 $requestTypeMeta = hc_stock_request_type_meta();
 $requestStatusMeta = hc_stock_request_status_meta();
+
+// Real medicine/vaccine names for the Edit Request modal's item-name
+// datalist (includes/pharmacist/new_stock_request_modal.php, reused
+// here — same autocomplete-only convenience pharmacist's own "+ New
+// Stock Request"/"Edit Request" modal already has).
+$medicineNames = array_column(hc_get_inventory_items('medicine'), 'name');
+$vaccineNames = array_column(hc_get_inventory_items('vaccine'), 'name');
 
 // ---------------------------------------------------------------------
 // Real stock request list — every stock_requests/{autoId} doc, newest

@@ -79,8 +79,8 @@
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end">
                                     <li><a class="dropdown-item mvi-view-details" href="#"><i class="bi bi-eye me-2"></i>View Details</a></li>
-                                    <li><a class="dropdown-item" href="#"><i class="bi bi-clock-history me-2"></i>View Stock History</a></li>
-                                    <li><a class="dropdown-item" href="#"><i class="bi bi-archive me-2"></i>Archive</a></li>
+                                    <li><a class="dropdown-item mvi-stock-history" href="#"><i class="bi bi-clock-history me-2"></i>View Stock History</a></li>
+                                    <li><a class="dropdown-item mvi-archive" href="#"><i class="bi bi-archive me-2"></i>Archive</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item text-danger mvi-delete" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
                                 </ul>

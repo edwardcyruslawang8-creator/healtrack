@@ -38,6 +38,12 @@ if (!empty($externalCss)) {
      also unconditionally, so every public page gets it regardless of
      that page's own $pageCss. -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/chatbot-widget.css') ?>">
+<!-- Shared confirm/alert dialog (assets/js/hc-dialogs.js, loaded from
+     footer.php) — explicitly designed to work on both admin-family and
+     plain patient-facing pages, see that stylesheet's own header
+     comment. Used by assets/js/search-form-guard.js's empty-search
+     error on this page's own search bar(s). -->
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 
 <script>window.APP_BASE_URL = "<?= BASE_URL ?>";</script>
 

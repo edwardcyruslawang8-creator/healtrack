@@ -69,6 +69,14 @@ if (!function_exists('hc_compute_medicine_vaccine_inventory')) {
         $seenVaccineCategories = [];
         foreach ($firestore->listDocuments('medicines') as $doc) {
             $fields = $doc['fields'];
+            // Archived (api/archive-medicine.php) — excluded from the
+            // default inventory list, same as every other read path over
+            // this collection (firebase/firestore.php's getAllMedicines()/
+            // getAllVaccines(), includes/firestore/medicines.php's
+            // hc_get_inventory_items()).
+            if ($fields['archived'] ?? false) {
+                continue;
+            }
             $category = $fields['category'] ?? 'Uncategorized';
 
             $row = [

@@ -384,5 +384,6 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/add-subadmin.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/subadmin-actions.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
 </body>
 </html>

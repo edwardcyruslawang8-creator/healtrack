@@ -53,7 +53,15 @@ $adminNavItems = [
     ['icon' => 'bi-person-lines-fill',      'label' => t('nav.patient_management'),           'href' => 'patient_management.php', 'active' => true],
     ['icon' => 'bi-capsule',                'label' => t('nav.medicine_vaccine_inventory'), 'href' => 'medicine_vaccine_inventory.php'],
     ['icon' => 'bi-box-seam-fill',          'label' => t('nav.stock_requests'),               'href' => 'stock_requests.php'],
-    ['icon' => 'bi-bar-chart-fill',         'label' => t('nav.analytics_reports'),          'href' => 'analytics_reports.php'],
+    [
+        'icon' => 'bi-bar-chart-fill',
+        'label' => t('nav.analytics_reports'),
+        'id' => 'admNavAnalyticsReports',
+        'children' => [
+            ['label' => t('nav.analytics_reports_facility'), 'href' => 'analytics_reports.php'],
+            ['label' => t('nav.analytics_reports_chatbot'),  'href' => 'chatbot_reports.php'],
+        ],
+    ],
     ['icon' => 'bi-people-fill',            'label' => t('nav.user_management'),              'href' => 'user_management.php'],
     ['icon' => 'bi-bell-fill',              'label' => t('nav.notifications'),                'href' => 'notifications.php', 'badge' => subadmin_unread_notification_count()],
     [
@@ -106,6 +114,7 @@ $adminNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_profile.css') ?>">
 <!-- Laboratory & X-ray page styles (filter toolbars, result tables) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_laboratory_xray.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/view_details_modal.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -370,7 +379,7 @@ $adminNavItems = [
                         <td><span class="plx-badge" style="background:<?= htmlspecialchars($status['bg']) ?>; color:<?= htmlspecialchars($status['color']) ?>;"><?= htmlspecialchars($status['label']) ?></span></td>
                         <td>
                             <div class="adm-action-btns">
-                                <a href="laboratory_result_details.php?id=<?= urlencode($patient['id']) ?>&type=lab&recordId=<?= urlencode($lab['id']) ?>" class="adm-action-btn view" aria-label="View"><i class="bi bi-eye"></i></a>
+                                <a href="laboratory_result_details.php?id=<?= urlencode($patient['id']) ?>&type=lab&recordId=<?= urlencode($lab['id']) ?>" class="adm-view-link-btn">View Details</a>
                             </div>
                         </td>
                     </tr>
@@ -446,7 +455,7 @@ $adminNavItems = [
                         <td><span class="plx-badge" style="background:<?= htmlspecialchars($status['bg']) ?>; color:<?= htmlspecialchars($status['color']) ?>;"><?= htmlspecialchars($status['label']) ?></span></td>
                         <td>
                             <div class="adm-action-btns">
-                                <a href="laboratory_result_details.php?id=<?= urlencode($patient['id']) ?>&type=xray&recordId=<?= urlencode($xray['id']) ?>" class="adm-action-btn view" aria-label="View"><i class="bi bi-eye"></i></a>
+                                <a href="laboratory_result_details.php?id=<?= urlencode($patient['id']) ?>&type=xray&recordId=<?= urlencode($xray['id']) ?>" class="adm-view-link-btn">View Details</a>
                             </div>
                         </td>
                     </tr>

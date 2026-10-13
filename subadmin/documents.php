@@ -54,7 +54,15 @@ $adminNavItems = [
     ['icon' => 'bi-person-lines-fill',      'label' => t('nav.patient_management'),           'href' => 'patient_management.php', 'active' => true],
     ['icon' => 'bi-capsule',                'label' => t('nav.medicine_vaccine_inventory'), 'href' => 'medicine_vaccine_inventory.php'],
     ['icon' => 'bi-box-seam-fill',          'label' => t('nav.stock_requests'),               'href' => 'stock_requests.php'],
-    ['icon' => 'bi-bar-chart-fill',         'label' => t('nav.analytics_reports'),          'href' => 'analytics_reports.php'],
+    [
+        'icon' => 'bi-bar-chart-fill',
+        'label' => t('nav.analytics_reports'),
+        'id' => 'admNavAnalyticsReports',
+        'children' => [
+            ['label' => t('nav.analytics_reports_facility'), 'href' => 'analytics_reports.php'],
+            ['label' => t('nav.analytics_reports_chatbot'),  'href' => 'chatbot_reports.php'],
+        ],
+    ],
     ['icon' => 'bi-people-fill',            'label' => t('nav.user_management'),              'href' => 'user_management.php'],
     ['icon' => 'bi-bell-fill',              'label' => t('nav.notifications'),                'href' => 'notifications.php', 'badge' => subadmin_unread_notification_count()],
     [
@@ -115,6 +123,7 @@ $fileTypeIconMeta = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/documents.css') ?>">
 <!-- "am-" (Add Modal) shared modal styling, reused here for the Upload Document modal -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/add_medicine_modal.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/view_details_modal.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -381,7 +390,7 @@ $fileTypeIconMeta = [
                         <td class="doc-desc-cell"><?= htmlspecialchars($doc['description']) ?></td>
                         <td>
                             <div class="adm-action-btns">
-                                <a href="../api/download-document.php?id=<?= urlencode((string) $doc['id']) ?>&view=1" target="_blank" rel="noopener" class="adm-action-btn view" aria-label="View"><i class="bi bi-eye"></i></a>
+                                <a href="../api/download-document.php?id=<?= urlencode((string) $doc['id']) ?>&view=1" target="_blank" rel="noopener" class="adm-view-link-btn">View Details</a>
                                 <button type="button" class="adm-action-btn doc-download-btn" data-doc-id="<?= htmlspecialchars((string) $doc['id']) ?>" aria-label="Download"><i class="bi bi-download"></i></button>
                                 <button type="button" class="adm-action-btn delete doc-delete-btn" data-doc-id="<?= htmlspecialchars((string) $doc['id']) ?>" data-doc-name="<?= htmlspecialchars($doc['name']) ?>" aria-label="Delete"><i class="bi bi-trash"></i></button>
                             </div>

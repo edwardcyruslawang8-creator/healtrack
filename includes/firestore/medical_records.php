@@ -61,6 +61,38 @@ if (!function_exists('hc_get_medical_records_for_patient')) {
     }
 }
 
+if (!function_exists('hc_format_vitals_summary')) {
+    /**
+     * A medical record's raw 'vitals' field (hc_get_medical_records_for_patient()
+     * above) formatted as "Temp: 37.5°C • BP: 120/80 • HR: 78 bpm",
+     * skipping any sub-field left blank — same exact formatting
+     * includes/firestore/patient_overview.php's Overview-tab "latest
+     * vitals" card already uses, pulled out here so
+     * subadmin/medical_records.php's View Details modal can show the
+     * same real data the same way instead of re-deriving it.
+     * Null when there's no vitals data at all.
+     */
+    function hc_format_vitals_summary(?array $vitals): ?string
+    {
+        if ($vitals === null) {
+            return null;
+        }
+
+        $parts = [];
+        if (($vitals['temperature'] ?? '') !== '') {
+            $parts[] = 'Temp: ' . $vitals['temperature'] . '°C';
+        }
+        if (($vitals['bloodPressureSystolic'] ?? '') !== '' && ($vitals['bloodPressureDiastolic'] ?? '') !== '') {
+            $parts[] = 'BP: ' . $vitals['bloodPressureSystolic'] . '/' . $vitals['bloodPressureDiastolic'];
+        }
+        if (($vitals['heartRate'] ?? '') !== '') {
+            $parts[] = 'HR: ' . $vitals['heartRate'] . ' bpm';
+        }
+
+        return $parts !== [] ? implode(' • ', $parts) : null;
+    }
+}
+
 if (!function_exists('hc_get_medical_conditions_for_patient')) {
     /**
      * Every medical_conditions/{id} doc for $patientId (all statuses —

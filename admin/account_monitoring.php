@@ -84,6 +84,7 @@ $adminNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/account_monitoring.css') ?>">
 <!-- Search/filter toolbar styling (.pmg-search/.pmg-filter-select/.pmg-btn-search), reused here for the All User Accounts table below the same way patient_management.php's own toolbar already looks -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_management.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -413,5 +414,7 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/account_monitoring.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/account-monitoring-ajax.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
 </body>
 </html>

@@ -78,6 +78,7 @@ $staffNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/quick-search.css') ?>">
 <!-- Add Patient modal styles (multi-step intake wizard) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/add_patient_modal.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -311,5 +312,7 @@ $staffNavItems = [
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/quick-search.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/add-patient.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
 </body>
 </html>

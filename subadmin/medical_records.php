@@ -49,7 +49,15 @@ $adminNavItems = [
     ['icon' => 'bi-person-lines-fill',      'label' => t('nav.patient_management'),           'href' => 'patient_management.php', 'active' => true],
     ['icon' => 'bi-capsule',                'label' => t('nav.medicine_vaccine_inventory'), 'href' => 'medicine_vaccine_inventory.php'],
     ['icon' => 'bi-box-seam-fill',          'label' => t('nav.stock_requests'),               'href' => 'stock_requests.php'],
-    ['icon' => 'bi-bar-chart-fill',         'label' => t('nav.analytics_reports'),          'href' => 'analytics_reports.php'],
+    [
+        'icon' => 'bi-bar-chart-fill',
+        'label' => t('nav.analytics_reports'),
+        'id' => 'admNavAnalyticsReports',
+        'children' => [
+            ['label' => t('nav.analytics_reports_facility'), 'href' => 'analytics_reports.php'],
+            ['label' => t('nav.analytics_reports_chatbot'),  'href' => 'chatbot_reports.php'],
+        ],
+    ],
     ['icon' => 'bi-people-fill',            'label' => t('nav.user_management'),              'href' => 'user_management.php'],
     ['icon' => 'bi-bell-fill',              'label' => t('nav.notifications'),                'href' => 'notifications.php', 'badge' => subadmin_unread_notification_count()],
     [
@@ -102,6 +110,7 @@ $adminNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_profile.css') ?>">
 <!-- Medical Records page styles (category panel, records table) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/medical_records.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/view_details_modal.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -363,7 +372,16 @@ $adminNavItems = [
                             <td colspan="5" class="adm-table-empty">No medical records yet.</td>
                         </tr>
                         <?php endif; ?>
-                        <?php foreach ($medicalRecords as $rec): $meta = $recordTypeMeta[$rec['type']] ?? ['label' => ucfirst($rec['type']), 'icon' => 'bi-file-earmark-text-fill', 'bg' => '#EEF0F3', 'color' => '#6B7280']; ?>
+                        <?php foreach ($medicalRecords as $rec): $meta = $recordTypeMeta[$rec['type']] ?? ['label' => ucfirst($rec['type']), 'icon' => 'bi-file-earmark-text-fill', 'bg' => '#EEF0F3', 'color' => '#6B7280']; $vdmFields = json_encode(array_filter([
+                                'Record Type' => $meta['label'],
+                                'Date' => $rec['date'],
+                                'Time' => $rec['time'],
+                                'Provider' => $rec['provider'],
+                                'Facility' => $rec['facility'],
+                                'Chief Complaint' => $rec['chiefComplaint'],
+                                'Diagnosis' => $rec['diagnosis'],
+                                'Vitals' => hc_format_vitals_summary($rec['vitals']),
+                            ], fn ($v) => $v !== null && $v !== '')); ?>
                         <tr>
                             <td>
                                 <div class="mrc-type-cell">
@@ -385,7 +403,7 @@ $adminNavItems = [
                             </td>
                             <td>
                                 <div class="adm-action-btns">
-                                    <button type="button" class="adm-action-btn view" aria-label="View"><i class="bi bi-eye"></i></button>
+                                    <button type="button" class="vdm-trigger" data-vdm-title="<?= htmlspecialchars($rec['title']) ?>" data-vdm-fields='<?= htmlspecialchars($vdmFields) ?>'>View Details</button>
                                     <button type="button" class="adm-action-btn mrc-download-btn" aria-label="Download"><i class="bi bi-download"></i></button>
                                 </div>
                             </td>
@@ -405,10 +423,13 @@ $adminNavItems = [
 
 </main>
 
+<?php require __DIR__ . '/../includes/shared/view_details_modal.php'; ?>
+
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-tab-nav.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/view-details-action.js') ?>"></script>
 </body>
 </html>

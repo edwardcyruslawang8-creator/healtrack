@@ -61,6 +61,13 @@ if (!function_exists('hc_get_inventory_items')) {
             if (($f['type'] ?? 'medicine') !== $type) {
                 continue;
             }
+            // Archived (api/archive-medicine.php) — excluded from the
+            // default inventory list, same as every other read path over
+            // this collection (firebase/firestore.php's getAllMedicines()/
+            // getAllVaccines(), includes/shared/medicine_vaccine_inventory_shared.php).
+            if ($f['archived'] ?? false) {
+                continue;
+            }
 
             $items[] = [
                 'id' => $doc['id'],

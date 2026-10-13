@@ -356,8 +356,8 @@ if (!function_exists('mvi_page_url')) {
                                             <li><a class="dropdown-item mvi-view-details" href="#"><i class="bi bi-eye me-2"></i>View Details</a></li>
                                             <li><a class="dropdown-item mvi-adjust-stock" href="#"><i class="bi bi-sliders me-2"></i>Adjust Stock</a></li>
                                             <li><a class="dropdown-item mvi-dispense-no-rx" href="#"><i class="bi bi-capsule me-2"></i>Dispense (No Prescription)</a></li>
-                                            <li><a class="dropdown-item" href="#"><i class="bi bi-clock-history me-2"></i>View Stock History</a></li>
-                                            <li><a class="dropdown-item" href="#"><i class="bi bi-archive me-2"></i>Archive</a></li>
+                                            <li><a class="dropdown-item mvi-stock-history" href="#"><i class="bi bi-clock-history me-2"></i>View Stock History</a></li>
+                                            <li><a class="dropdown-item mvi-archive" href="#"><i class="bi bi-archive me-2"></i>Archive</a></li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li><a class="dropdown-item text-danger mvi-delete" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
                                         </ul>
@@ -478,8 +478,8 @@ if (!function_exists('mvi_page_url')) {
                                             <li><a class="dropdown-item mvi-view-details" href="#"><i class="bi bi-eye me-2"></i>View Details</a></li>
                                             <li><a class="dropdown-item mvi-adjust-stock" href="#"><i class="bi bi-sliders me-2"></i>Adjust Stock</a></li>
                                             <li><a class="dropdown-item mvi-dispense-no-rx" href="#"><i class="bi bi-capsule me-2"></i>Dispense (No Prescription)</a></li>
-                                            <li><a class="dropdown-item" href="#"><i class="bi bi-clock-history me-2"></i>View Stock History</a></li>
-                                            <li><a class="dropdown-item" href="#"><i class="bi bi-archive me-2"></i>Archive</a></li>
+                                            <li><a class="dropdown-item mvi-stock-history" href="#"><i class="bi bi-clock-history me-2"></i>View Stock History</a></li>
+                                            <li><a class="dropdown-item mvi-archive" href="#"><i class="bi bi-archive me-2"></i>Archive</a></li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li><a class="dropdown-item text-danger mvi-delete" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
                                         </ul>
@@ -524,5 +524,6 @@ if (!function_exists('mvi_page_url')) {
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/quick-search.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/medicine_vaccine_inventory_pharmacist.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
 </body>
 </html>

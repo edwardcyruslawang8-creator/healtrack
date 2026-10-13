@@ -169,11 +169,15 @@ function getAllMedicines(): array
             'form' => $doc['fields']['form'] ?? '',
             'status' => $doc['fields']['status'] ?? 'unavailable',
             'type' => $doc['fields']['type'] ?? 'medicine',
+            'archived' => $doc['fields']['archived'] ?? false,
         ],
         $firestore->listDocuments('medicines'),
     );
 
-    $medicines = array_values(array_filter($medicines, fn ($m) => $m['type'] === 'medicine'));
+    // Archived (api/archive-medicine.php) means discontinued/no longer
+    // carried — never shown to patients, same reasoning as every
+    // staff-side inventory list excluding it from the default view.
+    $medicines = array_values(array_filter($medicines, fn ($m) => $m['type'] === 'medicine' && !$m['archived']));
 
     usort($medicines, fn ($a, $b) => $a['name'] <=> $b['name']);
 
@@ -207,11 +211,13 @@ function getAllVaccines(): array
             'form' => $doc['fields']['form'] ?? '',
             'status' => $doc['fields']['status'] ?? 'unavailable',
             'type' => $doc['fields']['type'] ?? 'medicine',
+            'archived' => $doc['fields']['archived'] ?? false,
         ],
         $firestore->listDocuments('medicines'),
     );
 
-    $vaccines = array_values(array_filter($vaccines, fn ($m) => $m['type'] === 'vaccine'));
+    // Archived (api/archive-medicine.php) — same reasoning as getAllMedicines() above.
+    $vaccines = array_values(array_filter($vaccines, fn ($m) => $m['type'] === 'vaccine' && !$m['archived']));
 
     usort($vaccines, fn ($a, $b) => $a['name'] <=> $b['name']);
 

@@ -21,6 +21,26 @@
 .cbr-card .adm-card-header h2{ display: flex; align-items: center; gap: 8px; }
 .cbr-card-subtitle{ font-size: 12.5px; color: var(--adm-text-muted); margin: -10px 0 16px; }
 .cbr-question-cell{ max-width: 420px; }
+.cbr-answer-cell{ max-width: 420px; color: var(--adm-text-muted); }
+
+/* -- Scrollable table body — "Needs Your Answer" and "Answered
+      Questions" can both grow past a screenful; a sticky header keeps
+      the column labels in view while scrolling instead of the whole
+      page growing indefinitely. -- */
+.cbr-table-scroll{
+  max-height: 420px;
+  overflow-y: auto;
+  overflow-x: auto; /* .adm-table has a 640px min-width, same as every other table on this page — this wrapper is the only thing keeping a narrow viewport from clipping it */
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-lg);
+}
+.cbr-table-scroll .adm-table{ margin: 0; }
+.cbr-table-scroll .adm-table thead th{
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--adm-card);
+}
 .cbr-reason-badge{
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 11px; font-weight: 600; border-radius: 6px;

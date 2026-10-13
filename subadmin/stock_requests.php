@@ -60,7 +60,15 @@ $adminNavItems = [
     ['icon' => 'bi-person-lines-fill',      'label' => t('nav.patient_management'),           'href' => 'patient_management.php'],
     ['icon' => 'bi-capsule',                'label' => t('nav.medicine_vaccine_inventory'), 'href' => 'medicine_vaccine_inventory.php'],
     ['icon' => 'bi-box-seam-fill',          'label' => t('nav.stock_requests'),               'href' => 'stock_requests.php', 'active' => true],
-    ['icon' => 'bi-bar-chart-fill',         'label' => t('nav.analytics_reports'),          'href' => 'analytics_reports.php'],
+    [
+        'icon' => 'bi-bar-chart-fill',
+        'label' => t('nav.analytics_reports'),
+        'id' => 'admNavAnalyticsReports',
+        'children' => [
+            ['label' => t('nav.analytics_reports_facility'), 'href' => 'analytics_reports.php'],
+            ['label' => t('nav.analytics_reports_chatbot'),  'href' => 'chatbot_reports.php'],
+        ],
+    ],
     ['icon' => 'bi-people-fill',            'label' => t('nav.user_management'),              'href' => 'user_management.php'],
     ['icon' => 'bi-bell-fill',              'label' => t('nav.notifications'),                'href' => 'notifications.php', 'badge' => subadmin_unread_notification_count()],
     [
@@ -317,8 +325,10 @@ $adminNavItems = [
                         data-request-date="<?= htmlspecialchars($req['requestDate']) ?>"
                         data-request-time="<?= htmlspecialchars($req['requestTime']) ?>"
                         data-request-type="<?= htmlspecialchars($type['label']) ?>"
+                        data-request-type-raw="<?= htmlspecialchars($req['type']) ?>"
                         data-request-status="<?= htmlspecialchars($status['label']) ?>"
                         data-request-date-needed="<?= htmlspecialchars($req['dateNeeded']) ?>"
+                        data-request-date-needed-raw="<?= htmlspecialchars($req['dateNeededRaw']) ?>"
                         data-request-facility="<?= htmlspecialchars($req['facility']) ?>"
                         data-request-items="<?= htmlspecialchars(json_encode($req['items'])) ?>"
                     >
@@ -360,7 +370,11 @@ $adminNavItems = [
                                     <?php else: ?>
                                     <li><span class="dropdown-item disabled"><i class="bi bi-box-arrow-up me-2"></i>Release Items</span></li>
                                     <?php endif; ?>
-                                    <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>Edit Request</a></li>
+                                    <?php if ($req['status'] === 'pending'): ?>
+                                    <li><a class="dropdown-item srq-edit-request" href="#"><i class="bi bi-pencil me-2"></i>Edit Request</a></li>
+                                    <?php else: ?>
+                                    <li><span class="dropdown-item disabled" title="Only a pending request can be edited"><i class="bi bi-pencil me-2"></i>Edit Request</span></li>
+                                    <?php endif; ?>
                                     <li><a class="dropdown-item srq-print-request" href="#"><i class="bi bi-printer me-2"></i>Print Request</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item text-danger srq-delete-request" href="#"><i class="bi bi-trash me-2"></i>Delete Request</a></li>
@@ -382,6 +396,7 @@ $adminNavItems = [
 </main>
 
 <?php require __DIR__ . '/../includes/subadmin/stock_request_view_modal.php'; ?>
+<?php require __DIR__ . '/../includes/pharmacist/new_stock_request_modal.php'; ?>
 
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -389,6 +404,8 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/stock_requests.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/new-stock-request.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
 </body>
 </html>

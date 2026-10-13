@@ -42,5 +42,7 @@ if (!empty($pageScripts)) {
 <?php require_once __DIR__ . '/chatbot_widget.php'; ?>
 <script src="<?= asset_url('/assets/js/chatbot-history.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/chatbot-widget.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
 </body>
 </html>

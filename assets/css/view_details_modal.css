@@ -1,0 +1,97 @@
+/* =============================================================
+   GENERIC "VIEW DETAILS" MODAL (includes/shared/view_details_modal.php)
+   ---------------------------------------------------------------
+   Same visual language as assets/css/add_medicine_modal.css's
+   .am-modal/.am-detail-list (not reused directly — that file also
+   carries a lot of medicine-form-specific styling this modal has no
+   business loading on pages that only need the read-only detail view).
+   ============================================================= */
+.vdm-modal .modal-dialog{ max-width: 480px; }
+.vdm-modal .modal-content{
+  border: none;
+  border-radius: var(--adm-radius-lg);
+  box-shadow: var(--adm-shadow-hover);
+}
+.vdm-modal .modal-header{
+  border-bottom: 1px solid var(--adm-border);
+  padding: 20px 24px;
+}
+.vdm-modal .modal-title{
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--adm-text);
+}
+.vdm-modal .modal-body{
+  padding: 22px 24px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.vdm-modal .modal-footer{
+  border-top: 1px solid var(--adm-border);
+  padding: 16px 24px;
+}
+.vdm-btn-close{
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  color: var(--adm-text-muted);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.vdm-btn-close:hover{ background: var(--adm-hover-bg); }
+
+.vdm-detail-list{ margin: 0; }
+.vdm-detail-row{
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--adm-border);
+}
+.vdm-detail-row:last-child{ border-bottom: none; }
+.vdm-detail-row dt{
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text-soft);
+  flex-shrink: 0;
+}
+.vdm-detail-row dd{
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--adm-text);
+  text-align: right;
+}
+
+/* -- The trigger button itself — replaces the old icon-only
+      ".adm-action-btn.view" eye button with a labeled one, same visual
+      weight as assets/css/chatbot_reports.css's .cbr-answer-btn /
+      the Medicine & Vaccine Inventory page's "Manage Medicine" button.
+      .adm-view-link-btn is the exact same look for the Patient Profile
+      family's OTHER "View" actions that are real navigational <a href>
+      links (allergy_details.php, laboratory_result_details.php,
+      vaccination_record_details.php, download-document.php) rather
+      than this modal — kept as a separate class so assets/js/view-details-action.js's
+      unconditional e.preventDefault() on .vdm-trigger never swallows
+      an actual navigation. -- */
+.vdm-trigger,
+.adm-view-link-btn{
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--adm-red-bright);
+  background: var(--adm-card);
+  border: 1px solid var(--adm-red-bright);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap; /* without this the text wraps to "View\nDetails" the moment its flex row (.adm-action-btns) gets tight next to the Download icon button */
+  flex-shrink: 0;
+  text-decoration: none;
+  line-height: 1.4;
+}
+.vdm-trigger:hover,
+.adm-view-link-btn:hover{ background: var(--adm-red-bright); color: #fff; }

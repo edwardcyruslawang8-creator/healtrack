@@ -126,6 +126,25 @@ $chatbotNeedsAnswer = array_values(array_filter(
 ));
 usort($chatbotNeedsAnswer, fn ($a, $b) => strcmp($b['lastAskedAt'], $a['lastAskedAt']));
 
+// "Answered Questions" — the other side of the same move: every custom
+// answer a subadmin has taught (api/answer-chatbot-question.php), most
+// recently taught/updated first. Once a question lands here it's
+// permanently excluded from "Needs Your Answer" above (same
+// md5(questionNormalized) id both filters key off), and
+// hc_chatbot_find_custom_answer() matches it on every future real
+// message from this point on — this table is just a visible record of
+// what the chatbot has actually learned.
+$chatbotAnsweredQuestions = array_map(function ($doc) {
+    $f = $doc['fields'];
+    return [
+        'questionSample' => (string) ($f['questionSample'] ?? ''),
+        'answer' => (string) ($f['answer'] ?? ''),
+        'createdBy' => (string) ($f['createdBy'] ?? 'Sub-Administrator'),
+        'answeredAt' => (string) ($f['updatedAt'] ?? $f['createdAt'] ?? ''),
+    ];
+}, $chatbotCustomAnswerDocs);
+usort($chatbotAnsweredQuestions, fn ($a, $b) => strcmp($b['answeredAt'], $a['answeredAt']));
+
 // ---------------------------------------------------------------------
 // Summary KPI cards — real counts, same "adm-card arp-kpi-card" look
 // as every other report page's stat row.

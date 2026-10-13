@@ -47,7 +47,6 @@
   flex-shrink: 0;
   position: relative;
   overflow: visible; /* the mascot is a floating transparent-background image, not clipped to the circle */
-  animation: hc-fab-blink 4.5s ease-in-out infinite;
   transition: transform .15s ease;
 }
 .chatbot-fab:hover{ transform: scale(1.06); }
@@ -62,6 +61,37 @@
 .chatbot-fab i{ font-size: 24px; color: var(--maroon); transition: transform .2s ease; }
 .chatbot-fab i.bi-x-lg{ display: none; }
 
+/* -- Real eye-blink — two small circles positioned directly over the
+      mascot's own eyes (assets/images/chatbot-mascot.png), colored to
+      match its face so they read as eyelids sweeping shut, not a
+      floating dot. Positions are percentages of the 84x84 button,
+      calibrated against the actual rendered image (a temporary grid
+      overlay test page, not guesswork — there's no image-editing tool
+      here to sample exact pixel coordinates, so this is the next best
+      thing) — left eye ~ 37%/31%, right eye ~ 63%/30%. If the mascot
+      image ever changes, these two percentages need re-calibrating.
+      scaleY(0) at rest (invisible — eyes open), sweeps to scaleY(1)
+      (eyelid fully closed) and back, quickly, so it reads as a blink
+      rather than a fade. -- */
+.chatbot-eye-blink{
+  position: absolute;
+  width: 12%;
+  height: 12%;
+  border-radius: 50%;
+  background: #fffaf8;
+  transform: translate(-50%, -50%) scaleY(0);
+  transform-origin: center;
+  pointer-events: none;
+  animation: hc-eye-blink 4.2s ease-in-out infinite;
+}
+.chatbot-eye-blink-l{ left: 37%; top: 31%; }
+.chatbot-eye-blink-r{ left: 63%; top: 30%; animation-delay: .03s; } /* a hair after the left eye, like a real blink */
+
+@keyframes hc-eye-blink{
+  0%, 92%, 100% { transform: translate(-50%, -50%) scaleY(0); }
+  95%, 97%      { transform: translate(-50%, -50%) scaleY(1); }
+}
+
 /* Open state: shrink back to a plain, smaller circular "close" button
    (no mascot needed once the panel is already open) — same pink-tint
    treatment the fab used before it became a floating transparent image. */
@@ -70,20 +100,13 @@
   height: 64px;
   background: var(--maroon-tint);
   box-shadow: 0 6px 20px rgba(0,0,0,.18);
-  animation: none;
 }
-.chatbot-fab-wrap.is-open .chatbot-fab .chatbot-mascot-img{ display: none; }
+.chatbot-fab-wrap.is-open .chatbot-fab .chatbot-mascot-img,
+.chatbot-fab-wrap.is-open .chatbot-fab .chatbot-eye-blink{ display: none; }
 .chatbot-fab-wrap.is-open .chatbot-fab i.bi-x-lg{ display: inline-block; }
 
-/* A simple periodic "blink" — holds steady, then dips briefly, rather
-   than the mascot sitting perfectly static while idle. */
-@keyframes hc-fab-blink{
-  0%, 92%, 100% { opacity: 1; transform: scaleY(1); }
-  96%           { opacity: .55; transform: scaleY(.9); }
-}
-
 @media (prefers-reduced-motion: reduce){
-  .chatbot-fab{ animation: none; }
+  .chatbot-eye-blink{ animation: none; }
 }
 
 /* -- Idle "cute phrase" speech bubble — only ever shown while the
@@ -160,7 +183,7 @@
   border-bottom: 1px solid var(--border-soft);
   flex-shrink: 0;
 }
-.chatbot-widget-header .chat-avatar-sm{ width: 40px; height: 40px; }
+.chatbot-widget-header .chat-avatar-sm{ width: 48px; height: 48px; }
 .chatbot-widget-header .chat-avatar-sm i{ font-size: 19px; }
 .chatbot-widget-header-text{ flex: 1; min-width: 0; }
 .chatbot-widget-header-text h2{
@@ -234,15 +257,30 @@
   .chat-typing-dots span{ animation: none; opacity: .8; }
 }
 .chat-avatar-sm{
-  width: 38px; height: 38px; border-radius: 50%; background: var(--maroon-tint);
+  width: 44px; height: 44px; border-radius: 50%; background: var(--maroon-tint);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .chat-avatar-sm i{ font-size: 18px; color: var(--maroon); }
-/* The mascot image at avatar size — object-fit:contain (not cover) so
-   the whole character stays visible rather than being tightly cropped
-   at such a small size; the tinted circle behind it (above) fills the
-   rest, same look the bi-robot icon had before. */
-.chatbot-mascot-img-avatar{ width: 82%; height: 82%; object-fit: contain; }
+/* The bot avatar (header, welcome message, every reply bubble) renders
+   the mascot as a CSS background-image, cropped/zoomed to just its
+   face — NOT the whole-body PNG shrunk small, which read as a blurry,
+   unrecognizable little photo rather than a clean icon. Crop region
+   calibrated against the actual image (a temporary grid overlay test,
+   not guesswork): roughly x 5%-95%, y 0%-90% of the original — the
+   head + headphones, cropping out the body/arms. Kept deliberately
+   LESS tight than it could be (a tighter crop was tried first and
+   looked soft/pixelated at this size — fine detail like the headphone
+   ring doesn't hold up under heavy magnification at ~40px, so a looser
+   crop + a slightly larger box above both reduce how much the image
+   needs to be magnified). background-size 111% = 1 / (crop span),
+   background-position 50% 0% centers horizontally (the crop is
+   symmetric) and keeps the top of the head flush with the circle's top. */
+.chat-avatar-sm:not(.user-avatar){
+  background-image: url("../images/chatbot-mascot.png");
+  background-size: 111% 111%;
+  background-position: 50% 0%;
+  background-repeat: no-repeat;
+}
 .chat-bubble{
   background: var(--bg-light);
   border-radius: 4px 14px 14px 14px;

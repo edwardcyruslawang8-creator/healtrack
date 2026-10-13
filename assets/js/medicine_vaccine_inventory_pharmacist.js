@@ -113,7 +113,11 @@ document.addEventListener('DOMContentLoaded', function () {
         // bound directly to each row at page load would silently stop
         // working on any page the AJAX pagination fetched afterward.
         document.addEventListener('click', function (e) {
-            const btn = e.target.closest('.adm-action-btn.edit');
+            // pharmacist's edit button is an icon-only '.adm-action-btn.edit';
+            // subadmin's is the labeled "Manage Medicine"/"Manage Vaccine"
+            // button, '.mvi-manage-btn.edit' — different markup, same .edit
+            // class and same row dataset, so one shared handler covers both.
+            const btn = e.target.closest('.adm-action-btn.edit, .mvi-manage-btn.edit');
             if (!btn) return;
             const row = btn.closest('tr');
             if (!row) return;
@@ -418,4 +422,106 @@ document.addEventListener('DOMContentLoaded', function () {
                 HCDialog.alert(err.message);
             });
     });
+
+    // -------------------------------------------------------------
+    // Archive — HCDialog.confirm() + POST to api/archive-medicine.php.
+    // A soft removal: the item stops appearing in every inventory list
+    // (see that API's own header comment) rather than being deleted.
+    // -------------------------------------------------------------
+    document.addEventListener('click', async function (e) {
+        const link = e.target.closest('.mvi-archive');
+        if (!link) return;
+        const row = link.closest('tr');
+        if (!row) return;
+        e.preventDefault();
+        const d = row.dataset;
+        const confirmed = await HCDialog.confirm('Archive "' + d.medName + '"? It will stop appearing in the inventory list and on the public site.');
+        if (!confirmed) return;
+
+        fetch('../api/archive-medicine.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: d.medId }),
+        })
+            .then(function (res) {
+                return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+            })
+            .then(function (result) {
+                if (!result.ok || !result.data.success) {
+                    throw new Error(result.data.error || 'Something went wrong. Please try again.');
+                }
+                window.location.reload();
+            })
+            .catch(function (err) {
+                HCDialog.alert(err.message);
+            });
+    });
+
+    // -------------------------------------------------------------
+    // View Stock History — fetches api/get-medicine-stock-history.php
+    // on click; not server-rendered with the rest of the page since
+    // it's a per-row detail nobody needs until they open it.
+    // -------------------------------------------------------------
+    const stockHistoryModalEl = document.getElementById('stockHistoryModal');
+    if (stockHistoryModalEl && typeof bootstrap !== 'undefined') {
+        const stockHistoryModal = new bootstrap.Modal(stockHistoryModalEl);
+        const shLoading = document.getElementById('shLoading');
+        const shEmpty = document.getElementById('shEmpty');
+        const shList = document.getElementById('shList');
+
+        document.addEventListener('click', function (e) {
+            const link = e.target.closest('.mvi-stock-history');
+            if (!link) return;
+            const row = link.closest('tr');
+            if (!row) return;
+            e.preventDefault();
+            const d = row.dataset;
+
+            document.getElementById('shItemName').textContent = d.medName;
+            shLoading.classList.remove('d-none');
+            shEmpty.classList.add('d-none');
+            shList.classList.add('d-none');
+            shList.innerHTML = '';
+            stockHistoryModal.show();
+
+            fetch('../api/get-medicine-stock-history.php?name=' + encodeURIComponent(d.medName))
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    shLoading.classList.add('d-none');
+                    if (!data.success) throw new Error(data.error || 'Could not load stock history.');
+                    if (!data.history.length) {
+                        shEmpty.textContent = 'No recorded history for this item yet.';
+                        shEmpty.classList.remove('d-none');
+                        return;
+                    }
+                    data.history.forEach(function (entry) {
+                        const li = document.createElement('li');
+                        li.className = 'am-history-item';
+                        const when = entry.timestamp
+                            ? new Date(entry.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+                            : '';
+                        const detailsEl = document.createElement('div');
+                        detailsEl.className = 'am-history-details';
+                        detailsEl.textContent = entry.details;
+                        const metaEl = document.createElement('div');
+                        metaEl.className = 'am-history-meta';
+                        metaEl.textContent = entry.actorName + ' — ' + when;
+                        li.appendChild(detailsEl);
+                        li.appendChild(metaEl);
+                        shList.appendChild(li);
+                    });
+                    shList.classList.remove('d-none');
+                })
+                .catch(function (err) {
+                    shLoading.classList.add('d-none');
+                    shEmpty.textContent = err.message;
+                    shEmpty.classList.remove('d-none');
+                });
+        });
+    }
+
+    // Search validation (clicking "Search" with an empty box) now
+    // lives in assets/js/search-form-guard.js, shared across every
+    // page's search toolbar instead of duplicated per page — see that
+    // file's own header comment.
 });

@@ -116,6 +116,30 @@
 }
 #adjustStockModal .input-group .btn:hover{ background: var(--adm-hover-bg); }
 
+/* Stock History modal's entry list — real audit_logs rows (see
+   api/get-medicine-stock-history.php), newest first. */
+.am-history-list{
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.am-history-item{
+  padding: 10px 0;
+  border-bottom: 1px solid var(--adm-border);
+}
+.am-history-item:last-child{ border-bottom: none; }
+.am-history-item .am-history-details{
+  font-size: 13px;
+  color: var(--adm-text);
+  margin-bottom: 3px;
+}
+.am-history-item .am-history-meta{
+  font-size: 11.5px;
+  color: var(--adm-text-soft);
+}
+
 /* New Stock Request modal's repeatable item rows (item select + qty + remove). */
 .nsr-item-row{
   display: flex;

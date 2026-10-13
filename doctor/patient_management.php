@@ -385,5 +385,6 @@ $doctorNavItems = [
 <script src="<?= asset_url('/assets/js/quick-search.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/add-patient.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/patient-access-request.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
 </body>
 </html>

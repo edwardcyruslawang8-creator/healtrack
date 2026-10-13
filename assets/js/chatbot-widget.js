@@ -26,7 +26,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const chatInput = document.getElementById('chatInput');
     const suggestionCards = document.querySelector('.suggestion-cards');
     const BASE_URL = window.APP_BASE_URL || '';
-    const MASCOT_AVATAR_HTML = '<img src="' + BASE_URL + '/assets/images/chatbot-mascot.png" alt="" class="chatbot-mascot-img chatbot-mascot-img-avatar">';
+    // Bot avatars render via pure CSS (assets/css/chatbot-widget.css's
+    // .chat-avatar-sm:not(.user-avatar) background-image, cropped/zoomed
+    // to just the mascot's face) — no <img> needed, so these divs are
+    // left empty below.
 
     if (!panel || !fabBtn) return; // widget markup not present on this page for some reason — nothing to wire up
 
@@ -167,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const avatar = document.createElement('div');
         avatar.className = 'chat-avatar-sm' + (from === 'user' ? ' user-avatar' : '');
-        avatar.innerHTML = from === 'user' ? '<i class="bi bi-person-fill"></i>' : MASCOT_AVATAR_HTML;
+        if (from === 'user') avatar.innerHTML = '<i class="bi bi-person-fill"></i>';
 
         const bubble = document.createElement('div');
         bubble.className = 'chat-bubble';
@@ -198,7 +201,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const avatar = document.createElement('div');
         avatar.className = 'chat-avatar-sm';
-        avatar.innerHTML = MASCOT_AVATAR_HTML;
 
         const bubble = document.createElement('div');
         bubble.className = 'chat-bubble';
@@ -265,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const avatar = document.createElement('div');
         avatar.className = 'chat-avatar-sm' + (from === 'user' ? ' user-avatar' : '');
-        avatar.innerHTML = from === 'user' ? '<i class="bi bi-person-fill"></i>' : MASCOT_AVATAR_HTML;
+        if (from === 'user') avatar.innerHTML = '<i class="bi bi-person-fill"></i>';
 
         const bubbleCol = document.createElement('div');
         bubbleCol.className = 'chat-bubble-col';
