@@ -3,10 +3,12 @@
 config/gemini.php
 config/mail.php
 
-# --- Composer dependencies & tooling: regenerate with `composer install`
+# --- Composer dependencies: regenerate with `php composer.phar install`
 # (composer.lock IS committed so installs stay pinned to the same versions).
+# composer.phar itself IS committed (not ignored) — this machine has no
+# global `composer` command either, only this file, so leaving it out
+# would strand anyone cloning the repo with no way to run composer at all.
 /vendor/
-composer.phar
 
 # --- Uploaded patient documents: real PII, never belongs in git. The
 # .htaccess guarding this folder is kept (see the negated rule below).
