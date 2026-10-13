@@ -85,7 +85,7 @@ $currentOverall = $currentDoc['fields']['resultBadgeLabel'] ?? '';
     <hr class="adm-sidebar-divider">
 
     <div class="adm-profile">
-        <div class="adm-avatar"><i class="bi bi-person-circle"></i></div>
+        <div class="adm-avatar"><?php require_once __DIR__ . '/../includes/shared/profile_photo_storage.php'; echo hc_render_sidebar_avatar(); ?></div>
         <div class="adm-profile-text">
             <div class="adm-profile-name"><?= htmlspecialchars($staffProfile['name']) ?></div>
             <div class="adm-profile-role"><?= htmlspecialchars($staffProfile['role']) ?></div>

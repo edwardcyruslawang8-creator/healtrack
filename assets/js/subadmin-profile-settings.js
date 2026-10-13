@@ -67,11 +67,19 @@ document.addEventListener('DOMContentLoaded', function () {
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving…';
 
-            postJson('../api/update-profile-settings.php', {
-                fullName: document.getElementById('fullName').value.trim(),
-                phone: document.getElementById('phone').value.trim(),
-                healthCenter: document.getElementById('healthCenter').value,
-            })
+            // Photo first (if one was picked — a no-op Promise otherwise,
+            // see assets/js/profile-photo-preview.js), THEN the text
+            // fields — either can fail independently, and failing to
+            // reach here at all must not leave the photo half-saved
+            // with the rest of the form silently skipped.
+            window.HCProfilePhoto.uploadIfSelected()
+                .then(function () {
+                    return postJson('../api/update-profile-settings.php', {
+                        fullName: document.getElementById('fullName').value.trim(),
+                        phone: document.getElementById('phone').value.trim(),
+                        healthCenter: document.getElementById('healthCenter').value,
+                    });
+                })
                 .then(function () {
                     window.location.reload();
                 })

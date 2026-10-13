@@ -1,0 +1,12 @@
+# Uploaded profile photo files live here on local disk (Firebase Cloud
+# Storage isn't enabled for this project — see
+# includes/shared/profile_photo_storage.php's header comment). This
+# folder must never be served directly; every real view goes through
+# api/view-profile-photo.php, which only ever streams the signed-in
+# user's own photo.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Deny from all
+</IfModule>

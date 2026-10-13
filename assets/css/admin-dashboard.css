@@ -192,6 +192,12 @@ body.adm-body{
   overflow: hidden;
 }
 .adm-profile .adm-avatar i{ font-size: 22px; color: var(--adm-red-light); }
+/* Real uploaded photo (includes/shared/profile_photo_storage.php's
+   hc_render_sidebar_avatar()) — fills whichever of the two avatar
+   boxes it's rendered into (this one, or .adm-topbar-avatar below),
+   cropped to a circle regardless of the original image's own aspect
+   ratio. */
+.hc-avatar-img{ width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 .adm-profile .adm-profile-text .adm-profile-name{
   font-size: 14.5px;
   font-weight: 700;
@@ -425,6 +431,8 @@ body.adm-body{
   justify-content: center;
   color: var(--adm-text-muted);
   font-size: 19px;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 .adm-profile-dropdown .adm-topbar-name{
   font-size: 13.5px;

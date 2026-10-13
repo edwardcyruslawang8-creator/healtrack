@@ -99,7 +99,7 @@ $backHref = $backConsultationId !== '' ? 'active_consultation.php?id=' . urlenco
 
     <!-- Doctor profile -->
     <div class="adm-profile">
-        <div class="adm-avatar"><i class="bi bi-person-circle"></i></div>
+        <div class="adm-avatar"><?php require_once __DIR__ . '/../includes/shared/profile_photo_storage.php'; echo hc_render_sidebar_avatar(); ?></div>
         <div class="adm-profile-text">
             <div class="adm-profile-name"><?= htmlspecialchars($doctorProfile['name']) ?></div>
             <div class="adm-profile-role"><?= htmlspecialchars($doctorProfile['role']) ?></div>
@@ -177,7 +177,7 @@ $backHref = $backConsultationId !== '' ? 'active_consultation.php?id=' . urlenco
 
                 <div class="dropdown">
                     <button class="adm-profile-dropdown dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <span class="adm-topbar-avatar"><i class="bi bi-person-fill"></i></span>
+                        <span class="adm-topbar-avatar"><?php require_once __DIR__ . '/../includes/shared/profile_photo_storage.php'; echo hc_render_sidebar_avatar(); ?></span>
                         <span>
                             <span class="d-block adm-topbar-name"><?= htmlspecialchars(hc_doctor_display_name($doctorProfile['name'])) ?></span>
                             <span class="d-block adm-topbar-role"><?= htmlspecialchars($doctorProfile['role']) ?></span>

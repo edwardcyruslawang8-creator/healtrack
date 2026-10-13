@@ -56,11 +56,18 @@ document.addEventListener('DOMContentLoaded', function () {
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving…';
 
-            postJson('../api/update-profile-settings.php', {
-                fullName: document.getElementById('fullName').value.trim(),
-                phone: document.getElementById('phone').value.trim(),
-                healthCenter: document.getElementById('healthCenter').value,
-            })
+            // Photo first (if one was picked — a no-op Promise otherwise,
+            // see assets/js/profile-photo-preview.js), THEN the text
+            // fields — same reasoning as
+            // assets/js/subadmin-profile-settings.js's identical change.
+            window.HCProfilePhoto.uploadIfSelected()
+                .then(function () {
+                    return postJson('../api/update-profile-settings.php', {
+                        fullName: document.getElementById('fullName').value.trim(),
+                        phone: document.getElementById('phone').value.trim(),
+                        healthCenter: document.getElementById('healthCenter').value,
+                    });
+                })
                 .then(function () {
                     window.location.reload();
                 })

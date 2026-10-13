@@ -200,6 +200,13 @@ $_SESSION['emailVerified'] = (bool) $verifiedToken->claims()->get('email_verifie
 $_SESSION['theme'] = $userDoc['theme'] ?? 'Light';
 $_SESSION['language'] = $userDoc['language'] ?? 'English';
 
+// Profile photo (includes/shared/profile_photo_storage.php's
+// hc_render_sidebar_avatar()) — same "read once at login, cached in
+// session" reasoning as theme/language above; api/upload-profile-photo.php
+// keeps this in sync whenever a new photo is saved.
+$_SESSION['profilePhotoFileName'] = $userDoc['profilePhotoFileName'] ?? null;
+$_SESSION['profilePhotoUpdatedAt'] = $userDoc['profilePhotoUpdatedAt'] ?? null;
+
 // Restore which notifications this subadmin already marked read on a
 // previous login — api/mark-notifications-read.php writes this same
 // field back to users/{uid} whenever something is marked read, so

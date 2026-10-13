@@ -203,5 +203,10 @@ if (!function_exists('hc_restore_session_from_remember_token')) {
         $_SESSION['language'] = $userDoc['language'] ?? 'English';
         $_SESSION['ntfReadIds'] = $userDoc['notificationsReadIds'] ?? [];
         $_SESSION['ntfDismissedIds'] = $userDoc['notificationsDismissedIds'] ?? [];
+        // Same reasoning as api/session-login.php's own copy of this —
+        // a remember-me auto-login never goes through that file, so it
+        // needs to cache this itself too.
+        $_SESSION['profilePhotoFileName'] = $userDoc['profilePhotoFileName'] ?? null;
+        $_SESSION['profilePhotoUpdatedAt'] = $userDoc['profilePhotoUpdatedAt'] ?? null;
     }
 }
