@@ -51,12 +51,12 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateUnreadCount() {
         const unreadCount = getRows().filter(function (row) { return row.dataset.unread === '1'; }).length;
 
-        if (unreadTabBadge) unreadTabBadge.textContent = unreadCount; // always shown, even "0"
-
-        // The sidebar/bell badges only ever appear when there's something to
-        // show elsewhere in the app (see the `<?php if (!empty($item['badge']))`
-        // pattern) — mirror that here by hiding them once the count hits 0.
-        [bellBadge, sidebarBadge].forEach(function (el) {
+        // The tab badges (same as the sidebar/bell badges below) only
+        // appear when there's actually something to show — a "0" badge
+        // next to "All Notifications"/"Unread" reads as if there's one
+        // unread item, not zero, so it's hidden instead once the count
+        // hits 0.
+        [unreadTabBadge, bellBadge, sidebarBadge].forEach(function (el) {
             if (!el) return;
             el.textContent = unreadCount;
             el.style.display = unreadCount > 0 ? '' : 'none';
@@ -65,11 +65,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updateAllTabBadge() {
         // "All Notifications" badge mirrors the unread count too, same as the reference.
-        if (allTabBadge) allTabBadge.textContent = getRows().filter(function (row) { return row.dataset.unread === '1'; }).length;
+        const count = getRows().filter(function (row) { return row.dataset.unread === '1'; }).length;
+        if (allTabBadge) {
+            allTabBadge.textContent = count;
+            allTabBadge.style.display = count > 0 ? '' : 'none';
+        }
     }
 
     function updateArchivedTabBadge() {
-        if (archivedTabBadge) archivedTabBadge.textContent = getRows().filter(function (row) { return row.dataset.archived === '1'; }).length;
+        const count = getRows().filter(function (row) { return row.dataset.archived === '1'; }).length;
+        if (archivedTabBadge) {
+            archivedTabBadge.textContent = count;
+            archivedTabBadge.style.display = count > 0 ? '' : 'none';
+        }
     }
 
     /* ---------- Mark a row read (removes its unread flag + flips its Unread/Read badge) ---------- */

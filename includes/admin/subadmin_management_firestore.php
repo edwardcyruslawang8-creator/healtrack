@@ -22,16 +22,22 @@ require_once __DIR__ . '/../shared/avatar_helpers.php';            // derive_ini
 require_once __DIR__ . '/../shared/fuzzy_search.php';               // hc_fuzzy_match()
 
 // ---------------------------------------------------------------------
-// Status filter tabs — "All" is the only one with real content for now;
-// the others would each become a filtered query once search/filter is
-// connected (see the search box + Filter/Sort controls further down).
+// Status filter tabs — real now, a ?status= query param narrowing the
+// table to that one real status (same $s['status'] field the table's
+// own badges and the summary stat cards above already read), carried
+// through search/pagination by hc_sam_query() below same as ?q=/?page=.
 // ---------------------------------------------------------------------
+$subadminStatusTabKeys = ['all', 'active', 'inactive', 'locked', 'pending'];
+$subadminStatusFilter = $_GET['status'] ?? 'all';
+if (!in_array($subadminStatusFilter, $subadminStatusTabKeys, true)) {
+    $subadminStatusFilter = 'all';
+}
 $subadminTabs = [
-    ['key' => 'all',      'label' => 'All',      'active' => true],
-    ['key' => 'active',   'label' => 'Active'],
-    ['key' => 'inactive', 'label' => 'Inactive'],
-    ['key' => 'locked',   'label' => 'Locked'],
-    ['key' => 'pending',  'label' => 'Pending'],
+    ['key' => 'all',      'label' => 'All',      'active' => $subadminStatusFilter === 'all'],
+    ['key' => 'active',   'label' => 'Active',   'active' => $subadminStatusFilter === 'active'],
+    ['key' => 'inactive', 'label' => 'Inactive', 'active' => $subadminStatusFilter === 'inactive'],
+    ['key' => 'locked',   'label' => 'Locked',   'active' => $subadminStatusFilter === 'locked'],
+    ['key' => 'pending',  'label' => 'Pending',  'active' => $subadminStatusFilter === 'pending'],
 ];
 
 // Role → badge color lookup, so the table loop doesn't hardcode colors per row.
@@ -119,6 +125,15 @@ $filteredSubadmins = $searchTerm === '' ? $subadmins : array_values(array_filter
     fn ($s) => hc_fuzzy_match($s['name'] . ' ' . $s['email'] . ' ' . $s['facility'], $searchTerm)
 ));
 
+// Status tab filter — applied on top of the search above, same real
+// $s['status'] field the table badges/legend/summary cards all share.
+if ($subadminStatusFilter !== 'all') {
+    $filteredSubadmins = array_values(array_filter(
+        $filteredSubadmins,
+        fn ($s) => $s['status'] === $subadminStatusFilter
+    ));
+}
+
 $subadminsTotal = count($filteredSubadmins);
 $subadminsPerPage = 8;
 // Was hardcoded to 1 with $filteredSubadmins never actually sliced
@@ -134,11 +149,12 @@ $subadminsCurrentPage = min($subadminsCurrentPage, $subadminsTotalPages);
 $filteredSubadmins = array_slice($filteredSubadmins, ($subadminsCurrentPage - 1) * $subadminsPerPage, $subadminsPerPage);
 
 if (!function_exists('hc_sam_query')) {
-    /** Builds a ?query string carrying the current ?q= search except whatever's in $overrides — used by the pagination links so paging never drops an active search. */
+    /** Builds a ?query string carrying the current ?q= search and ?status= tab except whatever's in $overrides — used by the pagination/tab links so paging/switching tabs never drops the other active filter. */
     function hc_sam_query(array $overrides = []): string
     {
         $params = array_merge([
             'q' => $_GET['q'] ?? '',
+            'status' => $_GET['status'] ?? '',
             'page' => $_GET['page'] ?? 1,
         ], $overrides);
 

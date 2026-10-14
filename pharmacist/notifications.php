@@ -208,7 +208,7 @@ $staffNavItems = [
                 <button class="nav-link <?= !empty($tab['active']) ? 'active' : '' ?>" type="button" data-ntf-tab="<?= htmlspecialchars($tab['key']) ?>">
                     <?= htmlspecialchars($tab['label']) ?>
                     <?php if (isset($tab['badge'])): ?>
-                    <span class="ntf-tab-badge" data-ntf-tab-badge="<?= htmlspecialchars($tab['key']) ?>"><?= (int) $tab['badge'] ?></span>
+                    <span class="ntf-tab-badge" data-ntf-tab-badge="<?= htmlspecialchars($tab['key']) ?>"<?= $tab['badge'] > 0 ? '' : ' style="display:none"' ?>><?= (int) $tab['badge'] ?></span>
                     <?php endif; ?>
                 </button>
             </li>

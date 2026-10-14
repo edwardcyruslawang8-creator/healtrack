@@ -273,11 +273,18 @@ if (!function_exists('hc_acct_query')) {
 }
 
 // ---------------------------------------------------------------------
-// Accounts Needing Attention
+// Accounts Needing Attention — each "View" link now actually filters
+// the real "All User Accounts" table below (?acct_status=..., the same
+// real filter that table's own Status dropdown already applies) and
+// jumps to it, instead of the dead account_monitoring.php link (no
+// query params at all) every item used to point at. "Password Expiring
+// Soon" has no real status/field behind it at all yet (no password-
+// expiry policy exists — see its own desc below), so it gets no View
+// link rather than one that would go nowhere meaningful.
 // ---------------------------------------------------------------------
 $attentionItems = [
-    ['icon' => 'bi-exclamation-triangle-fill', 'iconBg' => '#FDECDD', 'iconColor' => '#E8710A', 'label' => 'Inactive Accounts',      'desc' => 'Accounts inactive for more than 30 days',        'count' => $statusCounts['inactive'], 'href' => 'account_monitoring.php'],
-    ['icon' => 'bi-lock-fill',                 'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'label' => 'Locked Accounts',        'desc' => 'Accounts locked due to multiple failed attempts', 'count' => $statusCounts['locked'],   'href' => 'account_monitoring.php'],
-    ['icon' => 'bi-envelope-fill',             'iconBg' => '#EFE7FB', 'iconColor' => '#7C3AED', 'label' => 'Pending Invitations',    'desc' => 'Self-registered accounts awaiting sub-admin approval', 'count' => $statusCounts['pending'],  'href' => 'account_monitoring.php'],
-    ['icon' => 'bi-info-circle-fill',          'iconBg' => '#E8F0FE', 'iconColor' => '#1A73E8', 'label' => 'Password Expiring Soon', 'desc' => 'No password-expiry policy is configured yet',    'count' => 0,                         'href' => 'account_monitoring.php'],
+    ['icon' => 'bi-exclamation-triangle-fill', 'iconBg' => '#FDECDD', 'iconColor' => '#E8710A', 'label' => 'Inactive Accounts',      'desc' => 'Accounts inactive for more than 30 days',        'count' => $statusCounts['inactive'], 'href' => 'account_monitoring.php?' . hc_acct_query(['acct_status' => 'Inactive', 'acct_page' => 1]) . '#acmAccountsResults'],
+    ['icon' => 'bi-lock-fill',                 'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'label' => 'Locked Accounts',        'desc' => 'Accounts locked due to multiple failed attempts', 'count' => $statusCounts['locked'],   'href' => 'account_monitoring.php?' . hc_acct_query(['acct_status' => 'Locked', 'acct_page' => 1]) . '#acmAccountsResults'],
+    ['icon' => 'bi-envelope-fill',             'iconBg' => '#EFE7FB', 'iconColor' => '#7C3AED', 'label' => 'Pending Invitations',    'desc' => 'Self-registered accounts awaiting sub-admin approval', 'count' => $statusCounts['pending'],  'href' => 'account_monitoring.php?' . hc_acct_query(['acct_status' => 'Pending', 'acct_page' => 1]) . '#acmAccountsResults'],
+    ['icon' => 'bi-info-circle-fill',          'iconBg' => '#E8F0FE', 'iconColor' => '#1A73E8', 'label' => 'Password Expiring Soon', 'desc' => 'No password-expiry policy is configured yet',    'count' => 0,                         'href' => null],
 ];

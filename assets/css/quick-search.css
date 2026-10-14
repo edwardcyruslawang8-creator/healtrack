@@ -82,6 +82,16 @@
   right: 14px;
   top: 50%;
   transform: translateY(-50%);
+  /* Fixed box instead of sizing purely from the icon glyph + padding —
+     without this, the button's own box briefly disagrees with its
+     icon's rendered size/position while the icon font is still
+     loading/swapping in, which can paint the circle straddling the
+     input's right border instead of sitting cleanly inside it
+     (confirmed via direct measurement: the icon's rect didn't match
+     its own parent button's rect during that window). A fixed size
+     makes the button's box stable regardless of font-load timing. */
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -91,7 +101,7 @@
   color: var(--adm-text-soft, #9AA0AC);
   font-size: 15px;
   font-weight: 400;
-  padding: 3px;
+  padding: 0;
   line-height: 1;
   white-space: normal;
   transition: color .15s ease, background-color .15s ease, transform .15s ease;
@@ -188,12 +198,30 @@
   border-radius: 50%;
   background: var(--adm-orange-bg, #FDECDD);
   color: var(--adm-orange, #E8710A);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
+  /* position:relative + the icon absolutely centered below — NOT
+     flexbox align/justify-center. Reported in production as the
+     person icon rendering badly off-center (escaping the circle's
+     top-left edge) even though flex-centering measured correctly in
+     testing here; icon-font glyphs don't all share the same internal
+     baseline/line-height metrics across browsers and OSes, so
+     flexbox's line-box-based centering isn't reliable for them.
+     Pinning the icon to the container's exact geometric center via
+     absolute positioning sidesteps that entirely. */
+  position: relative;
   flex-shrink: 0;
   transition: transform .12s ease;
+}
+.qs-avatar i{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* 16px read ambiguously small here — bi-person-fill's round head +
+     shoulder shape got mistaken for a magnifying glass (reported
+     against the purple-tinted row specifically). Bumped up so the
+     silhouette is unambiguous at a glance. */
+  font-size: 19px;
+  line-height: 1;
 }
 .qs-result-row:hover .qs-avatar{
   transform: scale(1.08);

@@ -230,9 +230,9 @@ $adminNavItems = [
         <ul class="nav adm-tabs sam-tabs" role="tablist">
             <?php foreach ($subadminTabs as $tab): ?>
             <li class="nav-item" role="presentation">
-                <button class="nav-link <?= !empty($tab['active']) ? 'active' : '' ?>" type="button" role="tab">
+                <a href="?<?= hc_sam_query(['status' => $tab['key'], 'page' => 1]) ?>" class="nav-link <?= !empty($tab['active']) ? 'active' : '' ?>" role="tab">
                     <?= htmlspecialchars($tab['label']) ?>
-                </button>
+                </a>
             </li>
             <?php endforeach; ?>
         </ul>
@@ -302,16 +302,9 @@ $adminNavItems = [
                         </td>
                         <td><?= $s['lastLogin'] ? htmlspecialchars($s['lastLogin']) : '—' ?></td>
                         <td>
-                            <div class="adm-action-btns">
-                                <button type="button" class="adm-action-btn view" aria-label="View" data-id="<?= htmlspecialchars($s['id']) ?>"><i class="bi bi-eye"></i></button>
-                                <?php if (in_array($s['status'], ['active', 'inactive'], true)): ?>
-                                <button type="button" class="adm-action-btn edit" aria-label="Edit" data-id="<?= htmlspecialchars($s['id']) ?>"><i class="bi bi-pencil"></i></button>
-                                <?php endif; ?>
-                                <?php if ($s['status'] === 'locked'): ?>
-                                <button type="button" class="adm-action-btn continue" aria-label="Unlock Account" data-id="<?= htmlspecialchars($s['id']) ?>"><i class="bi bi-unlock-fill"></i></button>
-                                <?php endif; ?>
-                                <button type="button" class="adm-action-btn delete" aria-label="Delete" data-id="<?= htmlspecialchars($s['id']) ?>"><i class="bi bi-trash"></i></button>
-                            </div>
+                            <button type="button" class="sam-manage-btn" data-manage-trigger data-id="<?= htmlspecialchars($s['id']) ?>">
+                                Manage Account
+                            </button>
                         </td>
                     </tr>
                     <?php endforeach; ?>

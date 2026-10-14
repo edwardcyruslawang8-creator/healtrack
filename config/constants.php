@@ -72,8 +72,27 @@ ob_start(function ($buffer) {
     $script = '<script>window.HC_IDLE_BASE_URL = ' . json_encode(BASE_URL) . ';</script>'
         . '<script src="' . asset_url('/assets/js/idle-timeout.js') . '"></script>';
 
-    require_once __DIR__ . '/../includes/shared/two_fa_reminder.php';
-    $script .= hc_render_2fa_reminder_toast();
+    // This runs very late (PHP's own output-buffer-flush machinery, at
+    // or near request shutdown), by which point Guzzle's cURL handles
+    // (used by $firestore under the hood — see firebase/FirestoreRestClient.php)
+    // have intermittently already been torn down on this Windows/Apache
+    // mod_php setup — an observed, hard-to-eliminate environment flake
+    // (also surfaces on its own as "Couldn't execute method
+    // GuzzleHttp\Handler\CurlMultiHandler::__destruct" in the Apache
+    // error log), not something a code-level fix here can prevent
+    // outright. Without this try/catch, that one intermittent failure
+    // took down the ENTIRE page — the whole buffered response, already
+    // fully rendered, discarded in favor of a blank one — just to skip
+    // showing a non-essential reminder toast. Caught and logged instead,
+    // so this best-effort toast degrades gracefully on a bad request
+    // rather than ever blanking a real page the admin/staff member
+    // actually needed.
+    try {
+        require_once __DIR__ . '/../includes/shared/two_fa_reminder.php';
+        $script .= hc_render_2fa_reminder_toast();
+    } catch (\Throwable $e) {
+        error_log('[2FA reminder toast] Skipped after a late-stage failure: ' . $e->getMessage());
+    }
 
     return str_replace('</body>', $script . '</body>', $buffer);
 });

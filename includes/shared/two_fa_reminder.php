@@ -122,7 +122,28 @@ if (!function_exists('hc_my_2fa_reminder_notification')) {
         global $firestore;
         require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 
-        $userDoc = $firestore->getDocument('users', $uid);
+        // This is called from several places that each run at a different
+        // point in the request (config/constants.php's own nav-badge
+        // unread-count functions run early/mid-script; its ob_start()
+        // callback below runs very late, at output-buffer flush time) —
+        // and on this Windows/Apache mod_php setup, $firestore's
+        // underlying Guzzle cURL handles have intermittently already been
+        // torn down by the time a late call like that runs (the same
+        // environment flake that otherwise surfaces on its own as
+        // "Couldn't execute method GuzzleHttp\Handler\CurlMultiHandler::
+        // __destruct" in the Apache error log). An uncaught failure here
+        // used to take down the ENTIRE page just to skip one
+        // non-essential reminder notification — treated the same as
+        // "no user doc found" instead (not memoized, so a different,
+        // earlier-running call site in the same request can still
+        // succeed and doesn't get poisoned by one later call's failure).
+        try {
+            $userDoc = $firestore->getDocument('users', $uid);
+        } catch (\Throwable $e) {
+            error_log('[2FA reminder] Firestore read failed, skipping this notification: ' . $e->getMessage());
+            return null;
+        }
+
         $cachedUid = $uid;
         $cachedResult = $userDoc === null ? null : hc_get_2fa_reminder_notification($uid, $userDoc);
 

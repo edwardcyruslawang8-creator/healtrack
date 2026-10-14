@@ -11,9 +11,16 @@
  *
  * $accountStats/$accountStatusOverview/$accountsByRole all read live
  * from Firestore — see includes/admin/account_monitoring_firestore.php's
- * header comment for the collections behind each. The "Sort"/range
- * dropdowns and the "View" links on the attention panel aren't wired up
- * yet. The "All User Accounts" table further down IS real — a System
+ * header comment for the collections behind each. The "Accounts Over
+ * Time" range dropdown and the "View" links on the attention panel are
+ * both real now too — the range dropdown re-fetches and re-draws the
+ * chart via assets/js/account-monitoring-ajax.js + api/get-accounts-
+ * over-time.php, and each "View" link jumps straight to "All User
+ * Accounts" below, pre-filtered to that real status (?acct_status=...,
+ * the same filter that table's own Status dropdown applies) — except
+ * "Password Expiring Soon", which has no View link since no
+ * password-expiry policy exists yet to filter by (see its own desc).
+ * The "All User Accounts" table further down IS real — a System
  * Administrator can search/filter/page through every account in the
  * system there, not just the aggregate counts/charts above it. (A
  * "Recent Account Activities" table used to sit above "Accounts Needing
@@ -370,7 +377,9 @@ $adminNavItems = [
                     <span class="acm-attention-desc"><?= htmlspecialchars($item['desc']) ?></span>
                 </span>
                 <span class="acm-attention-count"><?= (int) $item['count'] ?></span>
+                <?php if ($item['href'] !== null): ?>
                 <a href="<?= htmlspecialchars($item['href']) ?>" class="acm-attention-view">View</a>
+                <?php endif; ?>
             </div>
             <?php endforeach; ?>
         </div>

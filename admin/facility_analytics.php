@@ -989,7 +989,7 @@ $adminNavItems = [
                 <div class="an-card">
                     <div class="an-card-header"><h3>Patients by Barangay</h3></div>
                     <?php if ($patientsByBarangay === []): ?>
-                    <p class="adm-table-empty">No patients registered at this facility yet.</p>
+                    <p class="adm-table-empty"><?= $totalPatients > 0 ? 'None of this facility\'s patients have a barangay on file yet.' : 'No patients registered at this facility yet.' ?></p>
                     <?php else: ?>
                     <div class="an-inv-list-header"><span>Patients</span></div>
                     <?php foreach ($patientsByBarangay as $b): ?>

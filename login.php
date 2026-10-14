@@ -157,7 +157,19 @@ $idleTimeoutNotice = ($_GET['reason'] ?? '') === 'idle'
             <!-- Client-side auth errors (Firebase) appear here -->
             <div id="loginError" class="alert alert-danger py-2 px-3 d-none" style="font-size:13px;"></div>
 
-            <form action="<?= BASE_URL ?>/api/login.php" method="post" autocomplete="off" id="loginForm">
+            <!-- The real sign-in happens entirely client-side via the Firebase
+                 Auth SDK (assets/js/login.js), which always calls
+                 e.preventDefault() before posting the resulting idToken to
+                 api/session-login.php — this action/method are only ever hit
+                 if that JS never attaches (e.g. the Firebase SDK scripts
+                 below failed to load), so this points at a route that at
+                 least exists rather than api/login.php (never existed,
+                 produced a raw 404). It still can't complete a real login
+                 on its own — session-login.php requires a verified Firebase
+                 idToken, which only the client-side SDK can produce — see
+                 the Firebase-availability check in login.js, which shows a
+                 clear error instead of silently leaving the form like this. -->
+            <form action="<?= BASE_URL ?>/api/session-login.php" method="post" autocomplete="off" id="loginForm">
 
                 <!-- Email field (Firebase Authentication signs in with email + password) -->
                 <div class="login-field">

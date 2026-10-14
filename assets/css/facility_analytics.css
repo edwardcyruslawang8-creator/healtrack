@@ -299,9 +299,13 @@
   margin-bottom: 18px;
 }
 .an-inv-pill{
-  background: var(--adm-bg);
+  /* Same card treatment as .an-summary-tile above (and .adm-card
+     elsewhere in this app) instead of a flat tinted block. */
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
   border-radius: var(--adm-radius-md);
-  padding: 10px 12px;
+  box-shadow: var(--adm-shadow);
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -369,14 +373,27 @@
 .an-summary-panel{ display: flex; flex-direction: column; justify-content: space-between; }
 .an-summary-tiles{
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  /* 4-across by default — these sections (Patients/Records/Services tab
+     headers, etc.) always render exactly 4 tiles. A narrower breakpoint
+     below drops this to 2 for real small-screen reflow; it used to be
+     the other way around (2 columns at full desktop width, 4 columns
+     only once the viewport got narrower) which spread 4 small tiles
+     into a sparse 2x2 grid with large empty gaps on an ordinary desktop
+     view instead of one clean row. */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 16px;
 }
 .an-summary-tile{
-  background: var(--adm-bg);
+  /* Same card treatment as .adm-card elsewhere in this app (white/card
+     background, bordered, soft shadow) instead of a flat tinted block —
+     these 4 stats sit directly on the page background with no outer
+     card wrapping them, so each one reads as its own card now. */
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
   border-radius: var(--adm-radius-md);
-  padding: 12px 14px;
+  box-shadow: var(--adm-shadow);
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -509,7 +526,6 @@
   .an-summary-row{ grid-template-columns: repeat(3, 1fr); }
   .an-inventory-row{ grid-template-columns: 1fr 1fr; }
   .an-summary-panel{ grid-column: 1 / -1; }
-  .an-summary-tiles{ grid-template-columns: repeat(4, 1fr); }
 }
 @media (max-width: 1199.98px){
   .an-charts-row{ grid-template-columns: 1fr; }

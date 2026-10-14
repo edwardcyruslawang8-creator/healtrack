@@ -314,10 +314,34 @@ $staffNavItems = [
                     function cns_page_url($qs, $page) { $qs['page'] = $page; return 'consultations.php?' . http_build_query($qs); }
                 }
                 ?>
+                <?php
+                // Windowed page numbers (current page +/- 1, with
+                // first/last plus an ellipsis when truncated) instead of
+                // a raw 1..N loop — with up to ~75 pages of real
+                // consultation history, printing every page number
+                // inline overflowed this card's width and spilled past
+                // its right edge (same windowing hc_render_pagination_nav()
+                // in includes/shared/pagination_helpers.php already uses
+                // for the Analytics & Reports tables).
+                $cnsWindowStart = max(1, min($consultationsCurrentPage - 1, max(1, $consultationsTotalPages - 2)));
+                $cnsWindowEnd = min($consultationsTotalPages, $cnsWindowStart + 2);
+                ?>
                 <a href="<?= cns_page_url($qs, max(1, $consultationsCurrentPage - 1)) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
-                <?php for ($p = 1; $p <= $consultationsTotalPages; $p++): ?>
+                <?php if ($cnsWindowStart > 1): ?>
+                <a href="<?= cns_page_url($qs, 1) ?>" class="page-btn">1</a>
+                <?php if ($cnsWindowStart > 2): ?>
+                <span class="page-ellipsis">&hellip;</span>
+                <?php endif; ?>
+                <?php endif; ?>
+                <?php for ($p = $cnsWindowStart; $p <= $cnsWindowEnd; $p++): ?>
                 <a href="<?= cns_page_url($qs, $p) ?>" class="page-btn <?= $p === $consultationsCurrentPage ? 'active' : '' ?>"><?= $p ?></a>
                 <?php endfor; ?>
+                <?php if ($cnsWindowEnd < $consultationsTotalPages): ?>
+                <?php if ($cnsWindowEnd < $consultationsTotalPages - 1): ?>
+                <span class="page-ellipsis">&hellip;</span>
+                <?php endif; ?>
+                <a href="<?= cns_page_url($qs, $consultationsTotalPages) ?>" class="page-btn"><?= $consultationsTotalPages ?></a>
+                <?php endif; ?>
                 <a href="<?= cns_page_url($qs, min($consultationsTotalPages, $consultationsCurrentPage + 1)) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
             </nav>
         </div>

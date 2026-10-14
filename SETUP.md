@@ -33,21 +33,24 @@ folder with the exact same package versions everyone else is using.
 (`composer.phar` is committed in this repo for exactly this reason —
 there's no guarantee you have Composer installed globally.)
 
-## 4. Set up the two "soft" secrets
+## 4. Set up the "soft" secrets
 
-These two files are gitignored (real credentials don't belong in git),
-but example templates are committed. Copy each one and drop the
-`.example`:
+These files are gitignored (real credentials don't belong in git), but
+example templates are committed. Copy each one and drop the `.example`:
 
 - `config/gemini.example.php` → `config/gemini.php`
+- `config/groq.example.php` → `config/groq.php`
 - `config/mail.example.php` → `config/mail.php`
 
 You can leave the values inside blank. The app is written to treat an
-empty Gemini key / empty mail credentials as "that feature is
+empty Gemini/Groq key or empty mail credentials as "that feature is
 unavailable" and skip it gracefully — the chatbot still answers from
-its decision tree, it just skips the natural-language phrasing step;
-account emails just don't get sent. Only fill in real values if you
-have your own Gemini API key / Gmail app password to use.
+its decision tree, it just skips the natural-language phrasing step
+(and Groq, which only ever runs after a real Gemini failure, never
+gets called either); account emails just don't get sent. Only fill in
+real values if you have your own Gemini/Groq API key or Gmail app
+password to use. Groq's free tier needs no billing info — get a key at
+https://console.groq.com/keys.
 
 ## 5. Set up the "hard" secret — this is the one that actually gates everything
 
@@ -99,8 +102,9 @@ http://localhost/Healtrack/
 
 - **Blank page / fatal error mentioning `vendor/autoload.php`** → step 3
   wasn't run yet.
-- **Fatal error mentioning `config/gemini.php` or `config/mail.php`** →
-  step 4 wasn't done (the file needs to exist, even with blank values).
+- **Fatal error mentioning `config/gemini.php`, `config/groq.php`, or
+  `config/mail.php`** → step 4 wasn't done (the file needs to exist,
+  even with blank values).
 - **Fatal error mentioning the Firebase/Dialogflow credentials path, or
   nothing loads any real data** → step 5 wasn't done, or the JSON file
   isn't at the exact path `config/firebase.php` / `config/dialogflow.php`

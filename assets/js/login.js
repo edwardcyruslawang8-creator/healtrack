@@ -294,6 +294,22 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
             });
         });
+    } else if (loginForm) {
+        // Firebase never became available — one of the 3 gstatic.com SDK
+        // script tags in login.php failed to load (a blocked/flaky
+        // connection to Google's CDN, an ad-blocker, etc.). A failed
+        // <script src> load is silent (no page error), so without this the
+        // user would click "Sign In" with no listener ever attached and
+        // fall through to this form's own action/method — which can never
+        // complete a real login anyway (api/session-login.php requires a
+        // verified Firebase idToken only the client-side SDK can produce)
+        // and used to point at a route that didn't even exist
+        // (api/login.php), surfacing as a raw, unexplained 404. This gives
+        // the user an actual reason instead.
+        loginForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            showError('Unable to load required sign-in scripts. Please check your internet connection and reload the page.');
+        });
     }
 
     /* ---------- 2FA code entry (#loginStep2fa) ---------- */
