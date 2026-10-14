@@ -252,8 +252,10 @@ if (!function_exists('hc_chatbot_log_exchange')) {
      * 'decision_tree' (Dialogflow+decision tree), 'legacy_engine'
      * (hc_chatbot_answer()), 'custom' (a subadmin-authored answer —
      * $customAnswerId is that doc's id, whose hitCount is bumped here),
-     * 'gemini_general' (open-domain, ungrounded), or 'fallback'
-     * (nothing answered it at all). Only the last two ever show up in
+     * 'gemini_general'/'groq_general' (open-domain, ungrounded — Groq
+     * only ever answers here after a real, confirmed Gemini failure,
+     * see includes/public/groq_client.php), or 'fallback' (nothing
+     * answered it at all). Only these last three ever show up in
      * "Needs Your Answer" — every other type already came from a real,
      * verified source and doesn't need subadmin review.
      *
@@ -264,7 +266,7 @@ if (!function_exists('hc_chatbot_log_exchange')) {
      * "👎 This didn't answer my question" link (api/chatbot-feedback.php)
      * can reference exactly this exchange.
      */
-    function hc_chatbot_log_exchange(string $message, string $answer, string $matchType, ?string $customAnswerId = null): ?string
+    function hc_chatbot_log_exchange(string $message, string $answer, string $matchType, ?string $customAnswerId = null, ?string $geminiFailureReason = null): ?string
     {
         global $firestore;
 
@@ -280,6 +282,14 @@ if (!function_exists('hc_chatbot_log_exchange')) {
                 'answer' => $answer,
                 'matchType' => $matchType,
                 'flagged' => false,
+                // A real Gemini API call was attempted somewhere in this
+                // exchange AND it threw (not "unconfigured", not
+                // "declined to answer") — see
+                // includes/public/gemini_client.php's hc_gemini_last_error()
+                // for the full reasoning. Read by
+                // subadmin/chatbot_reports.php's "Gemini Failures" KPI.
+                'geminiFailed' => $geminiFailureReason !== null,
+                'geminiFailureReason' => $geminiFailureReason,
                 'createdAt' => date('c'),
             ]);
 
@@ -885,17 +895,25 @@ if (!function_exists('hc_chatbot_health_topics')) {
      */
     function hc_chatbot_health_topics(): array
     {
+        // Each pattern also matches the common Tagalog/Filipino term for
+        // the same topic (sipon, trangkaso, lagnat, etc.) — this engine
+        // is the only part of the pipeline that still works when BOTH
+        // Dialogflow (config/dialogflow.php's DIALOGFLOW_LANGUAGE_CODE is
+        // English-only) and Gemini (whose free-tier quota this app has
+        // hit before) are unavailable, so real Filipino patients asking
+        // in Tagalog still get a grounded answer instead of the generic
+        // "I'm not sure I understood that" fallback.
         return [
-            ['cold', '/\b(common cold|colds?)\b/i', '🤧 A common cold usually brings a runny or stuffy nose, sore throat, cough, sneezing, and mild body aches or low fever, typically clearing up in about 7–10 days. Rest and fluids help; see a doctor if it doesn\'t improve or gets worse. (Source: CDC — https://www.cdc.gov/common-cold/about/index.html)'],
-            ['flu', '/\b(flu|influenza)\b/i', '🤒 Flu symptoms usually start suddenly and are more intense than a cold — fever, chills, muscle aches, fatigue, headache, cough, and sore throat. Rest, fluids, and staying home to avoid spreading it are key; seek care if breathing becomes difficult or symptoms are severe. (Source: WHO — https://www.who.int/news-room/fact-sheets/detail/influenza-(seasonal))'],
+            ['cold', '/\b(common cold|colds?|sipon)\b/i', '🤧 A common cold usually brings a runny or stuffy nose, sore throat, cough, sneezing, and mild body aches or low fever, typically clearing up in about 7–10 days. Rest and fluids help; see a doctor if it doesn\'t improve or gets worse. (Source: CDC — https://www.cdc.gov/common-cold/about/index.html)'],
+            ['flu', '/\b(flu|influenza|trangkaso)\b/i', '🤒 Flu symptoms usually start suddenly and are more intense than a cold — fever, chills, muscle aches, fatigue, headache, cough, and sore throat. Rest, fluids, and staying home to avoid spreading it are key; seek care if breathing becomes difficult or symptoms are severe. (Source: WHO — https://www.who.int/news-room/fact-sheets/detail/influenza-(seasonal))'],
             ['dengue', '/\bdengue\b/i', '🦟 Common dengue symptoms include sudden high fever, severe headache, pain behind the eyes, joint and muscle pain, and rash. Warning signs like severe abdominal pain, persistent vomiting, or bleeding need immediate medical attention — dengue can worsen quickly. (Source: Philippine DOH — https://doh.gov.ph/uhc/health-programs/dengue-prevention-and-control-program/)'],
-            ['fever', '/\bfevers?\b/i', '🌡️ For a mild fever at home: rest, drink plenty of fluids, dress lightly, and you may take paracetamol as directed on the packaging. Seek medical care if the fever is very high, lasts more than 2–3 days, or comes with other worrying symptoms. (Source: CDC — https://www.cdc.gov/common-cold/treatment/index.html)'],
-            ['headache', '/\bheadaches?\b/i', '🤕 Common headache causes include stress, dehydration, lack of sleep, eye strain, and skipped meals. Most improve with rest, hydration, and over-the-counter pain relief. Seek care for a sudden, severe headache or one with other symptoms like vision changes. (Source: WHO — https://www.who.int/news-room/fact-sheets/detail/headache-disorders)'],
-            ['diarrhea', '/\bdiarrh(o?ea)\b/i', '🚰 Diarrhea means frequent loose or watery stools, sometimes with cramping, nausea, or fever. The main risk is dehydration, so fluids and oral rehydration salts (ORS) are important. See a doctor if it lasts more than 2 days, or has blood. (Source: WHO — https://www.who.int/news-room/fact-sheets/detail/diarrhoeal-disease)'],
+            ['fever', '/\b(fevers?|lagnat)\b/i', '🌡️ For a mild fever at home: rest, drink plenty of fluids, dress lightly, and you may take paracetamol as directed on the packaging. Seek medical care if the fever is very high, lasts more than 2–3 days, or comes with other worrying symptoms. (Source: CDC — https://www.cdc.gov/common-cold/treatment/index.html)'],
+            ['headache', '/\b(headaches?|sakit ng ulo|(sumasakit|masakit) (ang |na )?ulo)\b/i', '🤕 Common headache causes include stress, dehydration, lack of sleep, eye strain, and skipped meals. Most improve with rest, hydration, and over-the-counter pain relief. Seek care for a sudden, severe headache or one with other symptoms like vision changes. (Source: WHO — https://www.who.int/news-room/fact-sheets/detail/headache-disorders)'],
+            ['diarrhea', '/\b(diarrh(o?ea)|pagtatae|nagtatae|lbm)\b/i', '🚰 Diarrhea means frequent loose or watery stools, sometimes with cramping, nausea, or fever. The main risk is dehydration, so fluids and oral rehydration salts (ORS) are important. See a doctor if it lasts more than 2 days, or has blood. (Source: WHO — https://www.who.int/news-room/fact-sheets/detail/diarrhoeal-disease)'],
             ['dehydration', '/\bdehydrat(ion|ed)?\b/i', '💧 To prevent dehydration, drink water regularly — more during heat, illness, exercise, or diarrhea/vomiting, when oral rehydration salts (ORS) help too. Watch for warning signs like dark urine, dizziness, or a dry mouth. (Source: WHO — https://www.who.int/news-room/fact-sheets/detail/diarrhoeal-disease)'],
-            ['sore_throat', '/\bsore throats?\b/i', '🗣️ A sore throat usually causes pain or scratchiness when swallowing, sometimes with redness or a mild fever. Warm fluids, rest, and lozenges can help; see a doctor if it\'s severe, lasts over a week, or comes with high fever or trouble breathing. (Source: CDC — https://www.cdc.gov/common-cold/about/index.html)'],
+            ['sore_throat', '/\b(sore throats?|sakit ng lalamunan|masakit (ang |na )?lalamunan)\b/i', '🗣️ A sore throat usually causes pain or scratchiness when swallowing, sometimes with redness or a mild fever. Warm fluids, rest, and lozenges can help; see a doctor if it\'s severe, lasts over a week, or comes with high fever or trouble breathing. (Source: CDC — https://www.cdc.gov/common-cold/about/index.html)'],
             ['infection_prevention', '/\binfectious disease|communicable disease|spread(ing)? of (disease|infection)/i', '🧼 Common ways to prevent the spread of infectious diseases include frequent handwashing, covering coughs and sneezes, staying home when sick, keeping vaccinations up to date, and practicing good food and water hygiene. (Source: WHO — https://www.who.int/health-topics/infection-prevention-and-control)'],
-            ['cough', '/\bcoughs?\b/i', '😮‍💨 See a healthcare professional if a cough lasts more than 2–3 weeks, or comes with fever, shortness of breath, chest pain, blood, or unexplained weight loss. (Source: CDC — https://www.cdc.gov/respiratory-viruses/about/index.html)'],
+            ['cough', '/\b(coughs?|ubo)\b/i', '😮‍💨 See a healthcare professional if a cough lasts more than 2–3 weeks, or comes with fever, shortness of breath, chest pain, blood, or unexplained weight loss. (Source: CDC — https://www.cdc.gov/respiratory-viruses/about/index.html)'],
         ];
     }
 }
@@ -1112,7 +1130,7 @@ if (!function_exists('hc_chatbot_answer')) {
         // chatbot's own claimed expertise. The URL is real text in the
         // reply; assets/js/chatbot-widget.js renders it as an actual
         // clickable link client-side.
-        if (preg_match('/\b(symptoms?|signs?|causes?|prevent|prevention|treat|treatment|remedy|remedies|home|what (can|should) i do|when should i|consult|see a doctor|persistent|mild|severe)\b/i', $lower) === 1) {
+        if (preg_match('/\b(symptoms?|signs?|causes?|prevent|prevention|treat|treatment|remedy|remedies|home|what (can|should) i do|when should i|consult|see a doctor|persistent|mild|severe|sintomas|sanhi|lunas|\w*iwasan)\b/i', $lower) === 1) {
             foreach (hc_chatbot_health_topics() as [$topicKey, $topicPattern, $answer]) {
                 if (preg_match($topicPattern, $lower) === 1) {
                     hc_chatbot_remember_topic('health_topic', ['topic' => $topicKey]);
@@ -1142,8 +1160,11 @@ if (!function_exists('hc_chatbot_answer')) {
         // just because that drug happens to exist in inventory
         // (availability and clinical recommendation are different
         // functions). Checked before 1b specifically because "tell me"
-        // + "medicine" would otherwise match 1b's broad trigger.
-        if (preg_match('/\b(what|which) (medicine|medication|drug)s? (should|do) i (take|use)\b|\bcan you tell me the medicine (if|when) i\b|\b(recommend|suggest) (a |some )?(medicine|medication|drug)\b|\bbest (medicine|medication|drug) for\b|\bwhat medication should i\b/i', $lower) === 1) {
+        // + "medicine" would otherwise match 1b's broad trigger. The
+        // "ano(ng) gamot" branch is the Tagalog equivalent ("ano gamot sa
+        // sipon" = "what medicine for a cold") — same decline-and-
+        // redirect-to-general-info behavior as the English phrasing.
+        if (preg_match('/\b(what|which) (medicine|medication|drug)s? (should|do) i (take|use)\b|\bcan you tell me the medicine (if|when) i\b|\b(recommend|suggest) (a |some )?(medicine|medication|drug)\b|\bbest (medicine|medication|drug) for\b|\bwhat medication should i\b|\bano(ng)? (ang )?gamot\b|\bmay gamot (ba )?(sa|para sa)\b/i', $lower) === 1) {
             $topicKey = null;
             foreach (hc_chatbot_health_topics() as [$key, $topicPattern, $topicAnswer]) {
                 if (preg_match($topicPattern, $lower) === 1) {

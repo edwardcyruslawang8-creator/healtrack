@@ -69,8 +69,20 @@ $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'We
 // Group every real logged exchange by its normalized question text.
 // ---------------------------------------------------------------------
 $chatbotGroups = []; // questionNormalized => ['questionNormalized','sampleMessage','count','lastAskedAt','needsAnswer']
+// A real Gemini API call failed (not "unconfigured", not "declined to
+// answer" — see includes/public/gemini_client.php's hc_gemini_last_error())
+// within the last 24 hours — counted across EVERY log regardless of
+// $normalized below, since a failure is worth surfacing even on a
+// message that somehow normalized to '' (edge case, but this counter
+// shouldn't silently miss a real failure over it).
+$chatbotGeminiFailuresLast24h = 0;
+$chatbotGeminiFailureCutoff = date('c', strtotime('-24 hours'));
 foreach ($firestore->listDocuments('chatbot_logs') as $doc) {
     $f = $doc['fields'];
+    if (($f['geminiFailed'] ?? false) && (string) ($f['createdAt'] ?? '') >= $chatbotGeminiFailureCutoff) {
+        $chatbotGeminiFailuresLast24h++;
+    }
+
     $normalized = (string) ($f['questionNormalized'] ?? '');
     if ($normalized === '') {
         continue;
@@ -94,7 +106,7 @@ foreach ($firestore->listDocuments('chatbot_logs') as $doc) {
         $chatbotGroups[$normalized]['sampleMessage'] = (string) ($f['message'] ?? $chatbotGroups[$normalized]['sampleMessage']);
     }
 
-    if (in_array($f['matchType'] ?? '', ['gemini_general', 'fallback'], true)) {
+    if (in_array($f['matchType'] ?? '', ['gemini_general', 'groq_general', 'fallback'], true)) {
         $chatbotGroups[$normalized]['missed'] = true;
     }
     if ($f['flagged'] ?? false) {
@@ -154,4 +166,5 @@ $chatbotKpiCards = [
     ['label' => 'Distinct Questions',   'value' => count($chatbotGroups),                             'icon' => 'bi-question-circle-fill',    'iconBg' => '#EFE7FB', 'iconColor' => '#7C3AED'],
     ['label' => 'Needs Your Answer',    'value' => count($chatbotNeedsAnswer),                        'icon' => 'bi-exclamation-triangle-fill', 'iconBg' => '#FDECDD', 'iconColor' => '#E8710A'],
     ['label' => 'Custom Answers Taught','value' => count($chatbotCustomAnswerDocs),                   'icon' => 'bi-mortarboard-fill',        'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E'],
+    ['label' => 'Gemini Failures (24h)','value' => $chatbotGeminiFailuresLast24h,                     'icon' => 'bi-cloud-slash-fill',        'iconBg' => '#FCE4E4', 'iconColor' => '#D93025'],
 ];

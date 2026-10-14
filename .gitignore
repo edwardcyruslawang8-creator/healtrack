@@ -1,6 +1,7 @@
 # --- Real secrets: never commit these. Each has a .example.php sibling
 # that IS committed, documenting the structure with placeholder values.
 config/gemini.php
+config/groq.php
 config/mail.php
 
 # --- Composer dependencies: regenerate with `php composer.phar install`

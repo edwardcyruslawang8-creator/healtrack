@@ -11,11 +11,6 @@
 .cbr-section-intro h2{ font-size: 19px; font-weight: 700; color: var(--adm-text); margin: 0 0 4px; }
 .cbr-section-intro p{ font-size: 13px; color: var(--adm-text-muted); margin: 0; }
 
-/* -- 4-up override of analytics_reports.css's 5-up .arp-kpi-row grid. -- */
-.cbr-kpi-row-4{ grid-template-columns: repeat(4, 1fr); }
-@media (max-width: 1199.98px){ .cbr-kpi-row-4{ grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 575.98px){ .cbr-kpi-row-4{ grid-template-columns: 1fr; } }
-
 /* -- "Needs Your Answer" / "Most Asked Questions" cards -- */
 .cbr-card{ margin-bottom: 22px; }
 .cbr-card .adm-card-header h2{ display: flex; align-items: center; gap: 8px; }

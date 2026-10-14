@@ -126,9 +126,19 @@
         }
     });
 
-    if (localStorage.getItem(ACTIVITY_STORAGE_KEY) === null) {
-        recordActivity();
-    }
+    // Unconditional, not just "if nothing stored yet" — this script
+    // only ever runs on an authenticated page, and the server already
+    // just confirmed THIS session isn't idle (includes/shared/idle_timeout.php's
+    // hc_enforce_idle_timeout() would have redirected to logout before
+    // this page's HTML was even sent back if it were). So landing here
+    // at all is itself real, fresh activity. Without this being
+    // unconditional, a stale hc_last_activity value left over from a
+    // PREVIOUS login (localStorage survives logout and even closing the
+    // browser entirely — nothing ever clears this key) would make the
+    // very first tick() below see a huge elapsed time and log the user
+    // straight back out seconds after they just signed in, looking
+    // exactly like "logged out without being idle" from their side.
+    recordActivity();
 
     setInterval(tick, CHECK_INTERVAL_MS);
 })();

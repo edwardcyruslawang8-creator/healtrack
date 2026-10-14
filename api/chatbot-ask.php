@@ -96,6 +96,7 @@
 require_once __DIR__ . '/../includes/public/chatbot_engine.php'; // hc_chatbot_answer() — the fallback
 require_once __DIR__ . '/../includes/public/chatbot_decision_tree.php'; // hc_chatbot_decide(), hc_chatbot_phrase_decision()
 require_once __DIR__ . '/../includes/public/gemini_client.php'; // hc_gemini_generate_reply(), hc_gemini_general_reply()
+require_once __DIR__ . '/../includes/public/groq_client.php'; // hc_groq_generate_reply(), hc_groq_general_reply() — tried only after a real Gemini failure, see this file's own header comment
 require_once __DIR__ . '/../config/dialogflow.php';
 require_once __DIR__ . '/../firebase/DialogflowRestClient.php';
 
@@ -141,6 +142,13 @@ $rbacRole = hc_chatbot_detect_rbac_role($lowerMessage);
 // null — every later ??= below is a no-op once that's happened, same as
 // $answer itself.
 $matchType = null;
+// Set true if a Gemini call was actually attempted AND threw a real
+// error (not "unconfigured", not "declined to answer") anywhere in
+// this request — see includes/public/gemini_client.php's
+// hc_gemini_last_error() for the full reasoning. Fed into
+// hc_chatbot_log_exchange() below for subadmin/chatbot_reports.php's
+// "Gemini Failures" KPI card.
+$geminiFailureReason = null;
 
 $answer = null;
 $answer ??= hc_chatbot_is_emergency($lowerMessage) ? hc_chatbot_emergency_reply() : null;
@@ -202,7 +210,14 @@ if ($answer === null && is_file(DIALOGFLOW_CREDENTIALS_PATH)) {
 
         if (in_array($nlu['intent'], HC_DIALOGFLOW_KNOWN_INTENTS, true) && $nlu['confidence'] >= HC_DIALOGFLOW_CONFIDENCE_THRESHOLD) {
             $decision = hc_chatbot_decide($nlu['intent'], $nlu['parameters'], $message);
-            $answer = hc_gemini_generate_reply($message, $decision) ?? hc_chatbot_phrase_decision($decision);
+            $geminiAnswer = hc_gemini_generate_reply($message, $decision);
+            $geminiFailureReason ??= hc_gemini_last_error();
+            // Groq only gets a turn when Gemini actually threw (not just
+            // "declined to phrase it" — hc_gemini_last_error() is null in
+            // that case too) — see includes/public/groq_client.php's own
+            // header comment.
+            $groqAnswer = ($geminiAnswer === null && $geminiFailureReason !== null) ? hc_groq_generate_reply($message, $decision) : null;
+            $answer = $geminiAnswer ?? $groqAnswer ?? hc_chatbot_phrase_decision($decision);
         }
     } catch (\Throwable $e) {
         error_log('[Chatbot] Dialogflow/decision-tree pipeline failed, falling back: ' . $e->getMessage());
@@ -235,7 +250,20 @@ if ($answer === null) {
 // header comment for why this is the actual fix for a free-form
 // follow-up ("where?", "but that's already done") that doesn't match
 // hc_chatbot_is_followup_reference()'s hand-written patterns above.
-$answer ??= hc_gemini_general_reply($message, hc_chatbot_recall_history());
+if ($answer === null) {
+    $recentHistory = hc_chatbot_recall_history();
+    $generalAnswer = hc_gemini_general_reply($message, $recentHistory);
+    $geminiFailureReason ??= hc_gemini_last_error();
+    if ($generalAnswer === null && $geminiFailureReason !== null) {
+        // Same rule as the decision-tree phrasing step above: Groq only
+        // steps in once a real Gemini failure is confirmed.
+        $generalAnswer = hc_groq_general_reply($message, $recentHistory);
+        if ($generalAnswer !== null) {
+            $matchType = 'groq_general';
+        }
+    }
+    $answer = $generalAnswer;
+}
 if ($answer !== null && $matchType === null) {
     $matchType = 'gemini_general';
 }
@@ -251,7 +279,7 @@ if ($answer === null) {
 // explicit current question hc_gemini_general_reply() also appends).
 hc_chatbot_remember_turn('user', $message);
 hc_chatbot_remember_turn('bot', $answer);
-$logId = hc_chatbot_log_exchange($message, $answer, $matchType, $customAnswerId);
+$logId = hc_chatbot_log_exchange($message, $answer, $matchType, $customAnswerId, $geminiFailureReason);
 
 // logId lets the browser's own "👎 This didn't answer my question" link
 // (assets/js/chatbot-widget.js -> api/chatbot-feedback.php) flag

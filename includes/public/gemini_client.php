@@ -19,6 +19,28 @@
 
 require_once __DIR__ . '/../../config/gemini.php';
 
+if (!function_exists('hc_gemini_last_error')) {
+    /**
+     * The exception message from the most recent Gemini API call that
+     * actually FAILED (a real network/HTTP error — e.g. the "503 ...
+     * high demand" errors this has intermittently returned since
+     * Sep 28) — distinct from the other, unrelated reasons
+     * hc_gemini_generate_reply()/hc_gemini_general_reply() also return
+     * null for (GEMINI_API_KEY not configured, or Gemini genuinely
+     * returning an empty/MAX_TOKENS response), neither of which touch
+     * this. Null if the most recent call succeeded, or no call has run
+     * yet this request. api/chatbot-ask.php checks this right after
+     * each call to tell "Gemini is currently failing" apart from those
+     * other cases, for subadmin/chatbot_reports.php's "Gemini
+     * Failures" KPI card — the only place this app surfaces a Gemini
+     * failure anywhere other than the Apache error log.
+     */
+    function hc_gemini_last_error(): ?string
+    {
+        return $GLOBALS['__hc_gemini_last_error'] ?? null;
+    }
+}
+
 if (!function_exists('hc_gemini_extract_text')) {
     /**
      * Pulls the real reply text out of a generateContent response body,
@@ -51,6 +73,8 @@ if (!function_exists('hc_gemini_extract_text')) {
 if (!function_exists('hc_gemini_generate_reply')) {
     function hc_gemini_generate_reply(string $userQuestion, array $decision): ?string
     {
+        $GLOBALS['__hc_gemini_last_error'] = null; // see hc_gemini_last_error()'s own comment — cleared fresh on every call, only set below if this specific call throws
+
         if (GEMINI_API_KEY === '') {
             return null; // not configured yet — caller falls back
         }
@@ -117,6 +141,7 @@ if (!function_exists('hc_gemini_generate_reply')) {
             );
         } catch (\GuzzleHttp\Exception\GuzzleException $e) {
             error_log('[Gemini] generateContent failed: ' . $e->getMessage());
+            $GLOBALS['__hc_gemini_last_error'] = $e->getMessage();
 
             return null;
         }
@@ -160,6 +185,8 @@ if (!function_exists('hc_gemini_general_reply')) {
      */
     function hc_gemini_general_reply(string $userQuestion, array $history = []): ?string
     {
+        $GLOBALS['__hc_gemini_last_error'] = null; // see hc_gemini_last_error()'s own comment
+
         if (GEMINI_API_KEY === '') {
             return null;
         }
@@ -251,6 +278,7 @@ if (!function_exists('hc_gemini_general_reply')) {
             );
         } catch (\GuzzleHttp\Exception\GuzzleException $e) {
             error_log('[Gemini] general fallback failed: ' . $e->getMessage());
+            $GLOBALS['__hc_gemini_last_error'] = $e->getMessage();
 
             return null;
         }

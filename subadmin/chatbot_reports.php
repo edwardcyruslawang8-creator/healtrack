@@ -240,7 +240,7 @@ $adminNavItems = [
     </div>
 
     <!-- ============ KPI SUMMARY CARDS ============ -->
-    <div class="arp-kpi-row cbr-kpi-row-4">
+    <div class="arp-kpi-row">
         <?php foreach ($chatbotKpiCards as $kpi): ?>
         <div class="adm-card arp-kpi-card">
             <div class="arp-kpi-icon" style="background:<?= htmlspecialchars($kpi['iconBg']) ?>; color:<?= htmlspecialchars($kpi['iconColor']) ?>;">
