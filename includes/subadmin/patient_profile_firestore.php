@@ -72,11 +72,11 @@ $patient = $patient ?? hc_not_found_patient_profile($requestedPatientId);
 // ---------------------------------------------------------------------
 $profileTabs = [
     ['key' => 'overview',        'icon' => 'bi-person-fill',            'label' => 'Overview', 'active' => true],
-    ['key' => 'medical_records', 'icon' => 'bi-folder2-open',           'label' => 'Medical Records'],
+    ['key' => 'medical_records', 'icon' => 'bi-folder2-open',           'label' => 'Medical History'],
+    ['key' => 'medications',     'icon' => 'bi-capsule',                'label' => 'Medications'],
+    ['key' => 'allergies',       'icon' => 'bi-shield-fill-check',      'label' => 'Allergies'],
     ['key' => 'lab_xray',        'icon' => 'bi-droplet-fill',           'label' => 'Laboratory & X-ray'],
     ['key' => 'vaccination',     'icon' => 'bi-clipboard2-pulse-fill',  'label' => 'Vaccination Records'],
-    ['key' => 'allergies',       'icon' => 'bi-shield-fill-check',      'label' => 'Allergies'],
-    ['key' => 'medications',     'icon' => 'bi-capsule',                'label' => 'Medications'],
     ['key' => 'documents',       'icon' => 'bi-file-earmark-text-fill', 'label' => 'Documents'],
     ['key' => 'history',         'icon' => 'bi-clock-history',          'label' => 'History'],
 ];

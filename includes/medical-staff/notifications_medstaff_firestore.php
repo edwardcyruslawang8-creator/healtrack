@@ -35,6 +35,7 @@ require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/consultations.php'; // hc_get_followup_notifications()
 require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav()
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
+require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -62,12 +63,18 @@ $notificationTypeOptions = ['All Types', 'Consultation', 'Reminder'];
 // ---------------------------------------------------------------------
 $ntfReadIds = $_SESSION['ntfReadIds'] ?? [];
 $ntfArchivedIds = $_SESSION['ntfDismissedIds'] ?? [];
+// Real gating — see includes/shared/notification_preferences.php's
+// header comment for which key covers which real source here.
+$rawNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'system') ? array_merge(
+    array_filter([hc_get_2fa_reminder_notification($myUid, $myDoc ?? [])]),
+    hc_notification_preference_enabled_for_doc($myDoc ?? [], 'consultation') ? hc_get_followup_notifications() : []
+) : [];
 $notifications = array_map(function ($n) use ($ntfReadIds, $ntfArchivedIds) {
     $n['unread'] = !in_array($n['id'], $ntfReadIds, true);
     $n['archived'] = in_array($n['id'], $ntfArchivedIds, true);
 
     return $n;
-}, array_merge(array_filter([hc_get_2fa_reminder_notification($myUid, $myDoc ?? [])]), hc_get_followup_notifications()));
+}, $rawNotifications);
 
 // ---------------------------------------------------------------------
 // Notification tabs — all filter the table client-side (see

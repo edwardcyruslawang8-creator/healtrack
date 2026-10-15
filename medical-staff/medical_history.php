@@ -2,30 +2,20 @@
 /**
  * =====================================================================
  * HEALTrack — Health Information System
- * Patient Medical Records (medical-staff/medical_records.php)
+ * Patient Medical History (medical-staff/medical_history.php)
  * ---------------------------------------------------------------------
- * This IS medical-staff/patient_profile.php's "Medical Records" tab —
- * reached by clicking that tab (or the "View Medical Records" link on
- * the Overview tab's Active Medical Conditions card) — as its own page
- * rather than an in-page tab pane, since it needs its own category
- * panel + table. Reuses the exact same sidebar/topbar/profile-header/
- * tab-strip shell as patient_profile.php and patient_laboratory_xray.php
- * (280px dark-red gradient sidebar, "adm-"/"ppf-" prefixed atoms,
- * "mst-" nav badge/topbar select buttons), including the Edit Profile
- * button staying removed there, for consistency — all pages sharing
- * this profile header render the literal same component. Modeled on
- * subadmin/medical_records.php; reuses assets/css/medical_records.css
- * directly since it's visually identical.
+ * This IS medical-staff/patient_profile.php's "Medical History" tab
+ * (was "Medical Records") — reached by clicking that tab (or the "View
+ * Medical History" link on the Overview tab's Active Medical Conditions
+ * card) — as its own page rather than an in-page tab pane. Reuses the
+ * exact same sidebar/topbar/profile-header/tab-strip shell as
+ * patient_profile.php and patient_laboratory_xray.php.
  *
- * The "Documents" tab has no medical-staff page yet, so it stays an
- * inert placeholder button here (unlike the other tabs, which now all
- * link to real pages) — see medical-staff/patient_profile.php's header
- * comment.
- *
- * CONNECTED to real Firestore data — see includes/medical-staff/medical_records_medstaff_firestore.php's
- * header comment. The category panel is now a set of real filter links
- * (?category=). The Filter button and each row's View/Download buttons
- * are still decorative.
+ * CONNECTED to real Firestore data across all three sections — see
+ * includes/medical-staff/medical_history_medstaff_firestore.php's
+ * header comment. Modeled on subadmin/medical_history.php; Add/Edit/
+ * Delete go through the same shared api/add-condition.php and its
+ * siblings.
  * =====================================================================
  */
 session_start();
@@ -38,10 +28,9 @@ if (($_SESSION['role'] ?? null) !== 'healthcare_staff') {
     exit;
 }
 
-require_once __DIR__ . '/../includes/medical-staff/medical_records_medstaff_firestore.php';
+require_once __DIR__ . '/../includes/medical-staff/medical_history_medstaff_firestore.php';
 // $staffProfile, $dashboardDateLabel, $facilityOptions, $patient, $profileTabs,
-// $recordTypeMeta, $recordCategories, $medicalRecords, $medicalRecordsTotal,
-// $medicalRecordsPerPage, $medicalRecordsCurrentPage, $medicalRecordsTotalPages
+// $chronicConditions, $surgicalHistory, $familyHistory
 
 // Sidebar nav — same Medical Staff nav list as medical-staff/dashboard.php.
 // Patient Management stays active (this page is reached from it).
@@ -60,7 +49,7 @@ $staffNavItems = [
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Medical Records — HEALTrack</title>
+<title>Medical History — HEALTrack</title>
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -79,8 +68,9 @@ $staffNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/medical_staff_dashboard.css') ?>">
 <!-- Patient Profile styles, reused here for the breadcrumb + profile header card -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_profile.css') ?>">
-<!-- Medical Records page styles (category panel, records table) — shared verbatim with subadmin/medical_records.php -->
-<link rel="stylesheet" href="<?= asset_url('/assets/css/medical_records.css') ?>">
+<!-- Medical History page styles (section headers, status badges) -->
+<link rel="stylesheet" href="<?= asset_url('/assets/css/medical_history.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -154,7 +144,7 @@ $staffNavItems = [
     <!-- ============ TOP HEADER ============ -->
     <div class="adm-topbar">
         <div>
-            <h1>Patient Management <span class="ppf-title-sep">/</span> Medical Records</h1>
+            <h1>Patient Management <span class="ppf-title-sep">/</span> Medical History</h1>
             <nav class="ppf-breadcrumb" aria-label="Breadcrumb">
                 <a href="dashboard.php">Dashboard</a>
                 <span class="ppf-breadcrumb-sep">&gt;</span>
@@ -162,7 +152,7 @@ $staffNavItems = [
                 <span class="ppf-breadcrumb-sep">&gt;</span>
                 <a href="patient_profile.php?id=<?= urlencode($patient['id']) ?>">Patient Profile</a>
                 <span class="ppf-breadcrumb-sep">&gt;</span>
-                <span class="ppf-breadcrumb-current">Medical Records</span>
+                <span class="ppf-breadcrumb-current">Medical History</span>
             </nav>
         </div>
 
@@ -229,10 +219,7 @@ $staffNavItems = [
         </div>
     </div>
 
-    <!-- ============ PROFILE TABS ============
-         "Documents" has no medical-staff page yet, so it stays an inert
-         placeholder button (else branch) — every other tab now links to
-         a real page. -->
+    <!-- ============ PROFILE TABS ============ -->
     <ul class="nav adm-tabs" role="tablist">
         <?php foreach ($profileTabs as $tab): ?>
         <li class="nav-item" role="presentation">
@@ -277,104 +264,129 @@ $staffNavItems = [
         <?php endforeach; ?>
     </ul>
 
-    <!-- ============ MEDICAL RECORDS SECTION HEADER ============ -->
-    <div class="mrc-section-header">
-        <div>
-            <h2>Medical Records</h2>
-            <p>View and manage all medical records of the patient.</p>
-        </div>
-        <div class="dropdown">
-            <button class="mrc-btn-filter dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-funnel"></i> <?= htmlspecialchars($mrcDateRangeLabel) ?></button>
-            <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['daterange' => 'all', 'page' => 1])) ?>">All Time</a></li>
-                <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['daterange' => 'today', 'page' => 1])) ?>">Today</a></li>
-                <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['daterange' => 'this_week', 'page' => 1])) ?>">This Week</a></li>
-                <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['daterange' => 'this_month', 'page' => 1])) ?>">This Month</a></li>
-            </ul>
-        </div>
+    <!-- ============ MEDICAL HISTORY SECTION HEADER ============ -->
+    <div class="mhx-intro">
+        <h2>Medical History</h2>
+        <p>View and manage patient's past and existing medical history.</p>
     </div>
 
-    <!-- ============ CATEGORY PANEL + RECORDS TABLE ============ -->
-    <div class="mrc-layout">
-
-        <!-- Record Categories -->
-        <div class="adm-card mrc-categories-card">
-            <h3>Record Categories</h3>
-            <ul class="mrc-category-list">
-                <?php foreach ($recordCategories as $cat): ?>
-                <li>
-                    <a href="<?= htmlspecialchars(hc_url_with_params(['category' => $cat['key'], 'page' => 1])) ?>" class="mrc-category-item <?= !empty($cat['active']) ? 'active' : '' ?>">
-                        <span><?= htmlspecialchars($cat['label']) ?></span>
-                        <span class="mrc-category-count"><?= (int) $cat['count'] ?></span>
-                    </a>
-                </li>
-                <?php endforeach; ?>
-            </ul>
+    <!-- ============ CHRONIC CONDITIONS ============ -->
+    <div class="adm-card mhx-section">
+        <div class="mhx-section-header">
+            <h3><i class="bi bi-heart-pulse-fill"></i> Chronic Conditions</h3>
+            <button type="button" class="mhx-add-btn" data-mhx-add="condition"><i class="bi bi-plus-lg"></i> Add</button>
         </div>
-
-        <!-- Medical Records Table -->
-        <div class="adm-card mrc-table-card">
-            <div class="adm-table-wrap">
-                <table class="adm-table mrc-table">
-                    <thead>
-                        <tr>
-                            <th>Record Type</th>
-                            <th>Title / Description</th>
-                            <th>Date</th>
-                            <th>Provider / Facility</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($medicalRecords)): ?>
-                        <tr>
-                            <td colspan="5" class="adm-table-empty">No medical records yet.</td>
-                        </tr>
-                        <?php endif; ?>
-                        <?php foreach ($medicalRecords as $rec): $meta = $recordTypeMeta[$rec['type']] ?? ['label' => ucfirst($rec['type']), 'icon' => 'bi-file-earmark-text-fill', 'bg' => '#EEF0F3', 'color' => '#6B7280']; ?>
-                        <tr>
-                            <td>
-                                <div class="mrc-type-cell">
-                                    <span class="mrc-type-icon" style="background:<?= htmlspecialchars($meta['bg']) ?>; color:<?= htmlspecialchars($meta['color']) ?>;">
-                                        <i class="bi <?= htmlspecialchars($meta['icon']) ?>"></i>
-                                    </span>
-                                    <span><?= htmlspecialchars($meta['label']) ?></span>
-                                </div>
-                            </td>
-                            <td class="mrc-strong"><?= htmlspecialchars($rec['title']) ?></td>
-                            <td class="mrc-datetime"><?= htmlspecialchars($rec['date']) ?> <span class="mrc-dot"></span> <?= htmlspecialchars($rec['time']) ?></td>
-                            <td>
-                                <div class="mrc-provider-cell">
-                                    <?php if ($rec['provider']): ?>
-                                    <span class="mrc-provider-name"><?= htmlspecialchars($rec['provider']) ?></span>
-                                    <?php endif; ?>
-                                    <span class="mrc-provider-facility"><?= htmlspecialchars($rec['facility']) ?></span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="adm-action-btns">
-                                    <button type="button" class="adm-action-btn view" aria-label="View"><i class="bi bi-eye"></i></button>
-                                    <button type="button" class="adm-action-btn mrc-download-btn" aria-label="Download"><i class="bi bi-download"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="adm-table-footer">
-                <span class="adm-showing-text"><?= $medicalRecordsTotal > 0 ? 'Showing ' . (($medicalRecordsCurrentPage - 1) * $medicalRecordsPerPage + 1) . ' to ' . (($medicalRecordsCurrentPage - 1) * $medicalRecordsPerPage + count($medicalRecords)) . ' of ' . $medicalRecordsTotal . ' entries' : 'No entries to show' ?></span>
-                <?= hc_render_pagination_nav('Medical records pages', 'page', $medicalRecordsCurrentPage, $medicalRecordsTotalPages) ?>
-            </div>
+        <div class="adm-table-wrap">
+            <table class="adm-table mhx-table">
+                <thead>
+                    <tr><th>Condition</th><th>Date Diagnosed</th><th>Status</th><th>Notes</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($chronicConditions)): ?>
+                    <tr><td colspan="5" class="adm-table-empty">No chronic conditions on record.</td></tr>
+                    <?php endif; ?>
+                    <?php foreach ($chronicConditions as $c): $rowJson = htmlspecialchars(json_encode($c), ENT_QUOTES); ?>
+                    <tr>
+                        <td class="mhx-cond-label"><?= htmlspecialchars($c['label']) ?></td>
+                        <td><?= htmlspecialchars($c['diagnosedOn']) ?></td>
+                        <td><span class="mhx-status-badge <?= strtolower($c['status']) ?>"><?= htmlspecialchars($c['status']) ?></span></td>
+                        <td class="mhx-notes-cell"><?= htmlspecialchars($c['details'] ?? '—') ?></td>
+                        <td>
+                            <div class="adm-action-btns">
+                                <button type="button" class="adm-action-btn edit" aria-label="Edit" data-mhx-edit="condition" data-id="<?= htmlspecialchars($c['id']) ?>" data-row='<?= $rowJson ?>'><i class="bi bi-pencil"></i></button>
+                                <button type="button" class="adm-action-btn delete" aria-label="Delete" data-mhx-delete="condition" data-id="<?= htmlspecialchars($c['id']) ?>" data-label="&quot;<?= htmlspecialchars($c['label']) ?>&quot;"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
         </div>
+        <?php if (!empty($chronicConditions)): ?>
+        <p class="mhx-footer-text">Showing 1 to <?= count($chronicConditions) ?> of <?= count($chronicConditions) ?> entries</p>
+        <?php endif; ?>
+    </div>
 
+    <!-- ============ PAST SURGERIES / PROCEDURES ============ -->
+    <div class="adm-card mhx-section">
+        <div class="mhx-section-header">
+            <h3><i class="bi bi-bandaid-fill"></i> Past Surgeries / Procedures</h3>
+            <button type="button" class="mhx-add-btn" data-mhx-add="surgery"><i class="bi bi-plus-lg"></i> Add</button>
+        </div>
+        <div class="adm-table-wrap">
+            <table class="adm-table mhx-table">
+                <thead>
+                    <tr><th>Procedure</th><th>Date</th><th>Surgeon / Facility</th><th>Notes</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($surgicalHistory)): ?>
+                    <tr><td colspan="5" class="adm-table-empty">No past surgeries or procedures on record.</td></tr>
+                    <?php endif; ?>
+                    <?php foreach ($surgicalHistory as $s): $rowJson = htmlspecialchars(json_encode($s), ENT_QUOTES); ?>
+                    <tr>
+                        <td class="mhx-cond-label"><?= htmlspecialchars($s['procedure']) ?></td>
+                        <td><?= htmlspecialchars($s['date']) ?></td>
+                        <td><?= htmlspecialchars($s['surgeonFacility'] ?? '—') ?></td>
+                        <td class="mhx-notes-cell"><?= htmlspecialchars($s['details'] ?? '—') ?></td>
+                        <td>
+                            <div class="adm-action-btns">
+                                <button type="button" class="adm-action-btn edit" aria-label="Edit" data-mhx-edit="surgery" data-id="<?= htmlspecialchars($s['id']) ?>" data-row='<?= $rowJson ?>'><i class="bi bi-pencil"></i></button>
+                                <button type="button" class="adm-action-btn delete" aria-label="Delete" data-mhx-delete="surgery" data-id="<?= htmlspecialchars($s['id']) ?>" data-label="&quot;<?= htmlspecialchars($s['procedure']) ?>&quot;"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php if (!empty($surgicalHistory)): ?>
+        <p class="mhx-footer-text">Showing 1 to <?= count($surgicalHistory) ?> of <?= count($surgicalHistory) ?> entries</p>
+        <?php endif; ?>
+    </div>
+
+    <!-- ============ FAMILY HISTORY ============ -->
+    <div class="adm-card mhx-section">
+        <div class="mhx-section-header">
+            <h3><i class="bi bi-people-fill"></i> Family History</h3>
+            <button type="button" class="mhx-add-btn" data-mhx-add="family"><i class="bi bi-plus-lg"></i> Add</button>
+        </div>
+        <div class="adm-table-wrap">
+            <table class="adm-table mhx-table">
+                <thead>
+                    <tr><th>Condition</th><th>Relation</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($familyHistory)): ?>
+                    <tr><td colspan="3" class="adm-table-empty">No family history on record.</td></tr>
+                    <?php endif; ?>
+                    <?php foreach ($familyHistory as $f): $rowJson = htmlspecialchars(json_encode($f), ENT_QUOTES); ?>
+                    <tr>
+                        <td class="mhx-cond-label"><?= htmlspecialchars($f['condition']) ?></td>
+                        <td><?= htmlspecialchars($f['relation']) ?></td>
+                        <td>
+                            <div class="adm-action-btns">
+                                <button type="button" class="adm-action-btn edit" aria-label="Edit" data-mhx-edit="family" data-id="<?= htmlspecialchars($f['id']) ?>" data-row='<?= $rowJson ?>'><i class="bi bi-pencil"></i></button>
+                                <button type="button" class="adm-action-btn delete" aria-label="Delete" data-mhx-delete="family" data-id="<?= htmlspecialchars($f['id']) ?>" data-label="&quot;<?= htmlspecialchars($f['condition']) ?>&quot;"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php if (!empty($familyHistory)): ?>
+        <p class="mhx-footer-text">Showing 1 to <?= count($familyHistory) ?> of <?= count($familyHistory) ?> entries</p>
+        <?php endif; ?>
     </div>
 
 </main>
 
+<?php require __DIR__ . '/../includes/shared/medical_history_modals.php'; ?>
+
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/medical-history.js') ?>"></script>
 </body>
 </html>

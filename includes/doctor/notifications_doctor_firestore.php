@@ -38,6 +38,7 @@ require_once __DIR__ . '/../firestore/consultations.php'; // hc_get_followup_not
 require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav()
 require_once __DIR__ . '/../shared/patient_access_requests.php'; // hc_get_access_request_notifications()
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
+require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -68,11 +69,15 @@ $notificationTypeOptions = ['All Types', 'Consultation', 'Patient Access', 'Remi
 // ---------------------------------------------------------------------
 $ntfReadIds = $_SESSION['ntfReadIds'] ?? [];
 $ntfArchivedIds = $_SESSION['ntfDismissedIds'] ?? [];
-$rawNotifications = array_merge(
+// Real gating — see includes/shared/notification_preferences.php's
+// header comment for which key covers which real source here. 'system'
+// is the master switch; access-request notifications don't map to any
+// more specific category, so they're only gated by it.
+$rawNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'system') ? array_merge(
     array_filter([hc_get_2fa_reminder_notification($myUid, $myDoc ?? [])]),
-    hc_get_followup_notifications($doctorProfile['name']),
+    hc_notification_preference_enabled_for_doc($myDoc ?? [], 'consultation') ? hc_get_followup_notifications($doctorProfile['name']) : [],
     hc_get_access_request_notifications($myUid)
-);
+) : [];
 $notifications = array_map(function ($n) use ($ntfReadIds, $ntfArchivedIds) {
     $n['unread'] = !in_array($n['id'], $ntfReadIds, true);
     $n['archived'] = in_array($n['id'], $ntfArchivedIds, true);

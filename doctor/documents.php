@@ -240,7 +240,7 @@ $fileTypeIconMeta = [
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'medical_records'): ?>
-            <a href="medical_records.php?id=<?= urlencode($patient['id']) ?>" class="nav-link">
+            <a href="medical_history.php?id=<?= urlencode($patient['id']) ?>" class="nav-link">
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'lab_xray'): ?>

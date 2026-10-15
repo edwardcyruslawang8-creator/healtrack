@@ -10,14 +10,17 @@
  * is medical-staff-specific). Writes:
  *   - one new document to "patients" (personal info + vitals snapshot)
  *   - zero or more documents to "medical_conditions", "surgical_history",
- *     "allergies", and "medications", each tagged with the new patientId
- * — the same collections includes/firestore/patients.php, medical_records.php,
+ *     "family_history", "allergies", and "medications", each tagged
+ *     with the new patientId
+ * — the same collections includes/firestore/patients.php,
+ * includes/firestore/medical_records.php, family_history.php,
  * allergies.php, and medications.php read for every role's Patient
- * Profile page ("surgical_history" has no reader yet — see that block
- * below). Condition/allergy/medication rows are filled in with the
- * same default field shape those read functions expect (see each
- * block below) so the Patient Profile tabs don't break when this
- * patient is viewed later.
+ * Profile page (specifically its Medical History tab for the first
+ * three — subadmin/doctor/medical-staff's medical_history.php).
+ * Condition/surgery/family-history/allergy/medication rows are filled
+ * in with the same default field shape those read functions expect
+ * (see each block below) so the Patient Profile tabs don't break when
+ * this patient is viewed later.
  *
  * Does NOT create a Firebase Auth login account (a separate, unrelated
  * concern from having a patient's chart exist) and does NOT create a
@@ -71,6 +74,7 @@ $sex = trim((string) ($body['sex'] ?? ''));
 $civilStatus = trim((string) ($body['civilStatus'] ?? ''));
 $occupation = trim((string) ($body['occupation'] ?? ''));
 $phone = trim((string) ($body['phone'] ?? ''));
+$email = trim((string) ($body['email'] ?? ''));
 $address = trim((string) ($body['address'] ?? ''));
 $barangay = trim((string) ($body['barangay'] ?? ''));
 $city = trim((string) ($body['city'] ?? ''));
@@ -82,6 +86,19 @@ $bloodType = trim((string) ($body['bloodType'] ?? ''));
 if ($bloodType !== '' && !in_array($bloodType, ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'], true)) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Please select a valid blood type.']);
+    exit;
+}
+
+// Email — optional (not every patient has one), same as Blood Type:
+// only format-checked when actually provided, never required. This is
+// the one real thing that lets includes/shared/patient_access_requests.php's
+// consent-request email actually reach the patient — previously no
+// "patients" doc had an email field at all, so that flow could only
+// ever fail with "This patient has no email on file" for every
+// account; see that file's own header comment.
+if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please enter a valid email address.']);
     exit;
 }
 
@@ -180,6 +197,7 @@ $patientFields = [
     'civilStatus' => $civilStatus,
     'occupation' => $occupation !== '' ? $occupation : null,
     'contact' => $phone,
+    'email' => $email !== '' ? $email : null,
     'address' => $address,
     'barangay' => $barangay,
     'city' => $city,
@@ -252,6 +270,31 @@ foreach ($surgeries as $s) {
         'procedure' => $procedure,
         'details' => trim((string) ($s['details'] ?? '')) ?: null,
         'dateRecorded' => date('Y-m-d'),
+    ]);
+}
+
+// ---------------------------------------------------------------------
+// Family History -> real "family_history" docs, in the exact shape
+// includes/firestore/family_history.php's hc_get_family_history_for_patient()
+// reads back. A row is only kept if BOTH Condition and Relation are
+// filled in — unlike Medical/Surgical History above (where only the
+// primary field is required), a family history entry means nothing
+// without knowing who it applies to, so the wizard's own validation
+// (assets/js/add-patient.js's validateRepeatTable) already enforces
+// both together before this is ever reached.
+// ---------------------------------------------------------------------
+$familyHistoryRows = is_array($body['familyHistory'] ?? null) ? $body['familyHistory'] : [];
+foreach ($familyHistoryRows as $fh) {
+    $condition = trim((string) ($fh['condition'] ?? ''));
+    $relation = trim((string) ($fh['relation'] ?? ''));
+    if ($condition === '' || $relation === '') {
+        continue;
+    }
+
+    $firestore->addDocument('family_history', [
+        'patientId' => $patientId,
+        'condition' => $condition,
+        'relation' => $relation,
     ]);
 }
 

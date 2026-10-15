@@ -96,9 +96,20 @@ if (!function_exists('hc_format_vitals_summary')) {
 if (!function_exists('hc_get_medical_conditions_for_patient')) {
     /**
      * Every medical_conditions/{id} doc for $patientId (all statuses —
-     * callers filter to 'Active' for the Overview tab's card).
+     * callers filter to 'Active' for the Overview tab's card), newest
+     * diagnosis first. 'details' (Notes) is real — written since
+     * api/create-patient.php's registration flow, and by
+     * api/add-condition.php/api/update-condition.php now too — just
+     * never surfaced by this reader until the Medical History tab
+     * (subadmin/doctor/medical-staff's medical_history.php) needed it.
      *
-     * @return array<int, array{id: string, label: string, diagnosedOn: string, status: string}>
+     * 'diagnosedOnRaw' is the real ISO date (same value stored in
+     * Firestore) alongside 'diagnosedOn's human-formatted display
+     * version — assets/js/medical-history.js needs the raw ISO form to
+     * pre-fill the Edit modal's <input type="date">, which can't parse
+     * "Feb 15, 2024".
+     *
+     * @return array<int, array{id: string, label: string, diagnosedOn: string, diagnosedOnRaw: string, status: string, details: ?string}>
      */
     function hc_get_medical_conditions_for_patient(string $patientId): array
     {
@@ -108,12 +119,69 @@ if (!function_exists('hc_get_medical_conditions_for_patient')) {
             $firestore->listDocuments('medical_conditions'),
             fn ($doc) => ($doc['fields']['patientId'] ?? '') === $patientId
         ));
+        usort($rows, fn ($a, $b) => strcmp($b['fields']['diagnosedOn'] ?? '', $a['fields']['diagnosedOn'] ?? ''));
 
         return array_map(fn ($doc) => [
             'id' => $doc['id'],
             'label' => $doc['fields']['label'],
             'diagnosedOn' => date('M j, Y', strtotime($doc['fields']['diagnosedOn'])),
+            'diagnosedOnRaw' => date('Y-m-d', strtotime($doc['fields']['diagnosedOn'])),
             'status' => $doc['fields']['status'],
+            'details' => $doc['fields']['details'] ?? null,
         ], $rows);
+    }
+}
+
+if (!function_exists('hc_get_surgical_history_for_patient')) {
+    /**
+     * Every surgical_history/{id} doc for $patientId, newest first. This
+     * collection has been written since the Add Patient wizard's Step 3
+     * (api/create-patient.php) but had no reader anywhere until the
+     * Medical History tab needed one — see that function's own comment.
+     * 'date' prefers the real 'datePerformed' (only ever set by
+     * api/add-surgery.php/api/update-surgery.php, where the actual
+     * surgery date is a real field on the Add/Edit form) over the
+     * registration wizard's 'dateRecorded' (just stamps the day the
+     * patient was registered, not necessarily when the surgery actually
+     * happened) — so a legacy registration-time row still shows SOME
+     * real date instead of nothing. 'surgeonFacility' is null for every
+     * row written before this field existed.
+     *
+     * 'datePerformedRaw' is the real ISO 'datePerformed' value ONLY
+     * (never falls back to 'dateRecorded') — for pre-filling the Edit
+     * modal's <input type="date"> honestly: a legacy row that only has
+     * 'dateRecorded' (when it was registered, not when the surgery
+     * actually happened) should open Edit with the Date field BLANK,
+     * not silently promote that registration timestamp into looking
+     * like a real chosen surgery date.
+     *
+     * @return array<int, array{id: string, procedure: string, date: string, datePerformedRaw: ?string, surgeonFacility: ?string, details: ?string}>
+     */
+    function hc_get_surgical_history_for_patient(string $patientId): array
+    {
+        global $firestore;
+
+        $rows = array_values(array_filter(
+            $firestore->listDocuments('surgical_history'),
+            fn ($doc) => ($doc['fields']['patientId'] ?? '') === $patientId
+        ));
+        usort($rows, fn ($a, $b) => strcmp(
+            $b['fields']['datePerformed'] ?? $b['fields']['dateRecorded'] ?? '',
+            $a['fields']['datePerformed'] ?? $a['fields']['dateRecorded'] ?? ''
+        ));
+
+        return array_map(function ($doc) {
+            $f = $doc['fields'];
+            $rawDate = $f['datePerformed'] ?? $f['dateRecorded'] ?? null;
+
+            return [
+                'id' => $doc['id'],
+                'procedure' => $f['procedure'],
+                'date' => $rawDate !== null ? date('M j, Y', strtotime($rawDate)) : '—',
+                'datePerformedRaw' => isset($f['datePerformed']) ? date('Y-m-d', strtotime($f['datePerformed'])) : null,
+                'surgeonFacility' => $f['surgeonFacility'] ?? null,
+                'details' => $f['details'] ?? null,
+            ];
+        }, $rows);
     }
 }

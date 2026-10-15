@@ -286,7 +286,7 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'medical_records'): ?>
-            <a href="medical_records.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
+            <a href="medical_history.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'lab_xray'): ?>
@@ -361,8 +361,8 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
         </div>
     </div>
 
-    <!-- ============ ALLERGY LIST TABLE ============ -->
-    <div class="alg-list-header"><h3>Allergy List</h3></div>
+    <!-- ============ ACTIVE ALLERGIES TABLE ============ -->
+    <div class="alg-list-header"><h3>Active Allergies</h3></div>
 
     <div class="adm-card alg-table-card">
         <div class="adm-table-wrap">
@@ -380,12 +380,12 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (empty($allergyRecords)): ?>
+                    <?php if (empty($activeAllergies)): ?>
                     <tr>
-                        <td colspan="8" class="adm-table-empty">No allergy records yet.</td>
+                        <td colspan="8" class="adm-table-empty">No active allergies recorded.</td>
                     </tr>
                     <?php endif; ?>
-                    <?php foreach ($allergyRecords as $alg): $sev = $severityMeta[$alg['severity']] ?? $severityMeta['mild']; $stat = $allergyStatusMeta[$alg['status']] ?? $allergyStatusMeta['active']; ?>
+                    <?php foreach ($activeAllergies as $alg): $sev = $severityMeta[$alg['severity']] ?? $severityMeta['mild']; $stat = $allergyStatusMeta[$alg['status']] ?? $allergyStatusMeta['active']; ?>
                     <tr>
                         <td>
                             <div class="alg-name-cell">
@@ -408,6 +408,7 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                         <td class="alg-notes-cell"><?= htmlspecialchars($alg['notes']) ?></td>
                         <td>
                             <div class="adm-action-btns">
+                                <a href="allergies.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($alg['id']) ?>#algDetailsPanel" class="adm-view-link-btn">Select</a>
                                 <a href="allergy_details.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($alg['id']) ?>" class="adm-view-link-btn">View Details</a>
                             </div>
                         </td>
@@ -418,7 +419,69 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
         </div>
 
         <div class="adm-table-footer">
-            <span class="adm-showing-text"><?= $allergyRecordsTotal > 0 ? 'Showing 1 to ' . count($allergyRecords) . ' of ' . $allergyRecordsTotal . ' entries' : 'No entries to show' ?></span>
+            <span class="adm-showing-text"><?= count($activeAllergies) > 0 ? 'Showing 1 to ' . count($activeAllergies) . ' of ' . count($activeAllergies) . ' entries' : 'No entries to show' ?></span>
+        </div>
+    </div>
+
+    <!-- ============ INACTIVE / RESOLVED ALLERGIES TABLE ============ -->
+    <div class="alg-list-header"><h3>Inactive / Resolved Allergies</h3></div>
+
+    <div class="adm-card alg-table-card">
+        <div class="adm-table-wrap">
+            <table class="adm-table alg-table">
+                <thead>
+                    <tr>
+                        <th>Allergen</th>
+                        <th>Type</th>
+                        <th>Reaction</th>
+                        <th>Severity</th>
+                        <th>Onset Date</th>
+                        <th>Status</th>
+                        <th>Notes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($inactiveAllergies)): ?>
+                    <tr>
+                        <td colspan="8" class="adm-table-empty">No inactive or resolved allergies recorded.</td>
+                    </tr>
+                    <?php endif; ?>
+                    <?php foreach ($inactiveAllergies as $alg): $sev = $severityMeta[$alg['severity']] ?? $severityMeta['mild']; $stat = $allergyStatusMeta[$alg['status']] ?? $allergyStatusMeta['active']; ?>
+                    <tr>
+                        <td>
+                            <div class="alg-name-cell">
+                                <span class="alg-type-icon" style="background:<?= htmlspecialchars($alg['iconBg']) ?>; color:<?= htmlspecialchars($alg['iconColor']) ?>;">
+                                    <i class="bi <?= htmlspecialchars($alg['icon']) ?>"></i>
+                                </span>
+                                <div class="alg-name-text">
+                                    <span class="alg-strong"><?= htmlspecialchars($alg['allergen']) ?></span>
+                                    <?php if ($alg['subtype']): ?>
+                                    <span class="alg-subtype">(<?= htmlspecialchars($alg['subtype']) ?>)</span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </td>
+                        <td><?= htmlspecialchars($alg['type']) ?></td>
+                        <td><?= htmlspecialchars($alg['reaction']) ?></td>
+                        <td><span class="alg-badge" style="background:<?= htmlspecialchars($sev['bg']) ?>; color:<?= htmlspecialchars($sev['color']) ?>;"><?= htmlspecialchars($sev['label']) ?></span></td>
+                        <td><?= htmlspecialchars($alg['onsetDate']) ?></td>
+                        <td><span class="alg-badge" style="background:<?= htmlspecialchars($stat['bg']) ?>; color:<?= htmlspecialchars($stat['color']) ?>;"><?= htmlspecialchars($stat['label']) ?></span></td>
+                        <td class="alg-notes-cell"><?= htmlspecialchars($alg['notes']) ?></td>
+                        <td>
+                            <div class="adm-action-btns">
+                                <a href="allergies.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($alg['id']) ?>#algDetailsPanel" class="adm-view-link-btn">Select</a>
+                                <a href="allergy_details.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($alg['id']) ?>" class="adm-view-link-btn">View Details</a>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="adm-table-footer">
+            <span class="adm-showing-text"><?= count($inactiveAllergies) > 0 ? 'Showing 1 to ' . count($inactiveAllergies) . ' of ' . count($inactiveAllergies) . ' entries' : 'No entries to show' ?></span>
         </div>
     </div>
 

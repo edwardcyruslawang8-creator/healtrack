@@ -288,7 +288,7 @@ $selectedMeta = $vaccineTypeMeta[$selectedVaccineRecord['type']] ?? ['label' => 
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'medical_records'): ?>
-            <a href="medical_records.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
+            <a href="medical_history.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'lab_xray'): ?>

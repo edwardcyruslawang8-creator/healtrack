@@ -1,0 +1,66 @@
+/* =============================================================
+   MEDICAL HISTORY (subadmin/doctor/medical-staff's medical_history.php)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (.adm-card/.adm-table/
+   .adm-action-btn, all reused here) and assets/css/patient_profile.css
+   (breadcrumb/profile header/tab-strip). Everything new here is "mhx-"
+   prefixed (Medical HistoryX — "mh" alone collided with nothing, but
+   kept distinct from "mrc-" so the old, now-unused
+   assets/css/medical_records.css can be told apart at a glance).
+   ============================================================= */
+
+.mhx-intro{ margin-bottom: 18px; }
+.mhx-intro h2{ font-size: 19px; font-weight: 800; color: var(--adm-text); margin: 0 0 4px; }
+.mhx-intro p{ font-size: 13px; color: var(--adm-text-muted); margin: 0; }
+
+.mhx-section{ margin-bottom: 22px; }
+.mhx-section-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.mhx-section-header h3{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--adm-text);
+  margin: 0;
+}
+.mhx-section-header h3 i{ color: var(--adm-red-bright); }
+
+.mhx-add-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-red-bright);
+  color: var(--adm-red-bright);
+  border-radius: 9px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.mhx-add-btn:hover{ background: var(--adm-red-bright); color: #fff; }
+
+.mhx-table td, .mhx-table th{ vertical-align: middle; }
+.mhx-cond-label{ font-weight: 600; color: var(--adm-text); }
+.mhx-notes-cell{ color: var(--adm-text-muted); max-width: 320px; }
+
+.mhx-status-badge{
+  display: inline-flex;
+  align-items: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 3px 10px;
+}
+.mhx-status-badge.active{ background: var(--adm-green-bg); color: var(--adm-green); }
+.mhx-status-badge.controlled{ background: var(--adm-blue-bg); color: var(--adm-blue); }
+.mhx-status-badge.resolved{ background: #EEF0F3; color: #6B7280; }
+
+.mhx-footer-text{ padding: 10px 2px 0; font-size: 12px; color: var(--adm-text-muted); }

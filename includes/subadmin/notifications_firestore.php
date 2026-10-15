@@ -23,6 +23,7 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav()
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
+require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -69,7 +70,13 @@ $notifications = [
 // not appended: this page's 8 seed rows already fill page 1 on their
 // own, so appending would silently bury this behind pagination instead
 // of actually being visible/actionable.
-$twoFaNotification = hc_get_2fa_reminder_notification($myUid, $myDoc ?? []);
+// Gated by 'system' (master "Receive in-app notifications" toggle) —
+// see includes/shared/notification_preferences.php's header comment.
+// The 8 rows above are fake seed data (not real sources), so this is
+// the only one real thing on this page worth gating.
+$twoFaNotification = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'system')
+    ? hc_get_2fa_reminder_notification($myUid, $myDoc ?? [])
+    : null;
 if ($twoFaNotification !== null) {
     $twoFaNotification['unread'] = true;
     array_unshift($notifications, $twoFaNotification);

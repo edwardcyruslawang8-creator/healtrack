@@ -82,6 +82,19 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!fieldValid) valid = false;
         });
 
+        // Email is optional (no [required]), so the loop above skips it
+        // entirely — still worth catching an actually-malformed, non-empty
+        // value here, since it won't be able to receive a consent-request
+        // email later otherwise.
+        const emailField = document.getElementById('apmEmail');
+        if (emailField && panel.contains(emailField)) {
+            const emailValid = emailField.checkValidity();
+            emailField.classList.toggle('is-invalid', !emailValid);
+            const emailFeedback = emailField.closest('.apm-field').querySelector('.invalid-feedback');
+            if (emailFeedback) emailFeedback.style.display = emailValid ? 'none' : 'block';
+            if (!emailValid) valid = false;
+        }
+
         // Consent radios live in .apm-consent-box, not .apm-field.
         const consentGroup = panel.querySelectorAll('input[name="apmConsent"]');
         if (consentGroup.length) {
@@ -98,8 +111,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (currentStep === 3) {
             const conditionsOk = validateRepeatTable('apmConditionList', ['label']);
             const surgeriesOk = validateRepeatTable('apmSurgeryList', ['procedure']);
+            const familyOk = validateRepeatTable('apmFamilyList', ['condition', 'relation']);
             const allergiesOk = validateRepeatTable('apmAllergyList', ['allergen', 'severity', 'reaction']);
-            if (!conditionsOk || !surgeriesOk || !allergiesOk) return;
+            if (!conditionsOk || !surgeriesOk || !familyOk || !allergiesOk) return;
         }
         // Medications are fully optional — no field within a started row
         // is enforced (unlike Step 3's tables, which still require their
@@ -253,6 +267,9 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('apmAddSurgery').addEventListener('click', function () {
         addRow('apmSurgeryList', 'apmSurgeryRowTemplate');
     });
+    document.getElementById('apmAddFamily').addEventListener('click', function () {
+        addRow('apmFamilyList', 'apmFamilyRowTemplate');
+    });
     document.getElementById('apmAddAllergy').addEventListener('click', function () {
         addRow('apmAllergyList', 'apmAllergyRowTemplate');
     });
@@ -276,11 +293,12 @@ document.addEventListener('DOMContentLoaded', function () {
             form.reset();
             form.querySelectorAll('.is-invalid').forEach(function (f) { f.classList.remove('is-invalid'); });
             form.querySelectorAll('.invalid-feedback').forEach(function (f) { f.style.display = ''; });
-            ['apmConditionList', 'apmSurgeryList', 'apmAllergyList', 'apmMedicationList'].forEach(function (id) {
+            ['apmConditionList', 'apmSurgeryList', 'apmFamilyList', 'apmAllergyList', 'apmMedicationList'].forEach(function (id) {
                 document.getElementById(id).innerHTML = '';
             });
             addRow('apmConditionList', 'apmConditionRowTemplate');
             addRow('apmSurgeryList', 'apmSurgeryRowTemplate');
+            addRow('apmFamilyList', 'apmFamilyRowTemplate');
             addRow('apmAllergyList', 'apmAllergyRowTemplate');
             addRow('apmMedicationList', 'apmMedicationRowTemplate');
             medNotesCount.textContent = '0';
@@ -309,6 +327,7 @@ document.addEventListener('DOMContentLoaded', function () {
             civilStatus: document.getElementById('apmCivilStatus').value,
             occupation: document.getElementById('apmOccupation').value.trim(),
             phone: document.getElementById('apmPhone').value.trim(),
+            email: document.getElementById('apmEmail').value.trim(),
             address: document.getElementById('apmAddress').value.trim(),
             barangay: document.getElementById('apmBarangay').value,
             city: document.getElementById('apmCity').value.trim(),
@@ -328,6 +347,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             conditions: collectRows('apmConditionList', ['label', 'details']),
             surgeries: collectRows('apmSurgeryList', ['procedure', 'details']),
+            familyHistory: collectRows('apmFamilyList', ['condition', 'relation']),
             allergies: collectRows('apmAllergyList', ['allergen', 'severity', 'reaction']),
             medications: collectRows('apmMedicationList', ['name', 'dosage', 'frequency', 'startDate', 'prescribedBy']),
             medicationNotes: medNotesInput.value.trim(),

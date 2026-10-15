@@ -281,7 +281,7 @@ $adminNavItems = [
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'medical_records'): ?>
-            <a href="medical_records.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
+            <a href="medical_history.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'vaccination'): ?>
@@ -345,7 +345,7 @@ $adminNavItems = [
                         <span>Status: <strong class="ppf-status-active"><?= htmlspecialchars($c['status']) ?></strong></span>
                     </div>
                     <?php endforeach; ?>
-                    <a href="medical_records.php?id=<?= urlencode($patient['id']) ?>" class="ppf-card-link">View Medical Records <i class="bi bi-arrow-right"></i></a>
+                    <a href="medical_history.php?id=<?= urlencode($patient['id']) ?>" class="ppf-card-link">View Medical History <i class="bi bi-arrow-right"></i></a>
                 </div>
 
                 <div class="adm-card ppf-ov-card">

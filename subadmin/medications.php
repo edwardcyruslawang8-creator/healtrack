@@ -286,7 +286,7 @@ $adminNavItems = [
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'medical_records'): ?>
-            <a href="medical_records.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
+            <a href="medical_history.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'lab_xray'): ?>
@@ -354,10 +354,10 @@ $adminNavItems = [
         </div>
     </div>
 
-    <!-- ============ MEDICATIONS LIST ============ -->
+    <!-- ============ CURRENT MEDICATIONS ============ -->
     <div class="mdc-list-header">
-        <h3>Medications List</h3>
-        <p>Current and past medications prescribed to the patient.</p>
+        <h3>Current Medications</h3>
+        <p>Medications the patient is currently taking.</p>
     </div>
 
     <div class="adm-card mdc-table-card">
@@ -378,12 +378,12 @@ $adminNavItems = [
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (empty($medications)): ?>
+                    <?php if (empty($currentMedications)): ?>
                     <tr>
-                        <td colspan="10" class="adm-table-empty">No medications recorded yet.</td>
+                        <td colspan="10" class="adm-table-empty">No current medications recorded.</td>
                     </tr>
                     <?php endif; ?>
-                    <?php foreach ($medications as $med): ?>
+                    <?php foreach ($currentMedications as $med): ?>
                     <tr
                         data-med-name="<?= htmlspecialchars($med['name']) ?>"
                         data-med-category="<?= htmlspecialchars($med['category']) ?>"
@@ -433,7 +433,90 @@ $adminNavItems = [
         </div>
 
         <div class="adm-table-footer">
-            <span class="adm-showing-text"><?= $medicationsTotal > 0 ? 'Showing 1 to ' . count($medications) . ' of ' . $medicationsTotal . ' entries' : 'No entries to show' ?></span>
+            <span class="adm-showing-text"><?= count($currentMedications) > 0 ? 'Showing ' . count($currentMedications) . ' of ' . count($currentMedications) . ' entries' : 'No entries to show' ?></span>
+        </div>
+    </div>
+
+    <!-- ============ PAST MEDICATIONS ============ -->
+    <div class="mdc-list-header">
+        <h3>Past Medications</h3>
+        <p>Medications the patient has taken in the past.</p>
+    </div>
+
+    <div class="adm-card mdc-table-card">
+        <div class="adm-table-wrap">
+            <table class="adm-table mdc-table">
+                <thead>
+                    <tr>
+                        <th>Medication</th>
+                        <th>Dosage</th>
+                        <th>Frequency</th>
+                        <th>Route</th>
+                        <th>Indication / Reason</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Prescribed By</th>
+                        <th>Notes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($pastMedications)): ?>
+                    <tr>
+                        <td colspan="10" class="adm-table-empty">No past medications recorded.</td>
+                    </tr>
+                    <?php endif; ?>
+                    <?php foreach ($pastMedications as $med): ?>
+                    <tr
+                        data-med-name="<?= htmlspecialchars($med['name']) ?>"
+                        data-med-category="<?= htmlspecialchars($med['category']) ?>"
+                        data-med-dosage="<?= htmlspecialchars($med['dosage']) ?>"
+                        data-med-frequency="<?= htmlspecialchars($med['frequency']) ?>"
+                        data-med-route="<?= htmlspecialchars($med['route']) ?>"
+                        data-med-indication="<?= htmlspecialchars($med['indication']) ?>"
+                        data-med-start-date="<?= htmlspecialchars($med['startDate']) ?>"
+                        data-med-end-date="<?= htmlspecialchars($med['endDate'] ?? '') ?>"
+                        data-med-end-date-note="<?= htmlspecialchars($med['endDateNote'] ?? '') ?>"
+                        data-med-prescribed-by="<?= htmlspecialchars($med['prescribedBy']) ?>"
+                        data-med-status="<?= htmlspecialchars(ucfirst($med['status'])) ?>"
+                        data-med-notes="<?= htmlspecialchars($med['notes']) ?>"
+                    >
+                        <td>
+                            <div class="mdc-name-cell">
+                                <span class="mdc-strong"><?= htmlspecialchars($med['name']) ?></span>
+                                <span class="mdc-category">(<?= htmlspecialchars($med['category']) ?>)</span>
+                            </div>
+                        </td>
+                        <td><?= htmlspecialchars($med['dosage']) ?></td>
+                        <td><?= htmlspecialchars($med['frequency']) ?></td>
+                        <td><?= htmlspecialchars($med['route']) ?></td>
+                        <td><?= htmlspecialchars($med['indication']) ?></td>
+                        <td><?= htmlspecialchars($med['startDate']) ?></td>
+                        <td>
+                            <?php if ($med['endDate']): ?>
+                            <?= htmlspecialchars($med['endDate']) ?>
+                            <?php if ($med['endDateNote']): ?>
+                            <span class="mdc-end-note">(<?= htmlspecialchars($med['endDateNote']) ?>)</span>
+                            <?php endif; ?>
+                            <?php else: ?>
+                            &mdash;
+                            <?php endif; ?>
+                        </td>
+                        <td class="mdc-strong"><?= htmlspecialchars($med['prescribedBy']) ?></td>
+                        <td class="mdc-notes-cell"><?= htmlspecialchars($med['notes']) ?></td>
+                        <td>
+                            <div class="adm-action-btns">
+                                <button type="button" class="mdc-view-details-btn med-view-details">View Details</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="adm-table-footer">
+            <span class="adm-showing-text"><?= count($pastMedications) > 0 ? 'Showing ' . count($pastMedications) . ' of ' . count($pastMedications) . ' entries' : 'No entries to show' ?></span>
         </div>
     </div>
 

@@ -38,8 +38,16 @@ $allergyStatusMeta = [
 $allergyRecords = hc_get_allergies_for_patient($patient['id']);
 $allergyRecordsTotal = count($allergyRecords);
 
-// The record shown in the "Allergy Details" panel below the table.
-$selectedAllergy = $allergyRecords[0] ?? hc_empty_allergy();
+// Active vs Inactive/Resolved — same real 'active' status
+// $allergyStatusMeta and hc_allergy_summary() below already key off;
+// everything else (e.g. 'resolved') is Inactive.
+$activeAllergies = array_values(array_filter($allergyRecords, fn ($a) => $a['status'] === 'active'));
+$inactiveAllergies = array_values(array_filter($allergyRecords, fn ($a) => $a['status'] !== 'active'));
+
+// The record shown in the "Allergy Details" panel below the table —
+// whichever row's "Select" action was clicked (?recordId=), falling
+// back to the most recently added record.
+$selectedAllergy = hc_resolve_selected_allergy($allergyRecords, $_GET['recordId'] ?? null);
 
 // ---------------------------------------------------------------------
 // Allergy Summary — real counts over $allergyRecords.

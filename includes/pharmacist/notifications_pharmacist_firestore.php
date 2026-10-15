@@ -44,6 +44,7 @@ require_once __DIR__ . '/../firestore/medicines.php'; // hc_get_low_stock_notifi
 require_once __DIR__ . '/../firestore/pharmacy_orders.php'; // hc_get_pending_pharmacy_order_notifications()
 require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav()
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
+require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -69,11 +70,13 @@ $notificationTypeOptions = ['All Types', 'Inventory', 'Medicine', 'Vaccine', 'Re
 // ---------------------------------------------------------------------
 $ntfReadIds = $_SESSION['ntfReadIds'] ?? [];
 $ntfArchivedIds = $_SESSION['ntfDismissedIds'] ?? [];
-$rawNotifications = array_merge(
+// Real gating — see includes/shared/notification_preferences.php's
+// header comment for which key covers which real source here.
+$rawNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'system') ? array_merge(
     array_filter([hc_get_2fa_reminder_notification($myUid, $myDoc ?? [])]),
-    hc_get_low_stock_notifications(),
-    hc_get_pending_pharmacy_order_notifications()
-);
+    hc_notification_preference_enabled_for_doc($myDoc ?? [], 'inventory') ? hc_get_low_stock_notifications() : [],
+    hc_notification_preference_enabled_for_doc($myDoc ?? [], 'inventory') ? hc_get_pending_pharmacy_order_notifications() : []
+) : [];
 $notifications = array_map(function ($n) use ($ntfReadIds, $ntfArchivedIds) {
     $n['unread'] = !in_array($n['id'], $ntfReadIds, true);
     $n['archived'] = in_array($n['id'], $ntfArchivedIds, true);

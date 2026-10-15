@@ -38,6 +38,7 @@ require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/lab_results.php'; // hc_get_pending_lab_xray_notifications()
 require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav()
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
+require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -65,12 +66,18 @@ $notificationTypeOptions = ['All Types', 'Laboratory', 'X-ray', 'Reminder'];
 // ---------------------------------------------------------------------
 $ntfReadIds = $_SESSION['ntfReadIds'] ?? [];
 $ntfArchivedIds = $_SESSION['ntfDismissedIds'] ?? [];
+// Real gating — see includes/shared/notification_preferences.php's
+// header comment. Lab/x-ray referrals don't map to any more specific
+// category, so they're only gated by the 'system' master switch.
+$rawNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'system')
+    ? array_merge(array_filter([hc_get_2fa_reminder_notification($myUid, $myDoc ?? [])]), hc_get_pending_lab_xray_notifications())
+    : [];
 $notifications = array_map(function ($n) use ($ntfReadIds, $ntfArchivedIds) {
     $n['unread'] = !in_array($n['id'], $ntfReadIds, true);
     $n['archived'] = in_array($n['id'], $ntfArchivedIds, true);
 
     return $n;
-}, array_merge(array_filter([hc_get_2fa_reminder_notification($myUid, $myDoc ?? [])]), hc_get_pending_lab_xray_notifications()));
+}, $rawNotifications);
 
 // ---------------------------------------------------------------------
 // Notification tabs — all filter the table client-side (see

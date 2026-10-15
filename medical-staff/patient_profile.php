@@ -231,7 +231,7 @@ $staffNavItems = [
         <?php foreach ($profileTabs as $tab): ?>
         <li class="nav-item" role="presentation">
             <?php if ($tab['key'] === 'medical_records'): ?>
-            <a href="medical_records.php?id=<?= urlencode($patient['id']) ?>" class="nav-link">
+            <a href="medical_history.php?id=<?= urlencode($patient['id']) ?>" class="nav-link">
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'lab_xray'): ?>
@@ -299,7 +299,7 @@ $staffNavItems = [
                         <span>Status: <strong class="ppf-status-active"><?= htmlspecialchars($c['status']) ?></strong></span>
                     </div>
                     <?php endforeach; ?>
-                    <a href="medical_records.php?id=<?= urlencode($patient['id']) ?>" class="ppf-card-link">View Medical Records <i class="bi bi-arrow-right"></i></a>
+                    <a href="medical_history.php?id=<?= urlencode($patient['id']) ?>" class="ppf-card-link">View Medical History <i class="bi bi-arrow-right"></i></a>
                 </div>
 
                 <div class="adm-card ppf-ov-card">

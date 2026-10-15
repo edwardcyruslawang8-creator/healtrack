@@ -32,6 +32,12 @@ unset($tab);
 $medications = hc_get_medications_for_patient($patient['id']);
 $medicationsTotal = count($medications);
 
+// Current vs Past — same real 'active' status the Overview tab's
+// "Active Medications" summary and hc_medications_summary() below
+// already key off; everything else (e.g. 'completed') is Past.
+$currentMedications = array_values(array_filter($medications, fn ($m) => $m['status'] === 'active'));
+$pastMedications = array_values(array_filter($medications, fn ($m) => $m['status'] !== 'active'));
+
 // ---------------------------------------------------------------------
 // Medications Summary — real counts over $medications.
 // ---------------------------------------------------------------------

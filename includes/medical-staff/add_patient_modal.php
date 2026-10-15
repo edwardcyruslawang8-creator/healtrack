@@ -18,13 +18,15 @@
 
      Steps 2-4 (Vital Signs, History & Allergies, Medications) are
      genuinely optional intake data: vitals are stored on the new
-     patient doc; known conditions/allergies/medications each become
-     their own real "medical_conditions"/"allergies"/"medications"
-     documents (same collections includes/firestore/medical_records.php,
-     allergies.php, and medications.php read for the Patient Profile
-     tabs), tied to the new patientId — filled in with the same
-     default field shape hc_empty_allergy()/hc_get_medications_for_patient()
-     expect so those tabs don't break when this patient is later viewed.
+     patient doc; known conditions/surgeries/family history/allergies/
+     medications each become their own real "medical_conditions"/
+     "surgical_history"/"family_history"/"allergies"/"medications"
+     documents (same collections the Patient Profile's Medical History
+     tab — subadmin/doctor/medical-staff's medical_history.php — and
+     Allergies/Medications tabs read), tied to the new patientId —
+     filled in with the same default field shape
+     hc_empty_allergy()/hc_get_medications_for_patient() expect so
+     those tabs don't break when this patient is later viewed.
 
      Step 5's Reason for Visit is stored as-entered on the patient doc
      (initialReasonForVisit) — there's still no "consultations"
@@ -141,10 +143,18 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
 
             <div class="apm-section">
               <h6 class="apm-section-title">Contact Information</h6>
-              <div class="apm-field">
-                <label for="apmPhone">Phone Number<span class="req">*</span></label>
-                <input type="text" class="form-control" id="apmPhone" placeholder="Enter phone number" required>
-                <div class="invalid-feedback">Required.</div>
+              <div class="apm-grid apm-grid-2">
+                <div class="apm-field">
+                  <label for="apmPhone">Phone Number<span class="req">*</span></label>
+                  <input type="text" class="form-control" id="apmPhone" placeholder="Enter phone number" required>
+                  <div class="invalid-feedback">Required.</div>
+                </div>
+                <div class="apm-field">
+                  <label for="apmEmail">Email Address <span class="text-muted fw-normal">(Optional)</span></label>
+                  <input type="email" class="form-control" id="apmEmail" placeholder="Enter email address">
+                  <div class="apm-field-help">Used to send the patient a consent request by email when another doctor asks to access their records.</div>
+                  <div class="invalid-feedback">Please enter a valid email address.</div>
+                </div>
               </div>
             </div>
 
@@ -290,6 +300,15 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
             </div>
 
             <div class="apm-section">
+              <h6 class="apm-section-title">Family History</h6>
+              <div class="apm-table-head apm-hist-row">
+                <span>#</span><span>Condition</span><span>Relation</span><span></span>
+              </div>
+              <div id="apmFamilyList"></div>
+              <button type="button" class="apm-add-row-btn" id="apmAddFamily"><i class="bi bi-plus-lg"></i> Add Family History</button>
+            </div>
+
+            <div class="apm-section">
               <h6 class="apm-section-title">Allergies</h6>
               <div class="apm-table-head apm-allergy-row">
                 <span>#</span><span>Allergen</span><span>Severity</span><span>Reaction / Details</span><span></span>
@@ -377,6 +396,21 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
     </div>
     <div class="apm-cell">
       <input type="text" class="form-control" placeholder="Enter details" data-field="details">
+    </div>
+    <button type="button" class="apm-row-remove" aria-label="Remove row"><i class="bi bi-trash"></i></button>
+  </div>
+</template>
+
+<template id="apmFamilyRowTemplate">
+  <div class="apm-repeat-row apm-hist-row" data-row="family">
+    <span class="apm-row-num">1</span>
+    <div class="apm-cell">
+      <input type="text" class="form-control" placeholder="e.g. Diabetes Mellitus" data-field="condition">
+      <div class="invalid-feedback">Required if relation is filled in.</div>
+    </div>
+    <div class="apm-cell">
+      <input type="text" class="form-control" placeholder="e.g. Mother, Father, Maternal Aunt" data-field="relation">
+      <div class="invalid-feedback">Required if condition is filled in.</div>
     </div>
     <button type="button" class="apm-row-remove" aria-label="Remove row"><i class="bi bi-trash"></i></button>
   </div>

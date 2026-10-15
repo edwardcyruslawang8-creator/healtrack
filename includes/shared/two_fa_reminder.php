@@ -43,6 +43,18 @@ if (!function_exists('hc_2fa_reminder_email_due')) {
             return false;
         }
 
+        // The EMAIL channel specifically — gated by 'email' ("Receive
+        // updates and alerts via email"), independently of 'system' (the
+        // separate in-app toast/notification, see
+        // hc_my_2fa_reminder_notification() above). Checked per-account
+        // (scripts/send-2fa-reminders.php iterates every real user doc,
+        // not just the signed-in one), so this takes $userDoc directly
+        // rather than reading the current session.
+        require_once __DIR__ . '/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
+        if (!hc_notification_preference_enabled_for_doc($userDoc, 'email')) {
+            return false;
+        }
+
         $baseline = $userDoc['twoFaReminderLastSentAt'] ?? ($userDoc['createdAt'] ?? null);
         if ($baseline === null || $baseline === '') {
             return true; // no real timestamp to compare against — honest default is "due"
@@ -117,6 +129,19 @@ if (!function_exists('hc_my_2fa_reminder_notification')) {
         }
         if ($cachedUid === $uid) {
             return $cachedResult;
+        }
+
+        // This specifically represents the IN-APP reminder (notification-
+        // list row + hc_render_2fa_reminder_toast()'s bottom-right toast
+        // below) — the separate weekly EMAIL reminder
+        // (hc_2fa_reminder_email_due()/hc_send_2fa_reminder_email()) is
+        // gated by the 'email' preference instead, independently, since
+        // they're different channels for the same underlying condition.
+        // See includes/shared/notification_preferences.php's header
+        // comment for the full picture of what each preference key gates.
+        require_once __DIR__ . '/notification_preferences.php'; // hc_notification_preference_enabled()
+        if (!hc_notification_preference_enabled('system')) {
+            return null;
         }
 
         global $firestore;
