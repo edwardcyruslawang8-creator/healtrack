@@ -33,7 +33,15 @@ $staffNavItems = [
     ['icon' => 'bi-grid-fill',                 'label' => 'Dashboard',                       'href' => 'dashboard.php'],
     ['icon' => 'bi-clipboard2-pulse-fill',      'label' => 'Laboratory & X-ray',              'href' => 'laboratory_xray.php'],
     ['icon' => 'bi-inboxes-fill',              'label' => 'Laboratory & X-ray Consultation', 'href' => 'lab_xray_consultation.php', 'active' => true, 'badge' => hc_get_pending_lab_xray_count()],
-    ['icon' => 'bi-bar-chart-fill',           'label' => 'Analytics & Reports',              'href' => 'analytics_reports.php'],
+    [
+        'icon' => 'bi-bar-chart-fill',
+        'label' => 'Analytics & Reports',
+        'id' => 'mtNavAnalyticsReports',
+        'children' => [
+            ['label' => 'Analytics', 'href' => 'analytics_reports.php'],
+            ['label' => 'My Reports', 'href' => 'patients_report.php'],
+        ],
+    ],
     ['icon' => 'bi-bell-fill',                 'label' => 'Notifications',                   'href' => 'notifications.php', 'badge' => hc_medtech_unread_notification_count()],
     ['icon' => 'bi-clipboard-data-fill', 'label' => 'Audit Logs', 'href' => 'audit_logs.php'],
     ['icon' => 'bi-gear-fill',                 'label' => 'Profile / Settings',              'href' => 'profile_settings.php'],
@@ -89,6 +97,22 @@ $savedResult = hc_gram_stain_saved_value($currentDoc, 'result');
 
     <ul class="adm-nav">
         <?php foreach ($staffNavItems as $item): ?>
+        <?php if (!empty($item['children'])): ?>
+        <li>
+            <a href="#<?= htmlspecialchars($item['id'] ?? 'mtNavAnalyticsReports') ?>" class="adm-nav-link adm-nav-toggle <?= !empty($item['active']) ? 'active' : '' ?> <?= empty($item['open']) ? 'collapsed' : '' ?>" data-bs-toggle="collapse" role="button" aria-expanded="<?= !empty($item['open']) ? 'true' : 'false' ?>" aria-controls="<?= htmlspecialchars($item['id'] ?? 'mtNavAnalyticsReports') ?>">
+                <i class="bi <?= htmlspecialchars($item['icon']) ?>"></i>
+                <span><?= htmlspecialchars($item['label']) ?></span>
+                <i class="bi bi-chevron-down adm-nav-caret"></i>
+            </a>
+            <div class="collapse <?= !empty($item['open']) ? 'show' : '' ?>" id="<?= htmlspecialchars($item['id'] ?? 'mtNavAnalyticsReports') ?>">
+                <ul class="adm-nav-submenu">
+                    <?php foreach ($item['children'] as $child): ?>
+                    <li><a href="<?= htmlspecialchars($child['href']) ?>" class="adm-nav-sublink <?= !empty($child['active']) ? 'active' : '' ?>"><?= htmlspecialchars($child['label']) ?></a></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        </li>
+        <?php else: ?>
         <li>
             <a href="<?= htmlspecialchars($item['href']) ?>" class="adm-nav-link <?= !empty($item['active']) ? 'active' : '' ?>">
                 <i class="bi <?= htmlspecialchars($item['icon']) ?>"></i>
@@ -98,6 +122,7 @@ $savedResult = hc_gram_stain_saved_value($currentDoc, 'result');
                 <?php endif; ?>
             </a>
         </li>
+        <?php endif; ?>
         <?php endforeach; ?>
     </ul>
 

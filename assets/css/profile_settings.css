@@ -75,6 +75,13 @@
   border-color: var(--adm-red-bright);
   box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.12);
 }
+/* Disabled fields (Role, Health Center) aren't actually a picker, so
+   the native select's dropdown-arrow background image is misleading —
+   drop it and show a plain not-editable field instead. */
+.prf-field .form-select:disabled{
+  background-image: none;
+  cursor: not-allowed;
+}
 .prf-field-grid-2{
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -89,7 +96,14 @@
   gap: 20px;
   margin-bottom: 20px;
 }
-.prf-photo-wrap{ position: relative; flex-shrink: 0; }
+/* .prf-photo-col holds the circle+camera-button unit AND "Remove
+   Photo" below it. .prf-photo-wrap stays the camera button's OWN
+   relative-positioning anchor — keeping "Remove Photo" out of it is
+   what keeps that button pinned to the circle's own bottom-right
+   corner instead of drifting down to the bottom of this taller column
+   once a "Remove Photo" line is present. */
+.prf-photo-col{ flex-shrink: 0; width: 104px; }
+.prf-photo-wrap{ position: relative; }
 .prf-photo{
   width: 104px;
   height: 104px;
@@ -121,6 +135,20 @@
 }
 .prf-photo-upload:hover{ background: var(--adm-red-bright-hover); }
 .prf-photo img{ width: 100%; height: 100%; object-fit: cover; }
+.prf-photo-remove{
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--adm-red-bright);
+  text-align: center;
+  cursor: pointer;
+}
+.prf-photo-remove:hover{ text-decoration: underline; }
 .prf-name-email-col{
   flex: 1;
   min-width: 0;

@@ -270,12 +270,17 @@ $adminNavItems = [
 
                 <form id="profileInfoForm">
                     <div class="prf-photo-row">
-                        <div class="prf-photo-wrap">
-                            <div class="prf-photo" id="prfPhotoPreview"><i class="bi bi-person-fill"></i></div>
-                            <button type="button" class="prf-photo-upload" id="prfPhotoUploadBtn" aria-label="Change photo">
-                                <i class="bi bi-camera-fill"></i>
-                            </button>
-                            <input type="file" id="prfPhotoInput" accept="image/*" class="d-none">
+                        <div class="prf-photo-col">
+                            <div class="prf-photo-wrap">
+                                <div class="prf-photo" id="prfPhotoPreview"><?php require_once __DIR__ . '/../includes/shared/profile_photo_storage.php'; echo hc_render_sidebar_avatar(); ?></div>
+                                <button type="button" class="prf-photo-upload" id="prfPhotoUploadBtn" aria-label="Change photo">
+                                    <i class="bi bi-camera-fill"></i>
+                                </button>
+                                <input type="file" id="prfPhotoInput" accept="image/*" class="d-none">
+                            </div>
+                            <?php if (!empty($_SESSION['profilePhotoFileName'])): ?>
+                            <button type="button" class="prf-photo-remove" id="prfPhotoRemoveBtn">Remove Photo</button>
+                            <?php endif; ?>
                         </div>
                         <div class="prf-name-email-col">
                             <div class="prf-field">
@@ -305,9 +310,10 @@ $adminNavItems = [
 
                     <div class="prf-field">
                         <label for="healthCenter">Health Center</label>
-                        <select class="form-select" id="healthCenter">
+                        <select class="form-select" id="healthCenter" disabled>
                             <?= renderSelectOptions($healthCenterOptions, $profileInfo['healthCenter']) ?>
                         </select>
+                        <div class="form-text">Only a sub-admin or admin can change your health facility.</div>
                     </div>
 
                     <div class="prf-actions-right">
@@ -426,32 +432,6 @@ $adminNavItems = [
 
         </div>
 
-    </div>
-
-    <!-- ============ APPEARANCE SETTINGS (full width) ============ -->
-    <div class="adm-card prf-section">
-        <div class="prf-section-header">
-            <span class="prf-section-icon red"><i class="bi bi-palette-fill"></i></span>
-            <div>
-                <h2>Appearance Settings</h2>
-                <p>Customize how the application looks for you.</p>
-            </div>
-        </div>
-
-        <div class="prf-appearance-row">
-            <div class="prf-field">
-                <label for="themeSelect">Theme</label>
-                <select class="form-select" id="themeSelect">
-                    <?= renderSelectOptions($themeOptions, $currentTheme) ?>
-                </select>
-            </div>
-            <div class="prf-field">
-                <label for="languageSelect">Language</label>
-                <select class="form-select" id="languageSelect">
-                    <?= renderSelectOptions($languageOptions, $currentLanguage) ?>
-                </select>
-            </div>
-        </div>
     </div>
 
 </main>

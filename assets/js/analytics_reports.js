@@ -180,3 +180,19 @@ function initReportPageCharts() {
 
 window.initReportPageCharts = initReportPageCharts;
 document.addEventListener('DOMContentLoaded', initReportPageCharts);
+
+/* ---------- "My Patients Report" Print button (doctor/medical-staff/
+   medical_technician) ----------
+   Delegated on document (survives any future AJAX content swap,
+   same reasoning as this file's header comment) — toggles a body
+   class the @media print rules in analytics_reports.css key off of,
+   so the printed/PDF output is just the report table, not the whole
+   dashboard page. */
+document.addEventListener('click', function (e) {
+    if (!e.target.closest('.arp-report-print-btn')) return;
+    document.body.classList.add('arp-printing-report');
+    window.print();
+});
+window.addEventListener('afterprint', function () {
+    document.body.classList.remove('arp-printing-report');
+});

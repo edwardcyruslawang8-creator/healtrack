@@ -259,7 +259,7 @@ $adminNavItems = [
         <div class="adm-card-header">
             <h2><i class="bi bi-exclamation-triangle-fill" style="color:#E8710A;"></i> Needs Your Answer</h2>
         </div>
-        <p class="cbr-card-subtitle">Real questions the chatbot couldn't confidently answer from its own built-in intents, or that a real person flagged as wrong — answer one here and it's matched automatically on every future message, no code changes needed.</p>
+        <p class="cbr-card-subtitle">Real questions a patient flagged with "This didn't answer my question" — answer one here and it's matched automatically on every future message, no code changes needed.</p>
         <?php if (empty($chatbotNeedsAnswer)): ?>
         <div class="cbr-empty"><i class="bi bi-check-circle"></i> Nothing needs your attention right now.</div>
         <?php else: ?>

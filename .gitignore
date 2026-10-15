@@ -16,6 +16,11 @@ config/mail.php
 storage/patient_documents/*
 !storage/patient_documents/.htaccess
 
+# --- Uploaded profile photos: same reasoning — real PII, never belongs
+# in git. The .htaccess guarding this folder is kept.
+storage/profile_photos/*
+!storage/profile_photos/.htaccess
+
 # --- Local Claude Code tool state (session scratch, local permissions) —
 # not part of the application.
 .claude/

@@ -58,7 +58,15 @@ $staffNavItems = [
     ['icon' => 'bi-grid-fill',            'label' => 'Dashboard',          'href' => 'dashboard.php'],
     ['icon' => 'bi-person-lines-fill',    'label' => 'Patient Management', 'href' => 'patient_management.php'],
     ['icon' => 'bi-calendar2-heart-fill', 'label' => 'Consultations',      'href' => 'consultations.php'],
-    ['icon' => 'bi-bar-chart-fill',      'label' => 'Analytics & Reports', 'href' => 'analytics_reports.php'],
+    [
+        'icon' => 'bi-bar-chart-fill',
+        'label' => 'Analytics & Reports',
+        'id' => 'mstNavAnalyticsReports',
+        'children' => [
+            ['label' => 'Analytics', 'href' => 'analytics_reports.php'],
+            ['label' => 'My Reports', 'href' => 'patients_report.php'],
+        ],
+    ],
     ['icon' => 'bi-bell-fill',            'label' => 'Notifications',      'href' => 'notifications.php', 'badge' => hc_medstaff_unread_notification_count(), 'active' => true],
     ['icon' => 'bi-clipboard-data-fill', 'label' => 'Audit Logs', 'href' => 'audit_logs.php'],
     ['icon' => 'bi-gear-fill',            'label' => 'Profile / Settings', 'href' => 'profile_settings.php'],
@@ -127,6 +135,22 @@ $staffNavItems = [
     <!-- Navigation -->
     <ul class="adm-nav">
         <?php foreach ($staffNavItems as $item): ?>
+        <?php if (!empty($item['children'])): ?>
+        <li>
+            <a href="#<?= htmlspecialchars($item['id'] ?? 'mstNavAnalyticsReports') ?>" class="adm-nav-link adm-nav-toggle <?= !empty($item['active']) ? 'active' : '' ?> <?= empty($item['open']) ? 'collapsed' : '' ?>" data-bs-toggle="collapse" role="button" aria-expanded="<?= !empty($item['open']) ? 'true' : 'false' ?>" aria-controls="<?= htmlspecialchars($item['id'] ?? 'mstNavAnalyticsReports') ?>">
+                <i class="bi <?= htmlspecialchars($item['icon']) ?>"></i>
+                <span><?= htmlspecialchars($item['label']) ?></span>
+                <i class="bi bi-chevron-down adm-nav-caret"></i>
+            </a>
+            <div class="collapse <?= !empty($item['open']) ? 'show' : '' ?>" id="<?= htmlspecialchars($item['id'] ?? 'mstNavAnalyticsReports') ?>">
+                <ul class="adm-nav-submenu">
+                    <?php foreach ($item['children'] as $child): ?>
+                    <li><a href="<?= htmlspecialchars($child['href']) ?>" class="adm-nav-sublink <?= !empty($child['active']) ? 'active' : '' ?>"><?= htmlspecialchars($child['label']) ?></a></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        </li>
+        <?php else: ?>
         <li>
             <a href="<?= htmlspecialchars($item['href']) ?>" class="adm-nav-link <?= !empty($item['active']) ? 'active' : '' ?>">
                 <i class="bi <?= htmlspecialchars($item['icon']) ?>"></i>
@@ -136,6 +160,7 @@ $staffNavItems = [
                 <?php endif; ?>
             </a>
         </li>
+        <?php endif; ?>
         <?php endforeach; ?>
     </ul>
 

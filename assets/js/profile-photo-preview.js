@@ -1,5 +1,5 @@
 /* =============================================================
-   PROFILE PHOTO — picker, live preview, and real upload
+   PROFILE PHOTO — picker, live preview, real upload, and removal
    (Profile / Settings, all 6 roles)
    ---------------------------------------------------------------
    The picker + instant preview (swap the avatar circle's icon for the
@@ -17,6 +17,15 @@
    API's own header comment for the real reason this wasn't wired up
    before, and includes/shared/profile_photo_storage.php for where the
    file actually lives).
+
+   "Remove Photo" (#prfPhotoRemoveBtn, only rendered server-side when a
+   photo is actually on record) is a separate, IMMEDIATE action — unlike
+   a new upload, it doesn't wait for "Save Changes", same convention as
+   this page's other instant actions (Change Password, Enable 2FA).
+   Confirms via HCDialog, posts to api/remove-profile-photo.php, then
+   reloads the page so the sidebar/topbar/this-card avatars all pick up
+   the now-cleared session state the same way a successful Save already
+   does (assets/js/profile-settings.js's own window.location.reload()).
    ============================================================= */
 document.addEventListener('DOMContentLoaded', function () {
     const btn = document.getElementById('prfPhotoUploadBtn');
@@ -87,6 +96,29 @@ document.addEventListener('DOMContentLoaded', function () {
                 reject(new Error('Please choose a valid image file.'));
             };
             img.src = url;
+        });
+    }
+
+    const removeBtn = document.getElementById('prfPhotoRemoveBtn');
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function () {
+            HCDialog.confirm('Remove your profile photo?').then(function (confirmed) {
+                if (!confirmed) return;
+
+                removeBtn.disabled = true;
+                fetch('../api/remove-profile-photo.php', { method: 'POST' })
+                    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+                    .then(function (result) {
+                        if (!result.ok || !result.data.success) {
+                            throw new Error(result.data.error || 'Could not remove the photo. Please try again.');
+                        }
+                        window.location.reload();
+                    })
+                    .catch(function (err) {
+                        removeBtn.disabled = false;
+                        HCDialog.alert(err.message);
+                    });
+            });
         });
     }
 

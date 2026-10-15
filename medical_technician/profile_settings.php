@@ -67,7 +67,15 @@ $staffNavItems = [
     ['icon' => 'bi-grid-fill',                 'label' => 'Dashboard',                       'href' => 'dashboard.php'],
     ['icon' => 'bi-clipboard2-pulse-fill',      'label' => 'Laboratory & X-ray',              'href' => 'laboratory_xray.php'],
     ['icon' => 'bi-inboxes-fill',              'label' => 'Laboratory & X-ray Consultation', 'href' => 'lab_xray_consultation.php', 'badge' => hc_get_pending_lab_xray_count()],
-    ['icon' => 'bi-bar-chart-fill',           'label' => 'Analytics & Reports',              'href' => 'analytics_reports.php'],
+    [
+        'icon' => 'bi-bar-chart-fill',
+        'label' => 'Analytics & Reports',
+        'id' => 'mtNavAnalyticsReports',
+        'children' => [
+            ['label' => 'Analytics', 'href' => 'analytics_reports.php'],
+            ['label' => 'My Reports', 'href' => 'patients_report.php'],
+        ],
+    ],
     ['icon' => 'bi-bell-fill',                 'label' => 'Notifications',                   'href' => 'notifications.php', 'badge' => hc_medtech_unread_notification_count()],
     ['icon' => 'bi-clipboard-data-fill', 'label' => 'Audit Logs', 'href' => 'audit_logs.php'],
     ['icon' => 'bi-gear-fill',                 'label' => 'Profile / Settings',              'href' => 'profile_settings.php', 'active' => true],
@@ -136,6 +144,22 @@ $staffNavItems = [
     <!-- Navigation -->
     <ul class="adm-nav">
         <?php foreach ($staffNavItems as $item): ?>
+        <?php if (!empty($item['children'])): ?>
+        <li>
+            <a href="#<?= htmlspecialchars($item['id'] ?? 'mtNavAnalyticsReports') ?>" class="adm-nav-link adm-nav-toggle <?= !empty($item['active']) ? 'active' : '' ?> <?= empty($item['open']) ? 'collapsed' : '' ?>" data-bs-toggle="collapse" role="button" aria-expanded="<?= !empty($item['open']) ? 'true' : 'false' ?>" aria-controls="<?= htmlspecialchars($item['id'] ?? 'mtNavAnalyticsReports') ?>">
+                <i class="bi <?= htmlspecialchars($item['icon']) ?>"></i>
+                <span><?= htmlspecialchars($item['label']) ?></span>
+                <i class="bi bi-chevron-down adm-nav-caret"></i>
+            </a>
+            <div class="collapse <?= !empty($item['open']) ? 'show' : '' ?>" id="<?= htmlspecialchars($item['id'] ?? 'mtNavAnalyticsReports') ?>">
+                <ul class="adm-nav-submenu">
+                    <?php foreach ($item['children'] as $child): ?>
+                    <li><a href="<?= htmlspecialchars($child['href']) ?>" class="adm-nav-sublink <?= !empty($child['active']) ? 'active' : '' ?>"><?= htmlspecialchars($child['label']) ?></a></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        </li>
+        <?php else: ?>
         <li>
             <a href="<?= htmlspecialchars($item['href']) ?>" class="adm-nav-link <?= !empty($item['active']) ? 'active' : '' ?>">
                 <i class="bi <?= htmlspecialchars($item['icon']) ?>"></i>
@@ -145,6 +169,7 @@ $staffNavItems = [
                 <?php endif; ?>
             </a>
         </li>
+        <?php endif; ?>
         <?php endforeach; ?>
     </ul>
 
@@ -226,12 +251,17 @@ $staffNavItems = [
 
                 <form id="profileInfoForm">
                     <div class="prf-photo-row">
-                        <div class="prf-photo-wrap">
-                            <div class="prf-photo" id="prfPhotoPreview"><i class="bi bi-person-fill"></i></div>
-                            <button type="button" class="prf-photo-upload" id="prfPhotoUploadBtn" aria-label="Change photo">
-                                <i class="bi bi-camera-fill"></i>
-                            </button>
-                            <input type="file" id="prfPhotoInput" accept="image/*" class="d-none">
+                        <div class="prf-photo-col">
+                            <div class="prf-photo-wrap">
+                                <div class="prf-photo" id="prfPhotoPreview"><?php require_once __DIR__ . '/../includes/shared/profile_photo_storage.php'; echo hc_render_sidebar_avatar(); ?></div>
+                                <button type="button" class="prf-photo-upload" id="prfPhotoUploadBtn" aria-label="Change photo">
+                                    <i class="bi bi-camera-fill"></i>
+                                </button>
+                                <input type="file" id="prfPhotoInput" accept="image/*" class="d-none">
+                            </div>
+                            <?php if (!empty($_SESSION['profilePhotoFileName'])): ?>
+                            <button type="button" class="prf-photo-remove" id="prfPhotoRemoveBtn">Remove Photo</button>
+                            <?php endif; ?>
                         </div>
                         <div class="prf-name-email-col">
                             <div class="prf-field">
@@ -261,9 +291,10 @@ $staffNavItems = [
 
                     <div class="prf-field">
                         <label for="healthCenter">Health Center</label>
-                        <select class="form-select" id="healthCenter">
+                        <select class="form-select" id="healthCenter" disabled>
                             <?= renderSelectOptions($healthCenterOptions, $profileInfo['healthCenter']) ?>
                         </select>
+                        <div class="form-text">Only a sub-admin or admin can change your health facility.</div>
                     </div>
 
                     <div class="prf-actions-right">
@@ -384,31 +415,6 @@ $staffNavItems = [
 
     </div>
 
-    <!-- ============ APPEARANCE SETTINGS (full width) ============ -->
-    <div class="adm-card prf-section">
-        <div class="prf-section-header">
-            <span class="prf-section-icon red"><i class="bi bi-palette-fill"></i></span>
-            <div>
-                <h2>Appearance Settings</h2>
-                <p>Customize how the application looks for you.</p>
-            </div>
-        </div>
-
-        <div class="prf-appearance-row">
-            <div class="prf-field">
-                <label for="themeSelect">Theme</label>
-                <select class="form-select" id="themeSelect">
-                    <?= renderSelectOptions($themeOptions, $currentTheme) ?>
-                </select>
-            </div>
-            <div class="prf-field">
-                <label for="languageSelect">Language</label>
-                <select class="form-select" id="languageSelect">
-                    <?= renderSelectOptions($languageOptions, $currentLanguage) ?>
-                </select>
-            </div>
-        </div>
-    </div>
 
 </main>
 

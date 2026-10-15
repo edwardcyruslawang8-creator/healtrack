@@ -29,20 +29,22 @@
  *     asked" signal — same "Top 5" convention as this app's other
  *     ranked lists (e.g. subadmin/analytics_reports.php's Top 5
  *     Diagnoses).
- *   - "Needs Your Answer" — distinct questions where, at least once,
- *     EITHER the chatbot had no real answer (matchType 'gemini_general'/
- *     'fallback' — see hc_chatbot_log_exchange()'s own header comment
- *     for what each matchType means) OR a real person flagged the
- *     answer it DID give as wrong (api/chatbot-feedback.php's "👎 This
- *     didn't answer my question" link — the 'flagged' field) — a
- *     confidently wrong answer looks exactly like a correct one from
- *     the server's side alone, so that's the only way this queue can
- *     catch it. Either way, no chatbot_custom_answers doc can already
- *     exist for it. Answering one here (api/answer-chatbot-question.php)
- *     writes that doc, which hc_chatbot_find_custom_answer() then
- *     checks on every future message — the actual mechanism making the
- *     chatbot's knowledge grow past its original hand-built intents
- *     instead of being permanently limited to them.
+ *   - "Needs Your Answer" — distinct questions where a real patient
+ *     explicitly flagged the chatbot's answer as wrong
+ *     (api/chatbot-feedback.php's "👎 This didn't answer my question"
+ *     link — the 'flagged' field). A question the chatbot merely fell
+ *     back to a general AI answer for (matchType 'gemini_general'/
+ *     'groq_general'/'fallback' — still tracked below as 'missed' and
+ *     shown as a secondary "Couldn't answer" badge on an already-flagged
+ *     row) does NOT by itself land here — only the patient's own flag
+ *     does, since that's the one real "a human said this was wrong"
+ *     signal; nobody flagging it is treated as nothing to review. Either
+ *     way, no chatbot_custom_answers doc can already exist for it.
+ *     Answering one here (api/answer-chatbot-question.php) writes that
+ *     doc, which hc_chatbot_find_custom_answer() then checks on every
+ *     future message — the actual mechanism making the chatbot's
+ *     knowledge grow past its original hand-built intents instead of
+ *     being permanently limited to them.
  * =====================================================================
  */
 
@@ -134,7 +136,7 @@ $chatbotMostAsked = array_slice($chatbotMostAsked, 0, 5);
 
 $chatbotNeedsAnswer = array_values(array_filter(
     $chatbotGroups,
-    fn ($g) => ($g['missed'] || $g['flagged']) && !isset($chatbotAnsweredIds[md5($g['questionNormalized'])])
+    fn ($g) => $g['flagged'] && !isset($chatbotAnsweredIds[md5($g['questionNormalized'])])
 ));
 usort($chatbotNeedsAnswer, fn ($a, $b) => strcmp($b['lastAskedAt'], $a['lastAskedAt']));
 
