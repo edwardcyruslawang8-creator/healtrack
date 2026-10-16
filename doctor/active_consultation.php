@@ -269,7 +269,7 @@ $doctorNavItems = [
 
             <?php if (!empty($linkedLabResults)): ?>
             <div class="adm-card">
-                <div class="acv-field-label"><i class="bi bi-clipboard2-pulse-fill"></i> Lab Results <span class="acv-source-tag">(from Medical Technologist)</span></div>
+                <div class="acv-field-label"><i class="bi bi-clipboard2-pulse-fill"></i> Lab &amp; X-ray Results <span class="acv-source-tag">(from Medical Technologist)</span></div>
                 <div style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
                     <?php foreach ($linkedLabResults as $lr): ?>
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--adm-border); border-radius:10px;">
@@ -279,7 +279,7 @@ $doctorNavItems = [
                         </div>
                         <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
                             <span class="cns-badge" style="background:<?= htmlspecialchars($lr['resultBadgeBg']) ?>; color:<?= htmlspecialchars($lr['resultBadgeColor']) ?>;"><?= htmlspecialchars($lr['resultBadgeLabel']) ?></span>
-                            <a href="laboratory_result_details.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($lr['id']) ?>&consultationId=<?= urlencode($consultation['id']) ?>" class="acv-view-full-link" style="margin-top:0;" target="_blank" rel="noopener"><i class="bi bi-eye"></i> View Full Result</a>
+                            <a href="laboratory_result_details.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($lr['id']) ?>&type=<?= urlencode($lr['type']) ?>&consultationId=<?= urlencode($consultation['id']) ?>" class="acv-view-full-link" style="margin-top:0;" target="_blank" rel="noopener"><i class="bi bi-eye"></i> View Full Result</a>
                         </div>
                     </div>
                     <?php endforeach; ?>

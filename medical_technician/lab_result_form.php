@@ -11,7 +11,7 @@
  * header comment). Not a mirror of a specific real paper form the way
  * those 4 are — this is a general-purpose result entry form (Specimen,
  * Result, Unit, Reference Range, Interpretation, Remarks) that covers
- * every other test in hc_lab_test_catalog() (CBC, Blood Typing, Fasting
+ * every other test in hc_lab_test_catalog() (CBC, Fasting
  * Blood Sugar, Viral Load, etc.).
  *
  * Saving posts to api/complete-lab-result.php, which writes onto the
@@ -80,6 +80,7 @@ $savedRemarks = $docFields['remarks'] ?? '';
 
 <link rel="stylesheet" href="<?= asset_url('/assets/css/admin-dashboard.css') ?>">
 <link rel="stylesheet" href="<?= asset_url('/assets/css/medical_technician_dashboard.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/medical_technician_lab_xray.css') ?>">
 </head>
 <body class="adm-body">
 

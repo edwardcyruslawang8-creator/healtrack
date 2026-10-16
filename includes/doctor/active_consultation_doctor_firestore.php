@@ -81,6 +81,18 @@ if ($consultation === null || $consultation['assignedPersonnel'] !== $myName || 
     exit;
 }
 
+// A patient routed to the lab is physically there, not with the
+// doctor — this workspace stays closed to them until every test
+// ordered from this consultation is back (hc_consultation_is_awaiting_lab_results()).
+// The queue card that links here already hides "Resume Consultation"
+// for exactly this case (includes/doctor/_consultation_queue_cards.php);
+// this is the same rule enforced again in case that link is ever
+// reached directly (a stale tab, a bookmarked URL).
+if (hc_consultation_is_awaiting_lab_results($consultation)) {
+    header('Location: consultations.php?blocked=awaiting_lab');
+    exit;
+}
+
 $patient = hc_get_patient_profile($consultation['patientId']) ?? hc_not_found_patient_profile($consultation['patientId']);
 
 $consultationTypeMeta = hc_consultation_type_meta();
@@ -141,43 +153,91 @@ if ($consultation['createdBy'] !== '') {
 $startedAtLabel = $consultation['startedAt'] !== '' ? date('M j, Y g:i A', strtotime($consultation['startedAt'])) : '—';
 
 // ---------------------------------------------------------------------
-// Lab Results — real completed lab_results docs, only present when
-// this consultation is a follow-up created by a medical technologist's
-// "Proceed to Doctor" button (api/proceed-lab-result-to-doctor.php),
-// which stamps their real ids onto labResultDocIds. Every other
-// consultation has an empty array here, so the card below simply
-// doesn't render for those. Just the compact summary each row needs —
-// "View Full Result" links to laboratory_result_details.php, which
-// independently re-resolves the SAME doc's full structured breakdown
-// via hc_resolve_lab_result() rather than this array carrying it
-// through.
+// Lab + X-ray Results — shown as soon as the medical technologist
+// marks a test "completed", NOT only once they separately click
+// "Proceed to Doctor" on top of that. Those are two different real
+// signals that used to be conflated:
+//   - labResultDocIds — only set once a medtech explicitly routes a
+//     result back (api/proceed-lab-result-to-doctor.php).
+//   - a lab_results/xray_results doc's own real 'status' field —
+//     flips to "completed" the moment the medtech saves the result
+//     form, independent of that separate routing step ever happening.
+// A doctor reopening an ongoing consultation (e.g. the checkbox grid
+// below showing "Gram Stain (result received)" via $labTestsAlreadyOrdered)
+// could see a test marked received with NO way to actually open it,
+// because nothing had routed it back yet — this union fixes that: a
+// completed test ordered FROM this consultation (sourceConsultationId
+// match) shows here regardless of whether it was also routed.
+// Deduplicated by doc id since a routed result is often the same doc
+// a sourceConsultationId match would already find.
 // ---------------------------------------------------------------------
+$labDocsForPatient = hc_get_lab_result_docs_for_patient($consultation['patientId']);
+$xrayDocsForPatient = hc_get_xray_result_docs_for_patient($consultation['patientId']);
+
+$labDocsById = array_column($labDocsForPatient, 'fields', 'id');
+$xrayDocsById = array_column($xrayDocsForPatient, 'fields', 'id');
+
+$resultIdsToShow = $consultation['labResultDocIds'];
+foreach ($labDocsForPatient as $doc) {
+    if (($doc['fields']['sourceConsultationId'] ?? '') === $consultation['id'] && ($doc['fields']['status'] ?? '') === 'completed') {
+        $resultIdsToShow[] = $doc['id'];
+    }
+}
+foreach ($xrayDocsForPatient as $doc) {
+    if (($doc['fields']['sourceConsultationId'] ?? '') === $consultation['id'] && ($doc['fields']['status'] ?? '') === 'completed') {
+        $resultIdsToShow[] = $doc['id'];
+    }
+}
+$resultIdsToShow = array_unique($resultIdsToShow);
+
 $linkedLabResults = [];
-foreach ($consultation['labResultDocIds'] as $labResultId) {
-    $labDoc = $firestore->getDocument('lab_results', $labResultId);
-    if ($labDoc === null) {
+foreach ($resultIdsToShow as $resultId) {
+    $labDoc = $labDocsById[$resultId] ?? $firestore->getDocument('lab_results', $resultId);
+    if ($labDoc !== null) {
+        $badgeColor = $labDoc['resultBadgeColor'] ?? '#6B7280';
+        $linkedLabResults[] = [
+            'id' => $resultId,
+            'type' => 'lab',
+            'testName' => $labDoc['testName'] ?? '—',
+            'resultBadgeLabel' => $labDoc['resultBadgeLabel'] ?? '—',
+            'resultBadgeColor' => $badgeColor,
+            // Same light-background mapping every other role's lab badge
+            // uses (includes/medical_technician/laboratory_xray_firestore.php's
+            // hc_medtech_badge_bg_for_color()) — duplicated here rather
+            // than requiring that whole file just for this one helper.
+            'resultBadgeBg' => match ($badgeColor) {
+                '#1E8E3E' => '#E4F7EA',
+                '#E8710A' => '#FDECDD',
+                '#D93025' => '#FCE4E4',
+                '#1A73E8' => '#E8F0FE',
+                '#7C3AED' => '#EFE7FB',
+                default => '#EEF0F3',
+            },
+            'completedDate' => ($labDoc['completedDate'] ?? '') !== '' ? date('M j, Y', strtotime($labDoc['completedDate'])) : '—',
+            'completedTime' => $labDoc['completedTime'] ?? '—',
+        ];
         continue;
     }
-    $badgeColor = $labDoc['resultBadgeColor'] ?? '#6B7280';
+
+    $xrayDoc = $xrayDocsById[$resultId] ?? $firestore->getDocument('xray_results', $resultId);
+    if ($xrayDoc === null) {
+        continue;
+    }
+    // xray_results has no resultBadgeLabel/resultBadgeColor of its own
+    // (that's a lab_results-only field) — same real "no active"
+    // heuristic includes/firestore/patient_overview.php's Overview tab
+    // already uses to call an x-ray normal vs. abnormal from its
+    // impression text.
+    $isNormal = str_contains(strtolower($xrayDoc['impression'] ?? ''), 'no active');
     $linkedLabResults[] = [
-        'id' => $labResultId,
-        'testName' => $labDoc['testName'] ?? '—',
-        'resultBadgeLabel' => $labDoc['resultBadgeLabel'] ?? '—',
-        'resultBadgeColor' => $badgeColor,
-        // Same light-background mapping every other role's lab badge
-        // uses (includes/medical_technician/laboratory_xray_firestore.php's
-        // hc_medtech_badge_bg_for_color()) — duplicated here rather
-        // than requiring that whole file just for this one helper.
-        'resultBadgeBg' => match ($badgeColor) {
-            '#1E8E3E' => '#E4F7EA',
-            '#E8710A' => '#FDECDD',
-            '#D93025' => '#FCE4E4',
-            '#1A73E8' => '#E8F0FE',
-            '#7C3AED' => '#EFE7FB',
-            default => '#EEF0F3',
-        },
-        'completedDate' => ($labDoc['completedDate'] ?? '') !== '' ? date('M j, Y', strtotime($labDoc['completedDate'])) : '—',
-        'completedTime' => $labDoc['completedTime'] ?? '—',
+        'id' => $resultId,
+        'type' => 'xray',
+        'testName' => $xrayDoc['examName'] ?? '—',
+        'resultBadgeLabel' => $isNormal ? 'Normal' : 'Abnormal',
+        'resultBadgeColor' => $isNormal ? '#1E8E3E' : '#D93025',
+        'resultBadgeBg' => $isNormal ? '#E4F7EA' : '#FCE4E4',
+        'completedDate' => ($xrayDoc['completedDate'] ?? '') !== '' ? date('M j, Y', strtotime($xrayDoc['completedDate'])) : '—',
+        'completedTime' => $xrayDoc['completedTime'] ?? '—',
     ];
 }
 
@@ -191,7 +251,7 @@ foreach ($consultation['labResultDocIds'] as $labResultId) {
 // second time — this is exactly how the real duplicate Gram Stain
 // orders on a live consultation happened before this existed.
 $labTestsAlreadyOrdered = [];
-foreach (hc_get_lab_result_docs_for_patient($consultation['patientId']) as $doc) {
+foreach ($labDocsForPatient as $doc) {
     $f = $doc['fields'];
     if (($f['sourceConsultationId'] ?? '') === $consultation['id']) {
         $labTestsAlreadyOrdered[$f['testName'] ?? ''] = $f['status'] ?? 'pending';

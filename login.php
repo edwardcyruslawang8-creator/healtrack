@@ -127,17 +127,6 @@ $idleTimeoutNotice = ($_GET['reason'] ?? '') === 'idle'
          ========================================================= -->
     <div class="login-right">
 
-        <!-- Language selector -->
-        <div class="lang-selector dropdown">
-            <button class="btn-lang dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-globe2"></i> <span id="langLabel">English</span>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item lang-option" href="#">English</a></li>
-                <li><a class="dropdown-item lang-option" href="#">Filipino</a></li>
-            </ul>
-        </div>
-
         <!-- Login card -->
         <div class="login-card">
 
@@ -195,12 +184,6 @@ $idleTimeoutNotice = ($_GET['reason'] ?? '') === 'idle'
                 <!-- Forgot password -->
                 <div class="login-forgot-row">
                     <a href="<?= BASE_URL ?>/forgot-password.php">Forgot password?</a>
-                </div>
-
-                <!-- Remember me -->
-                <div class="login-remember">
-                    <input type="checkbox" id="rememberMe" name="remember_me">
-                    <label for="rememberMe">Remember me</label>
                 </div>
 
                 <!-- Sign In button -->

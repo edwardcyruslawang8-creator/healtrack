@@ -12,10 +12,10 @@
  * a live refresh can never drift out of sync with what a real page
  * load would have shown.
  *
- * Expects $patient, $ongoingConsult, $ongoingPatient, $nextConsult,
- * $nextPatient, $consultationTypeMeta, $consultationStatusMeta already
- * set by the includer (hc_get_doctor_queue_status() — see
- * includes/firestore/consultations.php).
+ * Expects $patient, $ongoingConsult, $ongoingPatient, $ongoingAwaitingLab,
+ * $nextConsult, $nextPatient, $consultationTypeMeta,
+ * $consultationStatusMeta already set by the includer
+ * (hc_get_doctor_queue_status() — see includes/firestore/consultations.php).
  * =====================================================================
  */
 ?>
@@ -53,16 +53,26 @@
      active_consultation.php if they navigated away or reloaded
      mid-consultation, since that page itself has no other link to
      it. Shown ABOVE "Next to Consult" rather than replacing it —
-     both can be true at once (an ongoing one plus more waiting). -->
+     both can be true at once (an ongoing one plus more waiting).
+
+     While $ongoingAwaitingLab is true (routed to the lab, at least one
+     ordered test still "pending" — hc_consultation_is_awaiting_lab_results())
+     "Resume Consultation" is replaced with a disabled, non-clickable
+     waiting state instead: the patient is physically at the lab right
+     now, so there's nothing for the doctor to resume documenting until
+     a result comes back (doctor/active_consultation_doctor_firestore.php
+     enforces this same rule server-side too, in case this card's link
+     is ever bypassed). It flips back to a real "Resume Consultation"
+     link on its own the moment every ordered test is completed —
+     nothing here needs to separately clear it. -->
 <?php if ($ongoingConsult !== null && $ongoingPatient !== null): ?>
 <div class="cns-next-card">
     <div class="cns-next-identity">
-        <div class="cns-next-avatar"><i class="bi bi-play-circle-fill"></i></div>
+        <div class="cns-next-avatar"><i class="bi <?= $ongoingAwaitingLab ? 'bi-hourglass-split' : 'bi-play-circle-fill' ?>"></i></div>
         <div>
             <div class="cns-next-label">Ongoing Consultation</div>
             <div class="cns-next-name"><?= htmlspecialchars($ongoingPatient['name']) ?></div>
             <div class="cns-next-meta"><?= (int) $ongoingPatient['age'] ?> years old (<?= htmlspecialchars($ongoingPatient['gender']) ?>)</div>
-            <div class="cns-next-meta"><?= htmlspecialchars($ongoingConsult['patientId']) ?></div>
         </div>
     </div>
 
@@ -78,7 +88,7 @@
             <span class="cns-next-field-label">Status</span>
             <span class="cns-next-field-value">
                 <?php $ongoingStatus = $consultationStatusMeta[$ongoingConsult['status']] ?? $consultationStatusMeta['ongoing']; ?>
-                <span class="cns-badge" style="background:<?= htmlspecialchars($ongoingStatus['bg']) ?>; color:<?= htmlspecialchars($ongoingStatus['color']) ?>;"><?= htmlspecialchars($ongoingStatus['label']) ?></span>
+                <span class="cns-badge" style="background:<?= htmlspecialchars($ongoingStatus['bg']) ?>; color:<?= htmlspecialchars($ongoingStatus['color']) ?>;"><?= htmlspecialchars($ongoingAwaitingLab ? 'In Laboratory' : $ongoingStatus['label']) ?></span>
             </span>
         </div>
         <div class="cns-next-field">
@@ -91,7 +101,13 @@
         </div>
     </div>
 
+    <?php if ($ongoingAwaitingLab): ?>
+    <div class="cns-btn-start cns-btn-waiting" aria-disabled="true" title="Waiting for the medical technologist to finish — this patient's results aren't back yet.">
+        <i class="bi bi-hourglass-split"></i> Waiting for Laboratory Results
+    </div>
+    <?php else: ?>
     <a href="active_consultation.php?id=<?= urlencode($ongoingConsult['id']) ?>" class="cns-btn-start"><i class="bi bi-arrow-right-circle"></i> Resume Consultation</a>
+    <?php endif; ?>
 </div>
 <?php endif; ?>
 
@@ -104,7 +120,6 @@
             <div class="cns-next-label">Next to Consult</div>
             <div class="cns-next-name"><?= htmlspecialchars($nextPatient['name']) ?></div>
             <div class="cns-next-meta"><?= (int) $nextPatient['age'] ?> years old (<?= htmlspecialchars($nextPatient['gender']) ?>)</div>
-            <div class="cns-next-meta"><?= htmlspecialchars($nextConsult['patientId']) ?></div>
         </div>
     </div>
 

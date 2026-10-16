@@ -316,20 +316,19 @@ function hc_medtech_lxr_query(array $overrides = []): string
                         <th>Priority</th>
                         <th>Status</th>
                         <th>Result / Report</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($requests)): ?>
                     <tr>
-                        <td colspan="8" class="adm-table-empty">No requests match these filters.</td>
+                        <td colspan="7" class="adm-table-empty">No requests match these filters.</td>
                     </tr>
                     <?php endif; ?>
                     <?php foreach ($requests as $r): $status = $statusMeta[$r['status']] ?? $statusMeta['pending']; ?>
                     <tr>
                         <td>
                             <div class="lxr-strong"><?= htmlspecialchars($r['patientName']) ?></div>
-                            <div class="lxr-patient-meta"><?= htmlspecialchars($r['patientId']) ?><span class="lxr-dot"></span><?= (int) $r['patientAge'] ?> years old</div>
+                            <div class="lxr-patient-meta"><?= (int) $r['patientAge'] ?> years old</div>
                         </td>
                         <td><?= htmlspecialchars($r['examination']) ?></td>
                         <td><?= htmlspecialchars($r['requestedBy']) ?></td>
@@ -338,21 +337,10 @@ function hc_medtech_lxr_query(array $overrides = []): string
                         <td><span class="lxr-badge" style="background:<?= htmlspecialchars($status['bg']) ?>; color:<?= htmlspecialchars($status['color']) ?>;"><?= htmlspecialchars($status['label']) ?></span></td>
                         <td>
                             <?php if ($r['hasReport']): ?>
-                            <a href="laboratory_result_details.php?id=<?= urlencode($r['patientId']) ?>&type=<?= urlencode($r['type']) ?>&recordId=<?= urlencode($r['id']) ?>" class="lxr-report-link"><?= $r['type'] === 'lab' ? 'View Result' : 'View Report' ?></a>
+                            <a href="laboratory_result_details.php?id=<?= urlencode($r['patientId']) ?>&type=<?= urlencode($r['type']) ?>&recordId=<?= urlencode($r['id']) ?>" class="lxr-consult-btn"><?= $r['type'] === 'lab' ? 'View Result' : 'View Report' ?></a>
                             <?php else: ?>
                             <span class="lxr-report-none">&mdash;</span>
                             <?php endif; ?>
-                        </td>
-                        <td>
-                            <!-- Proceed/Update and More Options aren't wired to anything yet
-                                 (no in-progress/reassign/cancel workflow exists for this role) —
-                                 present for the same reason as other "not wired up yet" controls
-                                 elsewhere in this app, ready for when those actions are built. -->
-                            <div class="adm-action-btns">
-                                <a href="laboratory_result_details.php?id=<?= urlencode($r['patientId']) ?>&type=<?= urlencode($r['type']) ?>&recordId=<?= urlencode($r['id']) ?>" class="adm-action-btn view" aria-label="View Request"><i class="bi bi-eye"></i></a>
-                                <button type="button" class="adm-action-btn edit" aria-label="Proceed / Update"><i class="bi bi-arrow-right"></i></button>
-                                <button type="button" class="adm-action-btn edit" aria-label="More Options"><i class="bi bi-three-dots-vertical"></i></button>
-                            </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -394,7 +382,6 @@ function hc_medtech_lxr_query(array $overrides = []): string
             <?php foreach ($recentLabResults as $rep): ?>
             <div class="lxr-report-card">
                 <div class="lxr-report-name"><?= htmlspecialchars($rep['patientName']) ?></div>
-                <div class="lxr-report-pid"><?= htmlspecialchars($rep['patientId']) ?></div>
                 <div class="lxr-report-exam"><?= htmlspecialchars($rep['examination']) ?></div>
                 <?php if ($rep['resultBadge']): ?>
                 <span class="lxr-badge" style="background:<?= htmlspecialchars($rep['resultBadge']['bg']) ?>; color:<?= htmlspecialchars($rep['resultBadge']['color']) ?>;"><?= htmlspecialchars($rep['resultBadge']['label']) ?></span>
@@ -418,7 +405,6 @@ function hc_medtech_lxr_query(array $overrides = []): string
             <?php foreach ($recentXrayReports as $rep): ?>
             <div class="lxr-report-card">
                 <div class="lxr-report-name"><?= htmlspecialchars($rep['patientName']) ?></div>
-                <div class="lxr-report-pid"><?= htmlspecialchars($rep['patientId']) ?></div>
                 <div class="lxr-report-exam"><?= htmlspecialchars($rep['examination']) ?></div>
                 <span class="lxr-badge" style="background:<?= htmlspecialchars($rep['resultBadge']['bg']) ?>; color:<?= htmlspecialchars($rep['resultBadge']['color']) ?>;"><?= htmlspecialchars($rep['resultBadge']['label']) ?></span>
                 <div class="lxr-report-date"><i class="bi bi-calendar3"></i> <?= htmlspecialchars($rep['date']) ?></div>

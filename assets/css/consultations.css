@@ -249,6 +249,16 @@
   flex-shrink: 0;
 }
 .cns-btn-start:hover{ background: #1558B0; color: #fff; }
+/* -- Waiting-for-lab variant (includes/doctor/_consultation_queue_cards.php)
+   — same box as .cns-btn-start so the card's layout doesn't jump
+   between the two states, just muted and non-interactive instead of
+   the normal blue "go do this" affordance. -- */
+.cns-btn-waiting{
+  background: var(--adm-bg);
+  color: var(--adm-text-muted);
+  border: 1px solid var(--adm-border);
+  cursor: not-allowed;
+}
 
 /* -- Clickable rows (sets the "Next to Consult" card above) -- */
 .cns-row-clickable{ cursor: pointer; transition: background .12s ease; }

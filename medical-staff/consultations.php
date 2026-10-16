@@ -277,13 +277,12 @@ $staffNavItems = [
                         <th>Assigned Personnel</th>
                         <th>Chief Complaint</th>
                         <th>Status</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="cnsTableBody">
                     <?php if (empty($consultations)): ?>
                     <tr>
-                        <td colspan="7" class="adm-table-empty">No consultations found.</td>
+                        <td colspan="6" class="adm-table-empty">No consultations found.</td>
                     </tr>
                     <?php endif; ?>
                     <?php foreach ($consultations as $c): $type = $consultationTypeMeta[$c['consultationType']] ?? $consultationTypeMeta['walk_in']; $status = $consultationStatusMeta[$c['status']] ?? $consultationStatusMeta['pending']; ?>
@@ -315,15 +314,6 @@ $staffNavItems = [
                         <td><?= htmlspecialchars($c['assignedPersonnel']) ?></td>
                         <td><?= htmlspecialchars($c['chiefComplaint']) ?></td>
                         <td><span class="cns-badge" style="background:<?= htmlspecialchars($status['bg']) ?>; color:<?= htmlspecialchars($status['color']) ?>;"><?= htmlspecialchars($status['label']) ?></span></td>
-                        <td>
-                            <div class="adm-action-btns">
-                                <button type="button" class="adm-action-btn view" aria-label="View Consultation"><i class="bi bi-eye"></i></button>
-                                <button type="button" class="adm-action-btn edit" aria-label="Edit Consultation"><i class="bi bi-pencil"></i></button>
-                                <?php if (!in_array($c['status'], ['completed', 'cancelled'], true)): ?>
-                                <button type="button" class="adm-action-btn continue cns-btn-complete" aria-label="Complete Consultation"><i class="bi bi-check-circle"></i></button>
-                                <?php endif; ?>
-                            </div>
-                        </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>

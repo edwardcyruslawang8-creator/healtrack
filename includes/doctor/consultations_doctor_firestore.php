@@ -89,6 +89,7 @@ $nextConsult = $queueStatus['nextConsult'];
 $nextPatient = $queueStatus['nextPatient'];
 $ongoingConsult = $queueStatus['ongoingConsult'];
 $ongoingPatient = $queueStatus['ongoingPatient'];
+$ongoingAwaitingLab = $queueStatus['ongoingAwaitingLab'];
 $patient = $queueStatus['patient'];
 
 // ---------------------------------------------------------------------

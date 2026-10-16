@@ -54,7 +54,17 @@
   min-width: 240px;
   position: relative;
 }
-.pmg-search i{
+/* Direct-child combinator (not a bare descendant selector) — this
+   must only ever match the one static prefix icon in the PHP markup.
+   assets/js/quick-search.js reuses this same .pmg-search element as
+   its own component root (appending the clear ("x") button and the
+   results dropdown as children of it), and a bare ".pmg-search i"
+   was catching THEIR nested <i> icons too (the clear button's "x" and
+   the dropdown's "View all results" search icon), ripping them out of
+   their own button's flex-centered layout and absolutely positioning
+   them here instead — on top of the prefix icon / overlapping
+   whatever the dropdown renders right below it. */
+.pmg-search > i{
   position: absolute;
   left: 18px;
   top: 50%;

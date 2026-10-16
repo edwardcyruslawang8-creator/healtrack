@@ -100,7 +100,11 @@
   display: flex;
   align-items: center;
 }
-.mvi-search i{ position: absolute; left: 14px; color: var(--adm-text-soft); font-size: 14px; }
+/* Direct-child combinator, same reasoning as assets/css/patient_management.css's
+   ".pmg-search > i" — assets/js/quick-search.js reuses .mvi-search as
+   its own component root too, and a bare descendant selector here
+   would catch its nested clear-button/dropdown icons the same way. */
+.mvi-search > i{ position: absolute; left: 14px; color: var(--adm-text-soft); font-size: 14px; }
 .mvi-search input{
   width: 100%;
   background: var(--adm-card);

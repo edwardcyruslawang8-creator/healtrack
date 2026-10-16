@@ -229,6 +229,18 @@ $doctorNavItems = [
         </div>
     </div>
 
+    <?php if (($_GET['blocked'] ?? '') === 'awaiting_lab'): ?>
+    <!-- Landed here because doctor/active_consultation_doctor_firestore.php's
+         own server-side guard bounced a direct/stale link back — the
+         queue card below already explains the same thing visually
+         ("Waiting for Laboratory Results"), this is just the one-time
+         explanation for why the page they tried to reach didn't open. -->
+    <div class="alert alert-warning d-flex align-items-center gap-2 py-2 px-3 small mb-3" role="alert">
+        <i class="bi bi-hourglass-split"></i>
+        This consultation can't be resumed yet — it's still waiting on results from the laboratory.
+    </div>
+    <?php endif; ?>
+
     <!-- ============ PATIENT INFORMATION / ONGOING / NEXT TO CONSULT ============
          Polled by assets/js/doctor_consultations.js (api/doctor-queue-status.php)
          so this whole section refreshes itself in place — e.g. once
@@ -301,6 +313,15 @@ $doctorNavItems = [
                     <?php foreach ($consultations as $c):
                         $type = $consultationTypeMeta[$c['consultationType']] ?? $consultationTypeMeta['walk_in'];
                         $status = $consultationStatusMeta[$c['status']] ?? $consultationStatusMeta['pending'];
+                        // Still real "ongoing" underneath (filtering by
+                        // ?status=ongoing still matches it) — just a more
+                        // specific label so this doesn't read the same as
+                        // a consultation the doctor is still actively
+                        // writing up themselves. Same bg/color, since it's
+                        // still the "ongoing" family, just further along.
+                        if ($c['status'] === 'ongoing' && $c['nextRouting'] === 'laboratory') {
+                            $status = ['label' => 'In Laboratory', 'bg' => $status['bg'], 'color' => $status['color']];
+                        }
                         $rowPatient = $patientsById[$c['patientId']] ?? null;
                     ?>
                     <tr>
@@ -309,7 +330,6 @@ $doctorNavItems = [
                                 <div class="cns-avatar-sm"><i class="bi bi-person-fill"></i></div>
                                 <div class="cns-name-text">
                                     <span class="cns-strong"><?= htmlspecialchars($c['patientName']) ?></span>
-                                    <span class="cns-patient-id"><?= htmlspecialchars($c['patientId']) ?></span>
                                 </div>
                             </div>
                         </td>

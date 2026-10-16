@@ -245,6 +245,7 @@ $staffNavItems = [
             <i class="bi bi-search"></i>
             <input type="text" name="q" value="<?= htmlspecialchars($searchTerm) ?>" id="patientSearchInput" placeholder="Search by name or contact number..." autocomplete="off" data-quick-search="<?= BASE_URL ?>/api/quick-search-patients.php" data-quick-search-view="patient_profile.php?id={id}">
         </div>
+        <button type="submit" class="pmg-btn-search"><i class="bi bi-search"></i> Search</button>
 
         <select class="form-select pmg-filter-select" name="gender" aria-label="Filter by gender" onchange="this.form.submit()">
             <?php foreach ($genderOptions as $g): ?>
@@ -258,7 +259,6 @@ $staffNavItems = [
             <?php endforeach; ?>
         </select>
 
-        <button type="submit" class="pmg-btn-search"><i class="bi bi-search"></i> Search</button>
         <button type="button" class="pmg-btn-search" id="btnAddPatient"><i class="bi bi-person-plus-fill"></i> Add Patient</button>
     </form>
 

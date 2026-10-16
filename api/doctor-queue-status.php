@@ -42,6 +42,7 @@ $queueStatus = hc_get_doctor_queue_status($myName);
 $patient = $queueStatus['patient'];
 $ongoingConsult = $queueStatus['ongoingConsult'];
 $ongoingPatient = $queueStatus['ongoingPatient'];
+$ongoingAwaitingLab = $queueStatus['ongoingAwaitingLab'];
 $nextConsult = $queueStatus['nextConsult'];
 $nextPatient = $queueStatus['nextPatient'];
 

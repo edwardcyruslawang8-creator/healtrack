@@ -68,6 +68,7 @@ $currentOverall = $currentDoc['fields']['resultBadgeLabel'] ?? '';
 
 <link rel="stylesheet" href="<?= asset_url('/assets/css/admin-dashboard.css') ?>">
 <link rel="stylesheet" href="<?= asset_url('/assets/css/medical_technician_dashboard.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/medical_technician_lab_xray.css') ?>">
 <style>
   .urn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
   .urn-grid.two-col { grid-template-columns: repeat(2, 1fr); }

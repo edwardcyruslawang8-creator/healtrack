@@ -14,6 +14,7 @@
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/patients.php'; // hc_get_patient_profile(), hc_not_found_patient_profile()
+require_once __DIR__ . '/lab_results.php'; // hc_consultation_is_awaiting_lab_results()
 
 if (!function_exists('hc_map_consultation_doc')) {
     /**
@@ -155,6 +156,11 @@ if (!function_exists('hc_get_doctor_queue_status')) {
         $ongoingPatient = $ongoingConsult !== null
             ? (hc_get_patient_profile($ongoingConsult['patientId']) ?? hc_not_found_patient_profile($ongoingConsult['patientId']))
             : null;
+        // Still surfaced as "Ongoing Consultation" either way — the
+        // patient hasn't gone anywhere — but "Resume Consultation" only
+        // makes sense once the lab is actually done with them; see
+        // hc_consultation_is_awaiting_lab_results()'s own comment.
+        $ongoingAwaitingLab = $ongoingConsult !== null && hc_consultation_is_awaiting_lab_results($ongoingConsult);
 
         return [
             'myConsultations' => $myConsultations,
@@ -162,6 +168,7 @@ if (!function_exists('hc_get_doctor_queue_status')) {
             'nextPatient' => $nextPatient,
             'ongoingConsult' => $ongoingConsult,
             'ongoingPatient' => $ongoingPatient,
+            'ongoingAwaitingLab' => $ongoingAwaitingLab,
             'patient' => $nextPatient,
         ];
     }

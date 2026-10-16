@@ -31,10 +31,10 @@ if (!function_exists('hc_lab_test_catalog')) {
     {
         return [
             'Bacteriology' => ['Gram Stain', 'Wet Mount'],
-            'Clinical Microscopy' => ['Urinalysis', 'Parasitology', 'Fecal Occult Blood (FBOT)'],
+            'Clinical Microscopy' => ['Urinalysis', 'Stool Exam', 'Fecal Occult Blood (FBOT)'],
             'Serology' => ['HBSAG', 'Syphilis', 'HIV', 'CD4', 'Viral Load', 'Dengue NS1', 'IGM and IGG'],
-            'Hematology' => ['CBC', 'Blood Typing'],
-            'Clinical Chemistry' => ['Fasting Blood Sugar', 'Blood Urea Nitrogen', 'Creatinine', 'Blood Uric Acid', 'Total Cholesterol', 'Triglycerides', 'HDL/LDL', 'SGOT/SGPT', 'HBA1C'],
+            'Hematology' => ['CBC'],
+            'Clinical Chemistry' => ['Fasting Blood Sugar', 'Blood Urea Nitrogen', 'Creatinine', 'Blood Uric Acid', 'Total Cholesterol', 'Triglycerides', 'HDL/LDL', 'SGOT', 'SGPT', 'HBA1C'],
         ];
     }
 }
@@ -307,6 +307,130 @@ if (!function_exists('hc_get_pending_lab_xray_count')) {
             }
         }
         return $count;
+    }
+}
+
+if (!function_exists('hc_get_doctor_result_ready_notifications')) {
+    /**
+     * The doctor-facing mirror of hc_get_pending_lab_xray_notifications()
+     * above: one real notification row per lab_results/xray_results doc
+     * this doctor personally ordered ('orderedBy' === their real name,
+     * the same field every completion endpoint stamps — see
+     * api/complete-lab-result.php etc.) that's now 'completed' — i.e.
+     * the medical technologist is DONE and this doctor can actually open
+     * it (doctor/active_consultation.php's "Lab & X-ray Results" card,
+     * or patient_laboratory_xray.php outside an active consultation).
+     * Capped to the last 14 days (same reasoning
+     * hc_get_followup_notifications()'s own 7-day window gives: a
+     * meaningfully "new" alert, not an ever-growing list of every result
+     * this doctor has ever ordered) — older completions simply age out
+     * of the bell rather than needing a separate dismiss-forever flag.
+     *
+     * @return array<int, array{id: int, title: string, description: string, type: string, date: string, time: string, icon: string, iconBg: string, iconColor: string}>
+     */
+    function hc_get_doctor_result_ready_notifications(string $doctorName): array
+    {
+        if ($doctorName === '') {
+            return [];
+        }
+
+        $cutoff = date('Y-m-d', strtotime('-14 days'));
+        $patientNames = array_column(hc_get_all_patients_summary(), 'name', 'id');
+
+        $rows = [];
+        foreach (hc_get_all_lab_result_docs() as $doc) {
+            $f = $doc['fields'];
+            if (($f['status'] ?? '') !== 'completed' || ($f['orderedBy'] ?? '') !== $doctorName) {
+                continue;
+            }
+            if (($f['completedDate'] ?? '') < $cutoff) {
+                continue;
+            }
+            $rows[] = [
+                'collection' => 'lab_results',
+                'docId' => $doc['id'],
+                'testName' => $f['testName'] ?? 'Lab test',
+                'patientId' => $f['patientId'] ?? '',
+                'completedDate' => $f['completedDate'] ?? '',
+                'completedTime' => $f['completedTime'] ?? '',
+            ];
+        }
+        foreach (hc_get_all_xray_result_docs() as $doc) {
+            $f = $doc['fields'];
+            if (($f['status'] ?? '') !== 'completed' || ($f['orderedBy'] ?? '') !== $doctorName) {
+                continue;
+            }
+            if (($f['completedDate'] ?? '') < $cutoff) {
+                continue;
+            }
+            $rows[] = [
+                'collection' => 'xray_results',
+                'docId' => $doc['id'],
+                'testName' => $f['examName'] ?? 'X-ray exam',
+                'patientId' => $f['patientId'] ?? '',
+                'completedDate' => $f['completedDate'] ?? '',
+                'completedTime' => $f['completedTime'] ?? '',
+            ];
+        }
+
+        usort($rows, fn ($a, $b) => strcmp($b['completedDate'] . $b['completedTime'], $a['completedDate'] . $a['completedTime']));
+
+        return array_map(function ($r) use ($patientNames) {
+            $completedAt = $r['completedDate'] !== '' ? strtotime($r['completedDate'] . ' ' . $r['completedTime']) : false;
+            $isXray = $r['collection'] === 'xray_results';
+            $patientName = $patientNames[$r['patientId']] ?? '(unknown patient)';
+
+            return [
+                'id' => crc32($r['collection'] . '-' . $r['docId'] . '-ready'),
+                'title' => ($isXray ? 'X-ray' : 'Lab') . ' result ready',
+                'description' => $r['testName'] . ' for ' . $patientName . ' is ready to view.',
+                'type' => $isXray ? 'X-ray' : 'Laboratory',
+                'date' => $completedAt !== false ? date('M j, Y', $completedAt) : '—',
+                'time' => $completedAt !== false ? date('g:i A', $completedAt) : '',
+                'icon' => $isXray ? 'bi-file-earmark-medical-fill' : 'bi-clipboard2-pulse-fill',
+                'iconBg' => '#E4F7EA',
+                'iconColor' => '#1E8E3E',
+            ];
+        }, $rows);
+    }
+}
+
+if (!function_exists('hc_consultation_is_awaiting_lab_results')) {
+    /**
+     * True while this consultation is genuinely "with the lab" — routed
+     * there (nextRouting === 'laboratory') AND at least one lab_results/
+     * xray_results doc whose sourceConsultationId matches is still
+     * 'pending' (the medical technologist hasn't completed it yet).
+     * Once every test ordered from it is 'completed', this flips back
+     * to false on its own — nothing to separately clear. Used to block
+     * a doctor from resuming the clinical documentation workspace
+     * (doctor/active_consultation.php) for a patient who's physically
+     * at the lab right now, same real signal
+     * hc_get_doctor_result_ready_notifications() above already reads
+     * (sourceConsultationId + status), just checking for ANY remaining
+     * 'pending' instead of a completed one.
+     */
+    function hc_consultation_is_awaiting_lab_results(array $consultation): bool
+    {
+        if (($consultation['nextRouting'] ?? '') !== 'laboratory') {
+            return false;
+        }
+
+        global $firestore;
+        foreach ($firestore->listDocuments('lab_results') as $doc) {
+            $f = $doc['fields'];
+            if (($f['sourceConsultationId'] ?? '') === $consultation['id'] && ($f['status'] ?? '') === 'pending') {
+                return true;
+            }
+        }
+        foreach ($firestore->listDocuments('xray_results') as $doc) {
+            $f = $doc['fields'];
+            if (($f['sourceConsultationId'] ?? '') === $consultation['id'] && ($f['status'] ?? '') === 'pending') {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 

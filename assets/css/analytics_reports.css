@@ -256,9 +256,9 @@ main.adm-main.adm-main-loading{ opacity: .55; pointer-events: none; transition: 
 .arp-report-filter{
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 .arp-report-filter label{
   font-size: 12.5px;
@@ -268,19 +268,27 @@ main.adm-main.adm-main-loading{ opacity: .55; pointer-events: none; transition: 
   align-items: center;
   gap: 6px;
 }
+/* Native date/select/button controls don't inherit the page's own
+   font by default (a long-standing browser behavior, not something
+   this app's CSS reset ever covers for inputs — only
+   ".adm-body button" gets a font-family fix) — without this, the
+   From/To fields fall back to the OS's own UI font, visibly
+   mismatched next to every Poppins-set label/button around them. */
 .arp-report-filter input[type="date"]{
   border: 1px solid var(--adm-border);
   border-radius: 8px;
   padding: 6px 10px;
+  font-family: inherit;
   font-size: 13px;
   color: var(--adm-text);
   background: var(--adm-card);
 }
 .arp-report-filter-btn,
-.arp-report-export-btn{
+.arp-report-export-btn,
+.arp-report-today-link{
   border: 1px solid var(--adm-border);
   border-radius: 8px;
-  padding: 7px 14px;
+  padding: 7px 16px;
   font-size: 12.5px;
   font-weight: 600;
   background: var(--adm-card);
@@ -290,12 +298,18 @@ main.adm-main.adm-main-loading{ opacity: .55; pointer-events: none; transition: 
   gap: 6px;
   text-decoration: none;
   cursor: pointer;
+  line-height: 1.4;
+  transition: background .15s ease, opacity .15s ease;
 }
 .arp-report-filter-btn{ background: var(--adm-red-bright); color: #fff; border-color: var(--adm-red-bright); }
 .arp-report-filter-btn:hover{ opacity: .92; }
 .arp-report-export-btn:hover{ background: var(--adm-hover-bg); }
-.arp-report-today-link{ font-size: 12.5px; color: var(--adm-red-bright); font-weight: 600; text-decoration: none; }
-.arp-report-today-link:hover{ text-decoration: underline; }
+/* "Today" reads and behaves as a real button now (same family as
+   Export CSV/Print — border, padding, hover state) instead of a bare
+   colored text link that looked like it belonged to a different,
+   less clickable class of element. */
+.arp-report-today-link{ color: var(--adm-red-bright); }
+.arp-report-today-link:hover{ background: var(--adm-hover-bg); text-decoration: none; }
 
 @media print{
   body.arp-printing-report .adm-sidebar,

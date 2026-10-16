@@ -467,7 +467,6 @@ $adminNavItems = [
                 <table class="adm-table" style="min-width:0;" data-sortable="true">
                     <thead>
                         <tr>
-                            <th>Patient ID</th>
                             <th>Patient Name</th>
                             <th>Age</th>
                             <th>Gender</th>
@@ -478,12 +477,11 @@ $adminNavItems = [
                     <tbody>
                         <?php if (empty($newPatientRegistrations)): ?>
                         <tr data-no-sort>
-                            <td colspan="6" class="adm-table-empty">No new registrations for this period.</td>
+                            <td colspan="5" class="adm-table-empty">No new registrations for this period.</td>
                         </tr>
                         <?php endif; ?>
                         <?php foreach ($newPatientRegistrations as $p): ?>
                         <tr>
-                            <td><?= htmlspecialchars($p['id']) ?></td>
                             <td><?= htmlspecialchars($p['name']) ?></td>
                             <td><?= (int) $p['age'] ?></td>
                             <td><?= htmlspecialchars($p['gender']) ?></td>

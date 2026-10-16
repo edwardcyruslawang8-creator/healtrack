@@ -7,8 +7,8 @@
  * a result" form for any lab test NOT covered by one of the 4 named
  * paper-form replicas (serology_rapid_test_form.php, urinalysis_form.php,
  * cd4_count_form.php, gram_stain_form.php). hc_lab_test_catalog() lists
- * ~23 orderable tests; only those 4 have a dedicated page, so every
- * other one (CBC, Blood Typing, Fasting Blood Sugar, Viral Load, etc.)
+ * ~22 orderable tests; only those 4 have a dedicated page, so every
+ * other one (CBC, Fasting Blood Sugar, Viral Load, etc.)
  * reaches this page instead — see
  * includes/medical_technician/_lab_xray_referral_table.php's Consult
  * button routing.
@@ -17,7 +17,7 @@
  * {test name}" since a patient can only have one pending order per
  * named test at a time), this page is reached with an explicit
  * &recordId= — a patient could have several different pending "other"
- * tests at once (e.g. both CBC and Blood Typing), so the exact
+ * tests at once (e.g. both CBC and Fasting Blood Sugar), so the exact
  * lab_results doc must be targeted directly, not found by name search.
  * =====================================================================
  */

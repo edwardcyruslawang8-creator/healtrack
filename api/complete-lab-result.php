@@ -10,7 +10,7 @@
  * Interpretation/Remarks onto the EXACT lab_results doc identified by
  * &recordId= (never found by patientId+testName search like the 4
  * named endpoints — a patient can have several different pending
- * "other" tests at once, e.g. both CBC and Blood Typing, so only
+ * "other" tests at once, e.g. both CBC and Fasting Blood Sugar, so only
  * recordId disambiguates which one this save is for). Flips it to
  * "completed", same field shape (resultGroups/interpretation/
  * resultBadgeLabel) laboratory_result_details.php already renders. A

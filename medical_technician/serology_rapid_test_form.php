@@ -66,6 +66,7 @@ $staffNavItems = [
 
 <link rel="stylesheet" href="<?= asset_url('/assets/css/admin-dashboard.css') ?>">
 <link rel="stylesheet" href="<?= asset_url('/assets/css/medical_technician_dashboard.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/medical_technician_lab_xray.css') ?>">
 </head>
 <body class="adm-body">
 

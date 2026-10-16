@@ -46,7 +46,7 @@
                 <tr>
                     <td>
                         <div class="lxr-strong"><?= htmlspecialchars($r['patientName']) ?></div>
-                        <div class="lxr-patient-meta"><?= htmlspecialchars($r['patientId']) ?><span class="lxr-dot"></span><?= (int) $r['patientAge'] ?> years old</div>
+                        <div class="lxr-patient-meta"><?= (int) $r['patientAge'] ?> years old</div>
                     </td>
                     <td><span class="lxr-badge" style="background:<?= $r['type'] === 'xray' ? '#FCE4E4' : '#EFE7FB' ?>; color:<?= $r['type'] === 'xray' ? '#D93025' : '#7C3AED' ?>;"><?= htmlspecialchars($r['typeLabel']) ?></span></td>
                     <td><?= htmlspecialchars($r['examination']) ?></td>

@@ -68,7 +68,7 @@ $testType = trim((string) ($body['testType'] ?? ''));
 // patientId+testName instead, since a patient can only ever have one
 // pending order for a given NAMED test at a time. A generic "other"
 // lab test or an X-ray exam has no such guarantee (e.g. both CBC and
-// Blood Typing could be pending at once), so only recordId
+// Fasting Blood Sugar could be pending at once), so only recordId
 // disambiguates which doc this button is actually for.
 $recordId = trim((string) ($body['recordId'] ?? ''));
 

@@ -3,19 +3,21 @@
  * =====================================================================
  * Notifications (Doctor) — Data
  * ---------------------------------------------------------------------
- * CONNECTED — every row is a real notification generated live from
- * includes/firestore/consultations.php's hc_get_followup_notifications(),
- * scoped to this signed-in doctor's own caseload (assignedPersonnel
- * matches their real name): one entry per consultation with a real
- * "nextFollowUp" date due within the next 7 days or already overdue.
- * This replaces the previous fully-fabricated 8-row placeholder list
- * (patient registrations, stock requests, etc. — none of which reflect
- * anything real for this role) with the one notification-worthy real
- * data source that actually exists for a doctor right now: their own
- * patients' upcoming follow-ups. With this app's current seed data
- * (one real consultation, assigned to a different name) this list will
- * likely be empty for most doctor accounts — genuinely, not a bug; see
- * includes/firestore/consultations.php's header comment.
+ * CONNECTED — every row is a real notification generated live from two
+ * sources scoped to this signed-in doctor's own caseload:
+ * includes/firestore/consultations.php's hc_get_followup_notifications()
+ * (assignedPersonnel matches their real name — one entry per
+ * consultation with a real "nextFollowUp" date due within the next 7
+ * days or already overdue) and includes/firestore/lab_results.php's
+ * hc_get_doctor_result_ready_notifications() (orderedBy matches their
+ * real name — one entry per lab/x-ray result a medical technologist
+ * has completed within the last 14 days, so a doctor is actually told
+ * when a result they ordered becomes available instead of only finding
+ * out by reopening the consultation). This replaces the previous
+ * fully-fabricated 8-row placeholder list (patient registrations,
+ * stock requests, etc. — none of which reflect anything real for this
+ * role) with the notification-worthy real data sources that actually
+ * exist for a doctor right now.
  *
  * Which of them are READ is real and persisted server-side (same
  * mechanism as pharmacist/notifications.php —
@@ -35,6 +37,7 @@
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/consultations.php'; // hc_get_followup_notifications()
+require_once __DIR__ . '/../firestore/lab_results.php'; // hc_get_doctor_result_ready_notifications()
 require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav()
 require_once __DIR__ . '/../shared/patient_access_requests.php'; // hc_get_access_request_notifications()
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
@@ -76,6 +79,7 @@ $ntfArchivedIds = $_SESSION['ntfDismissedIds'] ?? [];
 $rawNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'system') ? array_merge(
     array_filter([hc_get_2fa_reminder_notification($myUid, $myDoc ?? [])]),
     hc_notification_preference_enabled_for_doc($myDoc ?? [], 'consultation') ? hc_get_followup_notifications($doctorProfile['name']) : [],
+    hc_get_doctor_result_ready_notifications($doctorProfile['name']),
     hc_get_access_request_notifications($myUid)
 ) : [];
 $notifications = array_map(function ($n) use ($ntfReadIds, $ntfArchivedIds) {

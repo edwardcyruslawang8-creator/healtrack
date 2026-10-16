@@ -109,12 +109,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const form = input.closest('form');
-            const iconClass = function (item) { return item.icon || 'bi-person-fill'; };
-            const iconStyle = function (item) {
-                return item.iconBg && item.iconColor
-                    ? ' style="background:' + item.iconBg + '; color:' + item.iconColor + ';"'
-                    : '';
-            };
 
             let html = '<div class="qs-header">Quick Search Results</div><div class="qs-results-list">';
             results.forEach(function (item, index) {
@@ -127,7 +121,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         : ' type="button" data-fill="' + escapeHtml(item.name) + '"');
                 html +=
                     '<' + tag + ' class="qs-result-row" data-index="' + index + '"' + attrs + '>' +
-                        '<span class="qs-avatar"' + iconStyle(item) + '><i class="bi ' + iconClass(item) + '"></i></span>' +
                         '<span class="qs-result-body">' +
                             '<span class="qs-result-name">' + escapeHtml(item.name) + '</span>' +
                             '<span class="qs-result-meta">' + meta + '</span>' +
@@ -143,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!selectTarget) {
                 html +=
                     '<button type="button" class="qs-view-all" data-query="' + escapeHtml(query) + '">' +
-                        '<span><i class="bi bi-search"></i> View all results for "' + escapeHtml(query) + '"' + (total > results.length ? ' (' + total + ')' : '') + '</span>' +
+                        '<span>View all results for "' + escapeHtml(query) + '"' + (total > results.length ? ' (' + total + ')' : '') + '</span>' +
                         '<i class="bi bi-chevron-right"></i>' +
                     '</button>';
             }
