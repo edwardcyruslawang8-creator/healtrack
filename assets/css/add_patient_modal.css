@@ -130,6 +130,13 @@
 }
 .apm-modal .invalid-feedback{ font-size: 11.5px; }
 .apm-modal .is-invalid{ border-color: #D93025 !important; }
+/* Date inputs: Bootstrap's invalid icon sits on the right edge, exactly
+   where the native calendar picker icon is. Shift the warning icon left
+   of the picker and widen the right padding so both fit side by side. */
+.apm-modal input[type="date"].form-control.is-invalid{
+  padding-right: calc(1.5em + 0.75rem + 1.5rem);
+  background-position: right calc(0.375em + 0.1875rem + 1.5rem) center;
+}
 
 .apm-field-help{
   font-size: 11.5px;
