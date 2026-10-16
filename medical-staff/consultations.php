@@ -261,7 +261,10 @@ $staffNavItems = [
             <input type="date" name="to" value="<?= htmlspecialchars($dateTo) ?>" aria-label="To date" onchange="this.form.submit()">
         </div>
 
-        <button type="submit" class="cns-btn-search"><i class="bi bi-search"></i></button>
+        <!-- Invisible default button: keeps Enter-to-search working (the
+             date inputs above would otherwise block implicit submission)
+             now that the visible search icon button is gone. -->
+        <button type="submit" class="visually-hidden" tabindex="-1" aria-hidden="true">Search</button>
         <button type="button" class="cns-btn-set" id="btnSetConsultation"><i class="bi bi-plus-lg"></i> Set Consultation</button>
     </form>
 
