@@ -28,7 +28,6 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../shared/fuzzy_search.php'; // hc_fuzzy_match()
-require_once __DIR__ . '/../shared/patient_access_requests.php'; // hc_resolve_patient_owning_doctor(), hc_doctor_has_patient_access(), hc_get_pending_owner_requests()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -111,24 +110,6 @@ $patientsTotalPages = max(1, (int) ceil($patientsTotal / $patientsPerPage));
 $patientsCurrentPage = min($patientsCurrentPage, $patientsTotalPages);
 
 $patients = array_slice($filteredPatients, ($patientsCurrentPage - 1) * $patientsPerPage, $patientsPerPage);
-
-// ---------------------------------------------------------------------
-// Per-doctor ownership (see includes/shared/patient_access_requests.php's
-// header comment for the full workflow) — only computed for the current
-// page's rows, not every filtered patient. A row this doctor doesn't
-// have access to gets a locked state + "Request Access" action instead
-// of "View Profile" (see doctor/patient_management.php).
-// ---------------------------------------------------------------------
-foreach ($patients as &$p) {
-    $p['hasAccess'] = hc_doctor_has_patient_access($p, $myUid);
-    $owner = $p['hasAccess'] ? null : hc_resolve_patient_owning_doctor($p);
-    $p['ownerName'] = $owner['name'] ?? null;
-}
-unset($p);
-
-// Real requests waiting on THIS doctor (as the owner) to decide —
-// surfaced as a panel above the table when non-empty.
-$pendingOwnerRequests = hc_get_pending_owner_requests($myUid);
 
 // Centered pagination window (1 … current-1, current, current+1 … last)
 // — at 1,500+ patients / 8 per page that's 190+ pages, so a fixed

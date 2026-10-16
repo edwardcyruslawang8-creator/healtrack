@@ -73,20 +73,23 @@ foreach ($myAuditLogs as $log) {
 ksort($seenModules, SORT_STRING | SORT_FLAG_CASE);
 
 // ---------------------------------------------------------------------
-// Search box (?q=), Module filter (?module=), Date Range (?daterange=),
-// and pagination — real, applied over this pharmacist's own log above.
+// Search box (?q=), Module filter (?module=), a real From/To date range
+// (?from=/?to=), and pagination — real, applied over this pharmacist's
+// own log above.
 // ---------------------------------------------------------------------
 $auditSearchTerm = trim($_GET['q'] ?? '');
 $auditModuleFilter = $_GET['module'] ?? 'All Modules';
-$auditDateRangeFilter = $_GET['daterange'] ?? 'All Date & Time';
+// Both blank by default — every real date span, not a preset Today/
+// This Week/This Month bucket; either end can be left open-ended.
+$auditDateFrom = trim($_GET['from'] ?? '');
+$auditDateTo = trim($_GET['to'] ?? '');
 
 $filteredAuditLogs = hc_filter_audit_logs($myAuditLogs, [
     'q' => $auditSearchTerm,
     'module' => $auditModuleFilter,
-    'daterange' => $auditDateRangeFilter,
+    'from' => $auditDateFrom,
+    'to' => $auditDateTo,
 ]);
-
-$auditDateRangeLabel = $auditDateRangeFilter !== 'All Date & Time' ? $auditDateRangeFilter : 'All time';
 
 // ---------------------------------------------------------------------
 // Real pagination over the filtered result.
@@ -141,7 +144,6 @@ $auditLogs = array_map(fn ($log) => [
 // ---------------------------------------------------------------------
 $filterGroups = [
     ['key' => 'module',    'icon' => 'bi-grid-3x3-gap', 'label' => $auditModuleFilter,    'options' => array_merge(['All Modules'], array_keys($seenModules))],
-    ['key' => 'daterange', 'icon' => 'bi-calendar3',    'label' => $auditDateRangeFilter, 'options' => ['All Date & Time', 'Today', 'This Week', 'This Month']],
 ];
 
 if (!function_exists('hc_audit_query')) {
@@ -151,11 +153,12 @@ if (!function_exists('hc_audit_query')) {
         $params = array_merge([
             'q' => $_GET['q'] ?? '',
             'module' => $_GET['module'] ?? 'All Modules',
-            'daterange' => $_GET['daterange'] ?? 'All Date & Time',
+            'from' => $_GET['from'] ?? '',
+            'to' => $_GET['to'] ?? '',
             'page' => $_GET['page'] ?? 1,
         ], $overrides);
 
         return http_build_query(array_filter($params, fn ($v) => $v !== '' && $v !== null
-            && $v !== 'All Modules' && $v !== 'All Date & Time'));
+            && $v !== 'All Modules'));
     }
 }

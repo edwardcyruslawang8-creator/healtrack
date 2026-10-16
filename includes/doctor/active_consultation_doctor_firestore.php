@@ -258,14 +258,19 @@ foreach ($labDocsForPatient as $doc) {
     }
 }
 
-// "Patient Will Be Next In" — the four fixed routing choices this page
-// offers (see this file's header comment: recorded on the consultation
-// only, nothing auto-created elsewhere).
+// "Patient Will Be Next In" — one of three mutually-exclusive "right
+// now" destinations (recorded on the consultation only, nothing
+// auto-created elsewhere besides Laboratory's own real lab_results/
+// xray_results docs and Pharmacy's own real pharmacy_orders docs — see
+// api/complete-consultation.php). "Needs a follow-up visit" is a
+// SEPARATE, independent checkbox below this list (not a fourth radio
+// here) — a patient can need a follow-up scheduled AND still go to the
+// pharmacy today for medicine from THIS visit, so it can't be mutually
+// exclusive with the other three the way they are with each other.
 $routingOptions = [
-    'laboratory'  => ['label' => 'Laboratory',                  'desc' => 'Send patient to laboratory for tests.',        'icon' => 'bi-droplet-half'],
-    'pharmacy'    => ['label' => 'Pharmacy',                     'desc' => 'Send patient to pharmacy for medicines.',      'icon' => 'bi-capsule'],
-    'vaccination' => ['label' => 'Vaccination',                  'desc' => 'Send patient for vaccination.',                'icon' => 'bi-shield-plus'],
-    'follow_up'   => ['label' => 'Follow-up/Another Consultation','desc' => 'Schedule for follow-up or another consultation.', 'icon' => 'bi-calendar2-check'],
+    'laboratory'  => ['label' => 'Laboratory',  'desc' => 'Send patient to laboratory for tests.',   'icon' => 'bi-droplet-half'],
+    'pharmacy'    => ['label' => 'Pharmacy',    'desc' => 'Send patient to pharmacy for medicines.', 'icon' => 'bi-capsule'],
+    'vaccination' => ['label' => 'Vaccination', 'desc' => 'Send patient for vaccination.',            'icon' => 'bi-shield-plus'],
 ];
 
 // Selecting "Laboratory" above reveals a "Select Laboratory Tests"

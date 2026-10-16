@@ -37,11 +37,9 @@ if (($_SESSION['role'] ?? null) !== 'healthcare_staff') {
 
 require_once __DIR__ . '/../includes/medical-staff/history_medstaff_firestore.php';
 // $staffProfile, $dashboardDateLabel, $facilityOptions, $patient, $profileTabs,
-// $historyDateRangeLabel, $recordTypeOptions,
-// $recordTypeMeta, $actionMeta, $recordHistory, $recordHistoryTotal,
-// $recordHistoryPerPage, $recordHistoryCurrentPage, $recordHistoryTotalPages,
-// $activityLog, $activityLogTotal, $activityLogPerPage,
-// $activityLogCurrentPage, $activityLogTotalPages
+// $historyDateFrom, $historyDateTo, $historyRecordTypeFilter, $recordTypeOptions,
+// $consultationTypeMeta, $recordHistory, $recordHistoryTotal,
+// $recordHistoryPerPage, $recordHistoryCurrentPage, $recordHistoryTotalPages
 
 // Sidebar nav — same Medical Staff nav list as medical-staff/dashboard.php.
 // Patient Management stays active (this page is reached from it).
@@ -89,6 +87,8 @@ $staffNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_profile.css') ?>">
 <!-- History page styles (filter toolbar, record history table, activity log table) — shared verbatim with subadmin/history.php -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/history.css') ?>">
+<!-- Generic "View Details" modal, for each Consultation History row's only action -->
+<link rel="stylesheet" href="<?= asset_url('/assets/css/view_details_modal.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -262,31 +262,31 @@ $staffNavItems = [
         <?php foreach ($profileTabs as $tab): ?>
         <li class="nav-item" role="presentation">
             <?php if ($tab['key'] === 'overview'): ?>
-            <a href="patient_profile.php?id=<?= urlencode($patient['id']) ?>" class="nav-link">
+            <a href="patient_profile.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'medical_records'): ?>
-            <a href="medical_history.php?id=<?= urlencode($patient['id']) ?>" class="nav-link">
+            <a href="medical_history.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'lab_xray'): ?>
-            <a href="patient_laboratory_xray.php?id=<?= urlencode($patient['id']) ?>" class="nav-link">
+            <a href="patient_laboratory_xray.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'vaccination'): ?>
-            <a href="vaccination_records.php?id=<?= urlencode($patient['id']) ?>" class="nav-link">
+            <a href="vaccination_records.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'allergies'): ?>
-            <a href="allergies.php?id=<?= urlencode($patient['id']) ?>" class="nav-link">
+            <a href="allergies.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'medications'): ?>
-            <a href="medications.php?id=<?= urlencode($patient['id']) ?>" class="nav-link">
+            <a href="medications.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'documents'): ?>
-            <a href="documents.php?id=<?= urlencode($patient['id']) ?>" class="nav-link">
+            <a href="documents.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php else: ?>
@@ -300,19 +300,20 @@ $staffNavItems = [
 
     <!-- ============ RECORD HISTORY SECTION HEADER ============ -->
     <div class="his-section-header">
-        <h2>Record History</h2>
-        <p>View history of important changes made to the patient's profile and medical information.</p>
+        <h2>Consultation History</h2>
+        <p>View this patient's completed past consultations — visit type, diagnosis, and attending staff.</p>
     </div>
 
     <!-- ============ RECORD HISTORY FILTERS ============ -->
     <form class="his-filter-row" method="get" action="history.php">
         <input type="hidden" name="id" value="<?= htmlspecialchars($patient['id']) ?>">
-        <select class="form-select his-filter-select" name="hisRange" aria-label="Filter by date">
-            <?php foreach ($historyDateRangeOptions as $key => $label): ?>
-            <option value="<?= htmlspecialchars($key) ?>" <?= $key === $historyDateRangeFilter ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
-            <?php endforeach; ?>
-        </select>
-        <select class="form-select his-filter-select" name="hisType" aria-label="Filter by record type">
+        <div class="his-daterange">
+            <i class="bi bi-calendar3"></i>
+            <input type="date" name="hisFrom" value="<?= htmlspecialchars($historyDateFrom) ?>" aria-label="From date">
+            <span class="his-dot"></span>
+            <input type="date" name="hisTo" value="<?= htmlspecialchars($historyDateTo) ?>" aria-label="To date">
+        </div>
+        <select class="form-select his-filter-select" name="hisType" aria-label="Filter by consultation type">
             <?php foreach ($recordTypeOptions as $opt): ?>
             <option <?= $opt === $historyRecordTypeFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
             <?php endforeach; ?>
@@ -321,53 +322,17 @@ $staffNavItems = [
 
     <?php require __DIR__ . '/../includes/shared/_history_record_table.php'; ?>
 
-    <!-- ============ ACTIVITY LOG SECTION HEADER ============ -->
-    <div class="his-section-header">
-        <h2>Activity Log</h2>
-        <p>Track login and access activities related to this patient's record.</p>
-    </div>
-
-    <!-- ============ ACTIVITY LOG TABLE ============ -->
-    <div class="adm-card his-table-card">
-        <div class="adm-table-wrap">
-            <table class="adm-table his-table">
-                <thead>
-                    <tr>
-                        <th>Date &amp; Time</th>
-                        <th>Activity</th>
-                        <th>Performed By</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($activityLog)): ?>
-                    <tr>
-                        <td colspan="3" class="adm-table-empty">No activity recorded yet.</td>
-                    </tr>
-                    <?php endif; ?>
-                    <?php foreach ($activityLog as $log): ?>
-                    <tr>
-                        <td class="his-datetime"><?= htmlspecialchars($log['date']) ?> <span class="his-dot"></span> <?= htmlspecialchars($log['time']) ?></td>
-                        <td><?= htmlspecialchars($log['activity']) ?></td>
-                        <td class="his-strong"><?= htmlspecialchars($log['performedBy']) ?></td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="adm-table-footer">
-            <span class="adm-showing-text"><?= $activityLogTotal > 0 ? 'Showing ' . (($activityLogCurrentPage - 1) * $activityLogPerPage + 1) . ' to ' . (($activityLogCurrentPage - 1) * $activityLogPerPage + count($activityLog)) . ' of ' . $activityLogTotal . ' entries' : 'No entries to show' ?></span>
-            <?= hc_render_pagination_nav('Activity log pages', 'activityPage', $activityLogCurrentPage, $activityLogTotalPages) ?>
-        </div>
-    </div>
+    <?php require __DIR__ . '/../includes/shared/view_details_modal.php'; ?>
 
 </main>
 
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/ajax-tab-nav.js') ?>"></script>
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/patient-history-filters.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/view-details-action.js') ?>"></script>
 </body>
 </html>

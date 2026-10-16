@@ -152,7 +152,10 @@ $auditUserFilter = $_GET['user'] ?? 'All Users';
 $auditModuleFilter = $_GET['module'] ?? 'All Modules';
 $auditActionFilter = $_GET['action'] ?? 'All Actions';
 $auditStatusFilter = $_GET['status'] ?? 'All Statuses';
-$auditDateRangeFilter = $_GET['daterange'] ?? 'All Date & Time';
+// Both blank by default — every real date span, not a preset Today/
+// This Week/This Month bucket; either end can be left open-ended.
+$auditDateFrom = trim($_GET['from'] ?? '');
+$auditDateTo = trim($_GET['to'] ?? '');
 
 $filteredAuditLogs = hc_filter_audit_logs($allAuditLogs, [
     'q' => $auditSearchTerm,
@@ -160,11 +163,10 @@ $filteredAuditLogs = hc_filter_audit_logs($allAuditLogs, [
     'module' => $auditModuleFilter,
     'action' => $auditActionFilter,
     'status' => $auditStatusFilter,
-    'daterange' => $auditDateRangeFilter,
+    'from' => $auditDateFrom,
+    'to' => $auditDateTo,
     'role' => $auditRoleFilter,
 ]);
-
-$auditDateRangeLabel = $auditDateRangeFilter !== 'All Date & Time' ? $auditDateRangeFilter : 'All time';
 
 // ---------------------------------------------------------------------
 // Real pagination over the filtered result.
@@ -223,7 +225,6 @@ $auditLogs = array_map(fn ($log) => [
 $filterGroups = [
     ['key' => 'user',      'icon' => 'bi-person',          'label' => $auditUserFilter,      'options' => array_merge(['All Users'], array_keys($seenUsers))],
     ['key' => 'module',    'icon' => 'bi-grid-3x3-gap',    'label' => $auditModuleFilter,    'options' => array_merge(['All Modules'], array_keys($seenModules))],
-    ['key' => 'daterange', 'icon' => 'bi-calendar3',       'label' => $auditDateRangeFilter, 'options' => ['All Date & Time', 'Today', 'This Week', 'This Month']],
 ];
 
 if (!function_exists('hc_audit_query')) {
@@ -236,13 +237,14 @@ if (!function_exists('hc_audit_query')) {
             'module' => $_GET['module'] ?? 'All Modules',
             'action' => $_GET['action'] ?? 'All Actions',
             'status' => $_GET['status'] ?? 'All Statuses',
-            'daterange' => $_GET['daterange'] ?? 'All Date & Time',
+            'from' => $_GET['from'] ?? '',
+            'to' => $_GET['to'] ?? '',
             'role' => in_array($_GET['role'] ?? '', ['doctor', 'healthcare_staff', 'medical_technician', 'pharmacist'], true) ? $_GET['role'] : '',
             'page' => $_GET['page'] ?? 1,
         ], $overrides);
 
         return http_build_query(array_filter($params, fn ($v) => $v !== '' && $v !== null
             && $v !== 'All Users' && $v !== 'All Modules' && $v !== 'All Actions'
-            && $v !== 'All Statuses' && $v !== 'All Date & Time'));
+            && $v !== 'All Statuses'));
     }
 }

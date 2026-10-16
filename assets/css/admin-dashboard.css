@@ -320,6 +320,15 @@ body.adm-body{
   .adm-main.adm-page-leaving{ transition: none; }
 }
 
+/* -- Patient Profile tab switch (assets/js/ajax-tab-nav.js) — briefly
+   dims the content area while its fetch is in flight; the freshly
+   swapped-in <main> then gets the ".adm-main" fade-in above for free,
+   since it's a brand new element matching that same selector. -- */
+.adm-main.ajax-tab-loading{ opacity: .55; pointer-events: none; transition: opacity .12s ease; }
+@media (prefers-reduced-motion: reduce){
+  .adm-main.ajax-tab-loading{ transition: none; }
+}
+
 /* -- Top header -- */
 .adm-topbar{
   display: flex;

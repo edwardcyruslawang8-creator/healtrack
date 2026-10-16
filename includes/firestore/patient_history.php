@@ -114,13 +114,9 @@ if (!function_exists('hc_record_patient_history')) {
 if (!function_exists('hc_record_patient_activity')) {
     /**
      * Writes one real patient_activity_log/{autoId} doc — a single row
-     * in the History tab's "Activity Log" table. $performedByOverride
-     * covers the one real caller with no staff session to read a name
-     * from at all — api/respond-patient-consent.php, where the patient
-     * themselves (not a logged-in account) made the decision; every
-     * other caller just omits it and gets $_SESSION['name'].
+     * in the History tab's "Activity Log" table.
      */
-    function hc_record_patient_activity(string $patientId, string $activity, ?string $performedByOverride = null): void
+    function hc_record_patient_activity(string $patientId, string $activity): void
     {
         global $firestore;
 
@@ -134,7 +130,7 @@ if (!function_exists('hc_record_patient_activity')) {
             'date' => $now->format('Y-m-d'),
             'time' => $now->format('g:i A'),
             'activity' => $activity,
-            'performedBy' => $performedByOverride ?? ($_SESSION['name'] ?? 'System'),
+            'performedBy' => $_SESSION['name'] ?? 'System',
         ]);
     }
 }

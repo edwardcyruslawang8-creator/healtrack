@@ -422,9 +422,9 @@ $fileTypeIconMeta = [
         <p class="doc-upload-formats">Supported formats: <?= htmlspecialchars(implode(', ', $uploadSettings['supportedFormats'])) ?> (Max. <?= (int) $uploadSettings['maxSizeMB'] ?>MB)</p>
     </div>
 
-</main>
+    <?php require __DIR__ . '/../includes/shared/upload_document_modal.php'; ?>
 
-<?php require __DIR__ . '/../includes/shared/upload_document_modal.php'; ?>
+</main>
 
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

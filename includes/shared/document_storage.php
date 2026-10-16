@@ -66,10 +66,9 @@ if (!function_exists('hc_user_can_access_patient_document')) {
      * Patient Profile tab family already enforces, re-derived here
      * since api/upload-document.php and api/download-document.php
      * don't have a per-page $doctorProfile/$staffProfile/$adminProfile
-     * to read it from. A doctor needs real ownership (or an approved
-     * access request, see includes/shared/patient_access_requests.php);
-     * medical staff and sub-admins just need to share the patient's
-     * facility, same as includes/medical-staff/patient_profile_medstaff_firestore.php's
+     * to read it from. Doctor/healthcare_staff/subadmin all just need
+     * to share the patient's facility, same as
+     * includes/medical-staff/patient_profile_medstaff_firestore.php's
      * and includes/subadmin/patient_profile_firestore.php's own gates.
      *
      * @param array $patient Real patients/{id} doc fields, with 'id' set.
@@ -86,16 +85,7 @@ if (!function_exists('hc_user_can_access_patient_document')) {
 
         $myDoc = $firestore->getDocument('users', $myUid);
         $myFacility = $myDoc['facility'] ?? null;
-        if ($myFacility === null || $myFacility !== ($patient['facility'] ?? '')) {
-            return false;
-        }
 
-        if ($role === 'doctor') {
-            require_once __DIR__ . '/patient_access_requests.php'; // hc_doctor_has_patient_access()
-
-            return hc_doctor_has_patient_access($patient, $myUid);
-        }
-
-        return true; // healthcare_staff / subadmin — facility match above is the whole gate.
+        return $myFacility !== null && $myFacility === ($patient['facility'] ?? '');
     }
 }

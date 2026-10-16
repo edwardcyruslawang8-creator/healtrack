@@ -38,8 +38,7 @@ if (($_SESSION['role'] ?? null) !== 'doctor') {
 require_once __DIR__ . '/../includes/doctor/patient_management_doctor_firestore.php';
 // $doctorProfile, $dashboardDateLabel, $facilityOptions, $statCards,
 // $genderOptions, $ageGroupOptions, $patients, $patientsTotal,
-// $patientsPerPage, $patientsCurrentPage, $patientsTotalPages,
-// $pendingOwnerRequests
+// $patientsPerPage, $patientsCurrentPage, $patientsTotalPages
 
 // Sidebar nav — same Doctor nav list as doctor/dashboard.php.
 // Patient Management is active here.
@@ -237,44 +236,6 @@ $doctorNavItems = [
         <?php endforeach; ?>
     </div>
 
-    <!-- ============ PENDING ACCESS REQUESTS (real, only shown when this
-         doctor owns at least one patient a colleague has asked to view —
-         see includes/shared/patient_access_requests.php's header comment) ============ -->
-    <?php if (!empty($pendingOwnerRequests)): ?>
-    <div class="adm-card pmg-table-card" style="margin-bottom:20px;">
-        <h2 class="pmg-table-title">Pending Access Requests (<?= count($pendingOwnerRequests) ?>)</h2>
-        <div class="adm-table-wrap">
-            <table class="adm-table pmg-table">
-                <thead>
-                    <tr>
-                        <th>Patient</th>
-                        <th>Requested By</th>
-                        <th>Reason</th>
-                        <th>Requested</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($pendingOwnerRequests as $req): ?>
-                    <tr>
-                        <td><?= htmlspecialchars($req['patientName']) ?></td>
-                        <td><?= htmlspecialchars($req['requestedByName']) ?></td>
-                        <td><?= htmlspecialchars($req['reason'] !== '' ? $req['reason'] : '—') ?></td>
-                        <td><?= htmlspecialchars($req['createdAt']) ?></td>
-                        <td>
-                            <div class="adm-action-btns pmg-action-btns">
-                                <button type="button" class="pmg-btn-view-profile pmg-access-decide-btn" data-request-id="<?= htmlspecialchars($req['id']) ?>" data-action="approve">Approve</button>
-                                <button type="button" class="pmg-access-decide-btn pmg-access-deny-btn" data-request-id="<?= htmlspecialchars($req['id']) ?>" data-action="deny">Deny</button>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <?php endif; ?>
-
     <!-- ============ SEARCH + FILTER TOOLBAR ============ -->
     <form class="pmg-toolbar" method="get" action="patient_management.php">
         <div class="pmg-search">
@@ -337,13 +298,7 @@ $doctorNavItems = [
                         <td><?= htmlspecialchars($p['dateRegistered']) ?></td>
                         <td>
                             <div class="adm-action-btns pmg-action-btns">
-                                <?php if ($p['hasAccess']): ?>
                                 <a href="patient_profile.php?id=<?= urlencode($p['id']) ?>" class="pmg-btn-view-profile"><i class="bi bi-eye"></i> View Profile</a>
-                                <?php else: ?>
-                                <button type="button" class="pmg-btn-request-access" data-patient-id="<?= htmlspecialchars($p['id']) ?>" data-patient-name="<?= htmlspecialchars($p['name']) ?>" data-owner-name="<?= htmlspecialchars($p['ownerName'] ?? 'another doctor') ?>">
-                                    <i class="bi bi-lock-fill"></i> Request Access
-                                </button>
-                                <?php endif; ?>
                             </div>
                         </td>
                     </tr>
@@ -374,34 +329,6 @@ $doctorNavItems = [
 
 <?php require __DIR__ . '/../includes/medical-staff/add_patient_modal.php'; ?>
 
-<!-- ============ REQUEST ACCESS MODAL (real — posts to
-     api/request-patient-access.php; see
-     includes/shared/patient_access_requests.php's header comment) ============ -->
-<div class="modal fade" id="requestAccessModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Request Patient Access</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p style="font-size:14px; margin-bottom:14px;">
-                    <strong id="raPatientName"></strong> is currently owned by <strong id="raOwnerName"></strong>.
-                    They'll be asked to approve this request — the patient will then also need to consent by email before you're given access.
-                </p>
-                <div id="raError" class="alert alert-danger py-2 px-3 d-none" style="font-size:13px;"></div>
-                <label for="raReason" class="form-label" style="font-size:13px; font-weight:600;">Reason (optional)</label>
-                <textarea id="raReason" class="form-control" rows="3" placeholder="e.g. Covering this patient's care this week"></textarea>
-                <input type="hidden" id="raPatientId">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn" id="raSubmitBtn" style="background:var(--adm-red-bright); color:#fff;">Send Request</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
@@ -409,7 +336,6 @@ $doctorNavItems = [
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/quick-search.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/add-patient.js') ?>"></script>
-<script src="<?= asset_url('/assets/js/patient-access-request.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
 </body>
 </html>

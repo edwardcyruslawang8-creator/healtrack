@@ -46,8 +46,9 @@ require_once __DIR__ . '/../includes/doctor/consultations_doctor_firestore.php';
 // $consultationTypeMeta, $consultationStatusMeta, $consultationTypeOptions,
 // $consultationStatusOptions, $patientsById, $nextConsult, $nextPatient,
 // $ongoingConsult, $ongoingPatient, $patient, $searchTerm, $typeFilter,
-// $statusFilter, $dateFrom, $dateTo, $consultations, $consultationsTotal,
-// $consultationsPerPage, $consultationsCurrentPage, $consultationsTotalPages
+// $statusFilter, $dateFrom, $dateTo, $labRoutedConsultations, $consultations,
+// $consultationsTotal, $consultationsPerPage, $consultationsCurrentPage,
+// $consultationsTotalPages
 
 // Sidebar nav — same Doctor nav list as doctor/dashboard.php.
 // Consultations is active here.
@@ -255,6 +256,77 @@ $doctorNavItems = [
         <?php require __DIR__ . '/../includes/doctor/_consultation_queue_cards.php'; ?>
     </div>
 
+    <!-- ============ SENT TO LABORATORY ============
+         A consultation routed to the lab stays an OPEN visit (status
+         never flips to "completed" while nextRouting === 'laboratory')
+         — real, currently-open cases, not history to page through, so
+         this is its own small table instead of one more status value
+         mixed into Consultation Logs below. Each row's own real status
+         — still waiting on a pending result
+         (hc_consultation_is_awaiting_lab_results()) vs. every ordered
+         test now completed and ready to resume — only ever shown when
+         non-empty. -->
+    <?php if (!empty($labRoutedConsultations)): ?>
+    <div class="cns-section-header">
+        <h2>Sent to Laboratory</h2>
+        <p>Patients currently routed to the laboratory or x-ray — still open until results are in and you resume.</p>
+    </div>
+    <div class="adm-card" style="margin-bottom:28px;">
+        <div class="adm-table-wrap">
+            <table class="adm-table">
+                <thead>
+                    <tr>
+                        <th>Patient</th>
+                        <th>Age / Gender</th>
+                        <th>Consultation Type</th>
+                        <th>Sent At</th>
+                        <th>Reason for Visit</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($labRoutedConsultations as $c):
+                        $labType = $consultationTypeMeta[$c['consultationType']] ?? $consultationTypeMeta['walk_in'];
+                        $labRowPatient = $patientsById[$c['patientId']] ?? null;
+                    ?>
+                    <tr>
+                        <td>
+                            <div class="cns-name-cell">
+                                <div class="cns-avatar-sm"><i class="bi bi-person-fill"></i></div>
+                                <div class="cns-name-text">
+                                    <span class="cns-strong"><?= htmlspecialchars($c['patientName']) ?></span>
+                                </div>
+                            </div>
+                        </td>
+                        <td><?= $labRowPatient !== null ? (int) $labRowPatient['age'] . ' years / ' . htmlspecialchars($labRowPatient['gender']) : '—' ?></td>
+                        <td><span class="cns-badge" style="background:<?= htmlspecialchars($labType['bg']) ?>; color:<?= htmlspecialchars($labType['color']) ?>;"><?= htmlspecialchars($labType['label']) ?></span></td>
+                        <td><?= $c['dateTime'] !== '' ? htmlspecialchars(date('g:i A', strtotime($c['dateTime']))) : '—' ?></td>
+                        <td><?= htmlspecialchars($c['chiefComplaint']) ?></td>
+                        <td>
+                            <?php if ($c['awaitingLab']): ?>
+                            <span class="cns-badge" style="background:#FEF3C7; color:#B45309;">Waiting for Results</span>
+                            <?php else: ?>
+                            <span class="cns-badge" style="background:#E4F7EA; color:#1E8E3E;">Results Ready</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php if ($c['awaitingLab']): ?>
+                            <span class="cns-btn-start cns-btn-waiting" style="height:32px; padding:0 14px; font-size:12px;" aria-disabled="true" title="Waiting for the medical technologist to finish — this patient's results aren't back yet.">
+                                <i class="bi bi-hourglass-split"></i> Waiting
+                            </span>
+                            <?php else: ?>
+                            <a href="active_consultation.php?id=<?= urlencode($c['id']) ?>" class="cns-btn-start" style="height:32px; padding:0 14px; font-size:12px;"><i class="bi bi-arrow-right-circle"></i> Resume</a>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- ============ CONSULTATION LOGS ============ -->
     <div class="cns-section-header">
         <h2>Consultation Logs</h2>
@@ -313,15 +385,6 @@ $doctorNavItems = [
                     <?php foreach ($consultations as $c):
                         $type = $consultationTypeMeta[$c['consultationType']] ?? $consultationTypeMeta['walk_in'];
                         $status = $consultationStatusMeta[$c['status']] ?? $consultationStatusMeta['pending'];
-                        // Still real "ongoing" underneath (filtering by
-                        // ?status=ongoing still matches it) — just a more
-                        // specific label so this doesn't read the same as
-                        // a consultation the doctor is still actively
-                        // writing up themselves. Same bg/color, since it's
-                        // still the "ongoing" family, just further along.
-                        if ($c['status'] === 'ongoing' && $c['nextRouting'] === 'laboratory') {
-                            $status = ['label' => 'In Laboratory', 'bg' => $status['bg'], 'color' => $status['color']];
-                        }
                         $rowPatient = $patientsById[$c['patientId']] ?? null;
                     ?>
                     <tr>

@@ -5,8 +5,8 @@
    .adm-card/.adm-table/.adm-pagination) and assets/css/patient_profile.css
    (breadcrumb + profile header card, reused verbatim here).
    Everything here is specific to this page — the section headers,
-   filter toolbar, record history table, and activity log table —
-   and is "his-" prefixed.
+   filter toolbar, and Consultation History table — and is "his-"
+   prefixed.
    ============================================================= */
 
 /* -- Section header (title + subtitle) -- */
@@ -52,7 +52,34 @@
   box-shadow: var(--adm-shadow);
 }
 
-/* -- Record History / Activity Log tables -- */
+/* -- Real From/To date range (any span, not a preset Today/This Week/
+   This Month bucket) — same look as doctor/consultations.php's own
+   ".cns-daterange", not reused directly since that lives in a
+   different stylesheet this page doesn't otherwise load. -- */
+.his-daterange{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: var(--adm-shadow);
+  flex-shrink: 0;
+}
+.his-daterange i{ color: var(--adm-text-soft); font-size: 13px; }
+.his-daterange input[type="date"]{
+  border: none;
+  background: transparent;
+  color: var(--adm-text);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0;
+  width: 116px;
+}
+.his-daterange input[type="date"]:focus{ outline: none; }
+
+/* -- Consultation History table -- */
 .his-table-card{ margin-bottom: 28px; }
 
 .his-datetime{ white-space: nowrap; color: var(--adm-text-muted); font-size: 12.5px; }
@@ -77,6 +104,20 @@
    is in flight — #hisRecordTableWrap itself gets replaced once the
    response lands, so this never lingers. */
 #hisRecordTableWrap.his-table-loading{ opacity: .5; pointer-events: none; transition: opacity .1s ease; }
+
+/* -- "View Details" (.vdm-trigger, includes/shared/view_details_modal.php)
+   restyled here as a filled button matching this app's primary-action
+   theme (same blue used for e.g. the Laboratory & X-ray page's "View
+   Result"/"Consult" buttons) instead of its generic outlined default —
+   scoped to this table only (higher specificity than ".vdm-trigger"
+   alone) so the shared base style other pages reuse it with elsewhere
+   is untouched. -- */
+.his-table .vdm-trigger{
+  background: var(--adm-blue);
+  border: none;
+  color: #fff;
+}
+.his-table .vdm-trigger:hover{ background: #1558B0; color: #fff; }
 
 /* =============================================================
    RESPONSIVE

@@ -27,7 +27,6 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/patient_overview.php';
-require_once __DIR__ . '/../shared/patient_access_requests.php'; // hc_doctor_has_patient_access()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -51,18 +50,11 @@ $patient = hc_get_patient_profile($requestedPatientId);
 // render exactly like an invalid id — never leak that it exists at all
 // to clinicians outside the facility that registered them (see
 // includes/doctor/patient_management_doctor_firestore.php's header
-// comment for the registration/listing side of this same rule).
-//
-// Per-doctor ownership: even within the SAME facility, a patient
-// "belongs" to one resolved doctor (hc_resolve_patient_owning_doctor())
-// — a different doctor needs a real patient_access_requests doc that
-// reached 'approved' (both the owner AND the patient said yes; see
-// includes/shared/patient_access_requests.php's header comment for the
-// full workflow) before this page will show them anything. Same
-// "render exactly like an invalid id" treatment as the facility check
-// above — a doctor with no access shouldn't be able to tell the
-// difference between "wrong id" and "real patient, not yours".
-if ($patient !== null && ($patient['facility'] !== $doctorProfile['facility'] || !hc_doctor_has_patient_access($patient, $myUid))) {
+// comment for the registration/listing side of this same rule). Every
+// doctor at a facility can see every patient registered there — there
+// is no per-doctor ownership/ "belongs to one doctor" restriction on
+// top of that.
+if ($patient !== null && $patient['facility'] !== $doctorProfile['facility']) {
     $patient = null;
     // Every per-tab page (allergies.php, medications.php, medical_records.php,
     // ...) requires this file first for $patient, then independently

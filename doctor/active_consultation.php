@@ -538,6 +538,26 @@ $doctorNavItems = [
                     </div>
                     <?php endif; ?>
                     <?php endforeach; ?>
+
+                    <hr class="acv-routing-divider">
+
+                    <!-- Independent of the three above — a patient can
+                         need a follow-up visit scheduled AND still be
+                         routed to the pharmacy today for medicine from
+                         THIS visit, so this can't be mutually exclusive
+                         with them the way Laboratory/Pharmacy/
+                         Vaccination are with each other. Posted as its
+                         own real field (needsFollowUp,
+                         api/complete-consultation.php), independent of
+                         nextRouting. -->
+                    <label class="acv-routing-item">
+                        <span class="acv-routing-icon"><i class="bi bi-calendar2-check"></i></span>
+                        <span class="acv-routing-text">
+                            <span class="acv-routing-title">Also needs a follow-up visit</span>
+                            <span class="acv-routing-desc">Schedule another consultation later — can be checked together with any option above.</span>
+                        </span>
+                        <input type="checkbox" id="acvNeedsFollowUp" <?= $consultation['needsFollowUp'] ? 'checked' : '' ?>>
+                    </label>
                 </div>
             </div>
 

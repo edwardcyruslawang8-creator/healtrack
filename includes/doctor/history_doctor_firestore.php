@@ -6,16 +6,18 @@
  * Reuses includes/doctor/patient_profile_doctor_firestore.php for
  * everything about the patient themselves ($doctorProfile, $patient,
  * $profileTabs) — re-marks the "history" tab active here. This is the
- * last tab in the doctor patient profile family. The actual Firestore
- * queries live in includes/firestore/patient_history.php — shared with
- * every other role's identical page.
+ * last tab in the doctor patient profile family. The Consultation
+ * History table reads includes/firestore/consultations.php's
+ * hc_get_consultations_for_patient(), narrowed to 'completed' visits
+ * only (there's nothing meaningful to review yet for a pending/ongoing/
+ * cancelled one) — shared with every other role's identical page.
  * =====================================================================
  */
 
 require_once __DIR__ . '/patient_profile_doctor_firestore.php';
 // $doctorProfile, $dashboardDateLabel, $facilityOptions, $patient, $profileTabs
-require_once __DIR__ . '/../firestore/patient_history.php';
-require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav(), hc_matches_date_range_key()
+require_once __DIR__ . '/../firestore/consultations.php'; // hc_get_consultations_for_patient(), hc_consultation_type_meta()
+require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav()
 
 foreach ($profileTabs as &$tab) {
     $tab['active'] = ($tab['key'] === 'history');
@@ -23,46 +25,49 @@ foreach ($profileTabs as &$tab) {
 unset($tab);
 
 // ---------------------------------------------------------------------
-// Record History filters
+// Consultation History filters
 // ---------------------------------------------------------------------
-$historyDateRangeOptions = ['all' => 'All Dates', 'today' => 'Today', 'this_week' => 'This Week', 'this_month' => 'This Month'];
-$recordTypeOptions = ['All Record Types', 'Patient Profile', 'Medical Record', 'Laboratory Result', 'Medication', 'Document', 'Vaccination Record', 'Allergy'];
-
-// Record type -> icon/color meta.
-$recordTypeMeta = [
-    'patient_profile'    => ['label' => 'Patient Profile',    'icon' => 'bi-person-fill',            'color' => '#1A73E8'],
-    'medical_record'      => ['label' => 'Medical Record',      'icon' => 'bi-folder2-open',           'color' => '#8B5CF6'],
-    'laboratory_result'   => ['label' => 'Laboratory Result',   'icon' => 'bi-droplet-fill',            'color' => '#1E8E3E'],
-    'medication'          => ['label' => 'Medication',          'icon' => 'bi-capsule',                'color' => '#E8710A'],
-    'document'            => ['label' => 'Document',            'icon' => 'bi-file-earmark-text-fill', 'color' => '#1A73E8'],
-    'vaccination_record'  => ['label' => 'Vaccination Record',  'icon' => 'bi-shield-fill-check',      'color' => '#8B5CF6'],
-    'allergy'             => ['label' => 'Allergy',             'icon' => 'bi-exclamation-triangle-fill', 'color' => '#D93025'],
-];
-
-// Action -> badge color meta.
-$actionMeta = [
-    'updated'  => ['label' => 'Updated',  'bg' => '#E4F7EA', 'color' => '#1E8E3E'],
-    'added'    => ['label' => 'Added',    'bg' => '#E8F0FE', 'color' => '#1A73E8'],
-    'uploaded' => ['label' => 'Uploaded', 'bg' => '#F1E8FD', 'color' => '#8B5CF6'],
-    'deleted'  => ['label' => 'Deleted',  'bg' => '#FCE4E4', 'color' => '#D93025'],
-    'modified' => ['label' => 'Modified', 'bg' => '#FDECDD', 'color' => '#E8710A'],
-];
+$consultationTypeMeta = hc_consultation_type_meta();
+$recordTypeOptions = array_merge(['All Types'], array_column($consultationTypeMeta, 'label'));
 
 // ---------------------------------------------------------------------
-// Record History — real, from "patient_record_history". The Record Type
-// and date-range dropdowns above the table are real filters.
+// Consultation History — real, from "consultations", only this
+// patient's completed visits (every pending/ongoing/cancelled one is
+// left out — nothing to review there yet). The Type dropdown and a
+// real From/To date range above the table are real filters — any
+// range, not just preset Today/This Week/This Month buckets.
 // ---------------------------------------------------------------------
-$allRecordHistory = hc_get_record_history_for_patient($patient['id']);
+$allRecordHistory = array_map(function ($c) {
+    $timestamp = strtotime((string) $c['dateTime']);
 
-$historyRecordTypeFilter = in_array($_GET['hisType'] ?? '', $recordTypeOptions, true) ? $_GET['hisType'] : 'All Record Types';
-$historyDateRangeFilter = array_key_exists($_GET['hisRange'] ?? '', $historyDateRangeOptions) ? $_GET['hisRange'] : 'all';
-$historyDateRangeLabel = $historyDateRangeOptions[$historyDateRangeFilter];
+    return [
+        'consultationCode' => $c['consultationCode'],
+        'rawDate' => $timestamp !== false ? date('Y-m-d', $timestamp) : '',
+        'date' => $timestamp !== false ? date('M j, Y', $timestamp) : '—',
+        'time' => $timestamp !== false ? date('g:i A', $timestamp) : '—',
+        'consultationType' => $c['consultationType'],
+        'chiefComplaint' => $c['chiefComplaint'] !== '' ? $c['chiefComplaint'] : '—',
+        'diagnosis' => trim((string) $c['diagnosis']) !== '' ? $c['diagnosis'] : '—',
+        'detail' => trim((string) $c['diagnosis']) !== '' ? $c['diagnosis'] : ($c['chiefComplaint'] !== '' ? $c['chiefComplaint'] : '—'),
+        'assignedPersonnel' => $c['assignedPersonnel'] !== '' ? $c['assignedPersonnel'] : '—',
+        'notes' => trim((string) $c['notes']) !== '' ? $c['notes'] : '',
+    ];
+}, array_values(array_filter(hc_get_consultations_for_patient($patient['id']), fn ($c) => $c['status'] === 'completed')));
 
-$filteredRecordHistory = array_values(array_filter($allRecordHistory, function ($rec) use ($historyRecordTypeFilter, $historyDateRangeFilter, $recordTypeMeta) {
-    if ($historyRecordTypeFilter !== 'All Record Types' && ($recordTypeMeta[$rec['type']]['label'] ?? '') !== $historyRecordTypeFilter) {
+$historyRecordTypeFilter = in_array($_GET['hisType'] ?? '', $recordTypeOptions, true) ? $_GET['hisType'] : 'All Types';
+// Both blank by default — every completed visit, not just one preset
+// window — and either end can be left blank for an open-ended range.
+$historyDateFrom = trim($_GET['hisFrom'] ?? '');
+$historyDateTo = trim($_GET['hisTo'] ?? '');
+
+$filteredRecordHistory = array_values(array_filter($allRecordHistory, function ($rec) use ($historyRecordTypeFilter, $historyDateFrom, $historyDateTo, $consultationTypeMeta) {
+    if ($historyRecordTypeFilter !== 'All Types' && ($consultationTypeMeta[$rec['consultationType']]['label'] ?? '') !== $historyRecordTypeFilter) {
         return false;
     }
-    if (!hc_matches_date_range_key($rec['date'] ?? '', $historyDateRangeFilter)) {
+    if ($historyDateFrom !== '' && $rec['rawDate'] < $historyDateFrom) {
+        return false;
+    }
+    if ($historyDateTo !== '' && $rec['rawDate'] > $historyDateTo) {
         return false;
     }
     return true;
@@ -74,14 +79,3 @@ $recordHistory = $recordHistoryPagination['items'];
 $recordHistoryTotal = $recordHistoryPagination['total'];
 $recordHistoryTotalPages = $recordHistoryPagination['totalPages'];
 $recordHistoryCurrentPage = $recordHistoryPagination['page'];
-
-// ---------------------------------------------------------------------
-// Activity Log — real, from "patient_activity_log".
-// ---------------------------------------------------------------------
-$allActivityLog = hc_get_activity_log_for_patient($patient['id']);
-$activityLogPerPage = 5;
-$activityLogPagination = hc_paginate($allActivityLog, 'activityPage', $activityLogPerPage);
-$activityLog = $activityLogPagination['items'];
-$activityLogTotal = $activityLogPagination['total'];
-$activityLogTotalPages = $activityLogPagination['totalPages'];
-$activityLogCurrentPage = $activityLogPagination['page'];

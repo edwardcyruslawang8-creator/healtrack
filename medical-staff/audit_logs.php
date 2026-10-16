@@ -34,8 +34,8 @@ if (($_SESSION['role'] ?? null) !== 'healthcare_staff') {
 require_once __DIR__ . '/../includes/medical-staff/audit_logs_medstaff_firestore.php';
 // $staffProfile, $actionTypeMeta, $auditLogs, $auditLogsTotal,
 // $auditLogsPerPage, $auditLogsCurrentPage, $auditLogsTotalPages,
-// $auditPaginationWindow, $filterGroups, $auditDateRangeLabel,
-// $auditSearchTerm, $auditModuleFilter, $auditDateRangeFilter,
+// $auditPaginationWindow, $filterGroups,
+// $auditSearchTerm, $auditModuleFilter, $auditDateFrom, $auditDateTo,
 // resolveActionMeta(), hc_audit_query()
 
 // Sidebar nav — same Medical Staff nav list as medical-staff/dashboard.php.
@@ -200,11 +200,25 @@ $staffNavItems = [
         <i class="bi bi-search"></i>
         <input type="text" name="q" value="<?= htmlspecialchars($auditSearchTerm) ?>" placeholder="Search by action, module, or details..." autocomplete="off">
         <input type="hidden" name="module" value="<?= htmlspecialchars($auditModuleFilter) ?>">
-        <input type="hidden" name="daterange" value="<?= htmlspecialchars($auditDateRangeFilter) ?>">
+        <input type="hidden" name="from" value="<?= htmlspecialchars($auditDateFrom) ?>">
+        <input type="hidden" name="to" value="<?= htmlspecialchars($auditDateTo) ?>">
     </form>
 
     <!-- ============ FILTER TOOLBAR ============ -->
     <div class="aud-filter-toolbar">
+        <!-- Real From/To date range — any span, not a preset Today/This
+             Week/This Month bucket. Auto-submits on change, carrying
+             the Module filter/search term via hidden inputs so picking
+             a date never drops them. -->
+        <form class="aud-daterange" method="get" action="audit_logs.php">
+            <i class="bi bi-calendar3"></i>
+            <input type="date" name="from" value="<?= htmlspecialchars($auditDateFrom) ?>" aria-label="From date" onchange="this.form.submit()">
+            <span class="aud-dot"></span>
+            <input type="date" name="to" value="<?= htmlspecialchars($auditDateTo) ?>" aria-label="To date" onchange="this.form.submit()">
+            <input type="hidden" name="q" value="<?= htmlspecialchars($auditSearchTerm) ?>">
+            <input type="hidden" name="module" value="<?= htmlspecialchars($auditModuleFilter) ?>">
+        </form>
+
         <?php foreach ($filterGroups as $fg): ?>
         <div class="dropdown">
             <button class="aud-filter-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">

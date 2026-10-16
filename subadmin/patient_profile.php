@@ -357,7 +357,7 @@ $adminNavItems = [
                     <?php if ($latestConsultation['vitals'] !== null): ?>
                     <p class="ppf-consult-line"><span>Vitals:</span><br><?= htmlspecialchars($latestConsultation['vitals']) ?></p>
                     <?php endif; ?>
-                    <a href="history.php?id=<?= urlencode($patient['id']) ?>&hisType=Medical+Record" class="ppf-card-link">View Consultation Log <i class="bi bi-arrow-right"></i></a>
+                    <a href="history.php?id=<?= urlencode($patient['id']) ?>" class="ppf-card-link">View Consultation History <i class="bi bi-arrow-right"></i></a>
                 </div>
 
             </div>

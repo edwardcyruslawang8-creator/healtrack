@@ -202,6 +202,12 @@
 .acv-routing-title{ font-size: 12.5px; font-weight: 700; color: var(--adm-text); }
 .acv-routing-desc{ font-size: 11px; color: var(--adm-text-muted); }
 .acv-routing-item input[type="radio"]{ flex-shrink: 0; }
+/* -- "Also needs a follow-up visit" checkbox — same .acv-routing-item
+   box as the three radio options above it (the ":has(input:checked)"
+   highlight rule works for a checkbox too), just visually set apart
+   with a thin rule since it's an independent "also", not a fourth
+   mutually-exclusive choice in that same set. -- */
+.acv-routing-divider{ border: none; border-top: 1px solid var(--adm-border); margin: 2px 0; }
 
 .acv-footer-meta{ font-size: 11.5px; color: var(--adm-text-soft); margin-top: 22px; }
 
@@ -248,8 +254,12 @@
 .acv-lab-test-checkbox input{ flex-shrink: 0; }
 /* Already has a real lab_results doc from this consultation — locked
    so the doctor can't re-order the same test a second time (see
-   doctor/active_consultation.php's lab test grid). */
-.acv-lab-test-checkbox-locked{ cursor: default; }
+   doctor/active_consultation.php's lab test grid). The checkbox itself
+   is a real disabled input (can't actually be toggled either way) —
+   "not-allowed" plus dimming the whole row is just making that
+   genuinely non-interactive state look it, instead of still reading
+   like a normal clickable checkbox at a glance. */
+.acv-lab-test-checkbox-locked{ cursor: not-allowed; opacity: .65; }
 .acv-lab-test-checkbox-locked .acv-source-tag{ margin-left: 2px; }
 .acv-lab-test-error{ margin-bottom: 10px; }
 .acv-lab-test-actions{ display: flex; justify-content: flex-end; gap: 8px; }

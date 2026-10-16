@@ -131,42 +131,6 @@
 }
 .pmg-btn-view-profile:hover{ background: var(--adm-red-bright-hover); color: #fff; }
 
-/* -- "Request Access" row action — doctor/patient_management.php only,
-   shown in place of "View Profile" for a patient this doctor doesn't
-   yet have access to (see includes/shared/patient_access_requests.php) -- */
-.pmg-btn-request-access{
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: #fff;
-  color: var(--adm-text-muted);
-  border: 1px solid var(--adm-border);
-  height: 38px;
-  padding: 0 16px;
-  border-radius: 10px;
-  font-size: 12.5px;
-  font-weight: 600;
-  white-space: nowrap;
-  transition: border-color .15s ease, color .15s ease;
-}
-.pmg-btn-request-access:hover{ border-color: var(--adm-red-bright); color: var(--adm-red-bright); }
-
-/* -- Pending Access Requests panel's inline Approve/Deny buttons -- */
-.pmg-access-decide-btn{
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: none;
-  height: 34px;
-  padding: 0 14px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.pmg-access-deny-btn{ background: var(--adm-red-bg); color: var(--adm-red); }
-.pmg-access-deny-btn:hover{ background: var(--adm-red); color: #fff; }
-
 /* -- Toolbar "Search" submit button -- */
 .pmg-btn-search{
   display: inline-flex;

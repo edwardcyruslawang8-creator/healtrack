@@ -129,24 +129,33 @@ if (!function_exists('hc_get_my_audit_logs_annotated')) {
     }
 }
 
-if (!function_exists('hc_audit_log_matches_date_range')) {
-    /** @internal True if $timestamp (a real ISO 'c'-format audit log timestamp) falls within $rangeKey ('today'/'this_week'/'this_month'), or $rangeKey is anything else (no filter). */
-    function hc_audit_log_matches_date_range(string $timestamp, string $rangeKey): bool
+if (!function_exists('hc_audit_log_matches_date_from_to')) {
+    /**
+     * @internal True if $timestamp (a real ISO 'c'-format audit log
+     * timestamp) falls on or after $from and on or before $to — any
+     * real span, not just a preset Today/This Week/This Month bucket.
+     * Either end blank means that side is open-ended; both blank means
+     * no filter at all.
+     */
+    function hc_audit_log_matches_date_from_to(string $timestamp, string $from, string $to): bool
     {
-        if ($timestamp === '' || !in_array($rangeKey, ['today', 'this_week', 'this_month'], true)) {
+        if ($timestamp === '' || ($from === '' && $to === '')) {
             return true;
         }
         $ts = strtotime($timestamp);
         if ($ts === false) {
             return false;
         }
+        $day = date('Y-m-d', $ts);
 
-        return match ($rangeKey) {
-            'today' => date('Y-m-d', $ts) === date('Y-m-d'),
-            'this_week' => $ts >= strtotime('monday this week'),
-            'this_month' => date('Y-m', $ts) === date('Y-m'),
-            default => true,
-        };
+        if ($from !== '' && $day < $from) {
+            return false;
+        }
+        if ($to !== '' && $day > $to) {
+            return false;
+        }
+
+        return true;
     }
 }
 
@@ -157,7 +166,7 @@ if (!function_exists('hc_filter_audit_logs')) {
      * "All ..." value in any one of them means "don't filter on this".
      *
      * @param array<int, array<string, mixed>> $logs
-     * @param array{q?: string, user?: string, module?: string, action?: string, status?: string, daterange?: string, role?: string} $filters
+     * @param array{q?: string, user?: string, module?: string, action?: string, status?: string, from?: string, to?: string, role?: string} $filters
      */
     function hc_filter_audit_logs(array $logs, array $filters): array
     {
@@ -168,15 +177,15 @@ if (!function_exists('hc_filter_audit_logs')) {
         $module = (string) ($filters['module'] ?? 'All Modules');
         $actionLabel = (string) ($filters['action'] ?? 'All Actions');
         $statusLabel = (string) ($filters['status'] ?? 'All Statuses');
-        $dateRangeLabel = (string) ($filters['daterange'] ?? 'All Date & Time');
-        $dateRangeKey = ['Today' => 'today', 'This Week' => 'this_week', 'This Month' => 'this_month'][$dateRangeLabel] ?? '';
+        $dateFrom = trim((string) ($filters['from'] ?? ''));
+        $dateTo = trim((string) ($filters['to'] ?? ''));
         // 'subadmin'/'user' — driven by admin/audit_logs.php's sidebar
         // dropdown (Audit Logs > Sub Admin / User), never a real
         // dropdown option of its own, so no "All ..." placeholder to
         // check for; anything else (including '') means no role split.
         $roleFilter = (string) ($filters['role'] ?? '');
 
-        return array_values(array_filter($logs, function ($log) use ($q, $user, $module, $actionLabel, $statusLabel, $dateRangeKey, $roleFilter) {
+        return array_values(array_filter($logs, function ($log) use ($q, $user, $module, $actionLabel, $statusLabel, $dateFrom, $dateTo, $roleFilter) {
             if ($q !== '' && !hc_fuzzy_match($log['actorName'] . ' ' . $log['action'] . ' ' . $log['module'] . ' ' . $log['details'], $q)) {
                 return false;
             }
@@ -192,7 +201,7 @@ if (!function_exists('hc_filter_audit_logs')) {
             if ($statusLabel !== '' && $statusLabel !== 'All Statuses' && strcasecmp($log['status'], $statusLabel) !== 0) {
                 return false;
             }
-            if (!hc_audit_log_matches_date_range($log['timestamp'], $dateRangeKey)) {
+            if (!hc_audit_log_matches_date_from_to($log['timestamp'], $dateFrom, $dateTo)) {
                 return false;
             }
             if ($roleFilter === 'subadmin' && $log['actorRole'] !== 'Sub-Administrator') {

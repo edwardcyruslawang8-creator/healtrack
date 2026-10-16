@@ -39,7 +39,6 @@ require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/consultations.php'; // hc_get_followup_notifications()
 require_once __DIR__ . '/../firestore/lab_results.php'; // hc_get_doctor_result_ready_notifications()
 require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav()
-require_once __DIR__ . '/../shared/patient_access_requests.php'; // hc_get_access_request_notifications()
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
 require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
 
@@ -55,32 +54,24 @@ $doctorProfile = [
 $dashboardDateLabel = date('F j, Y');
 $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'West Super Health Center'];
 
-$notificationTypeOptions = ['All Types', 'Consultation', 'Patient Access', 'Reminder'];
+$notificationTypeOptions = ['All Types', 'Consultation', 'Reminder'];
 
 // ---------------------------------------------------------------------
-// Notifications List — real, merging two live sources: upcoming/overdue
-// follow-ups under this doctor's own care, and this workflow's own
-// access-request activity (both directions — see
-// includes/shared/patient_access_requests.php's hc_get_access_request_notifications()
-// header comment). Archived ones (api/archive-notifications.php) STAY
-// in this list, tagged 'archived' => true, rather than being excluded —
-// the Archived tab (assets/js/notifications.js) needs them to actually
-// show something; every other tab hides an archived row client-side
-// instead. 'unread' wins from real session-persisted read state over
-// the default "everything starts unread" assumption for a notification
-// not yet marked read.
+// Notifications List — real, merging live sources scoped to this
+// doctor's own caseload. Archived ones (api/archive-notifications.php)
+// STAY in this list, tagged 'archived' => true, rather than being
+// excluded — the Archived tab (assets/js/notifications.js) needs them
+// to actually show something; every other tab hides an archived row
+// client-side instead. 'unread' wins from real session-persisted read
+// state over the default "everything starts unread" assumption for a
+// notification not yet marked read.
 // ---------------------------------------------------------------------
 $ntfReadIds = $_SESSION['ntfReadIds'] ?? [];
 $ntfArchivedIds = $_SESSION['ntfDismissedIds'] ?? [];
-// Real gating — see includes/shared/notification_preferences.php's
-// header comment for which key covers which real source here. 'system'
-// is the master switch; access-request notifications don't map to any
-// more specific category, so they're only gated by it.
 $rawNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'system') ? array_merge(
     array_filter([hc_get_2fa_reminder_notification($myUid, $myDoc ?? [])]),
     hc_notification_preference_enabled_for_doc($myDoc ?? [], 'consultation') ? hc_get_followup_notifications($doctorProfile['name']) : [],
-    hc_get_doctor_result_ready_notifications($doctorProfile['name']),
-    hc_get_access_request_notifications($myUid)
+    hc_get_doctor_result_ready_notifications($doctorProfile['name'])
 ) : [];
 $notifications = array_map(function ($n) use ($ntfReadIds, $ntfArchivedIds) {
     $n['unread'] = !in_array($n['id'], $ntfReadIds, true);

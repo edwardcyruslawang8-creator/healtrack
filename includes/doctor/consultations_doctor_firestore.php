@@ -33,6 +33,7 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/consultations.php';
+require_once __DIR__ . '/../firestore/lab_results.php'; // hc_consultation_is_awaiting_lab_results()
 require_once __DIR__ . '/../shared/fuzzy_search.php'; // hc_fuzzy_match()
 
 $myUid = $_SESSION['uid'] ?? '';
@@ -126,7 +127,34 @@ $filteredConsultations = array_values(array_filter($myConsultations, function ($
 usort($filteredConsultations, fn ($a, $b) => strcmp($a['dateTime'], $b['dateTime']));
 
 // ---------------------------------------------------------------------
-// Pagination
+// Sent to Laboratory — split out from the main Consultation Logs table
+// below into its own real table (doctor/consultations.php) rather than
+// one more row mixed in there, since this is a genuinely different kind
+// of row: still an OPEN visit (never flips to "completed" while routed
+// to the lab), not something to page through as history. Each row's
+// own real status — still waiting on a pending lab/x-ray result
+// (hc_consultation_is_awaiting_lab_results()) vs. every ordered test
+// now actually completed and ready for the doctor to resume — is
+// computed live here rather than frozen at "In Laboratory" regardless
+// of whether the results actually came back yet.
+// ---------------------------------------------------------------------
+$labRoutedConsultations = [];
+$nonLabConsultations = [];
+foreach ($filteredConsultations as $c) {
+    if ($c['status'] === 'ongoing' && $c['nextRouting'] === 'laboratory') {
+        $c['awaitingLab'] = hc_consultation_is_awaiting_lab_results($c);
+        $labRoutedConsultations[] = $c;
+    } else {
+        $nonLabConsultations[] = $c;
+    }
+}
+$filteredConsultations = $nonLabConsultations;
+
+// ---------------------------------------------------------------------
+// Pagination — over the main (non-lab-routed) table only; the Sent to
+// Laboratory table above it shows every real row, unpaginated (it's
+// always a small, currently-open subset, never a long history to page
+// through).
 // ---------------------------------------------------------------------
 $consultationsTotal = count($filteredConsultations);
 $consultationsPerPage = 5;

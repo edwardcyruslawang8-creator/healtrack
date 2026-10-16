@@ -40,10 +40,12 @@ if (!function_exists('hc_map_patient_summary_doc')) {
             'initialReasonForVisit' => $f['initialReasonForVisit'] ?? '—',
             'birthDate' => isset($f['birthDate']) ? date('M j, Y', strtotime($f['birthDate'])) : '—',
             'facility' => $f['facility'] ?? '',
-            // Who this patient "belongs to" for includes/shared/patient_access_requests.php's
-            // ownership check — the name of whoever registered them (staff
-            // or doctor, api/create-patient.php sets this unconditionally to
-            // $_SESSION['name']), not necessarily a real doctor account.
+            // Informational only — the name of whoever registered this
+            // patient (staff or doctor, api/create-patient.php sets this
+            // unconditionally to $_SESSION['name']), not necessarily a
+            // real doctor account. Shown on the Overview tab as
+            // "Primary Physician"; does not gate who can view this
+            // patient's chart.
             'primaryPhysician' => $f['primaryPhysician'] ?? null,
             // Registration-time Vital Signs snapshot (Add Patient
             // modal's Step 2) — used by medical-staff/consultations.php's

@@ -13,15 +13,13 @@
  * pattern api/doctor-queue-status.php already established.
  *
  * Reuses each role's OWN real history_*_firestore.php data file as-is —
- * same $_GET-driven filtering/pagination/facility-or-ownership access
- * gate a full page load already runs (see that file's own header
- * comment), so this can never drift from what a full reload would have
- * shown for the same query. Role picks WHICH data file, since each
- * bakes in a different real access gate (doctor: facility + ownership
- * via hc_doctor_has_patient_access(); medical staff/sub-admin: facility
- * only) — same per-role split this app's other patient-profile tabs
- * already have, just addressed from one shared endpoint instead of
- * three near-identical ones.
+ * same $_GET-driven filtering/pagination/facility access gate a full
+ * page load already runs (see that file's own header comment), so this
+ * can never drift from what a full reload would have shown for the
+ * same query. Role picks WHICH data file, since each bakes in its own
+ * facility-scoped gate — same per-role split this app's other
+ * patient-profile tabs already have, just addressed from one shared
+ * endpoint instead of three near-identical ones.
  * =====================================================================
  */
 
@@ -46,7 +44,7 @@ if ($dataFile === null) {
 }
 
 require $dataFile;
-// $recordHistory, $recordTypeMeta, $actionMeta, $recordHistoryTotal,
+// $recordHistory, $consultationTypeMeta, $recordHistoryTotal,
 // $recordHistoryCurrentPage, $recordHistoryPerPage, $recordHistoryTotalPages
 // — same "blank the id, render as not-found" gate every other patient-
 // profile tab AJAX/page already relies on if $_GET['id'] doesn't

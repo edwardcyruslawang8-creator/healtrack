@@ -37,7 +37,7 @@ if (($_SESSION['role'] ?? null) !== 'subadmin') {
 }
 
 require_once __DIR__ . '/../includes/subadmin/subadmin_audit_logs_firestore.php';
-// $adminProfile, $facilityOptions, $auditDateRangeLabel, $filterGroups,
+// $adminProfile, $facilityOptions, $filterGroups,
 // $actionTypeMeta, $auditLogs, $auditLogsTotal, $auditLogsPerPage,
 // $auditLogsCurrentPage, $auditLogsTotalPages, resolveActionMeta()
 
@@ -241,7 +241,8 @@ $adminNavItems = [
         <input type="hidden" name="module" value="<?= htmlspecialchars($auditModuleFilter) ?>">
         <input type="hidden" name="action" value="<?= htmlspecialchars($auditActionFilter) ?>">
         <input type="hidden" name="status" value="<?= htmlspecialchars($auditStatusFilter) ?>">
-        <input type="hidden" name="daterange" value="<?= htmlspecialchars($auditDateRangeFilter) ?>">
+        <input type="hidden" name="from" value="<?= htmlspecialchars($auditDateFrom) ?>">
+        <input type="hidden" name="to" value="<?= htmlspecialchars($auditDateTo) ?>">
         <!-- Real user-name suggestions as you type (assets/js/audit-logs-search.js)
              — clicking one filters the table to that person's own log,
              same real name list (already locked to this sub-admin's own
@@ -252,6 +253,23 @@ $adminNavItems = [
 
     <!-- ============ FILTER TOOLBAR ============ -->
     <div class="aud-filter-toolbar">
+        <!-- Real From/To date range — any span, not a preset Today/This
+             Week/This Month bucket. Auto-submits on change, carrying
+             every other active filter via hidden inputs so picking a
+             date never drops them. -->
+        <form class="aud-daterange" method="get" action="audit_logs.php">
+            <i class="bi bi-calendar3"></i>
+            <input type="date" name="from" value="<?= htmlspecialchars($auditDateFrom) ?>" aria-label="From date" onchange="this.form.submit()">
+            <span class="aud-dot"></span>
+            <input type="date" name="to" value="<?= htmlspecialchars($auditDateTo) ?>" aria-label="To date" onchange="this.form.submit()">
+            <input type="hidden" name="q" value="<?= htmlspecialchars($auditSearchTerm) ?>">
+            <input type="hidden" name="user" value="<?= htmlspecialchars($auditUserFilter) ?>">
+            <input type="hidden" name="module" value="<?= htmlspecialchars($auditModuleFilter) ?>">
+            <input type="hidden" name="action" value="<?= htmlspecialchars($auditActionFilter) ?>">
+            <input type="hidden" name="status" value="<?= htmlspecialchars($auditStatusFilter) ?>">
+            <?php if ($auditRoleFilter !== ''): ?><input type="hidden" name="role" value="<?= htmlspecialchars($auditRoleFilter) ?>"><?php endif; ?>
+        </form>
+
         <?php foreach ($filterGroups as $fg): ?>
         <div class="dropdown">
             <button class="aud-filter-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">

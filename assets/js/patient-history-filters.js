@@ -2,14 +2,13 @@
    PATIENT HISTORY — RECORD HISTORY TABLE, AJAX REFRESH
    ---------------------------------------------------------------
    Shared by doctor/history.php, medical-staff/history.php, and
-   subadmin/history.php. The Record Type/Date Range filter row
-   (.his-filter-row) and every pagination link inside
-   #hisRecordTableWrap already render as real, working GET links/a
-   real <form> — still real, bookmarkable URLs, no-JS fallback — but
-   this intercepts both and fetches api/history-record-table.php
-   instead, swapping in just the returned table/pagination markup so
-   picking a filter or a page never reloads the whole Patient Profile
-   shell (sidebar, topbar, Activity Log section, etc.).
+   subadmin/history.php. The Type/From/To filter row (.his-filter-row)
+   and every pagination link inside #hisRecordTableWrap already render
+   as real, working GET links/a real <form> — still real, bookmarkable
+   URLs, no-JS fallback — but this intercepts both and fetches
+   api/history-record-table.php instead, swapping in just the returned
+   table/pagination markup so picking a filter or a page never reloads
+   the whole Patient Profile shell (sidebar, topbar, etc.).
 
    #hisRecordTableWrap itself gets replaced on every refresh (it's the
    literal fragment api/history-record-table.php returns), so
@@ -52,11 +51,12 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
-    // Filter row — Record Type / Date Range selects, same fields the
-    // real <form method="get"> already submits; resets back to page 1
-    // since the previous page number may not exist under a new filter.
+    // Filter row — the Type select and the From/To date inputs, same
+    // fields the real <form method="get"> already submits; resets back
+    // to page 1 since the previous page number may not exist under a
+    // new filter.
     filterForm.addEventListener('change', function (e) {
-        if (!e.target.matches('select')) return;
+        if (!e.target.matches('select, input[type="date"]')) return;
         const params = new URLSearchParams(new FormData(filterForm));
         params.set('recordPage', '1');
         refresh(params.toString());

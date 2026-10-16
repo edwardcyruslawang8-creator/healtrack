@@ -173,10 +173,11 @@ $adminNavItems = [
             <div class="adm-topbar-actions">
                 <!-- Plain date + time, same .adm-datetime-widget every other
                      admin page uses — this used to be a SECOND, functionally
-                     duplicate "Date Range" dropdown here (?daterange=...,
-                     the exact same param/options as the filter toolbar's own
-                     Date Range filter below), which just needlessly let the
-                     same filter be set from two different places. -->
+                     duplicate "Date Range" dropdown here, the exact same
+                     param/options as the filter toolbar's own date range
+                     below (now a real From/To range), which just
+                     needlessly let the same filter be set from two
+                     different places. -->
                 <div class="adm-datetime-widget">
                     <span><i class="bi bi-calendar3"></i><span class="adm-dt-date"><?= date('F j, Y') ?></span></span>
                     <span class="adm-dt-sep">|</span>
@@ -213,7 +214,8 @@ $adminNavItems = [
         <input type="hidden" name="module" value="<?= htmlspecialchars($auditModuleFilter) ?>">
         <input type="hidden" name="action" value="<?= htmlspecialchars($auditActionFilter) ?>">
         <input type="hidden" name="status" value="<?= htmlspecialchars($auditStatusFilter) ?>">
-        <input type="hidden" name="daterange" value="<?= htmlspecialchars($auditDateRangeFilter) ?>">
+        <input type="hidden" name="from" value="<?= htmlspecialchars($auditDateFrom) ?>">
+        <input type="hidden" name="to" value="<?= htmlspecialchars($auditDateTo) ?>">
         <!-- Real user-name suggestions as you type (assets/js/audit-logs-search.js)
              — clicking one filters the table to that person's own log,
              same real name list the User filter dropdown below uses. -->
@@ -223,6 +225,23 @@ $adminNavItems = [
 
     <!-- ============ FILTER TOOLBAR ============ -->
     <div class="aud-filter-toolbar">
+        <!-- Real From/To date range — any span, not a preset Today/This
+             Week/This Month bucket. Auto-submits on change, carrying
+             every other active filter via hidden inputs so picking a
+             date never drops them. -->
+        <form class="aud-daterange" method="get" action="audit_logs.php">
+            <i class="bi bi-calendar3"></i>
+            <input type="date" name="from" value="<?= htmlspecialchars($auditDateFrom) ?>" aria-label="From date" onchange="this.form.submit()">
+            <span class="aud-dot"></span>
+            <input type="date" name="to" value="<?= htmlspecialchars($auditDateTo) ?>" aria-label="To date" onchange="this.form.submit()">
+            <input type="hidden" name="q" value="<?= htmlspecialchars($auditSearchTerm) ?>">
+            <input type="hidden" name="user" value="<?= htmlspecialchars($auditUserFilter) ?>">
+            <input type="hidden" name="module" value="<?= htmlspecialchars($auditModuleFilter) ?>">
+            <input type="hidden" name="action" value="<?= htmlspecialchars($auditActionFilter) ?>">
+            <input type="hidden" name="status" value="<?= htmlspecialchars($auditStatusFilter) ?>">
+            <?php if ($auditRoleFilter !== ''): ?><input type="hidden" name="role" value="<?= htmlspecialchars($auditRoleFilter) ?>"><?php endif; ?>
+        </form>
+
         <?php foreach ($filterGroups as $fg): ?>
         <div class="dropdown">
             <button class="aud-filter-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">

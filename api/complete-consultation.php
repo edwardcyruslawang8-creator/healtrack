@@ -136,7 +136,13 @@ if ($prescriptionHtml !== '') {
     $prescriptionHtml = strip_tags($prescriptionHtml, '<b><strong><i><em><u><ul><ol><li><br><a><p><div><span>');
 }
 
-$validRouting = ['laboratory', 'pharmacy', 'vaccination', 'follow_up'];
+// "Needs a follow-up visit" is a real, separate field — independent of
+// nextRouting below (which picks at most ONE of Laboratory/Pharmacy/
+// Vaccination) — since needing a follow-up scheduled doesn't rule out
+// also being routed somewhere today.
+$needsFollowUp = (bool) ($body['needsFollowUp'] ?? false);
+
+$validRouting = ['laboratory', 'pharmacy', 'vaccination'];
 $nextRouting = trim((string) ($body['nextRouting'] ?? ''));
 if ($nextRouting !== '' && !in_array($nextRouting, $validRouting, true)) {
     http_response_code(422);
@@ -210,6 +216,12 @@ foreach ($rawMedications as $m) {
     ];
 }
 
+if ($nextRouting === 'pharmacy' && count($medications) === 0) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please add at least one medicine or vaccine before sending this patient to the Pharmacy.']);
+    exit;
+}
+
 $updated = $existing;
 // "Laboratory" keeps the consultation "ongoing" instead of completing
 // it — see this file's header comment for why. Every other routing
@@ -225,6 +237,7 @@ $updated['prescriptionHtml'] = $prescriptionHtml !== '' ? $prescriptionHtml : nu
 $updated['vitals'] = $vitals;
 $updated['medications'] = $medications;
 $updated['nextRouting'] = $nextRouting !== '' ? $nextRouting : null;
+$updated['needsFollowUp'] = $needsFollowUp;
 $updated['labTests'] = $labTests;
 $updated['doctorNotes'] = $doctorNotes !== '' ? $doctorNotes : null;
 
@@ -431,15 +444,5 @@ if ($nextRouting === 'laboratory') {
     hc_record_patient_history($historyPatientId, 'medical_record', 'updated', 'Consultation ' . $consultationLabel . ' completed.');
     hc_record_patient_activity($historyPatientId, 'Consultation completed.');
 }
-
-// Real-time check for a settled doctor-patient care pattern (see
-// includes/shared/patient_access_requests.php's hc_maybe_trigger_auto_access_request()
-// header comment) — this is the only point in the app a consultation
-// actually completes, so it's the natural trigger; there's no
-// background job/cron in this app to sweep for this separately.
-// Fire-and-forget: never lets a detection/email failure turn a
-// successfully completed consultation into a failed request.
-require_once __DIR__ . '/../includes/shared/patient_access_requests.php';
-hc_maybe_trigger_auto_access_request($existing['patientId'] ?? '', $_SESSION['name'] ?? '');
 
 echo json_encode(['success' => true]);

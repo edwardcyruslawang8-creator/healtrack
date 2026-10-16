@@ -90,12 +90,7 @@ if ($bloodType !== '' && !in_array($bloodType, ['A+', 'A-', 'B+', 'B-', 'AB+', '
 }
 
 // Email — optional (not every patient has one), same as Blood Type:
-// only format-checked when actually provided, never required. This is
-// the one real thing that lets includes/shared/patient_access_requests.php's
-// consent-request email actually reach the patient — previously no
-// "patients" doc had an email field at all, so that flow could only
-// ever fail with "This patient has no email on file" for every
-// account; see that file's own header comment.
+// only format-checked when actually provided, never required.
 if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Please enter a valid email address.']);

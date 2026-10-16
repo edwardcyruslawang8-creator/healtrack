@@ -25,10 +25,10 @@ if (!function_exists('hc_matches_date_range_key')) {
      * True if $dateStr (any strtotime()-parseable date, e.g. medical
      * records' own "M j, Y" formatted dates) falls within $rangeKey
      * ('today'/'this_week'/'this_month'), or $rangeKey is anything else
-     * (no filter) — same logic as includes/shared/audit_log_writer.php's
-     * hc_audit_log_matches_date_range() but generic (not audit-log-
-     * specific), for the several other tables across the app whose date
-     * filters use this same Today/This Week/This Month/All Time shape.
+     * (no filter) — for the several tables across the app whose date
+     * filters still use this preset Today/This Week/This Month/All Time
+     * shape (Audit Logs moved to a real From/To range instead — see
+     * includes/shared/audit_log_writer.php's hc_audit_log_matches_date_from_to()).
      */
     function hc_matches_date_range_key(string $dateStr, string $rangeKey): bool
     {

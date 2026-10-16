@@ -470,10 +470,18 @@ document.addEventListener('DOMContentLoaded', function () {
     saveBtn.addEventListener('click', async function () {
         const routingInput = document.querySelector('input[name="acvRouting"]:checked');
         const nextRouting = routingInput ? routingInput.value : '';
+        const needsFollowUp = document.getElementById('acvNeedsFollowUp').checked;
+        const medications = collectMedications();
 
         if (nextRouting === 'laboratory' && checkedLabTests().length === 0) {
             await HCDialog.alert('Please select at least one laboratory test before sending this patient to the Laboratory.');
             showLabTestPanel();
+            return;
+        }
+
+        if (nextRouting === 'pharmacy' && medications.length === 0) {
+            await HCDialog.alert('Please add at least one medicine or vaccine before sending this patient to the Pharmacy.');
+            showMedVaccinePanel();
             return;
         }
 
@@ -495,8 +503,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 bloodPressureDiastolic: document.getElementById('acvVitalBpDia').value,
                 heartRate: document.getElementById('acvVitalHr').value,
             },
-            medications: collectMedications(),
+            medications: medications,
             nextRouting: nextRouting,
+            needsFollowUp: needsFollowUp,
             labTests: checkedLabTests(),
             doctorNotes: document.getElementById('acvNotes').value.trim(),
         };

@@ -325,6 +325,12 @@ if (!function_exists('hc_get_doctor_result_ready_notifications')) {
      * meaningfully "new" alert, not an ever-growing list of every result
      * this doctor has ever ordered) — older completions simply age out
      * of the bell rather than needing a separate dismiss-forever flag.
+     * Also excludes anything already routedToDoctorAt (the medical
+     * technologist's own "Proceed to Doctor" action,
+     * api/proceed-lab-result-to-doctor.php) — once a result has actually
+     * been sent to the doctor that way, it's already sitting in their
+     * consultation's own "Lab & X-ray Results" card, so a "ready to
+     * view" alert for it is stale, not new.
      *
      * @return array<int, array{id: int, title: string, description: string, type: string, date: string, time: string, icon: string, iconBg: string, iconColor: string}>
      */
@@ -340,7 +346,7 @@ if (!function_exists('hc_get_doctor_result_ready_notifications')) {
         $rows = [];
         foreach (hc_get_all_lab_result_docs() as $doc) {
             $f = $doc['fields'];
-            if (($f['status'] ?? '') !== 'completed' || ($f['orderedBy'] ?? '') !== $doctorName) {
+            if (($f['status'] ?? '') !== 'completed' || ($f['orderedBy'] ?? '') !== $doctorName || !empty($f['routedToDoctorAt'])) {
                 continue;
             }
             if (($f['completedDate'] ?? '') < $cutoff) {
@@ -357,7 +363,7 @@ if (!function_exists('hc_get_doctor_result_ready_notifications')) {
         }
         foreach (hc_get_all_xray_result_docs() as $doc) {
             $f = $doc['fields'];
-            if (($f['status'] ?? '') !== 'completed' || ($f['orderedBy'] ?? '') !== $doctorName) {
+            if (($f['status'] ?? '') !== 'completed' || ($f['orderedBy'] ?? '') !== $doctorName || !empty($f['routedToDoctorAt'])) {
                 continue;
             }
             if (($f['completedDate'] ?? '') < $cutoff) {

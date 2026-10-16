@@ -286,31 +286,31 @@ $doctorNavItems = [
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </button>
             <?php elseif ($tab['key'] === 'medical_records'): ?>
-            <a href="medical_history.php?id=<?= urlencode($patient['id']) ?>" class="nav-link">
+            <a href="medical_history.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'lab_xray'): ?>
-            <a href="patient_laboratory_xray.php?id=<?= urlencode($patient['id']) ?>" class="nav-link">
+            <a href="patient_laboratory_xray.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'vaccination'): ?>
-            <a href="vaccination_records.php?id=<?= urlencode($patient['id']) ?>" class="nav-link">
+            <a href="vaccination_records.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'allergies'): ?>
-            <a href="allergies.php?id=<?= urlencode($patient['id']) ?>" class="nav-link">
+            <a href="allergies.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'medications'): ?>
-            <a href="medications.php?id=<?= urlencode($patient['id']) ?>" class="nav-link">
+            <a href="medications.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'documents'): ?>
-            <a href="documents.php?id=<?= urlencode($patient['id']) ?>" class="nav-link">
+            <a href="documents.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php elseif ($tab['key'] === 'history'): ?>
-            <a href="history.php?id=<?= urlencode($patient['id']) ?>" class="nav-link">
+            <a href="history.php?id=<?= urlencode($patient['id']) ?>" class="nav-link" data-ajax-tab>
                 <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
             </a>
             <?php endif; ?>
@@ -358,7 +358,7 @@ $doctorNavItems = [
                     <?php if ($latestConsultation['vitals'] !== null): ?>
                     <p class="ppf-consult-line"><span>Vitals:</span><br><?= htmlspecialchars($latestConsultation['vitals']) ?></p>
                     <?php endif; ?>
-                    <a href="consultations.php?q=<?= urlencode($patient['id']) ?>" class="ppf-card-link">View Consultation Log <i class="bi bi-arrow-right"></i></a>
+                    <a href="history.php?id=<?= urlencode($patient['id']) ?>" class="ppf-card-link">View Consultation History <i class="bi bi-arrow-right"></i></a>
                 </div>
 
             </div>
@@ -441,5 +441,6 @@ $doctorNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/ajax-tab-nav.js') ?>"></script>
 </body>
 </html>

@@ -55,6 +55,15 @@ if (!function_exists('hc_map_consultation_doc')) {
             'vitals' => $f['vitals'] ?? [],
             'medications' => $f['medications'] ?? [],
             'nextRouting' => $f['nextRouting'] ?? '',
+            // Independent of nextRouting (which picks at most one of
+            // Laboratory/Pharmacy/Vaccination) — a real, separate
+            // "schedule another visit" flag, since needing a follow-up
+            // doesn't rule out also being routed somewhere today. A
+            // doc saved before this flag existed, back when "Follow-up/
+            // Another Consultation" was itself one of the nextRouting
+            // radio choices, still reads as checked here for that old
+            // data.
+            'needsFollowUp' => (bool) ($f['needsFollowUp'] ?? (($f['nextRouting'] ?? '') === 'follow_up')),
             'labTests' => $f['labTests'] ?? [],
             'doctorNotes' => $f['doctorNotes'] ?? '',
             // The real lab_results doc ids this follow-up consultation
@@ -83,6 +92,26 @@ if (!function_exists('hc_get_all_consultations')) {
         usort($rows, fn ($a, $b) => strcmp($b['dateTime'], $a['dateTime']));
 
         return $rows;
+    }
+}
+
+if (!function_exists('hc_get_consultations_for_patient')) {
+    /**
+     * Every real consultations/{id} doc for $patientId — across every
+     * doctor/medical-staff member who ever saw them, any status
+     * (pending/ongoing/completed/cancelled) — newest dateTime first. Feeds
+     * the Patient Profile's History tab ("Consultation History" table,
+     * includes/shared/_history_record_table.php) for doctor/medical-staff/
+     * subadmin alike.
+     *
+     * @return array<int, array{id: string, consultationCode: string, patientId: string, patientName: string, consultationType: string, dateTime: string, assignedPersonnel: string, chiefComplaint: string, status: string, diagnosis: string}>
+     */
+    function hc_get_consultations_for_patient(string $patientId): array
+    {
+        return array_values(array_filter(
+            hc_get_all_consultations(),
+            fn ($c) => $c['patientId'] === $patientId
+        ));
     }
 }
 
