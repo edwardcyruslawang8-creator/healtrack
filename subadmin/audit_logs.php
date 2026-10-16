@@ -199,21 +199,6 @@ $adminNavItems = [
 
         <div class="adm-topbar-right">
             <div class="adm-topbar-actions">
-                <!-- Real — picking a range here re-filters $auditLogs for that
-                     window (?daterange=..., same param the filter toolbar's own
-                     Date Range dropdown below uses, so the two stay in sync). -->
-                <div class="dropdown">
-                    <button class="aud-topbar-select-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-calendar3"></i> <?= htmlspecialchars($auditDateRangeLabel) ?>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="?<?= hc_audit_query(['daterange' => 'All Date & Time', 'page' => 1]) ?>">All Time</a></li>
-                        <li><a class="dropdown-item" href="?<?= hc_audit_query(['daterange' => 'Today', 'page' => 1]) ?>">Today</a></li>
-                        <li><a class="dropdown-item" href="?<?= hc_audit_query(['daterange' => 'This Week', 'page' => 1]) ?>">This Week</a></li>
-                        <li><a class="dropdown-item" href="?<?= hc_audit_query(['daterange' => 'This Month', 'page' => 1]) ?>">This Month</a></li>
-                    </ul>
-                </div>
-
                 <!-- Fixed — shows only the facility this sub-admin is actually
                      assigned to (their real users/{uid} doc's "facility" field);
                      not a switcher, since a sub-admin can't reassign themselves. -->

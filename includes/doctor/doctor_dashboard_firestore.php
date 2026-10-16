@@ -25,10 +25,8 @@
  * name-string-matching limitation hc_get_physician_options() already
  * has, not something this file can fix on its own.
  *
- * "Unread Notifications" is real now too — hc_doctor_unread_notification_count()
- * (config/constants.php), the same real follow-up-derived count driving
- * doctor/notifications.php's own badges. "Recent Notifications" is real
- * as well — the same hc_get_followup_notifications() feed as that page,
+ * There's no "Unread Notifications" stat card — the topbar bell's badge
+ * already shows that count. "Recent Notifications" is real — the same hc_get_followup_notifications() feed as that page,
  * capped to 5 (see this file's "Recent Notifications" section below).
  * $doctorProfile IS real — read from the signed-in doctor's own
  * Firestore users/{uid} document.
@@ -101,7 +99,6 @@ $statCards = [
     ['icon' => 'bi-person-lines-fill',  'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E', 'label' => 'My Patients',             'value' => $totalMyPatientsCount, 'staticSub' => $newThisMonthCount . ' new ' . date('F Y')],
     ['icon' => 'bi-calendar2-week-fill','iconBg' => '#EFE7FB', 'iconColor' => '#7C3AED', 'label' => 'Pending Consultations',   'value' => $pendingConsultationsCount, 'staticSub' => 'Across all dates'],
     ['icon' => 'bi-check-circle-fill', 'iconBg' => '#E8F0FE',  'iconColor' => '#1A73E8', 'label' => 'Completed Today',         'value' => $completedTodayCount, 'staticSub' => date('F j, Y')],
-    ['icon' => 'bi-bell-fill',         'iconBg' => '#FDECDD',  'iconColor' => '#E8710A', 'label' => 'Unread Notifications',    'value' => hc_doctor_unread_notification_count(), 'link' => ['label' => 'View all notifications', 'href' => 'notifications.php']],
 ];
 
 // ---------------------------------------------------------------------
