@@ -80,7 +80,7 @@ $genderFilter = $_GET['gender'] ?? 'All Genders';
 $ageGroupFilter = $_GET['ageGroup'] ?? 'All Age Groups';
 
 $filteredPatients = array_values(array_filter($allPatients, function ($p) use ($searchTerm, $genderFilter, $ageGroupFilter) {
-    if ($searchTerm !== '' && !hc_fuzzy_match($p['name'] . ' ' . $p['contact'], $searchTerm)) {
+    if ($searchTerm !== '' && !hc_fuzzy_match($p['name'] . ' ' . $p['contact'] . ' ' . $p['address'], $searchTerm)) {
         return false;
     }
     if ($genderFilter !== 'All Genders' && $p['gender'] !== $genderFilter) {

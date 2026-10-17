@@ -182,7 +182,7 @@ if (!function_exists('hc_register_failed_login')) {
                 'actorRole' => $actorRole,
                 'action' => 'logged_in',
                 'module' => 'Account Security',
-                'details' => 'Failed sign-in attempt #' . $attempts . ' for "' . ($userDoc['name'] ?? 'Unknown') . '".',
+                'details' => 'Someone entered the wrong password while trying to sign in as ' . ($userDoc['name'] ?? 'Unknown') . ' (attempt #' . $attempts . ').',
                 'status' => 'failed',
                 'timestamp' => date('c'),
             ]);
@@ -301,8 +301,8 @@ if (!function_exists('hc_send_login_lockout_alert')) {
                 'action' => 'updated',
                 'module' => 'Account Security',
                 'details' => $permanent
-                    ? 'Account "' . $userName . '" was locked after repeated failed sign-in attempts.'
-                    : 'Multiple failed sign-in attempts detected for "' . $userName . '" — account temporarily locked.',
+                    ? $userName . '\'s account was locked after repeated failed sign-in attempts.'
+                    : 'Multiple failed sign-in attempts detected for ' . $userName . ' — account temporarily locked.',
                 'status' => 'failed',
                 'timestamp' => date('c'),
             ]);

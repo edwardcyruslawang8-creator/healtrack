@@ -83,7 +83,7 @@ if ($newId === null) {
     exit;
 }
 
-write_audit_log('created', 'Patient Management', 'Added surgical history "' . $procedure . '" for "' . ($patient['name'] ?? 'a patient') . '".');
+write_audit_log('created', 'Patient Management', 'Added surgical history "' . $procedure . '" for ' . ($patient['name'] ?? 'a patient') . '.');
 hc_record_patient_history($patientId, 'surgical_history', 'added', 'Added surgical history "' . $procedure . '".');
 hc_record_patient_activity($patientId, 'Surgical history "' . $procedure . '" recorded.');
 

@@ -87,7 +87,8 @@ if ($newId === null) {
     exit;
 }
 
-write_audit_log('created', 'Patient Management', 'Added a new allergy (' . $allergen . ') for patient ' . $patientId . '.');
+$patient = $firestore->getDocument('patients', $patientId);
+write_audit_log('created', 'Patient Management', 'Added a new allergy (' . $allergen . ') for ' . ($patient['name'] ?? 'a patient') . '.');
 hc_record_patient_history($patientId, 'allergy', 'added', 'Added allergy "' . $allergen . '" (severity: ' . ucfirst($severity) . ').');
 hc_record_patient_activity($patientId, 'Allergy "' . $allergen . '" recorded.');
 

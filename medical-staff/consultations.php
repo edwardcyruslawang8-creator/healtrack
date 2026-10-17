@@ -477,28 +477,28 @@ $staffNavItems = [
                                 <div class="mb-3">
                                     <label class="cns-form-label" for="cnsFormVitalBpSys">Blood Pressure (mmHg)<span class="text-danger">*</span></label>
                                     <div class="input-group">
-                                        <input type="number" class="form-control cns-form-control" id="cnsFormVitalBpSys" placeholder="Systolic" min="1" max="300" inputmode="numeric" required>
+                                        <input type="number" step="1" class="form-control cns-form-control" id="cnsFormVitalBpSys" placeholder="Systolic" min="40" max="300" inputmode="numeric" required>
                                         <span class="input-group-text">/</span>
-                                        <input type="number" class="form-control cns-form-control" id="cnsFormVitalBpDia" placeholder="Diastolic" min="1" max="300" inputmode="numeric" required>
+                                        <input type="number" step="1" class="form-control cns-form-control" id="cnsFormVitalBpDia" placeholder="Diastolic" min="20" max="200" inputmode="numeric" required>
                                     </div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="cns-form-label" for="cnsFormVitalHr">Heart Rate (bpm)<span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control cns-form-control" id="cnsFormVitalHr" placeholder="Enter heart rate" min="30" max="220" inputmode="numeric" required>
+                                    <input type="number" step="1" class="form-control cns-form-control" id="cnsFormVitalHr" placeholder="Enter heart rate" min="20" max="250" inputmode="numeric" required>
                                 </div>
                                 <div class="mb-0">
                                     <label class="cns-form-label" for="cnsFormVitalTemp">Temperature (&deg;C)<span class="text-danger">*</span></label>
-                                    <input type="number" step="0.1" class="form-control cns-form-control" id="cnsFormVitalTemp" placeholder="Enter temperature" min="30" max="45" inputmode="decimal" required>
+                                    <input type="number" step="0.1" class="form-control cns-form-control" id="cnsFormVitalTemp" placeholder="Enter temperature" min="25" max="45" inputmode="decimal" required>
                                 </div>
                             </div>
                             <div class="cns-form-col">
                                 <div class="mb-3">
                                     <label class="cns-form-label" for="cnsFormVitalWeight">Weight (kg)<span class="text-danger">*</span></label>
-                                    <input type="number" step="0.1" class="form-control cns-form-control" id="cnsFormVitalWeight" placeholder="Enter weight" min="0.1" inputmode="decimal" required>
+                                    <input type="number" step="0.1" class="form-control cns-form-control" id="cnsFormVitalWeight" placeholder="Enter weight" min="1" max="500" inputmode="decimal" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="cns-form-label" for="cnsFormVitalHeight">Height (cm)<span class="text-danger">*</span></label>
-                                    <input type="number" step="0.1" class="form-control cns-form-control" id="cnsFormVitalHeight" placeholder="Enter height" min="1" inputmode="decimal" required>
+                                    <input type="number" step="0.1" class="form-control cns-form-control" id="cnsFormVitalHeight" placeholder="Enter height" min="30" max="250" inputmode="decimal" required>
                                 </div>
                                 <div class="mb-0">
                                     <label class="cns-form-label" for="cnsFormVitalBmi">BMI (kg/m&sup2;)</label>

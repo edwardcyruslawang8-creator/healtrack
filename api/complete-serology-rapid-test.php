@@ -127,7 +127,7 @@ if (count($updatedTests) === 0) {
 write_audit_log(
     'updated',
     'Laboratory & X-ray',
-    'Entered Serology rapid test result(s) (' . implode(', ', $updatedTests) . ') for "' . $patient['name'] . '".'
+    'Entered Serology rapid test result(s) (' . implode(', ', $updatedTests) . ') for ' . $patient['name'] . '.'
 );
 hc_record_patient_history($patientId, 'laboratory_result', 'added', 'Entered Serology rapid test result(s) (' . implode(', ', $updatedTests) . ').');
 hc_record_patient_activity($patientId, 'Serology rapid test result(s) entered.');

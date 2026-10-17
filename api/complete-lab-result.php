@@ -139,7 +139,7 @@ $firestore->addDocument('medical_records', [
 write_audit_log(
     'updated',
     'Laboratory & X-ray',
-    'Entered ' . $testName . ' result (' . $result . ($unit !== '' ? ' ' . $unit : '') . ') for "' . $patient['name'] . '".'
+    'Entered ' . $testName . ' result (' . $result . ($unit !== '' ? ' ' . $unit : '') . ') for ' . $patient['name'] . '.'
 );
 hc_record_patient_history($patientId, 'laboratory_result', 'added', 'Entered ' . $testName . ' result (' . $result . ($unit !== '' ? ' ' . $unit : '') . ').');
 hc_record_patient_activity($patientId, $testName . ' result entered.');

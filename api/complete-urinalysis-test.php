@@ -128,7 +128,7 @@ $firestore->addDocument('medical_records', [
 write_audit_log(
     'updated',
     'Laboratory & X-ray',
-    'Entered Urinalysis result (' . $overallResult . ') for "' . $patient['name'] . '".'
+    'Entered Urinalysis result (' . $overallResult . ') for ' . $patient['name'] . '.'
 );
 hc_record_patient_history($patientId, 'laboratory_result', 'added', 'Entered Urinalysis result (' . $overallResult . ').');
 hc_record_patient_activity($patientId, 'Urinalysis result entered.');

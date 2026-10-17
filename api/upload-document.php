@@ -144,7 +144,7 @@ if ($newId === null) {
     exit;
 }
 
-write_audit_log('created', 'Patient Documents', 'Uploaded "' . $originalName . '" for "' . ($patient['name'] ?? 'a patient') . '".');
+write_audit_log('created', 'Patient Documents', 'Uploaded document "' . $originalName . '" for ' . ($patient['name'] ?? 'a patient') . '.');
 hc_record_patient_history($patientId, 'document', 'uploaded', 'Uploaded "' . $originalName . '".');
 hc_record_patient_activity($patientId, 'Document uploaded: "' . $originalName . '".');
 

@@ -109,7 +109,7 @@ $firestore->addDocument('medical_records', [
 write_audit_log(
     'updated',
     'Laboratory & X-ray',
-    'Entered X-ray result (' . $examName . ') for "' . $patient['name'] . '".'
+    'Entered X-ray result (' . $examName . ') for ' . $patient['name'] . '.'
 );
 hc_record_patient_history($patientId, 'laboratory_result', 'added', 'Entered X-ray result (' . $examName . ').');
 hc_record_patient_activity($patientId, 'X-ray result entered (' . $examName . ').');

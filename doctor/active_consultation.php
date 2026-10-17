@@ -408,20 +408,20 @@ $doctorNavItems = [
                 <div class="acv-vitals-grid">
                     <div class="acv-vital-field">
                         <label for="acvVitalTemp">Temperature</label>
-                        <div class="input-group input-group-sm"><input type="number" step="0.1" class="form-control" id="acvVitalTemp" value="<?= htmlspecialchars((string) $vitalsPrefill['temperature']) ?>"><span class="input-group-text">°C</span></div>
+                        <div class="input-group input-group-sm"><input type="number" step="0.1" min="25" max="45" class="form-control" id="acvVitalTemp" value="<?= htmlspecialchars((string) $vitalsPrefill['temperature']) ?>"><span class="input-group-text">°C</span></div>
                     </div>
                     <div class="acv-vital-field">
                         <label for="acvVitalBpSys">Blood Pressure</label>
                         <div class="input-group input-group-sm">
-                            <input type="number" class="form-control" id="acvVitalBpSys" placeholder="Sys" value="<?= htmlspecialchars((string) $vitalsPrefill['bloodPressureSystolic']) ?>">
+                            <input type="number" step="1" min="40" max="300" class="form-control" id="acvVitalBpSys" placeholder="Sys" value="<?= htmlspecialchars((string) $vitalsPrefill['bloodPressureSystolic']) ?>">
                             <span class="input-group-text">/</span>
-                            <input type="number" class="form-control" id="acvVitalBpDia" placeholder="Dia" value="<?= htmlspecialchars((string) $vitalsPrefill['bloodPressureDiastolic']) ?>">
+                            <input type="number" step="1" min="20" max="200" class="form-control" id="acvVitalBpDia" placeholder="Dia" value="<?= htmlspecialchars((string) $vitalsPrefill['bloodPressureDiastolic']) ?>">
                             <span class="input-group-text">mmHg</span>
                         </div>
                     </div>
                     <div class="acv-vital-field">
                         <label for="acvVitalHr">Heart Rate</label>
-                        <div class="input-group input-group-sm"><input type="number" class="form-control" id="acvVitalHr" value="<?= htmlspecialchars((string) $vitalsPrefill['heartRate']) ?>"><span class="input-group-text">bpm</span></div>
+                        <div class="input-group input-group-sm"><input type="number" step="1" min="20" max="250" class="form-control" id="acvVitalHr" value="<?= htmlspecialchars((string) $vitalsPrefill['heartRate']) ?>"><span class="input-group-text">bpm</span></div>
                     </div>
                     <!-- Weight/Height/BMI are read-only here — set once by
                          medical staff at check-in (Set Consultation's own

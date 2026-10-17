@@ -66,7 +66,7 @@ if (!$deleted) {
     exit;
 }
 
-write_audit_log('deleted', 'Patient Management', 'Deleted family history "' . ($existing['condition'] ?? 'an entry') . '" for "' . ($patient['name'] ?? 'a patient') . '".');
+write_audit_log('deleted', 'Patient Management', 'Deleted family history "' . ($existing['condition'] ?? 'an entry') . '" for ' . ($patient['name'] ?? 'a patient') . '.');
 hc_record_patient_history($patientId, 'family_history', 'deleted', 'Deleted family history "' . ($existing['condition'] ?? 'an entry') . '".');
 hc_record_patient_activity($patientId, 'Family history "' . ($existing['condition'] ?? '') . '" removed.');
 

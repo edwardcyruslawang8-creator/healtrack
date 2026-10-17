@@ -36,6 +36,7 @@ session_start();
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
+require_once __DIR__ . '/../includes/shared/vitals_validation.php'; // hc_validate_vitals()
 
 header('Content-Type: application/json');
 
@@ -134,35 +135,15 @@ $temperature = trim((string) ($vitals['temperature'] ?? ''));
 $weight = trim((string) ($vitals['weight'] ?? ''));
 $height = trim((string) ($vitals['height'] ?? ''));
 
-if ($vitalDateTime === '' || $bpSystolic === '' || $bpDiastolic === '' || $heartRate === ''
-    || $temperature === '' || $weight === '' || $height === '') {
+if ($vitalDateTime === '') {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Please fill out every required field in Vital Signs.']);
     exit;
 }
-if (!is_numeric($bpSystolic) || !is_numeric($bpDiastolic)) {
+$vitalsError = hc_validate_vitals($vitals, true);
+if ($vitalsError !== null) {
     http_response_code(422);
-    echo json_encode(['success' => false, 'error' => 'Blood pressure must be numeric.']);
-    exit;
-}
-if (!is_numeric($heartRate) || $heartRate < 30 || $heartRate > 220) {
-    http_response_code(422);
-    echo json_encode(['success' => false, 'error' => 'Heart rate must be between 30 and 220 bpm.']);
-    exit;
-}
-if (!is_numeric($temperature) || $temperature < 30 || $temperature > 45) {
-    http_response_code(422);
-    echo json_encode(['success' => false, 'error' => 'Temperature must be between 30°C and 45°C.']);
-    exit;
-}
-if (!is_numeric($weight) || $weight <= 0) {
-    http_response_code(422);
-    echo json_encode(['success' => false, 'error' => 'Please enter a valid weight.']);
-    exit;
-}
-if (!is_numeric($height) || $height <= 0) {
-    http_response_code(422);
-    echo json_encode(['success' => false, 'error' => 'Please enter a valid height.']);
+    echo json_encode(['success' => false, 'error' => $vitalsError]);
     exit;
 }
 

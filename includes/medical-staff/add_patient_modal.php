@@ -216,42 +216,42 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
                 <div class="apm-field">
                   <label>Blood Pressure (mmHg)<span class="req">*</span></label>
                   <div class="apm-bp-row">
-                    <input type="number" class="form-control" id="apmVitalBpSys" placeholder="Systolic" required min="1" max="300" inputmode="numeric">
+                    <input type="number" step="1" class="form-control" id="apmVitalBpSys" placeholder="Systolic" required min="40" max="300" inputmode="numeric">
                     <span class="apm-bp-sep">/</span>
-                    <input type="number" class="form-control" id="apmVitalBpDia" placeholder="Diastolic" required min="1" max="300" inputmode="numeric">
+                    <input type="number" step="1" class="form-control" id="apmVitalBpDia" placeholder="Diastolic" required min="20" max="200" inputmode="numeric">
                   </div>
-                  <div class="invalid-feedback">Enter valid systolic/diastolic values.</div>
+                  <div class="invalid-feedback">Enter a systolic between 40–300 and diastolic between 20–200 mmHg.</div>
                 </div>
                 <div class="apm-field">
                   <label for="apmVitalHr">Heart Rate (bpm)<span class="req">*</span></label>
-                  <input type="number" class="form-control" id="apmVitalHr" placeholder="Enter heart rate" required min="30" max="220" inputmode="numeric">
-                  <div class="invalid-feedback">Enter a heart rate between 30–220 bpm.</div>
+                  <input type="number" step="1" class="form-control" id="apmVitalHr" placeholder="Enter heart rate" required min="20" max="250" inputmode="numeric">
+                  <div class="invalid-feedback">Enter a heart rate between 20–250 bpm.</div>
                 </div>
               </div>
               <div class="apm-grid apm-grid-3">
                 <div class="apm-field">
                   <label for="apmVitalTemp">Temperature (°C)<span class="req">*</span></label>
                   <div class="apm-suffix-wrap">
-                    <input type="number" step="0.1" class="form-control" id="apmVitalTemp" placeholder="Enter temperature" required min="30" max="45" inputmode="decimal">
+                    <input type="number" step="0.1" class="form-control" id="apmVitalTemp" placeholder="Enter temperature" required min="25" max="45" inputmode="decimal">
                     <span class="apm-suffix">°C</span>
                   </div>
-                  <div class="invalid-feedback">Enter a temperature between 30–45°C.</div>
+                  <div class="invalid-feedback">Enter a temperature between 25.0–45.0°C.</div>
                 </div>
                 <div class="apm-field">
                   <label for="apmVitalWeight">Weight (kg)<span class="req">*</span></label>
                   <div class="apm-suffix-wrap">
-                    <input type="number" step="0.1" class="form-control" id="apmVitalWeight" placeholder="Enter weight" required min="0.1" inputmode="decimal">
+                    <input type="number" step="0.1" class="form-control" id="apmVitalWeight" placeholder="Enter weight" required min="1" max="500" inputmode="decimal">
                     <span class="apm-suffix">kg</span>
                   </div>
-                  <div class="invalid-feedback">Enter a valid weight.</div>
+                  <div class="invalid-feedback">Enter a weight between 1–500 kg.</div>
                 </div>
                 <div class="apm-field">
                   <label for="apmVitalHeight">Height (cm)<span class="req">*</span></label>
                   <div class="apm-suffix-wrap">
-                    <input type="number" step="0.1" class="form-control" id="apmVitalHeight" placeholder="Enter height" required min="1" inputmode="decimal">
+                    <input type="number" step="0.1" class="form-control" id="apmVitalHeight" placeholder="Enter height" required min="30" max="250" inputmode="decimal">
                     <span class="apm-suffix">cm</span>
                   </div>
-                  <div class="invalid-feedback">Enter a valid height.</div>
+                  <div class="invalid-feedback">Enter a height between 30–250 cm.</div>
                 </div>
               </div>
               <div class="apm-grid apm-grid-3">

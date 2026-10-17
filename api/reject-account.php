@@ -83,7 +83,7 @@ try {
     error_log('[reject-account] Could not delete Firebase Auth user ' . $uid . ': ' . $e->getMessage());
 }
 
-write_audit_log('deleted', 'User Management', 'Rejected account request from "' . $name . '" (' . $jobTitle . ').');
+write_audit_log('deleted', 'User Management', 'Rejected the account request from ' . $name . ' (' . $jobTitle . ').');
 
 if ($email !== '') {
     hc_send_email($email, $name, 'Your HEALTrack account request was declined', hc_account_email_shell(

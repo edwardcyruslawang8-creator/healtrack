@@ -128,7 +128,7 @@ $firestore->addDocument('medical_records', [
 write_audit_log(
     'updated',
     'Laboratory & X-ray',
-    'Entered CD4 Count result (' . $rawResult . ' c/uL, ' . $interpretation . ') for "' . $patient['name'] . '".'
+    'Entered CD4 Count result (' . $rawResult . ' c/uL, ' . $interpretation . ') for ' . $patient['name'] . '.'
 );
 hc_record_patient_history($patientId, 'laboratory_result', 'added', 'Entered CD4 Count result (' . $rawResult . ' c/uL, ' . $interpretation . ').');
 hc_record_patient_activity($patientId, 'CD4 Count result entered.');

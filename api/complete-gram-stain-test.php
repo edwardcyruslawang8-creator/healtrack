@@ -122,7 +122,7 @@ $firestore->addDocument('medical_records', [
 write_audit_log(
     'updated',
     'Laboratory & X-ray',
-    'Entered Gram Stain result for "' . $patient['name'] . '".'
+    'Entered Gram Stain result for ' . $patient['name'] . '.'
 );
 hc_record_patient_history($patientId, 'laboratory_result', 'added', 'Entered Gram Stain result.');
 hc_record_patient_activity($patientId, 'Gram Stain result entered.');

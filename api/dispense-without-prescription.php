@@ -182,7 +182,7 @@ if ($itemType === 'medicine') {
 write_audit_log(
     'created',
     'Medicine & Vaccine Inventory',
-    'Dispensed ' . $quantity . ' unit(s) of "' . $itemName . '" to "' . ($patientDoc['name'] ?? 'Unknown Patient') . '" without a prescription (patient-requested).'
+    'Dispensed ' . $quantity . ' unit(s) of "' . $itemName . '" to ' . ($patientDoc['name'] ?? 'an unknown patient') . ' without a prescription (patient-requested).'
 );
 hc_record_patient_history($patientId, 'medication', 'added', 'Dispensed ' . $quantity . ' unit(s) of "' . $itemName . '" (no prescription — patient-requested).');
 hc_record_patient_activity($patientId, 'Dispensed "' . $itemName . '" (' . $quantity . ' unit(s)).');

@@ -68,7 +68,7 @@ if ($newId === null) {
     exit;
 }
 
-write_audit_log('created', 'Patient Management', 'Added family history "' . $condition . '" (' . $relation . ') for "' . ($patient['name'] ?? 'a patient') . '".');
+write_audit_log('created', 'Patient Management', 'Added family history "' . $condition . '" (' . $relation . ') for ' . ($patient['name'] ?? 'a patient') . '.');
 hc_record_patient_history($patientId, 'family_history', 'added', 'Added family history "' . $condition . '" (' . $relation . ').');
 hc_record_patient_activity($patientId, 'Family history "' . $condition . '" recorded.');
 

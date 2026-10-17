@@ -93,7 +93,7 @@ if (!$saved) {
     exit;
 }
 
-write_audit_log('approved', 'User Management', 'Approved account request from "' . ($existing['name'] ?? $uid) . '" (' . ($existing['jobTitle'] ?? $existing['role'] ?? '') . ').');
+write_audit_log('approved', 'User Management', 'Approved the account request from ' . ($existing['name'] ?? $uid) . ' (' . ($existing['jobTitle'] ?? $existing['role'] ?? '') . ').');
 
 if (!empty($existing['email'])) {
     $loginUrl = (($_SERVER['HTTPS'] ?? 'off') !== 'off' ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . BASE_URL . '/login.php';

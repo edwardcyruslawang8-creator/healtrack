@@ -67,7 +67,7 @@ if (!$deleted) {
     exit;
 }
 
-write_audit_log('deleted', 'Patient Management', 'Deleted chronic condition "' . ($existing['label'] ?? 'a condition') . '" for "' . ($patient['name'] ?? 'a patient') . '".');
+write_audit_log('deleted', 'Patient Management', 'Deleted chronic condition "' . ($existing['label'] ?? 'a condition') . '" for ' . ($patient['name'] ?? 'a patient') . '.');
 hc_record_patient_history($patientId, 'medical_condition', 'deleted', 'Deleted chronic condition "' . ($existing['label'] ?? 'a condition') . '".');
 hc_record_patient_activity($patientId, 'Chronic condition "' . ($existing['label'] ?? '') . '" removed.');
 

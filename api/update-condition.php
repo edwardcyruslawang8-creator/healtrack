@@ -88,7 +88,7 @@ if (!$updated) {
     exit;
 }
 
-write_audit_log('updated', 'Patient Management', 'Updated chronic condition "' . $label . '" for "' . ($patient['name'] ?? 'a patient') . '".');
+write_audit_log('updated', 'Patient Management', 'Updated chronic condition "' . $label . '" for ' . ($patient['name'] ?? 'a patient') . '.');
 hc_record_patient_history($patientId, 'medical_condition', 'updated', 'Updated chronic condition "' . $label . '" (status: ' . $status . ').');
 hc_record_patient_activity($patientId, 'Chronic condition "' . $label . '" updated.');
 

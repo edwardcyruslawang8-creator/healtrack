@@ -23,7 +23,7 @@ if (!function_exists('hc_map_patient_summary_doc')) {
      * One raw patients/{id} doc -> the list-row shape Patient Management
      * pages need — used by hc_get_all_patients_summary() below.
      *
-     * @return array{id: string, name: string, age: int, gender: string, contact: string, dateRegisteredRaw: string, dateRegistered: string, initialReasonForVisit: string, birthDate: string, facility: string, primaryPhysician: ?string, intakeVitals: array}
+     * @return array{id: string, name: string, age: int, gender: string, contact: string, address: string, dateRegisteredRaw: string, dateRegistered: string, initialReasonForVisit: string, birthDate: string, facility: string, primaryPhysician: ?string, intakeVitals: array}
      */
     function hc_map_patient_summary_doc(array $doc): array
     {
@@ -35,6 +35,7 @@ if (!function_exists('hc_map_patient_summary_doc')) {
             'age' => (int) ($f['age'] ?? 0),
             'gender' => $f['gender'] ?? '—',
             'contact' => $f['contact'] ?? '—',
+            'address' => $f['address'] ?? '—',
             'dateRegisteredRaw' => $f['dateRegistered'] ?? '',
             'dateRegistered' => isset($f['dateRegistered']) ? date('M j, Y', strtotime($f['dateRegistered'])) : '—',
             'initialReasonForVisit' => $f['initialReasonForVisit'] ?? '—',
@@ -74,7 +75,7 @@ if (!function_exists('hc_get_all_patients_summary')) {
      * facility scoping happens in PHP over a full read instead of via a
      * narrower server-side query.
      *
-     * @return array<int, array{id: string, name: string, age: int, gender: string, contact: string, dateRegisteredRaw: string, dateRegistered: string, initialReasonForVisit: string, birthDate: string, facility: string, intakeVitals: array}>
+     * @return array<int, array{id: string, name: string, age: int, gender: string, contact: string, address: string, dateRegisteredRaw: string, dateRegistered: string, initialReasonForVisit: string, birthDate: string, facility: string, intakeVitals: array}>
      */
     function hc_get_all_patients_summary(): array
     {

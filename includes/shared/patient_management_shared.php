@@ -106,7 +106,7 @@ if (!function_exists('hc_compute_patient_management_for_facility')) {
             // filters.
             // -------------------------------------------------------------
             $filteredPatients = array_values(array_filter($allPatients, function ($p) use ($searchTerm, $genderFilter, $ageGroupFilter) {
-                if ($searchTerm !== '' && !hc_fuzzy_match($p['name'] . ' ' . $p['contact'], $searchTerm)) {
+                if ($searchTerm !== '' && !hc_fuzzy_match($p['name'] . ' ' . $p['contact'] . ' ' . $p['address'], $searchTerm)) {
                     return false;
                 }
                 if ($genderFilter !== 'All Genders' && $p['gender'] !== $genderFilter) {

@@ -86,7 +86,7 @@ if ($storedFileName !== '') {
     @unlink(hc_document_storage_dir() . '/' . $storedFileName);
 }
 
-write_audit_log('deleted', 'Patient Documents', 'Deleted "' . ($doc['name'] ?? 'a document') . '" for "' . ($patient['name'] ?? 'a patient') . '".');
+write_audit_log('deleted', 'Patient Documents', 'Deleted document "' . ($doc['name'] ?? 'a document') . '" for ' . ($patient['name'] ?? 'a patient') . '.');
 hc_record_patient_history($patientId, 'document', 'deleted', 'Deleted "' . ($doc['name'] ?? 'a document') . '".');
 hc_record_patient_activity($patientId, 'Document deleted: "' . ($doc['name'] ?? 'a document') . '".');
 

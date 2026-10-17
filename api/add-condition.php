@@ -81,7 +81,7 @@ if ($newId === null) {
     exit;
 }
 
-write_audit_log('created', 'Patient Management', 'Added chronic condition "' . $label . '" for "' . ($patient['name'] ?? 'a patient') . '".');
+write_audit_log('created', 'Patient Management', 'Added chronic condition "' . $label . '" for ' . ($patient['name'] ?? 'a patient') . '.');
 hc_record_patient_history($patientId, 'medical_condition', 'added', 'Added chronic condition "' . $label . '" (status: ' . $status . ').');
 hc_record_patient_activity($patientId, 'Chronic condition "' . $label . '" recorded.');
 

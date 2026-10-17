@@ -31,6 +31,7 @@ session_start();
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/firestore/consultations.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
+require_once __DIR__ . '/../includes/shared/vitals_validation.php'; // hc_validate_vitals()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
 
 header('Content-Type: application/json');
@@ -186,6 +187,13 @@ if (array_key_exists('vitals', $body)) {
         echo json_encode(['success' => false, 'error' => 'Please fill out every required field, including Vital Signs.']);
         exit;
     }
+    // Presence already checked above — this only re-checks real ranges.
+    $vitalsError = hc_validate_vitals($newVitals, false);
+    if ($vitalsError !== null) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => $vitalsError]);
+        exit;
+    }
     $updated['vitals'] = $newVitals;
 }
 
@@ -212,7 +220,7 @@ $actionVerb = $isStatusOnlyUpdate ? ($statusVerb[$updated['status']] ?? 'Updated
 write_audit_log(
     $isStatusOnlyUpdate && $updated['status'] === 'completed' ? 'completed' : 'updated',
     'Consultations',
-    $actionVerb . ' consultation ' . ($updated['consultationCode'] ?? $id) . ' for "' . ($updated['patientName'] ?? '') . '".'
+    $actionVerb . ' the consultation for ' . ($updated['patientName'] ?? '') . ' (' . ($updated['consultationCode'] ?? $id) . ').'
 );
 hc_record_patient_history($updated['patientId'] ?? '', 'medical_record', 'updated', $actionVerb . ' consultation ' . ($updated['consultationCode'] ?? $id) . '.');
 hc_record_patient_activity($updated['patientId'] ?? '', 'Consultation ' . ($updated['consultationCode'] ?? $id) . ' ' . strtolower($actionVerb) . '.');

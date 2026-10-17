@@ -67,7 +67,7 @@ if (!$deleted) {
     exit;
 }
 
-write_audit_log('deleted', 'Patient Management', 'Deleted surgical history "' . ($existing['procedure'] ?? 'a procedure') . '" for "' . ($patient['name'] ?? 'a patient') . '".');
+write_audit_log('deleted', 'Patient Management', 'Deleted surgical history "' . ($existing['procedure'] ?? 'a procedure') . '" for ' . ($patient['name'] ?? 'a patient') . '.');
 hc_record_patient_history($patientId, 'surgical_history', 'deleted', 'Deleted surgical history "' . ($existing['procedure'] ?? 'a procedure') . '".');
 hc_record_patient_activity($patientId, 'Surgical history "' . ($existing['procedure'] ?? '') . '" removed.');
 

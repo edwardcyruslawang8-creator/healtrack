@@ -85,7 +85,7 @@ if (!$updated) {
     exit;
 }
 
-write_audit_log('updated', 'Patient Management', 'Updated surgical history "' . $procedure . '" for "' . ($patient['name'] ?? 'a patient') . '".');
+write_audit_log('updated', 'Patient Management', 'Updated surgical history "' . $procedure . '" for ' . ($patient['name'] ?? 'a patient') . '.');
 hc_record_patient_history($patientId, 'surgical_history', 'updated', 'Updated surgical history "' . $procedure . '".');
 hc_record_patient_activity($patientId, 'Surgical history "' . $procedure . '" updated.');
 

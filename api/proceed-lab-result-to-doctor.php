@@ -217,7 +217,7 @@ if ($canResumeOriginal) {
     write_audit_log(
         'updated',
         'Consultations',
-        'Attached ' . $testLabel . ' result (' . $resultSummary . ') to ' . $assignedPersonnel . '\'s ongoing consultation ' . $resultLabel . ' for "' . $patient['name'] . '".'
+        'Attached ' . $testLabel . ' result (' . $resultSummary . ') to ' . $patient['name'] . '\'s ongoing consultation with ' . $assignedPersonnel . ' (' . $resultLabel . ').'
     );
 } else {
     // FALLBACK path — the original consultation can't be resumed
@@ -257,7 +257,7 @@ if ($canResumeOriginal) {
     write_audit_log(
         'created',
         'Consultations',
-        'Routed "' . $patient['name'] . '" to ' . $assignedPersonnel . ' for medication review after ' . $testLabel . ' result (' . $consultationCode . ').'
+        'Routed ' . $patient['name'] . ' to ' . $assignedPersonnel . ' for a medication review after their ' . $testLabel . ' result (' . $consultationCode . ').'
     );
 }
 

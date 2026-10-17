@@ -13,10 +13,11 @@
  * — see that file's header comment) so a pharmacist can pick a real
  * patient without leaving the modal.
  *
- * Fuzzy-matches ?q= against name/contact via includes/shared/fuzzy_search.php's
- * hc_fuzzy_match() — the exact same matching used server-side by each
- * role's Patient Management page filter, so what the dropdown suggests
- * and what "View all results" actually shows always agree. Returns
+ * Fuzzy-matches ?q= against name/contact/address via
+ * includes/shared/fuzzy_search.php's hc_fuzzy_match() — the exact same
+ * matching used server-side by each role's Patient Management page
+ * filter, so what the dropdown suggests and what "View all results"
+ * actually shows always agree. Returns
  * only the top 5 matches (a quick-glance list, not the full result
  * set) plus the total match count, for the "View all results for
  * ..." footer row.
@@ -62,7 +63,7 @@ $facility = $_SESSION['role'] === 'admin' ? trim($_GET['facility'] ?? '') : '';
 
 $matches = array_values(array_filter(
     hc_get_all_patients_summary(),
-    fn ($p) => ($facility === '' || $p['facility'] === $facility) && hc_fuzzy_match($p['name'] . ' ' . $p['contact'], $query)
+    fn ($p) => ($facility === '' || $p['facility'] === $facility) && hc_fuzzy_match($p['name'] . ' ' . $p['contact'] . ' ' . $p['address'], $query)
 ));
 
 $results = array_map(fn ($p) => [

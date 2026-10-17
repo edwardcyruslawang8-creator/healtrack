@@ -132,7 +132,7 @@ if ($medicineDoc !== null) {
     ]));
 }
 
-$auditMessage = 'Dispensed ' . ($existing['itemName'] ?? 'item') . ' for "' . ($existing['patientName'] ?? '') . '"';
+$auditMessage = 'Dispensed ' . ($existing['itemName'] ?? 'item') . ' for ' . ($existing['patientName'] ?? '');
 $auditMessage .= $dispensedItemName !== null
     ? ' — ' . $dispensedQuantity . ' unit(s) of "' . $dispensedItemName . '" deducted from inventory.'
     : ' (not linked to a tracked inventory item — stock unchanged).';

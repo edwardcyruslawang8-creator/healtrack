@@ -71,6 +71,7 @@ require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/firestore/consultations.php';
 require_once __DIR__ . '/../includes/firestore/lab_results.php'; // hc_lab_test_catalog()
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
+require_once __DIR__ . '/../includes/shared/vitals_validation.php'; // hc_validate_vitals()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
 
 header('Content-Type: application/json');
@@ -172,16 +173,17 @@ if ($nextRouting === 'laboratory' && count($labTests) === 0) {
     exit;
 }
 
-// Vitals — every sub-field optional; stored as-is (strings), same as
-// every other free-form numeric-ish field in this app (e.g. stock
-// request quantities are validated, but vitals have no "valid range"
-// concept worth enforcing here). Only temperature/BP/heart-rate are
-// doctor-editable on this page (doctor/active_consultation.php) — the
-// doctor's own form never submits weight/height/bmi (read-only there,
-// set by medical staff at check-in via api/create-consultation.php's
-// own "Vital Signs" section), so those three are carried over from
-// whatever this consultation already has instead of being blanked out
-// by a save that never touched them.
+// Vitals — every sub-field optional (a doctor can leave one blank if
+// it genuinely wasn't retaken), but WHEN a value is actually given it's
+// held to the same real clinical range this app enforces at intake
+// (includes/medical-staff/add_patient_modal.php / api/create-patient.php).
+// Only temperature/BP/heart-rate are doctor-editable on this page
+// (doctor/active_consultation.php) — the doctor's own form never
+// submits weight/height/bmi (read-only there, set by medical staff at
+// check-in via api/create-consultation.php's own "Vital Signs"
+// section), so those three are carried over from whatever this
+// consultation already has instead of being blanked out by a save that
+// never touched them.
 $rawVitals = is_array($body['vitals'] ?? null) ? $body['vitals'] : [];
 $existingVitals = is_array($existing['vitals'] ?? null) ? $existing['vitals'] : [];
 $vitals = [
@@ -193,6 +195,13 @@ $vitals = [
     'height' => trim((string) ($existingVitals['height'] ?? '')),
     'bmi' => trim((string) ($existingVitals['bmi'] ?? '')),
 ];
+
+$vitalsError = hc_validate_vitals($vitals, false);
+if ($vitalsError !== null) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => $vitalsError]);
+    exit;
+}
 
 // Medications & Vaccines — skip blank-name rows (a stray empty row
 // left over from the table UI, same tolerance
@@ -423,7 +432,7 @@ if ($nextRouting === 'laboratory') {
     write_audit_log(
         'updated',
         'Consultations',
-        'Sent "' . ($existing['patientName'] ?? '') . '" (consultation ' . $consultationLabel . ') to the laboratory — ' . count($labTests) . ' test(s) ordered.'
+        'Sent ' . ($existing['patientName'] ?? '') . ' to the laboratory for ' . count($labTests) . ' test(s) — consultation ' . $consultationLabel . '.'
     );
     hc_record_patient_history($historyPatientId, 'medical_record', 'updated', 'Consultation ' . $consultationLabel . ' sent to the laboratory — ' . count($labTests) . ' test(s) ordered.');
     hc_record_patient_activity($historyPatientId, 'Sent to laboratory for ' . count($labTests) . ' test(s).');
@@ -431,7 +440,7 @@ if ($nextRouting === 'laboratory') {
     write_audit_log(
         'completed',
         'Consultations',
-        'Completed consultation ' . $consultationLabel . ' for "' . ($existing['patientName'] ?? '') . '" — sent to the pharmacy, ' . count($medications) . ' item(s) prescribed.'
+        'Completed the consultation for ' . ($existing['patientName'] ?? '') . ' (' . $consultationLabel . ') — sent to the pharmacy, ' . count($medications) . ' item(s) prescribed.'
     );
     hc_record_patient_history($historyPatientId, 'medical_record', 'updated', 'Consultation ' . $consultationLabel . ' completed — sent to the pharmacy, ' . count($medications) . ' item(s) prescribed.');
     hc_record_patient_activity($historyPatientId, 'Consultation completed; sent to pharmacy.');
@@ -439,7 +448,7 @@ if ($nextRouting === 'laboratory') {
     write_audit_log(
         'completed',
         'Consultations',
-        'Completed consultation ' . $consultationLabel . ' for "' . ($existing['patientName'] ?? '') . '".'
+        'Completed the consultation for ' . ($existing['patientName'] ?? '') . ' (' . $consultationLabel . ').'
     );
     hc_record_patient_history($historyPatientId, 'medical_record', 'updated', 'Consultation ' . $consultationLabel . ' completed.');
     hc_record_patient_activity($historyPatientId, 'Consultation completed.');
