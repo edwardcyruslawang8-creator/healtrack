@@ -9,7 +9,7 @@
      "patients" Firestore collection — same collection every role's
      Patient Management page reads via includes/firestore/patients.php.
      Barangay options are the 11 real Lipa City barangays this clinic
-     actually covers (Balintawak, Bugtong, Buclanin, Dagatan, Inosluban,
+     actually covers (Balintawak, Bugtong, Bulacnin, Dagatan, Inosluban,
      Lumbang, Marawoy, Plaridel, Pusil, San Lucas, Talisay) — the SAME
      list patient/gis.php's case-count map now uses too
      (includes/shared/gis_geo.php, includes/public/gis_data_firestore.php),
@@ -170,7 +170,7 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
                   <label for="apmBarangay">Barangay<span class="req">*</span></label>
                   <select class="form-select" id="apmBarangay" required>
                     <option value="" selected disabled>Select barangay</option>
-                    <?php foreach (['Balintawak', 'Bugtong', 'Buclanin', 'Dagatan', 'Inosluban', 'Lumbang', 'Marawoy', 'Plaridel', 'Pusil', 'San Lucas', 'Talisay'] as $bgy): ?>
+                    <?php foreach (['Balintawak', 'Bugtong', 'Bulacnin', 'Dagatan', 'Inosluban', 'Lumbang', 'Marawoy', 'Plaridel', 'Pusil', 'San Lucas', 'Talisay'] as $bgy): ?>
                     <option value="<?= $bgy ?>"><?= $bgy ?></option>
                     <?php endforeach; ?>
                   </select>

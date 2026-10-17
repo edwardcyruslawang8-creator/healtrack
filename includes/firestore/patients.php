@@ -18,6 +18,27 @@
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 
+if (!function_exists('hc_format_patient_address')) {
+    /**
+     * A patient's full display address — street/purok line, then
+     * "Brgy. <barangay>", then city — built from the separate
+     * address/barangay/city fields the Add Patient modal saves. Every
+     * address display and every patient search (Quick Search, Patient
+     * Management) goes through this, so typing a barangay name finds
+     * that barangay's patients.
+     */
+    function hc_format_patient_address(array $f): string
+    {
+        $parts = array_filter([
+            trim((string) ($f['address'] ?? '')),
+            trim((string) ($f['barangay'] ?? '')) !== '' ? 'Brgy. ' . trim((string) $f['barangay']) : '',
+            trim((string) ($f['city'] ?? '')),
+        ], fn ($part) => $part !== '');
+
+        return $parts ? implode(', ', $parts) : '—';
+    }
+}
+
 if (!function_exists('hc_map_patient_summary_doc')) {
     /**
      * One raw patients/{id} doc -> the list-row shape Patient Management
@@ -35,7 +56,7 @@ if (!function_exists('hc_map_patient_summary_doc')) {
             'age' => (int) ($f['age'] ?? 0),
             'gender' => $f['gender'] ?? '—',
             'contact' => $f['contact'] ?? '—',
-            'address' => $f['address'] ?? '—',
+            'address' => hc_format_patient_address($f),
             'dateRegisteredRaw' => $f['dateRegistered'] ?? '',
             'dateRegistered' => isset($f['dateRegistered']) ? date('M j, Y', strtotime($f['dateRegistered'])) : '—',
             'initialReasonForVisit' => $f['initialReasonForVisit'] ?? '—',
@@ -117,7 +138,7 @@ if (!function_exists('hc_get_patient_profile')) {
             'birthDate' => isset($doc['birthDate']) ? date('M j, Y', strtotime($doc['birthDate'])) : '—',
             'phone' => $doc['contact'] ?? '—',
             'email' => $doc['email'] ?? '—',
-            'address' => $doc['address'] ?? '—',
+            'address' => hc_format_patient_address($doc),
             'bloodType' => $doc['bloodType'] ?? '—',
             'civilStatus' => $doc['civilStatus'] ?? '—',
             'occupation' => $doc['occupation'] ?? '—',

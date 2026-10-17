@@ -23,9 +23,8 @@
  * whoever first typed this list) — matched to their real counterpart
  * for geocoding purposes only, WITHOUT changing the spelling used
  * everywhere else in this app (that's a separate, bigger cleanup this
- * task didn't ask for). "Pulis" was one of these too until it was
- * corrected app-wide to its real spelling, "Pusil":
- *   "Buclanin"   -> real "Bulacnin"
+ * task didn't ask for). "Pulis" and "Buclanin" were among these too until they were
+ * corrected app-wide to their real spellings, "Pusil" and "Bulacnin":
  *   "Inosluban"  -> real "Inosloban"
  *   "Marawoy"    -> real "Marauoy"
  *   "Bugtong"    -> real "Bugtong na Pulo"
@@ -53,7 +52,7 @@ if (!function_exists('hc_gis_barangay_centers')) {
         return [
             'Balintawak' => [13.9530, 121.1588],
             'Bugtong' => [14.0000, 121.1670],
-            'Buclanin' => [13.9854, 121.1414],
+            'Bulacnin' => [13.9854, 121.1414],
             'Dagatan' => [13.9661, 121.1816],
             'Inosluban' => [13.9888, 121.1710],
             'Lumbang' => [13.9829, 121.1989],

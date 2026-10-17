@@ -52,7 +52,7 @@ require_once __DIR__ . '/inventory_match.php'; // hc_normalize_text(), hc_item_n
 // The 11 real Lipa City barangays this clinic covers — same list
 // includes/medical-staff/add_patient_modal.php:163 offers at patient
 // registration.
-const HC_COVERED_BARANGAYS = ['Balintawak', 'Bugtong', 'Buclanin', 'Dagatan', 'Inosluban', 'Lumbang', 'Marawoy', 'Plaridel', 'Pusil', 'San Lucas', 'Talisay'];
+const HC_COVERED_BARANGAYS = ['Balintawak', 'Bugtong', 'Bulacnin', 'Dagatan', 'Inosluban', 'Lumbang', 'Marawoy', 'Plaridel', 'Pusil', 'San Lucas', 'Talisay'];
 
 if (!function_exists('hc_predictive_severity_meta')) {
     /**
