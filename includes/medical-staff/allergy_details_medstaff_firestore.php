@@ -14,7 +14,7 @@
 
 require_once __DIR__ . '/allergies_medstaff_firestore.php';
 // $staffProfile, $dashboardDateLabel, $facilityOptions, $patient,
-// $severityMeta, $allergyStatusMeta, $allergyRecords, $allergyRecordsTotal,
-// $selectedAllergy (default: most recently added — overridden below by ?recordId=)
+// $severityMeta, $allergyStatusMeta, $allergyRecords, $allergyRecordsTotal
 
+// The ?recordId= row, else the most recently added one.
 $selectedAllergy = hc_resolve_selected_allergy($allergyRecords, $_GET['recordId'] ?? null);

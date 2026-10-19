@@ -23,9 +23,14 @@
  * CONNECTED to real Firestore data — see includes/medical-staff/allergies_medstaff_firestore.php's
  * header comment. Each row's View button now passes a real &recordId=
  * to allergy_details.php, so that page shows the actual clicked
- * record. The "Allergy Details" panel below the table on this page is
- * a separate, always-expandable summary of the most recently added
- * record.
+ * record. (The old "Allergy Details" panel below the tables was removed
+ * — View is the way to see one record's full details.)
+ *
+ * "+ Add Allergy" (includes/medical-staff/add_allergy_modal.php ->
+ * api/create-allergy-record.php) and each row's "Mark Inactive" /
+ * "Reactivate" action (api/update-allergy-status.php) are wired up in
+ * assets/js/allergy-actions.js. Status changes never delete a record —
+ * it just moves between the Active and Inactive / Resolved tables.
  * =====================================================================
  */
 session_start();
@@ -41,7 +46,7 @@ if (($_SESSION['role'] ?? null) !== 'healthcare_staff') {
 require_once __DIR__ . '/../includes/medical-staff/allergies_medstaff_firestore.php';
 // $staffProfile, $dashboardDateLabel, $facilityOptions, $patient, $profileTabs,
 // $severityMeta, $allergyStatusMeta, $allergySummary, $allergyRecords,
-// $allergyRecordsTotal, $selectedAllergy
+// $allergyRecordsTotal
 
 // Sidebar nav — same Medical Staff nav list as medical-staff/dashboard.php.
 // Patient Management stays active (this page is reached from it).
@@ -63,8 +68,6 @@ $staffNavItems = [
     ['icon' => 'bi-gear-fill',            'label' => 'Profile / Settings', 'href' => 'profile_settings.php'],
 ];
 
-$selectedSeverity = $severityMeta[$selectedAllergy['severity']] ?? $severityMeta['mild'];
-$selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStatusMeta['active'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -92,6 +95,8 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_profile.css') ?>">
 <!-- Allergies page styles (summary cards, table, details panel) — shared verbatim with subadmin/allergies.php -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/allergies.css') ?>">
+<!-- Shared confirm/alert dialog (Mark Inactive / Reactivate confirmations) -->
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -301,9 +306,12 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
     </ul>
 
     <!-- ============ ALLERGY SUMMARY SECTION HEADER ============ -->
-    <div class="alg-section-header">
-        <h2>Allergy Summary</h2>
-        <p>View and manage patient's allergy information.</p>
+    <div class="alg-section-header alg-section-header--actions">
+        <div>
+            <h2>Allergy Summary</h2>
+            <p>View and manage patient's allergy information.</p>
+        </div>
+        <button type="button" class="alg-btn-add" id="btnAddAllergy"><i class="bi bi-plus-lg"></i> Add Allergy</button>
     </div>
 
     <!-- ============ ALLERGY SUMMARY CARDS ============ -->
@@ -313,7 +321,7 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
             <div class="alg-summary-text">
                 <span class="alg-summary-label">Total Allergies</span>
                 <span class="alg-summary-value"><?= (int) $allergySummary['totalAllergies'] ?></span>
-                <span class="alg-summary-sub" style="color:#D93025;">Active allergies</span>
+                <span class="alg-summary-sub" style="color:#D93025;"><?= (int) $allergySummary['activeAllergies'] ?> active</span>
             </div>
         </div>
 
@@ -322,7 +330,7 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
             <div class="alg-summary-text">
                 <span class="alg-summary-label">Severe Allergies</span>
                 <span class="alg-summary-value"><?= (int) $allergySummary['severeAllergies'] ?></span>
-                <span class="alg-summary-sub" style="color:#E8710A;">Requires caution</span>
+                <span class="alg-summary-sub" style="color:#E8710A;">Active &bull; requires caution</span>
             </div>
         </div>
 
@@ -390,8 +398,8 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                         <td class="alg-notes-cell"><?= htmlspecialchars($alg['notes']) ?></td>
                         <td>
                             <div class="adm-action-btns">
-                                <a href="allergies.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($alg['id']) ?>#algDetailsPanel" class="adm-action-btn" aria-label="Select"><i class="bi bi-check2-square"></i></a>
                                 <a href="allergy_details.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($alg['id']) ?>" class="adm-action-btn view" aria-label="View"><i class="bi bi-eye"></i></a>
+                                <button type="button" class="adm-action-btn alg-action-deactivate" data-allergy-action="deactivate" data-allergy-id="<?= htmlspecialchars($alg['id']) ?>" data-allergen="<?= htmlspecialchars($alg['allergen']) ?>" title="Mark Inactive" aria-label="Mark <?= htmlspecialchars($alg['allergen']) ?> as inactive"><i class="bi bi-slash-circle"></i></button>
                             </div>
                         </td>
                     </tr>
@@ -452,8 +460,8 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                         <td class="alg-notes-cell"><?= htmlspecialchars($alg['notes']) ?></td>
                         <td>
                             <div class="adm-action-btns">
-                                <a href="allergies.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($alg['id']) ?>#algDetailsPanel" class="adm-action-btn" aria-label="Select"><i class="bi bi-check2-square"></i></a>
                                 <a href="allergy_details.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($alg['id']) ?>" class="adm-action-btn view" aria-label="View"><i class="bi bi-eye"></i></a>
+                                <button type="button" class="adm-action-btn alg-action-reactivate" data-allergy-action="reactivate" data-allergy-id="<?= htmlspecialchars($alg['id']) ?>" data-allergen="<?= htmlspecialchars($alg['allergen']) ?>" title="Reactivate" aria-label="Reactivate <?= htmlspecialchars($alg['allergen']) ?>"><i class="bi bi-arrow-counterclockwise"></i></button>
                             </div>
                         </td>
                     </tr>
@@ -467,39 +475,9 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
         </div>
     </div>
 
-    <!-- ============ ALLERGY DETAILS (expandable) ============ -->
-    <div class="adm-card alg-details-card" id="algDetailsPanel">
-        <button type="button" class="alg-details-toggle" data-bs-toggle="collapse" data-bs-target="#algDetailsBody" aria-expanded="true" aria-controls="algDetailsBody">
-            <span class="alg-details-title">
-                <span class="alg-type-icon" style="background:<?= htmlspecialchars($selectedAllergy['iconBg']) ?>; color:<?= htmlspecialchars($selectedAllergy['iconColor']) ?>;">
-                    <i class="bi bi-shield-fill-check"></i>
-                </span>
-                <h3>Allergy Details</h3>
-            </span>
-            <i class="bi bi-chevron-up alg-chevron"></i>
-        </button>
-
-        <div class="collapse show" id="algDetailsBody">
-            <div class="alg-details-grid">
-                <div class="alg-details-col">
-                    <div class="alg-field"><span class="alg-field-label">Allergen</span><span class="alg-field-value"><?= htmlspecialchars($selectedAllergy['allergen']) ?></span></div>
-                    <div class="alg-field"><span class="alg-field-label">Type</span><span class="alg-field-value"><?= htmlspecialchars($selectedAllergy['type']) ?><?= $selectedAllergy['subtype'] ? ' (' . htmlspecialchars($selectedAllergy['subtype']) . ')' : '' ?></span></div>
-                    <div class="alg-field"><span class="alg-field-label">Severity</span><span class="alg-badge" style="background:<?= htmlspecialchars($selectedSeverity['bg']) ?>; color:<?= htmlspecialchars($selectedSeverity['color']) ?>;"><?= htmlspecialchars($selectedSeverity['label']) ?></span></div>
-                    <div class="alg-field"><span class="alg-field-label">Status</span><span class="alg-badge" style="background:<?= htmlspecialchars($selectedStatus['bg']) ?>; color:<?= htmlspecialchars($selectedStatus['color']) ?>;"><?= htmlspecialchars($selectedStatus['label']) ?></span></div>
-                </div>
-                <div class="alg-details-col">
-                    <div class="alg-field"><span class="alg-field-label">Reaction</span><span class="alg-field-value"><?= htmlspecialchars($selectedAllergy['reaction']) ?></span></div>
-                    <div class="alg-field"><span class="alg-field-label">Onset Date</span><span class="alg-field-value"><?= htmlspecialchars($selectedAllergy['onsetDate']) ?></span></div>
-                    <div class="alg-field"><span class="alg-field-label">Last Occurred</span><span class="alg-field-value"><?= htmlspecialchars($selectedAllergy['lastOccurred']) ?></span></div>
-                    <div class="alg-field"><span class="alg-field-label">Added On</span><span class="alg-field-value"><?= htmlspecialchars($selectedAllergy['addedOn']) ?></span></div>
-                </div>
-                <div class="alg-details-col">
-                    <div class="alg-field alg-field-stacked"><span class="alg-field-label">Notes</span><span class="alg-field-value"><?= htmlspecialchars($selectedAllergy['notes']) ?></span></div>
-                    <div class="alg-field alg-field-stacked"><span class="alg-field-label">Recommendations</span><span class="alg-field-value"><?= htmlspecialchars($selectedAllergy['recommendations']) ?></span></div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Inside <main> so it comes along when assets/js/ajax-tab-nav.js
+         swaps this tab in from another Patient Profile tab. -->
+    <?php require __DIR__ . '/../includes/medical-staff/add_allergy_modal.php'; ?>
 
 </main>
 
@@ -507,5 +485,7 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-tab-nav.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/allergy-actions.js') ?>"></script>
 </body>
 </html>

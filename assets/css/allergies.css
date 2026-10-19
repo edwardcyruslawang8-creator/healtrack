@@ -14,6 +14,58 @@
 .alg-section-header h2{ font-size: 19px; font-weight: 800; color: var(--adm-text); margin: 0 0 4px; }
 .alg-section-header p{ font-size: 13px; color: var(--adm-text-muted); margin: 0; }
 
+/* Heading + "+ Add Allergy" on one row (medical-staff/allergies.php) */
+.alg-section-header--actions{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+/* Same look as consultations.css's "+ Set Consultation" (.cns-btn-set). */
+.alg-btn-add{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--adm-red-bright);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--adm-shadow);
+  transition: background .15s ease;
+}
+.alg-btn-add:hover{ background: var(--adm-red-bright-hover); color: #fff; }
+
+/* Row actions beside Select / View — distinct colors so they don't
+   read as another view/select icon. */
+.adm-action-btn.alg-action-deactivate{ color: var(--adm-red); }
+.adm-action-btn.alg-action-reactivate{ color: #1E8E3E; }
+.adm-action-btn.alg-action-deactivate:disabled,
+.adm-action-btn.alg-action-reactivate:disabled{ opacity: .5; cursor: wait; }
+
+/* "Add Allergy Record" modal — wider than admin-dashboard.css's shared
+   .adm-modal 480px cap, so the paired 2-column fields have room
+   without stretching the single-line inputs. */
+#addAllergyModal .modal-dialog{ max-width: 640px; }
+#addAllergyModal .form-text{ margin-top: 4px; font-size: 12px; }
+
+/* Success toast after Add / Mark Inactive / Reactivate */
+.alg-toast-container{ z-index: 1090; }
+.alg-toast{
+  background: var(--adm-card);
+  color: var(--adm-text);
+  border: 1px solid var(--adm-border);
+  border-left: 4px solid #1E8E3E;
+  border-radius: 10px;
+  box-shadow: var(--adm-shadow);
+  font-size: 13px;
+}
+.alg-toast-icon{ color: #1E8E3E; font-size: 18px; margin-left: 12px; }
+
 /* -- Summary cards row -- */
 .alg-summary-row{
   display: grid;
@@ -115,6 +167,8 @@
 }
 @media (max-width: 767.98px){
   .alg-summary-row{ grid-template-columns: 1fr; }
+  .alg-section-header--actions{ flex-direction: column; align-items: stretch; }
+  .alg-btn-add{ justify-content: center; }
   .alg-details-grid{ grid-template-columns: 1fr; gap: 18px; padding: 0 18px 18px; }
   .alg-details-toggle{ padding: 18px; }
   .alg-field{ flex-direction: column; align-items: flex-start; gap: 4px; }
