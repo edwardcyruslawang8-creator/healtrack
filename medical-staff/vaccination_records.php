@@ -22,6 +22,13 @@
  * inert placeholder button here — see
  * medical-staff/patient_profile.php's header comment.
  *
+ * "+ Add Vaccination" opens includes/medical-staff/add_vaccination_modal.php
+ * (assets/js/add-vaccination.js -> api/add-vaccination-record.php),
+ * which writes a real vaccination_records doc and reloads the page —
+ * either a historical vaccination (received before registration /
+ * elsewhere, tagged "Historical" in the table) or one administered at
+ * this facility.
+ *
  * CONNECTED to real Firestore data — see includes/medical-staff/vaccination_records_medstaff_firestore.php's
  * header comment. The Filter button still isn't wired up. Each row's
  * View button now links to vaccination_record_details.php with a real
@@ -310,6 +317,8 @@ $selectedMeta = $vaccineTypeMeta[$selectedVaccineRecord['type']] ?? ['label' => 
             <h2>Vaccination History</h2>
             <p>View and manage vaccination records of the patient.</p>
         </div>
+        <div class="vrc-section-actions">
+        <button type="button" class="vrc-btn-add" id="btnAddVaccination"><i class="bi bi-plus-lg"></i> Add Vaccination</button>
         <div class="dropdown">
             <button class="vrc-btn-filter dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-funnel"></i> <?= htmlspecialchars($vrcDateRangeLabel) ?></button>
             <ul class="dropdown-menu dropdown-menu-end">
@@ -318,6 +327,7 @@ $selectedMeta = $vaccineTypeMeta[$selectedVaccineRecord['type']] ?? ['label' => 
                 <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['daterange' => 'this_week', 'page' => 1])) ?>">This Week</a></li>
                 <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['daterange' => 'this_month', 'page' => 1])) ?>">This Month</a></li>
             </ul>
+        </div>
         </div>
     </div>
 
@@ -351,6 +361,9 @@ $selectedMeta = $vaccineTypeMeta[$selectedVaccineRecord['type']] ?? ['label' => 
                                     <i class="bi <?= htmlspecialchars($meta['icon']) ?>"></i>
                                 </span>
                                 <span class="vrc-strong"><?= htmlspecialchars($vac['name']) ?></span>
+                                <?php if ($vac['recordType'] === 'historical'): ?>
+                                <span class="vrc-record-tag" title="Received before registration or at another facility">Historical</span>
+                                <?php endif; ?>
                             </div>
                         </td>
                         <td><?= htmlspecialchars($meta['label']) ?></td>
@@ -415,11 +428,16 @@ $selectedMeta = $vaccineTypeMeta[$selectedVaccineRecord['type']] ?? ['label' => 
         </div>
     </div>
 
+    <!-- Inside <main> so it comes along when assets/js/ajax-tab-nav.js
+         swaps this tab in from another Patient Profile tab. -->
+    <?php require __DIR__ . '/../includes/medical-staff/add_vaccination_modal.php'; ?>
+
 </main>
 
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-tab-nav.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/add-vaccination.js') ?>"></script>
 </body>
 </html>

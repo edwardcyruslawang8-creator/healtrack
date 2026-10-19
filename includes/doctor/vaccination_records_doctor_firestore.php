@@ -24,12 +24,7 @@ foreach ($profileTabs as &$tab) {
 unset($tab);
 
 // Vaccine category -> icon/color meta for the table's type badge.
-$vaccineTypeMeta = [
-    'covid19'     => ['label' => 'COVID-19',    'icon' => 'bi-shield-fill-check', 'bg' => '#F1E8FD', 'color' => '#8B5CF6'],
-    'tetanus'     => ['label' => 'Tetanus',     'icon' => 'bi-shield-fill-check', 'bg' => '#E8F0FE', 'color' => '#1A73E8'],
-    'influenza'   => ['label' => 'Influenza',   'icon' => 'bi-shield-fill-check', 'bg' => '#E3F6FB', 'color' => '#12A6C6'],
-    'hepatitis_b' => ['label' => 'Hepatitis B', 'icon' => 'bi-shield-fill-check', 'bg' => '#E4F7EA', 'color' => '#1E8E3E'],
-];
+$vaccineTypeMeta = hc_vaccine_type_meta(); // includes/firestore/vaccination_records.php
 
 // ---------------------------------------------------------------------
 // Real vaccination records for this patient, newest-administered first.

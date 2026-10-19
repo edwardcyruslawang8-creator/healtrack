@@ -91,6 +91,13 @@ $vrTypeMeta = [
     'measles'      => ['label' => 'Measles',               'color' => '#D93025'],
     'bcg'          => ['label' => 'BCG',                   'color' => '#B45309'],
     'polio'        => ['label' => 'Polio (OPV/IPV)',       'color' => '#0E9CA8'],
+    // Also selectable in the medical-staff "Add Vaccination Record" form
+    // (includes/firestore/vaccination_records.php's hc_vaccine_type_meta()).
+    'tetanus_diphtheria' => ['label' => 'Tetanus-Diphtheria (Td)', 'color' => '#1558B0'],
+    'pentavalent'  => ['label' => 'Pentavalent (DPT-HepB-Hib)', 'color' => '#6366F1'],
+    'hpv'          => ['label' => 'HPV',                   'color' => '#DB2777'],
+    'rabies'       => ['label' => 'Rabies',                'color' => '#8B5E34'],
+    'other'        => ['label' => 'Other',                 'color' => '#9CA3AF'],
 ];
 $vrFallbackColors = ['#9CA3AF', '#6366F1', '#EC4899', '#14B8A6'];
 function vr_type_label(string $key, array $meta): string

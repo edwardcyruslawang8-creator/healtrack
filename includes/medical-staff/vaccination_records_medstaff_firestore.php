@@ -23,12 +23,7 @@ foreach ($profileTabs as &$tab) {
 unset($tab);
 
 // Vaccine category -> icon/color meta for the table's type badge.
-$vaccineTypeMeta = [
-    'covid19'     => ['label' => 'COVID-19',    'icon' => 'bi-shield-fill-check', 'bg' => '#F1E8FD', 'color' => '#8B5CF6'],
-    'tetanus'     => ['label' => 'Tetanus',     'icon' => 'bi-shield-fill-check', 'bg' => '#E8F0FE', 'color' => '#1A73E8'],
-    'influenza'   => ['label' => 'Influenza',   'icon' => 'bi-shield-fill-check', 'bg' => '#E3F6FB', 'color' => '#12A6C6'],
-    'hepatitis_b' => ['label' => 'Hepatitis B', 'icon' => 'bi-shield-fill-check', 'bg' => '#E4F7EA', 'color' => '#1E8E3E'],
-];
+$vaccineTypeMeta = hc_vaccine_type_meta(); // includes/firestore/vaccination_records.php
 
 // ---------------------------------------------------------------------
 // Real vaccination records for this patient, newest-administered first.
@@ -58,3 +53,29 @@ $vaccinationRecords = $vaccinationRecordsPagination['items'];
 $vaccinationRecordsTotal = $vaccinationRecordsPagination['total'];
 $vaccinationRecordsTotalPages = $vaccinationRecordsPagination['totalPages'];
 $vaccinationRecordsCurrentPage = $vaccinationRecordsPagination['page'];
+
+// ---------------------------------------------------------------------
+// "+ Add Vaccination Record" modal (includes/medical-staff/add_vaccination_modal.php)
+// ---------------------------------------------------------------------
+// Vaccine Name suggestions: common vaccines (including ones a patient
+// may have received elsewhere before registering) plus every vaccine
+// currently in this system's real inventory. Still free text — a
+// vaccination card can name anything.
+require_once __DIR__ . '/../firestore/medicines.php'; // hc_get_inventory_items()
+$vaccineNameSuggestions = array_merge([
+    'BCG', 'Hepatitis B', 'Pentavalent (DPT-HepB-Hib)', 'Oral Polio Vaccine (OPV)',
+    'Inactivated Polio Vaccine (IPV)', 'Pneumococcal Conjugate Vaccine (PCV)',
+    'Pneumococcal Polysaccharide Vaccine (PPSV23)', 'Measles-Rubella (MR)',
+    'Measles-Mumps-Rubella (MMR)', 'Tetanus Toxoid (TT)', 'Tetanus-Diphtheria (Td)',
+    'Influenza', 'HPV', 'Anti-Rabies', 'COVID-19 (Pfizer-BioNTech)', 'COVID-19 (Moderna)',
+    'COVID-19 (Sinovac/CoronaVac)', 'COVID-19 (AstraZeneca)', 'COVID-19 (Janssen)',
+], array_column(hc_get_inventory_items('vaccine'), 'name'));
+$vaccineNameSuggestions = array_values(array_unique($vaccineNameSuggestions));
+sort($vaccineNameSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
+
+// Date Administered bounds: never before birth, never in the future. A
+// vaccine given at this facility also can't predate registration —
+// enforced again in api/add-vaccination-record.php. $patient only has
+// display-formatted dates ("Jan 5, 2024"), which strtotime() parses.
+$avxBirthDateRaw = $patient['birthDate'] !== '—' && strtotime($patient['birthDate']) ? date('Y-m-d', strtotime($patient['birthDate'])) : '';
+$avxRegisteredRaw = $patient['registeredOn'] !== '—' && strtotime($patient['registeredOn']) ? date('Y-m-d', strtotime($patient['registeredOn'])) : '';
