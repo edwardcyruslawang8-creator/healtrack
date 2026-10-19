@@ -42,6 +42,33 @@ if (!function_exists('hc_vaccine_type_meta')) {
     }
 }
 
+if (!function_exists('hc_resolve_vaccine_type_meta')) {
+    /**
+     * Badge meta for a stored vaccination_records "type" value. The Add
+     * Vaccination Record form's Vaccine Type field is a type-or-pick
+     * field like Vaccine Name, not a fixed dropdown, so $type may be
+     * one of hc_vaccine_type_meta()'s canonical keys (older records,
+     * or the form's auto-detect-from-name match) OR free text the
+     * staff member typed — matched case-insensitively against the
+     * known labels too, so typing "covid-19" still gets the real
+     * COVID-19 badge. Anything that matches neither still renders,
+     * as a generic badge showing the text as entered.
+     */
+    function hc_resolve_vaccine_type_meta(string $type): array
+    {
+        $all = hc_vaccine_type_meta();
+        if (isset($all[$type])) {
+            return $all[$type];
+        }
+        foreach ($all as $meta) {
+            if ($type !== '' && strcasecmp($meta['label'], $type) === 0) {
+                return $meta;
+            }
+        }
+        return ['label' => $type !== '' ? $type : 'Vaccine', 'icon' => 'bi-shield-fill-check', 'bg' => '#EEF0F3', 'color' => '#6B7280'];
+    }
+}
+
 if (!function_exists('hc_get_all_vaccination_record_docs')) {
     /**
      * @internal Every raw vaccination_records/{id} doc across ALL
@@ -50,10 +77,12 @@ if (!function_exists('hc_get_all_vaccination_record_docs')) {
      * hc_get_vaccination_records_for_patient() below which scopes to
      * one patient's own profile pages.
      *
-     * Every current caller counts doses ADMINISTERED (dashboard stats,
-     * facility analytics, Vaccine Reports), so "historical" entries —
-     * vaccines a patient received before registering / elsewhere,
-     * entered from a vaccination card — are left out unless
+     * Every current caller counts doses this facility ADMINISTERED
+     * (dashboard stats, facility analytics, Vaccine Reports), so
+     * entries this facility didn't itself administer — "historical"
+     * (received before registration) and "administered_elsewhere"
+     * (given at another facility), both entered from a vaccination
+     * card or patient-provided history — are left out unless
      * $includeHistorical is true.
      */
     function hc_get_all_vaccination_record_docs(bool $includeHistorical = false): array
@@ -65,7 +94,7 @@ if (!function_exists('hc_get_all_vaccination_record_docs')) {
             return $docs;
         }
 
-        return array_values(array_filter($docs, fn ($doc) => ($doc['fields']['recordType'] ?? '') !== 'historical'));
+        return array_values(array_filter($docs, fn ($doc) => !in_array($doc['fields']['recordType'] ?? '', ['historical', 'administered_elsewhere'], true)));
     }
 }
 
@@ -74,7 +103,7 @@ if (!function_exists('hc_get_vaccination_records_for_patient')) {
      * Every vaccination_records/{id} doc for $patientId, newest
      * administered first.
      *
-     * @return array<int, array{id: string, name: string, type: string, description: string, status: string, dateAdministered: string, dose: string, manufacturer: string, lotNumber: string, expiryDate: string, givenBy: string, facility: string, route: string, site: string, notes: string, nextDoseDue: ?string, recordType: string}>
+     * @return array<int, array{id: string, name: string, type: string, description: string, status: string, rawDateAdministered: string, dateAdministered: string, dose: string, manufacturer: string, lotNumber: string, expiryDate: string, givenBy: string, facility: string, route: string, site: string, notes: string, nextDoseDue: ?string, recordType: string}>
      */
     function hc_get_vaccination_records_for_patient(string $patientId): array
     {
@@ -94,6 +123,10 @@ if (!function_exists('hc_get_vaccination_records_for_patient')) {
                 'type' => $f['type'],
                 'description' => $f['description'],
                 'status' => $f['status'],
+                // Plain "Y-m-d" for From/To range filtering — the display-
+                // formatted 'dateAdministered' below can't be compared as
+                // a string (e.g. "Jan 5, 2024" doesn't sort against "2024-02-01").
+                'rawDateAdministered' => $f['dateAdministered'] ?? '',
                 'dateAdministered' => $f['dateAdministered'] ? date('M j, Y', strtotime($f['dateAdministered'])) : 'Not yet given',
                 'dose' => $f['dose'],
                 'manufacturer' => $f['manufacturer'],
@@ -105,10 +138,10 @@ if (!function_exists('hc_get_vaccination_records_for_patient')) {
                 'site' => $f['site'],
                 'notes' => $f['notes'],
                 'nextDoseDue' => $f['nextDoseDue'] ? date('M j, Y', strtotime($f['nextDoseDue'])) : null,
-                // "historical" (received before registration / elsewhere,
-                // entered from a vaccination card etc.) or
-                // "administered_here". Older records predate this field
-                // and were all given at the facility.
+                // "historical" (received before registration),
+                // "administered_elsewhere" (given at another facility),
+                // or "administered_here". Older records predate this
+                // field and were all given at the facility.
                 'recordType' => $f['recordType'] ?? 'administered_here',
             ];
         }, $rows);
@@ -121,7 +154,7 @@ if (!function_exists('hc_empty_vaccine_record')) {
     {
         return [
             'id' => '', 'name' => 'No vaccination records yet.', 'type' => '', 'description' => '', 'status' => 'pending',
-            'dateAdministered' => '—', 'dose' => '—', 'manufacturer' => '—', 'lotNumber' => '—', 'expiryDate' => '—',
+            'rawDateAdministered' => '', 'dateAdministered' => '—', 'dose' => '—', 'manufacturer' => '—', 'lotNumber' => '—', 'expiryDate' => '—',
             'givenBy' => '—', 'facility' => '—', 'route' => '—', 'site' => '—', 'notes' => '—', 'nextDoseDue' => null,
             'recordType' => 'administered_here',
         ];

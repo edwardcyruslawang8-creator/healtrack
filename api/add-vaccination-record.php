@@ -12,22 +12,23 @@
  * field it accesses is required there (no "??" fallback), so unknown
  * values are stored as "—" rather than omitted.
  *
- * Two kinds of entries ("recordType"):
- *   - "historical": a vaccine received before registration and/or
- *     from another hospital, clinic, or provider, entered from a
- *     vaccination card, old record, or patient-provided history.
- *     Administered By / Facility / Manufacturer are taken as entered
- *     (blank = unknown) — the signed-in staff member is NEVER assumed
- *     to be the one who gave it.
+ * Three kinds of entries ("recordType"):
+ *   - "historical": a vaccine received before registration, entered
+ *     from a vaccination card, old record, or patient-provided history.
+ *   - "administered_elsewhere": a vaccine given at another hospital,
+ *     clinic, or provider (not this facility), at any time.
+ *     Administered By / Facility are taken as entered (blank =
+ *     unknown) for both of the above — the signed-in staff member is
+ *     NEVER assumed to be the one who gave it.
  *   - "administered_here": given at the staff member's own facility
  *     on or after the patient's registration date.
  * dateAdministered is always the real administration date the user
  * entered; when the entry itself was made is kept separately in
  * recordedOn/recordedAt/recordedBy.
  *
- * The legacy lotNumber/expiryDate/route/site fields aren't collected
- * by this form; they're stored as "—"/null so existing readers and
- * the details page still work.
+ * The legacy lotNumber/expiryDate/route/site fields, and manufacturer,
+ * aren't collected by this form; they're stored as "—"/null so
+ * existing readers and the details page still work.
  * =====================================================================
  */
 
@@ -37,7 +38,6 @@ require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/shared/document_storage.php'; // hc_user_can_access_patient_document()
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
-require_once __DIR__ . '/../includes/firestore/vaccination_records.php'; // hc_vaccine_type_meta()
 
 header('Content-Type: application/json');
 
@@ -82,14 +82,11 @@ $facility = $text('facility', 160);
 $notes = $text('notes', 500);
 $today = date('Y-m-d');
 
-if (!in_array($recordType, ['historical', 'administered_here'], true)) {
+if (!in_array($recordType, ['historical', 'administered_elsewhere', 'administered_here'], true)) {
     avx_fail(422, 'Please choose a record type.');
 }
-if ($patientId === '' || $name === '' || $dose === '' || $dateRaw === '') {
-    avx_fail(422, 'Please fill in the vaccine name, dose / series, and date administered.');
-}
-if (!array_key_exists($type, hc_vaccine_type_meta())) {
-    avx_fail(422, 'Please select the vaccine type.');
+if ($patientId === '' || $name === '' || $type === '' || $dose === '' || $dateRaw === '') {
+    avx_fail(422, 'Please fill in the vaccine name, type, dose / series, and date administered.');
 }
 if ($dateAdministered === null) {
     avx_fail(422, 'Please enter a valid date administered.');
@@ -172,7 +169,11 @@ if ($newId === null) {
     avx_fail(500, 'Could not save this vaccination record. Please try again.');
 }
 
-$kind = $recordType === 'historical' ? 'historical vaccination' : 'vaccination';
+$kind = match ($recordType) {
+    'historical' => 'historical vaccination',
+    'administered_elsewhere' => 'vaccination (administered elsewhere)',
+    default => 'vaccination',
+};
 $when = date('M j, Y', strtotime($dateAdministered));
 write_audit_log('created', 'Patient Management', 'Added a ' . $kind . ' record (' . $name . ', ' . $dose . ', given ' . $when . ') for ' . ($patient['name'] ?? 'a patient') . '.');
 hc_record_patient_history($patientId, 'vaccination_record', 'added', 'Added ' . $kind . ' "' . $name . '" (' . $dose . ', given ' . $when . ').');

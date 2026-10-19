@@ -54,7 +54,7 @@ $doctorNavItems = [
     ['icon' => 'bi-gear-fill',           'label' => 'Profile / Settings', 'href' => 'profile_settings.php'],
 ];
 
-$selectedMeta = $vaccineTypeMeta[$selectedVaccineRecord['type']] ?? ['label' => 'Vaccine', 'icon' => 'bi-shield-fill-check', 'bg' => '#EEF0F3', 'color' => '#6B7280'];
+$selectedMeta = hc_resolve_vaccine_type_meta($selectedVaccineRecord['type']);
 $selectedStatus = $vaccineStatusMeta[$selectedVaccineRecord['status']] ?? $vaccineStatusMeta['completed'];
 ?>
 <!DOCTYPE html>
@@ -243,7 +243,6 @@ $selectedStatus = $vaccineStatusMeta[$selectedVaccineRecord['status']] ?? $vacci
         <div class="ppf-info-col">
             <div class="ppf-info-item"><span class="ppf-info-label">Registered On</span><span class="ppf-info-value"><?= htmlspecialchars($patient['registeredOn']) ?></span></div>
             <div class="ppf-info-item"><span class="ppf-info-label">Last Visit</span><span class="ppf-info-value"><?= htmlspecialchars($patient['lastVisit']) ?></span></div>
-            <div class="ppf-info-item"><span class="ppf-info-label">Primary Physician</span><span class="ppf-info-value"><?= htmlspecialchars($patient['primaryPhysician']) ?></span></div>
         </div>
     </div>
 
@@ -308,7 +307,7 @@ $selectedStatus = $vaccineStatusMeta[$selectedVaccineRecord['status']] ?? $vacci
                         <td colspan="7" class="adm-table-empty">No vaccination records yet.</td>
                     </tr>
                     <?php endif; ?>
-                    <?php foreach ($vaccinationRecords as $vac): $meta = $vaccineTypeMeta[$vac['type']] ?? ['label' => ucfirst($vac['type'])]; $status = $vaccineStatusMeta[$vac['status']] ?? $vaccineStatusMeta['completed']; ?>
+                    <?php foreach ($vaccinationRecords as $vac): $meta = hc_resolve_vaccine_type_meta($vac['type']); $status = $vaccineStatusMeta[$vac['status']] ?? $vaccineStatusMeta['completed']; ?>
                     <tr>
                         <td class="vrd-strong"><?= htmlspecialchars($vac['name']) ?></td>
                         <td><?= htmlspecialchars($meta['label']) ?></td>

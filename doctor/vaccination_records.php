@@ -8,7 +8,7 @@
  * reached by clicking that tab (or the "View All" / "Go to Vaccination
  * Records" links on the Overview tab's Vaccination History card) — as
  * its own page rather than an in-page tab pane, since it needs its own
- * table + expandable details panel. Reuses the exact same
+ * table. Reuses the exact same
  * sidebar/topbar/profile-header/tab-strip shell as patient_profile.php,
  * patient_laboratory_xray.php, and medical_records.php (280px dark-red
  * gradient sidebar, "adm-"/"ppf-" prefixed atoms, "doc-" nav badge/
@@ -20,12 +20,10 @@
  *
  * CONNECTED to real Firestore data — see
  * includes/doctor/vaccination_records_doctor_firestore.php's header
- * comment. The Filter button still isn't wired up. Each row's View
+ * comment. The From/To date range above the table is a real filter
+ * (vrcFrom/vrcTo). Each row's View
  * button now links to vaccination_record_details.php with a real
- * &recordId=, so that page shows the actual clicked record. The
- * "Vaccine Record Details" panel below the table on this page is a
- * separate, always-expandable summary of the most recently administered
- * record.
+ * &recordId=, so that page shows the actual clicked record.
  * =====================================================================
  */
 session_start();
@@ -42,7 +40,7 @@ require_once __DIR__ . '/../includes/doctor/vaccination_records_doctor_firestore
 // $doctorProfile, $dashboardDateLabel, $facilityOptions, $patient, $profileTabs,
 // $vaccineTypeMeta, $vaccinationRecords, $vaccinationRecordsTotal,
 // $vaccinationRecordsPerPage, $vaccinationRecordsCurrentPage,
-// $vaccinationRecordsTotalPages, $selectedVaccineRecord
+// $vaccinationRecordsTotalPages
 
 // Sidebar nav — same Doctor nav list as every other doctor/*.php page.
 $doctorNavItems = [
@@ -62,8 +60,6 @@ $doctorNavItems = [
     ['icon' => 'bi-clipboard-data-fill', 'label' => 'Audit Logs', 'href' => 'audit_logs.php'],
     ['icon' => 'bi-gear-fill',           'label' => 'Profile / Settings', 'href' => 'profile_settings.php'],
 ];
-
-$selectedMeta = $vaccineTypeMeta[$selectedVaccineRecord['type']] ?? ['label' => 'Vaccine', 'icon' => 'bi-shield-fill-check', 'bg' => '#EEF0F3', 'color' => '#6B7280'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -89,8 +85,10 @@ $selectedMeta = $vaccineTypeMeta[$selectedVaccineRecord['type']] ?? ['label' => 
 <link rel="stylesheet" href="<?= asset_url('/assets/css/doctor_dashboard.css') ?>">
 <!-- Patient Profile styles, reused here for the breadcrumb + profile header card -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_profile.css') ?>">
-<!-- Vaccination Records page styles (table, details panel) — shared verbatim with every other role's version -->
+<!-- Vaccination Records page styles (table) — shared verbatim with every other role's version -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/vaccination_records.css') ?>">
+<!-- .adm-view-link-btn (Actions column's "View Details" button) -->
+<link rel="stylesheet" href="<?= asset_url('/assets/css/view_details_modal.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -249,7 +247,6 @@ $selectedMeta = $vaccineTypeMeta[$selectedVaccineRecord['type']] ?? ['label' => 
         <div class="ppf-info-col">
             <div class="ppf-info-item"><span class="ppf-info-label">Registered On</span><span class="ppf-info-value"><?= htmlspecialchars($patient['registeredOn']) ?></span></div>
             <div class="ppf-info-item"><span class="ppf-info-label">Last Visit</span><span class="ppf-info-value"><?= htmlspecialchars($patient['lastVisit']) ?></span></div>
-            <div class="ppf-info-item"><span class="ppf-info-label">Primary Physician</span><span class="ppf-info-value"><?= htmlspecialchars($patient['primaryPhysician']) ?></span></div>
         </div>
     </div>
 
@@ -300,15 +297,18 @@ $selectedMeta = $vaccineTypeMeta[$selectedVaccineRecord['type']] ?? ['label' => 
             <h2>Vaccination History</h2>
             <p>View and manage vaccination records of the patient.</p>
         </div>
-        <div class="dropdown">
-            <button class="vrc-btn-filter dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-funnel"></i> <?= htmlspecialchars($vrcDateRangeLabel) ?></button>
-            <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['daterange' => 'all', 'page' => 1])) ?>">All Time</a></li>
-                <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['daterange' => 'today', 'page' => 1])) ?>">Today</a></li>
-                <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['daterange' => 'this_week', 'page' => 1])) ?>">This Week</a></li>
-                <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['daterange' => 'this_month', 'page' => 1])) ?>">This Month</a></li>
-            </ul>
-        </div>
+        <!-- Real From/To date range — any span, not a preset Today/This
+             Week/This Month bucket. Always visible, not a dropdown.
+             Auto-submits on change. -->
+        <form class="vrc-daterange" method="get" action="vaccination_records.php">
+            <input type="hidden" name="id" value="<?= htmlspecialchars($patient['id']) ?>">
+            <i class="bi bi-calendar3"></i>
+            <label for="vrcFrom">From</label>
+            <input type="date" id="vrcFrom" name="vrcFrom" value="<?= htmlspecialchars($vrcDateFrom) ?>" onchange="this.form.submit()">
+            <span class="vrc-dot"></span>
+            <label for="vrcTo">To</label>
+            <input type="date" id="vrcTo" name="vrcTo" value="<?= htmlspecialchars($vrcDateTo) ?>" onchange="this.form.submit()">
+        </form>
     </div>
 
     <!-- ============ VACCINATION HISTORY TABLE ============ -->
@@ -333,7 +333,7 @@ $selectedMeta = $vaccineTypeMeta[$selectedVaccineRecord['type']] ?? ['label' => 
                         <td colspan="8" class="adm-table-empty">No vaccination records yet.</td>
                     </tr>
                     <?php endif; ?>
-                    <?php foreach ($vaccinationRecords as $vac): $meta = $vaccineTypeMeta[$vac['type']] ?? ['label' => ucfirst($vac['type']), 'icon' => 'bi-shield-fill-check', 'bg' => '#EEF0F3', 'color' => '#6B7280']; ?>
+                    <?php foreach ($vaccinationRecords as $vac): $meta = hc_resolve_vaccine_type_meta($vac['type']); ?>
                     <tr>
                         <td>
                             <div class="vrc-name-cell">
@@ -356,7 +356,7 @@ $selectedMeta = $vaccineTypeMeta[$selectedVaccineRecord['type']] ?? ['label' => 
                         <td class="vrc-next-dose"><?= $vac['nextDoseDue'] ? htmlspecialchars($vac['nextDoseDue']) : '—' ?></td>
                         <td>
                             <div class="adm-action-btns">
-                                <a href="vaccination_record_details.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($vac['id']) ?>" class="adm-action-btn view" aria-label="View"><i class="bi bi-eye"></i></a>
+                                <a href="vaccination_record_details.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($vac['id']) ?>" class="adm-view-link-btn">View Details</a>
                             </div>
                         </td>
                     </tr>
@@ -371,39 +371,6 @@ $selectedMeta = $vaccineTypeMeta[$selectedVaccineRecord['type']] ?? ['label' => 
         </div>
     </div>
 
-    <!-- ============ VACCINE RECORD DETAILS (expandable) ============ -->
-    <div class="adm-card vrc-details-card" id="vrcDetailsPanel">
-        <button type="button" class="vrc-details-toggle" data-bs-toggle="collapse" data-bs-target="#vrcDetailsBody" aria-expanded="true" aria-controls="vrcDetailsBody">
-            <span class="vrc-details-title">
-                <span class="vrc-type-icon" style="background:<?= htmlspecialchars($selectedMeta['bg']) ?>; color:<?= htmlspecialchars($selectedMeta['color']) ?>;">
-                    <i class="bi <?= htmlspecialchars($selectedMeta['icon']) ?>"></i>
-                </span>
-                <h3>Vaccine Record Details</h3>
-            </span>
-            <i class="bi bi-chevron-up vrc-chevron"></i>
-        </button>
-
-        <div class="collapse show" id="vrcDetailsBody">
-            <div class="vrc-details-grid">
-                <div class="vrc-details-col">
-                    <div class="vrc-detail-item"><span class="vrc-detail-label">Vaccine Name</span><span class="vrc-detail-value"><?= htmlspecialchars($selectedVaccineRecord['name']) ?></span></div>
-                    <div class="vrc-detail-item"><span class="vrc-detail-label">Vaccine Type</span><span class="vrc-detail-value"><?= htmlspecialchars($selectedMeta['label']) ?></span></div>
-                    <div class="vrc-detail-item"><span class="vrc-detail-label">Date Administered</span><span class="vrc-detail-value"><?= htmlspecialchars($selectedVaccineRecord['dateAdministered']) ?></span></div>
-                    <div class="vrc-detail-item"><span class="vrc-detail-label">Dose / Series</span><span class="vrc-detail-value"><?= htmlspecialchars($selectedVaccineRecord['dose']) ?></span></div>
-                    <div class="vrc-detail-item"><span class="vrc-detail-label">Manufacturer</span><span class="vrc-detail-value"><?= htmlspecialchars($selectedVaccineRecord['manufacturer']) ?></span></div>
-                    <div class="vrc-detail-item"><span class="vrc-detail-label">Lot Number</span><span class="vrc-detail-value"><?= htmlspecialchars($selectedVaccineRecord['lotNumber']) ?></span></div>
-                    <div class="vrc-detail-item"><span class="vrc-detail-label">Expiry Date</span><span class="vrc-detail-value"><?= htmlspecialchars($selectedVaccineRecord['expiryDate']) ?></span></div>
-                </div>
-                <div class="vrc-details-col">
-                    <div class="vrc-detail-item"><span class="vrc-detail-label">Given By</span><span class="vrc-detail-value"><?= htmlspecialchars($selectedVaccineRecord['givenBy']) ?></span></div>
-                    <div class="vrc-detail-item"><span class="vrc-detail-label">Facility</span><span class="vrc-detail-value"><?= htmlspecialchars($selectedVaccineRecord['facility']) ?></span></div>
-                    <div class="vrc-detail-item"><span class="vrc-detail-label">Route</span><span class="vrc-detail-value"><?= htmlspecialchars($selectedVaccineRecord['route']) ?></span></div>
-                    <div class="vrc-detail-item"><span class="vrc-detail-label">Site</span><span class="vrc-detail-value"><?= htmlspecialchars($selectedVaccineRecord['site']) ?></span></div>
-                    <div class="vrc-detail-item"><span class="vrc-detail-label">Notes</span><span class="vrc-detail-value"><?= htmlspecialchars($selectedVaccineRecord['notes']) ?></span></div>
-                </div>
-            </div>
-        </div>
-    </div>
 
 </main>
 

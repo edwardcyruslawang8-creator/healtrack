@@ -7,9 +7,12 @@
    new record appears in the Vaccination History table.
 
    Record Type drives the rest of the form:
-     - Historical: nothing auto-filled — Administered By, Administering
-       Facility, and Manufacturer may stay blank when unknown; the date
-       may be anywhere from the patient's birth date to today.
+     - Historical / Administered outside the facility: nothing
+       auto-filled — Administered By and Administering Facility may
+       stay blank when unknown; the date may be anywhere from the
+       patient's birth date to today. These two differ only in the
+       stored recordType value (before-registration paper record vs.
+       a vaccine given at another provider), not in form behavior.
      - Administered here: Administering Facility is locked to the staff
        member's facility, Administered By is pre-filled with their name
        (editable, required), and the date can't predate registration.
@@ -30,22 +33,26 @@
     const el = function (id) { return document.getElementById(id); };
     const val = function (id) { return el(id).value.trim(); };
 
-    // Vaccine name -> type, so picking/typing a known name pre-selects
-    // Vaccine Type (only while the user hasn't chosen one themselves).
+    // Vaccine name -> type, so picking/typing a known name pre-fills
+    // Vaccine Type (only while the user hasn't typed/picked one
+    // themselves). Vaccine Type is free text now (see below), so
+    // these fill in the exact label text from
+    // includes/firestore/vaccination_records.php's hc_vaccine_type_meta()
+    // rather than its internal key — keep the two in sync.
     // Order matters: Td and Pentavalent before plain Tetanus/Hep B.
     const TYPE_BY_NAME = [
-        [/pentavalent|dpt-hepb|hib/i, 'pentavalent'],
-        [/tetanus[- ]diphtheria|\btd\b/i, 'tetanus_diphtheria'],
-        [/tetanus|\btt\b/i, 'tetanus'],
-        [/covid|pfizer|moderna|sinovac|coronavac|astrazeneca|janssen/i, 'covid19'],
-        [/influenza|\bflu\b/i, 'influenza'],
-        [/hepatitis b|hep ?b/i, 'hepatitis_b'],
-        [/polio|\bopv\b|\bipv\b/i, 'polio'],
-        [/pneumo|\bpcv|\bppsv/i, 'pneumococcal'],
-        [/measles|rubella|\bmmr\b|\bmr\b/i, 'measles'],
-        [/\bbcg\b/i, 'bcg'],
-        [/\bhpv\b|papilloma/i, 'hpv'],
-        [/rabies/i, 'rabies'],
+        [/pentavalent|dpt-hepb|hib/i, 'Pentavalent (DPT-HepB-Hib)'],
+        [/tetanus[- ]diphtheria|\btd\b/i, 'Tetanus-Diphtheria (Td)'],
+        [/tetanus|\btt\b/i, 'Tetanus'],
+        [/covid|pfizer|moderna|sinovac|coronavac|astrazeneca|janssen/i, 'COVID-19'],
+        [/influenza|\bflu\b/i, 'Influenza'],
+        [/hepatitis b|hep ?b/i, 'Hepatitis B'],
+        [/polio|\bopv\b|\bipv\b/i, 'Polio (OPV/IPV)'],
+        [/pneumo|\bpcv|\bppsv/i, 'Pneumococcal'],
+        [/measles|rubella|\bmmr\b|\bmr\b/i, 'Measles (MR/MMR)'],
+        [/\bbcg\b/i, 'BCG'],
+        [/\bhpv\b|papilloma/i, 'HPV'],
+        [/rabies/i, 'Rabies'],
     ];
 
     function modalData() { return el('addVaccinationModal').dataset; }
@@ -89,7 +96,7 @@
             el('avxDateHelp').textContent = 'The actual date the vaccine was given (on or after registration).';
         } else {
             // Undo only what "here" auto-filled — never assign the current
-            // staff member/facility to a historical vaccine.
+            // staff member/facility to a historical or outside-facility vaccine.
             if (facility.readOnly) facility.value = '';
             facility.readOnly = false;
             if (givenBy.value.trim() === d.staffName) givenBy.value = '';
@@ -158,11 +165,18 @@
     });
 
     document.addEventListener('input', function (e) {
+        if (e.target.id === 'avxType') {
+            // Typing directly into Vaccine Type is itself a pick — stop
+            // Vaccine Name's auto-fill from overwriting it, even before
+            // the field is blurred (change fires too late for that).
+            e.target.dataset.userPicked = '1';
+            return;
+        }
         if (e.target.id !== 'avxName') return;
-        const typeSelect = el('avxType');
-        if (typeSelect.dataset.userPicked) return;
+        const typeInput = el('avxType');
+        if (typeInput.dataset.userPicked) return;
         const match = TYPE_BY_NAME.find(function (pair) { return pair[0].test(e.target.value); });
-        if (match) typeSelect.value = match[1];
+        if (match) typeInput.value = match[1];
     });
 
     document.addEventListener('submit', function (e) {
@@ -188,7 +202,6 @@
             dateAdministered: el('avxDateAdministered').value,
             dose: val('avxDose'),
             nextDoseDue: el('avxNextDoseDue').value,
-            manufacturer: val('avxManufacturer'),
             givenBy: val('avxGivenBy'),
             facility: val('avxFacility'),
             notes: val('avxNotes'),

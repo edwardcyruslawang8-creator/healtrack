@@ -16,7 +16,7 @@
 require_once __DIR__ . '/patient_profile_doctor_firestore.php';
 // $doctorProfile, $dashboardDateLabel, $facilityOptions, $patient, $profileTabs
 require_once __DIR__ . '/../firestore/vaccination_records.php';
-require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav(), hc_matches_date_range_key()
+require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav()
 
 foreach ($profileTabs as &$tab) {
     $tab['active'] = ($tab['key'] === 'vaccination');
@@ -31,22 +31,23 @@ $vaccineTypeMeta = hc_vaccine_type_meta(); // includes/firestore/vaccination_rec
 // ---------------------------------------------------------------------
 $allVaccinationRecords = hc_get_vaccination_records_for_patient($patient['id']);
 
-// The record shown in the "Vaccine Record Details" panel below the
-// table — the most recent one, or an empty-state placeholder shape if
-// this patient has no vaccination records at all. Resolved from the
-// UNFILTERED list, so this stays the same regardless of the date
-// filter below (a real card about this patient's latest record, not
-// about whatever the table happens to be currently showing).
-$selectedVaccineRecord = $allVaccinationRecords[0] ?? hc_empty_vaccine_record();
-
 // ---------------------------------------------------------------------
-// Date range filter (Today / This Week / This Month / All Time) — the
-// "Filter" button above the table, real now (used to be unwired).
+// Date range filter — a real From/To range (any span, not a preset
+// Today/This Week/This Month bucket), same pattern as the History
+// tab's hisFrom/hisTo. Either end can be left blank for an open-ended
+// range.
 // ---------------------------------------------------------------------
-$vrcDateRangeLabels = ['all' => 'All Time', 'today' => 'Today', 'this_week' => 'This Week', 'this_month' => 'This Month'];
-$vrcDateRangeFilter = array_key_exists($_GET['daterange'] ?? '', $vrcDateRangeLabels) ? $_GET['daterange'] : 'all';
-$vrcDateRangeLabel = $vrcDateRangeLabels[$vrcDateRangeFilter];
-$filteredVaccinationRecords = array_values(array_filter($allVaccinationRecords, fn ($v) => hc_matches_date_range_key($v['dateAdministered'] ?? '', $vrcDateRangeFilter)));
+$vrcDateFrom = trim($_GET['vrcFrom'] ?? '');
+$vrcDateTo = trim($_GET['vrcTo'] ?? '');
+$filteredVaccinationRecords = array_values(array_filter($allVaccinationRecords, function ($v) use ($vrcDateFrom, $vrcDateTo) {
+    if ($vrcDateFrom !== '' && $v['rawDateAdministered'] < $vrcDateFrom) {
+        return false;
+    }
+    if ($vrcDateTo !== '' && $v['rawDateAdministered'] > $vrcDateTo) {
+        return false;
+    }
+    return true;
+}));
 
 $vaccinationRecordsPerPage = 10;
 $vaccinationRecordsPagination = hc_paginate($filteredVaccinationRecords, 'page', $vaccinationRecordsPerPage);

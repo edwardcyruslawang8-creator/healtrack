@@ -6,19 +6,36 @@
      assets/js/add-vaccination.js POSTs it to
      api/add-vaccination-record.php, then reloads the page.
 
-     Records BOTH kinds of entries, chosen by Record Type:
-       - Historical — received before registration and/or at another
-         hospital/clinic/provider, entered from a vaccination card,
-         old medical record, or patient-provided history. Nothing is
-         auto-filled: Administered By / Administering Facility /
-         Manufacturer may stay blank when unknown, and the date may
-         be any day from birth to today.
+     Records THREE kinds of entries, chosen by Record Type:
+       - Historical — received before registration, entered from a
+         vaccination card, old medical record, or patient-provided
+         history. Nothing is auto-filled: Administered By /
+         Administering Facility may stay blank when unknown, and the
+         date may be any day from birth to today.
+       - Administered outside the facility — given at another
+         hospital, clinic, or provider (not this facility), at any
+         time. Nothing is auto-filled either, same as Historical, but
+         stored as its own recordType for reporting.
        - Administered at this facility — Administering Facility is
          locked to the staff member's own facility and Administered By
          is pre-filled with their name (still editable), and the date
          can't predate the patient's registration.
      The date the entry was made is stored separately server-side
      (recordedOn/recordedBy), never in place of Date Administered.
+     Patient Name and Manufacturer are intentionally not collected
+     here: the patient is already shown on the profile this modal
+     opens from, and manufacturer is rarely known at entry time — it
+     can still be added later via the record's edit flow if needed.
+
+     Vaccine Type is type-or-pick like Vaccine Name, not a fixed
+     dropdown — the datalist suggests hc_vaccine_type_meta()'s known
+     categories (assets/js/add-vaccination.js auto-fills it from the
+     Vaccine Name typed, same as before), but any free text is
+     accepted for vaccines outside that list. Rendered back with
+     includes/firestore/vaccination_records.php's
+     hc_resolve_vaccine_type_meta(), which still matches a known
+     category by label (case-insensitively) if the key isn't an
+     exact match, and falls back to a generic badge otherwise.
      ============================================================= -->
 <div class="modal fade adm-modal" id="addVaccinationModal" tabindex="-1" aria-labelledby="addVaccinationModalLabel" aria-hidden="true"
      data-staff-name="<?= htmlspecialchars($staffProfile['name']) ?>"
@@ -38,16 +55,16 @@
           <div id="addVaccinationError" class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
 
           <div class="row">
-            <div class="col-md-6 mb-3">
-              <label for="avxPatientName" class="form-label">Patient Name</label>
-              <input type="text" class="form-control" id="avxPatientName" value="<?= htmlspecialchars($patient['name']) ?>" readonly tabindex="-1">
-            </div>
-            <div class="col-md-6 mb-3">
+            <div class="col-12 mb-3">
               <span class="form-label d-block" id="avxRecordTypeLabel">Record Type <span class="text-danger">*</span></span>
               <div role="radiogroup" aria-labelledby="avxRecordTypeLabel">
                 <div class="form-check">
                   <input class="form-check-input" type="radio" name="avxRecordType" id="avxRecordTypeHistorical" value="historical" required>
                   <label class="form-check-label" for="avxRecordTypeHistorical">Historical Vaccination <span class="text-muted">(received before registration)</span></label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="avxRecordType" id="avxRecordTypeElsewhere" value="administered_elsewhere" required>
+                  <label class="form-check-label" for="avxRecordTypeElsewhere">Administered Outside the Facility <span class="text-muted">(at another hospital, clinic, or provider)</span></label>
                 </div>
                 <div class="form-check">
                   <input class="form-check-input" type="radio" name="avxRecordType" id="avxRecordTypeHere" value="administered_here" required>
@@ -71,13 +88,13 @@
             </div>
             <div class="col-md-5 mb-3">
               <label for="avxType" class="form-label">Vaccine Type <span class="text-danger">*</span></label>
-              <select class="form-select" id="avxType" required>
-                <option value="" selected disabled>Select vaccine type</option>
-                <?php foreach ($vaccineTypeMeta as $typeKey => $typeMeta): ?>
-                <option value="<?= htmlspecialchars($typeKey) ?>"><?= htmlspecialchars($typeMeta['label']) ?></option>
+              <input type="text" class="form-control" id="avxType" list="avxTypeOptions" placeholder="Type or pick a type" maxlength="80" autocomplete="off" required>
+              <datalist id="avxTypeOptions">
+                <?php foreach ($vaccineTypeMeta as $typeMeta): ?>
+                <option value="<?= htmlspecialchars($typeMeta['label']) ?>"></option>
                 <?php endforeach; ?>
-              </select>
-              <div class="invalid-feedback">Please select the vaccine type.</div>
+              </datalist>
+              <div class="invalid-feedback">Please enter the vaccine type.</div>
             </div>
           </div>
 
@@ -109,16 +126,12 @@
           </div>
 
           <div class="row">
-            <div class="col-md-4 mb-3">
-              <label for="avxManufacturer" class="form-label">Manufacturer <span class="text-muted fw-normal">(If known)</span></label>
-              <input type="text" class="form-control" id="avxManufacturer" placeholder="e.g. Sanofi Pasteur" maxlength="120">
-            </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-md-6 mb-3">
               <label for="avxGivenBy" class="form-label">Administered By <span class="text-muted fw-normal" id="avxGivenByHint">(If known)</span></label>
               <input type="text" class="form-control" id="avxGivenBy" placeholder="e.g. Nurse Maria Santos" maxlength="120">
               <div class="invalid-feedback">Please enter who administered the vaccine.</div>
             </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-md-6 mb-3">
               <label for="avxFacility" class="form-label">Administering Facility <span class="text-muted fw-normal" id="avxFacilityHint">(If known)</span></label>
               <input type="text" class="form-control" id="avxFacility" placeholder="e.g. Ospital ng Maynila" maxlength="160">
             </div>

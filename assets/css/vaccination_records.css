@@ -4,12 +4,23 @@
    Loaded alongside assets/css/admin-dashboard.css (shared shell:
    .adm-card/.adm-table) and assets/css/patient_profile.css
    (breadcrumb + profile header card, reused verbatim here).
-   Everything here is specific to this page — the section header,
-   vaccination table, and expandable details panel — and is
-   "vrc-" prefixed (Vaccination ReCords).
+   Everything here is specific to this page — the section header
+   and vaccination table — and is "vrc-" prefixed (Vaccination
+   ReCords). Each row's "View Details" action is .adm-view-link-btn
+   (assets/css/view_details_modal.css), the app's standard themed
+   link-button for this exact pattern elsewhere.
    ============================================================= */
 
-/* -- Section header (title + subtitle + Filter button) -- */
+/* "Add Vaccination Record" (medical-staff only) needs room for its
+   3-option Record Type group and 2-3 column field rows — override
+   .adm-modal's shared 480px cap (admin-dashboard.css, meant for
+   short single-column forms) which was otherwise silently beating
+   the modal-lg class already on this dialog and squeezing every
+   row's labels into wrapping, unevenly-aligned lines. Same override
+   pattern as assets/css/add_patient_modal.css's wider wizard modal. */
+#addVaccinationModal .modal-dialog{ max-width: 720px; }
+
+/* -- Section header (title + subtitle + From/To date range) -- */
 .vrc-section-header{
   display: flex;
   align-items: flex-start;
@@ -21,21 +32,39 @@
 .vrc-section-header h2{ font-size: 19px; font-weight: 800; color: var(--adm-text); margin: 0 0 4px; }
 .vrc-section-header p{ font-size: 13px; color: var(--adm-text-muted); margin: 0; }
 
-.vrc-btn-filter{
+/* Real From/To date range (any span, not a preset bucket) — always
+   visible, not tucked behind a dropdown. Same look as Audit Logs'
+   .aud-daterange (assets/css/audit_logs.css) and the Patient Profile
+   History tab's .his-daterange (assets/css/history.css). */
+.vrc-daterange{
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: var(--adm-card);
   border: 1px solid var(--adm-border);
   border-radius: 10px;
-  padding: 10px 18px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--adm-text);
-  white-space: nowrap;
+  padding: 10px 16px;
   box-shadow: var(--adm-shadow);
 }
-.vrc-btn-filter:hover{ background: var(--adm-hover-bg); }
+.vrc-daterange i{ color: var(--adm-text-soft); font-size: 13px; }
+.vrc-daterange label{
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--adm-text-muted);
+  margin: 0;
+  cursor: pointer;
+}
+.vrc-daterange input[type="date"]{
+  border: none;
+  background: transparent;
+  color: var(--adm-text);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 0;
+  width: 116px;
+}
+.vrc-daterange input[type="date"]:focus{ outline: none; }
+.vrc-dot{ width: 4px; height: 4px; border-radius: 50%; background: var(--adm-text-soft); display: inline-block; flex-shrink: 0; }
 
 /* "+ Add Vaccination" (medical-staff/vaccination_records.php only) —
    same look as consultations.css's "+ Set Consultation" (.cns-btn-set). */
@@ -92,46 +121,12 @@
 .vrc-provider-name{ font-size: 13px; font-weight: 600; color: var(--adm-text); }
 .vrc-provider-facility{ font-size: 12px; color: #1A73E8; }
 
-/* -- Vaccine Record Details (expandable panel) -- */
-.vrc-details-card{ padding: 0; overflow: hidden; }
-
-.vrc-details-toggle{
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  background: none;
-  border: none;
-  padding: 22px 26px;
-  text-align: left;
-}
-.vrc-details-title{ display: flex; align-items: center; gap: 12px; }
-.vrc-details-title h3{ font-size: 16px; font-weight: 700; color: var(--adm-text); margin: 0; }
-
-.vrc-chevron{ font-size: 16px; color: var(--adm-text-muted); transition: transform .2s ease; }
-.vrc-details-toggle[aria-expanded="false"] .vrc-chevron{ transform: rotate(180deg); }
-
-.vrc-details-grid{
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 28px;
-  padding: 0 26px 26px;
-}
-.vrc-details-col{ display: flex; flex-direction: column; gap: 18px; }
-.vrc-detail-item{ display: flex; flex-direction: column; gap: 4px; }
-.vrc-detail-label{ font-size: 12.5px; color: var(--adm-text-muted); font-weight: 500; }
-.vrc-detail-value{ font-size: 14px; color: var(--adm-text); font-weight: 700; }
-
 /* =============================================================
    RESPONSIVE
    ============================================================= */
 @media (max-width: 767.98px){
   .vrc-section-header{ flex-direction: column; align-items: stretch; }
-  .vrc-btn-filter{ justify-content: center; }
+  .vrc-daterange{ justify-content: center; }
   .vrc-section-actions{ flex-direction: column; align-items: stretch; }
   .vrc-btn-add{ justify-content: center; }
-  .vrc-details-grid{ grid-template-columns: 1fr; gap: 18px; }
-  .vrc-details-toggle{ padding: 18px 18px; }
-  .vrc-details-grid{ padding: 0 18px 18px; }
 }
