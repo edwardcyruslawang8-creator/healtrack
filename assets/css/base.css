@@ -214,6 +214,32 @@ button{ font-family: inherit; }
   padding-bottom: 140px;
 }
 
+/* -- Soft page-transition (same pattern admin-dashboard.css's own
+   .adm-page-leaving/@keyframes admPageFadeIn already uses for every
+   admin/subadmin/doctor/pharmacist/etc. page) — the real click still
+   performs a genuine full page navigation (assets/js/base.js's own
+   sidebar-nav click handler just delays it slightly), this only
+   softens how that navigation FEELS: the content fades out first
+   instead of the browser cutting straight to a blank page, and the new
+   page's content fades in on load instead of snapping in instantly.
+   .sidebar itself is never touched by either animation — fixed-
+   position and identical on every page, so it reads as a stable frame
+   around the content the whole time rather than something that itself
+   "navigates" and briefly disappears. -- */
+@keyframes pageFadeIn{
+  from{ opacity: 0; }
+  to{ opacity: 1; }
+}
+.main-content{ animation: pageFadeIn .2s ease-in-out; }
+.main-content.page-leaving{
+  opacity: 0;
+  transition: opacity .14s ease-in-out;
+}
+@media (prefers-reduced-motion: reduce){
+  .main-content{ animation: none; }
+  .main-content.page-leaving{ transition: none; }
+}
+
 /* =============================================================
    PAGE TITLE BLOCK (search.php, medicine.php, gis.php)
    ============================================================= */

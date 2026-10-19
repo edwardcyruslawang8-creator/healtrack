@@ -30,13 +30,18 @@ $currentPage = basename($_SERVER['SCRIPT_NAME']);
         <?php foreach ($navItems as $item):
             // Anchor links (e.g. index.php#about-us) point at a section on a
             // page rather than a distinct page of their own, so they never
-            // get the "active" highlight — only real pages do.
+            // get the "active" highlight — only real pages do. Also tagged
+            // "nav-link-anchor" so assets/js/base.js can force a real full
+            // page reload when clicked while already on that same page
+            // (a same-document hash change never reloads on its own,
+            // which otherwise reads as "this nav item does nothing" next
+            // to every other item, which performs a real navigation).
             $isAnchorLink = (strpos($item['href'], '#') !== false);
             $isActive = !$isAnchorLink && (basename($item['href']) === $currentPage);
         ?>
         <li>
             <a href="<?= htmlspecialchars($item['href']) ?>"
-               class="nav-link <?= $isActive ? 'active' : '' ?>">
+               class="nav-link <?= $isActive ? 'active' : '' ?> <?= $isAnchorLink ? 'nav-link-anchor' : '' ?>">
                 <i class="bi <?= htmlspecialchars($item['icon']) ?>"></i>
                 <span><?= htmlspecialchars($item['label']) ?></span>
             </a>
