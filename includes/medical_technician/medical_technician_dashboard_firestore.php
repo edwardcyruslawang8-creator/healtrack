@@ -126,49 +126,28 @@ $statCards = [
 // handful of real docs the spread is sparse rather than a smooth curve
 // — that's the real data, not a placeholder.
 // ---------------------------------------------------------------------
-$testsRangeOptions = ['this_week' => 'This Week', 'this_month' => 'This Month', 'this_year' => 'This Year'];
-$testsTrendRangeKey = array_key_exists($_GET['trendRange'] ?? '', $testsRangeOptions) ? $_GET['trendRange'] : 'this_week';
-$testsTrendRange = $testsRangeOptions[$testsTrendRangeKey];
+$testsTrendRangeState = hc_resolve_dashboard_range('trendRange', ['this_week' => 'This Week', 'this_month' => 'This Month', 'this_year' => 'This Year'], 'this_week');
+$testsTrendRangeKey = $testsTrendRangeState['key'];
+$testsTrendRange = $testsTrendRangeState['label'];
 
-$trendLabels = [];
-$trendValues = [];
-if ($testsTrendRangeKey === 'this_year') {
-    $monthsSoFar = (int) date('n');
-    for ($m = 1; $m <= $monthsSoFar; $m++) {
-        $monthStart = mktime(0, 0, 0, $m, 1, (int) date('Y'));
-        $trendLabels[] = date('M', $monthStart);
-        $monthPrefix = date('Y-m', $monthStart);
-        $trendValues[] = count(array_filter($allRequests, fn ($r) => str_starts_with($r['orderedDateRaw'], $monthPrefix)));
-    }
-} else {
-    $daysBack = $testsTrendRangeKey === 'this_month' ? ((int) date('j') - 1) : 6;
-    for ($i = $daysBack; $i >= 0; $i--) {
-        $day = date('Y-m-d', strtotime("-{$i} day"));
-        $trendLabels[] = date('M j', strtotime($day));
-        $trendValues[] = count(array_filter($allRequests, fn ($r) => str_starts_with($r['orderedDateRaw'], $day)));
-    }
-}
-$testsTrend = [
-    'labels' => $trendLabels,
-    'values' => $trendValues,
-];
+$testsTrend = hc_dashboard_trend_series(
+    $allRequests,
+    fn ($r) => $r['orderedDateRaw'],
+    $testsTrendRangeKey,
+    $testsTrendRangeState['customFrom'],
+    $testsTrendRangeState['customTo']
+);
 
 // ---------------------------------------------------------------------
 // Tests by Type — bar chart. Real distinct test/exam names, counted
 // only over requests whose real orderedDate falls within the selected
-// range (same three options as the trend chart above).
+// range (same preset options as the trend chart above).
 // ---------------------------------------------------------------------
-$testsByTypeRangeKey = array_key_exists($_GET['typeRange'] ?? '', $testsRangeOptions) ? $_GET['typeRange'] : 'this_week';
-$testsByTypeRange = $testsRangeOptions[$testsByTypeRangeKey];
+$testsByTypeRangeState = hc_resolve_dashboard_range('typeRange', ['this_week' => 'This Week', 'this_month' => 'This Month', 'this_year' => 'This Year'], 'this_week');
+$testsByTypeRangeKey = $testsByTypeRangeState['key'];
+$testsByTypeRange = $testsByTypeRangeState['label'];
 
-if ($testsByTypeRangeKey === 'this_year') {
-    $thisYearPrefix = date('Y');
-    $typeRangeRequests = array_filter($allRequests, fn ($r) => str_starts_with($r['orderedDateRaw'], $thisYearPrefix));
-} elseif ($testsByTypeRangeKey === 'this_month') {
-    $typeRangeRequests = array_filter($allRequests, fn ($r) => hc_matches_date_range_key($r['orderedDateRaw'], 'this_month'));
-} else {
-    $typeRangeRequests = array_filter($allRequests, fn ($r) => hc_matches_date_range_key($r['orderedDateRaw'], 'this_week'));
-}
+$typeRangeRequests = array_filter($allRequests, fn ($r) => hc_matches_date_range_key($r['orderedDateRaw'], $testsByTypeRangeKey, $testsByTypeRangeState['customFrom'], $testsByTypeRangeState['customTo']));
 
 $typeCounts = [];
 foreach ($typeRangeRequests as $r) {

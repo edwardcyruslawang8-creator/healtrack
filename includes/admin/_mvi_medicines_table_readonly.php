@@ -33,7 +33,7 @@
                     <td colspan="9" class="adm-table-empty">No medicines recorded yet.</td>
                 </tr>
                 <?php endif; ?>
-                <?php foreach ($medicines as $med): $cat = $medicineCategoryMeta[$med['category']] ?? ['icon' => 'bi-capsule', 'bg' => '#EEF0F3', 'color' => '#6B7280']; $status = $medicineStatusMeta[$med['status']] ?? $medicineStatusMeta['in_stock']; ?>
+                <?php foreach ($medicines as $med): $cat = $medicineCategoryMeta[$med['category']] ?? ['icon' => 'bi-capsule', 'bg' => '#EEF0F3', 'color' => '#6B7280']; $status = $medicineStatusMeta[$med['status']] ?? $medicineStatusMeta['in_stock']; $expiryBadge = $medicineExpiryBadgeMeta[$med['expiryStatus']] ?? null; ?>
                 <tr>
                     <td>
                         <div class="mvi-name-cell">
@@ -48,7 +48,12 @@
                     <td class="<?= $med['currentStock'] === 0 ? 'mvi-zero-stock' : '' ?>"><?= number_format($med['currentStock']) ?></td>
                     <td><?= number_format($med['minLevel']) ?></td>
                     <td><?= number_format($med['reorderLevel']) ?></td>
-                    <td class="<?= $med['status'] === 'out_of_stock' ? 'mvi-expiry-warning' : '' ?>"><?= htmlspecialchars($med['expiryDate']) ?></td>
+                    <td class="<?= $med['expiryStatus'] === 'expired' ? 'mvi-expiry-warning' : '' ?>">
+                        <?= htmlspecialchars($med['expiryDate']) ?>
+                        <?php if ($expiryBadge): ?>
+                        <span class="mvi-badge mvi-expiry-badge" style="background:<?= htmlspecialchars($expiryBadge['bg']) ?>; color:<?= htmlspecialchars($expiryBadge['color']) ?>;"><?= htmlspecialchars($expiryBadge['label']) ?></span>
+                        <?php endif; ?>
+                    </td>
                     <td><span class="mvi-badge" style="background:<?= htmlspecialchars($status['bg']) ?>; color:<?= htmlspecialchars($status['color']) ?>;"><?= htmlspecialchars($status['label']) ?></span></td>
                     <td class="mvi-updated-cell"><?= htmlspecialchars($med['lastUpdated']) ?></td>
                 </tr>

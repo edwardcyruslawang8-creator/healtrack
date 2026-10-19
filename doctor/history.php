@@ -299,9 +299,11 @@ $doctorNavItems = [
         <input type="hidden" name="id" value="<?= htmlspecialchars($patient['id']) ?>">
         <div class="his-daterange">
             <i class="bi bi-calendar3"></i>
-            <input type="date" name="hisFrom" value="<?= htmlspecialchars($historyDateFrom) ?>" aria-label="From date">
+            <label for="hisFrom">From</label>
+            <input type="date" id="hisFrom" name="hisFrom" value="<?= htmlspecialchars($historyDateFrom) ?>" aria-label="From date">
             <span class="his-dot"></span>
-            <input type="date" name="hisTo" value="<?= htmlspecialchars($historyDateTo) ?>" aria-label="To date">
+            <label for="hisTo">To</label>
+            <input type="date" id="hisTo" name="hisTo" value="<?= htmlspecialchars($historyDateTo) ?>" aria-label="To date">
         </div>
         <select class="form-select his-filter-select" name="hisType" aria-label="Filter by consultation type">
             <?php foreach ($recordTypeOptions as $opt): ?>

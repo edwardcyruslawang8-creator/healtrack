@@ -34,6 +34,7 @@ require_once __DIR__ . '/../firestore/medicines.php'; // hc_get_inventory_items(
 require_once __DIR__ . '/../shared/predictive_analytics_core.php'; // HC_COVERED_BARANGAYS
 require_once __DIR__ . '/../../firebase/firestore.php'; // getAnnouncements()
 require_once __DIR__ . '/../firestore/consultations.php'; // hc_get_physician_options()
+require_once __DIR__ . '/../firestore/lab_results.php'; // hc_lab_test_catalog()
 
 if (!function_exists('hc_chatbot_bullet_list')) {
     /**
@@ -932,6 +933,58 @@ if (!function_exists('hc_chatbot_health_topic_answer')) {
     }
 }
 
+if (!function_exists('hc_chatbot_is_lab_tests_question')) {
+    /**
+     * Is this asking what lab tests/exams are offered? Shared by
+     * hc_chatbot_answer() below AND chatbot_decision_tree.php's
+     * 'ask_services' case (same reasoning as hc_chatbot_contact_reply()'s
+     * own header comment: without sharing this check, a Dialogflow-
+     * matched "services" question would get the old generic summary
+     * while an un-trained/fallback question got the real detailed
+     * catalog — an inconsistent difference depending purely on which
+     * path happened to handle it).
+     */
+    function hc_chatbot_is_lab_tests_question(string $lowerQuestion): bool
+    {
+        return preg_match(
+            '/\b(lab(oratory)?)\b.{0,25}\b(test|tests|exam|exams|service|services)\b'
+            . '|\b(test|tests|exam|exams)\b.{0,25}\b(lab(oratory)?)\b'
+            . '|\bwhat (tests?|exams?) (do|can) you (offer|run|do|perform)\b/i',
+            $lowerQuestion
+        ) === 1;
+    }
+}
+
+if (!function_exists('hc_chatbot_lab_tests_reply')) {
+    /**
+     * Real answer to "what lab tests do you offer?" — grouped straight
+     * from includes/firestore/lab_results.php's hc_lab_test_catalog(),
+     * the exact same fixed catalog doctor/active_consultation.php's
+     * "Select Laboratory Tests" panel and api/complete-consultation.php's
+     * own server-side validation both use — never an invented list (a
+     * real example of the wrong kind of answer this replaces: an
+     * ungrounded Gemini guess describing generic services like "rapid
+     * tests for strep/flu/COVID-19" and "pregnancy testing" that this
+     * clinic doesn't actually offer). There's no fixed X-ray exam
+     * catalog anywhere in this app (medtech records each exam's name
+     * freeform per request, not from a checkbox list), so that part
+     * stays an honest, general mention instead of a guessed one.
+     */
+    function hc_chatbot_lab_tests_reply(): string
+    {
+        $lines = [];
+        foreach (hc_lab_test_catalog() as $category => $tests) {
+            $lines[] = $category . ' — ' . implode(', ', $tests);
+        }
+
+        return hc_chatbot_bullet_list(
+            '🧪 Our laboratory currently offers these tests:',
+            $lines,
+            'We also offer X-ray imaging — ask our staff on-site about the specific exam you need. Availability can vary by day, so please confirm with our laboratory staff before your visit.'
+        );
+    }
+}
+
 if (!function_exists('hc_chatbot_contact_reply')) {
     /**
      * Scoped to exactly what was asked — "what's your contact number?"
@@ -1255,6 +1308,18 @@ if (!function_exists('hc_chatbot_answer')) {
             }
 
             return hc_chatbot_bullet_list('👩‍⚕️ Our doctors are:', $doctors, $outro);
+        }
+
+        // 2e. Laboratory/X-ray tests offered — checked BEFORE #3's
+        // broader "services offered" bullet so this more specific
+        // question gets the real, detailed catalog breakdown instead of
+        // just the one summary line ("Laboratory & X-ray testing").
+        // Grounded in the exact same fixed hc_lab_test_catalog() every
+        // other real part of this app already uses — see
+        // hc_chatbot_lab_tests_reply()'s own header comment for the
+        // wrong, ungrounded kind of answer this replaces.
+        if (hc_chatbot_is_lab_tests_question($lower)) {
+            return hc_chatbot_lab_tests_reply();
         }
 
         // 3. Services offered — real, accurate to what this system actually

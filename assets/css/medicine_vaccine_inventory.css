@@ -162,6 +162,19 @@
   white-space: nowrap;
 }
 
+/* Real expiry badge ("Expired"/"Expiring Soon") — sits under the
+   Expiry Date column's own date text (includes/firestore/medicines.php's
+   hc_inventory_expiry_status()/hc_medicine_expiry_badge_meta()), so a
+   row that's past or nearing its real expiry is impossible to miss
+   scanning the table, not just a subtle text-color change. */
+.mvi-expiry-badge{
+  display: block;
+  width: fit-content;
+  margin-top: 4px;
+  font-size: 10.5px;
+  padding: 3px 9px;
+}
+
 /* -- Actions column — a text button rather than .adm-action-btn's
       fixed 30x30px icon square, which "Manage Medicine"/"Manage
       Vaccine" wouldn't fit. Outlined in the app's own brand red, same

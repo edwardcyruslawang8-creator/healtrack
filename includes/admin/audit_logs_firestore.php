@@ -142,8 +142,9 @@ $auditActionFilter = $_GET['action'] ?? 'All Actions';
 $auditStatusFilter = $_GET['status'] ?? 'All Statuses';
 // Both blank by default — every real date span, not a preset Today/
 // This Week/This Month bucket; either end can be left open-ended.
-$auditDateFrom = trim($_GET['from'] ?? '');
-$auditDateTo = trim($_GET['to'] ?? '');
+// Always-visible From/To inputs (admin/audit_logs.php), not a dropdown.
+$auditDateFrom = trim($_GET['dateRangeFrom'] ?? '');
+$auditDateTo = trim($_GET['dateRangeTo'] ?? '');
 
 $filteredAuditLogs = hc_filter_audit_logs($allAuditLogs, [
     'q' => $auditSearchTerm,
@@ -232,8 +233,8 @@ if (!function_exists('hc_audit_query')) {
             'module' => $_GET['module'] ?? 'All Modules',
             'action' => $_GET['action'] ?? 'All Actions',
             'status' => $_GET['status'] ?? 'All Statuses',
-            'from' => $_GET['from'] ?? '',
-            'to' => $_GET['to'] ?? '',
+            'dateRangeFrom' => $_GET['dateRangeFrom'] ?? '',
+            'dateRangeTo' => $_GET['dateRangeTo'] ?? '',
             'role' => in_array($_GET['role'] ?? '', ['subadmin', 'user'], true) ? $_GET['role'] : '',
             'page' => $_GET['page'] ?? 1,
         ], $overrides);

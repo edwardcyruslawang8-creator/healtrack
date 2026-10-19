@@ -33,13 +33,12 @@
  * draws between "my requests" (personal) and "inventory levels"
  * (system-wide).
  *
- * Exposes $predictiveOverviewCards / $predictiveOverviewTrend (a stock
- * PROJECTION line + reorder-level reference line — see
- * includes/admin/predictive_overview_card.php's own header comment for
- * how it tells this shape apart from the disease-forecast actual/
- * forecast shape the other roles' cards use) /
- * $predictiveOverviewTopAlerts, same shape rendered by that shared
- * partial.
+ * Exposes $predictiveOverviewCards / $predictiveOverviewTrend (one
+ * declining projected-stock line per at-risk medicine/vaccine, all at
+ * once — see includes/admin/predictive_overview_card.php's own header
+ * comment for how it tells this shape apart from the other roles'
+ * disease-forecast actual/forecast shape) / $predictiveOverviewTopAlerts,
+ * same shape rendered by that shared partial.
  * =====================================================================
  */
 
@@ -103,14 +102,20 @@ $predictiveOverviewCards = [
 ];
 
 // ---------------------------------------------------------------------
-// Trend chart — the same real stock-depletion PROJECTION line
-// hc_medicine_vaccine_shortage() already computes for the most urgent
-// still-stocked item (declining stock vs. its real reorder level), not
-// an actual-vs-forecast split (there's no "disease" forecast in this
-// role's card) — includes/admin/predictive_overview_card.php renders
-// this differently based on the presence of 'reorderLevel'/'itemName'.
+// Trend chart — the real stock-depletion PROJECTION line for EVERY
+// at-risk medicine AND vaccine at once (hc_medicine_vaccine_shortage()'s
+// own 'shortageTrend', up to 5 items, same multi-line shape/pattern
+// assets/js/predictive-analytics.js's renderMultiLineChart() already
+// draws for the full Predictive Analytics page's own identical chart —
+// includes/admin/predictive_overview_card.php auto-detects this shape
+// via the presence of a 'datasets' key). Not an actual-vs-forecast
+// split either (there's no "disease" forecast in this role's card).
+// Previously this showed only hc_medicine_vaccine_shortage()'s
+// 'stockProjection' — a single line for whichever ONE item happened to
+// be most urgent (e.g. always "Paracetamol"), not the full at-risk
+// picture across the whole real inventory.
 // ---------------------------------------------------------------------
-$predictiveOverviewTrend = $poShortage['stockProjection'];
+$predictiveOverviewTrend = $poShortage['shortageTrend'];
 
 // ---------------------------------------------------------------------
 // Top risk alerts — pooled across both categories, most severe first.

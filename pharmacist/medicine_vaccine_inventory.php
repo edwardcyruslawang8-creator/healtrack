@@ -313,7 +313,7 @@ if (!function_exists('mvi_page_url')) {
                             <td colspan="10" class="adm-table-empty">No medicines recorded yet.</td>
                         </tr>
                         <?php endif; ?>
-                        <?php foreach ($medicines as $med): $status = $medicineStatusMeta[$med['status']] ?? $medicineStatusMeta['available']; ?>
+                        <?php foreach ($medicines as $med): $status = $medicineStatusMeta[$med['status']] ?? $medicineStatusMeta['available']; $expiryBadge = $medicineExpiryBadgeMeta[$med['expiryStatus']] ?? null; ?>
                         <tr
                             data-med-id="<?= htmlspecialchars($med['id']) ?>"
                             data-med-type="medicine"
@@ -342,7 +342,12 @@ if (!function_exists('mvi_page_url')) {
                             <td class="<?= $med['currentStock'] === 0 ? 'mvi-zero-stock' : '' ?>"><?= number_format($med['currentStock']) ?></td>
                             <td><?= number_format($med['minLevel']) ?></td>
                             <td><?= number_format($med['reorderLevel']) ?></td>
-                            <td class="<?= $med['status'] === 'unavailable' ? 'mvi-expiry-warning' : '' ?>"><?= htmlspecialchars($med['expiryDate']) ?></td>
+                            <td class="<?= $med['expiryStatus'] === 'expired' ? 'mvi-expiry-warning' : '' ?>">
+                                <?= htmlspecialchars($med['expiryDate']) ?>
+                                <?php if ($expiryBadge): ?>
+                                <span class="mvi-badge mvi-expiry-badge" style="background:<?= htmlspecialchars($expiryBadge['bg']) ?>; color:<?= htmlspecialchars($expiryBadge['color']) ?>;"><?= htmlspecialchars($expiryBadge['label']) ?></span>
+                                <?php endif; ?>
+                            </td>
                             <td><span class="mvi-badge" style="background:<?= htmlspecialchars($status['bg']) ?>; color:<?= htmlspecialchars($status['color']) ?>;"><?= htmlspecialchars($status['label']) ?></span></td>
                             <td class="mvi-updated-cell"><?= htmlspecialchars($med['lastUpdated']) ?></td>
                             <td>
@@ -435,7 +440,7 @@ if (!function_exists('mvi_page_url')) {
                             <td colspan="10" class="adm-table-empty">No vaccines recorded yet.</td>
                         </tr>
                         <?php endif; ?>
-                        <?php foreach ($vaccines as $vac): $status = $medicineStatusMeta[$vac['status']] ?? $medicineStatusMeta['available']; ?>
+                        <?php foreach ($vaccines as $vac): $status = $medicineStatusMeta[$vac['status']] ?? $medicineStatusMeta['available']; $expiryBadge = $medicineExpiryBadgeMeta[$vac['expiryStatus']] ?? null; ?>
                         <tr
                             data-med-id="<?= htmlspecialchars($vac['id']) ?>"
                             data-med-type="vaccine"
@@ -464,7 +469,12 @@ if (!function_exists('mvi_page_url')) {
                             <td class="<?= $vac['currentStock'] === 0 ? 'mvi-zero-stock' : '' ?>"><?= number_format($vac['currentStock']) ?></td>
                             <td><?= number_format($vac['minLevel']) ?></td>
                             <td><?= number_format($vac['reorderLevel']) ?></td>
-                            <td class="<?= $vac['status'] === 'unavailable' ? 'mvi-expiry-warning' : '' ?>"><?= htmlspecialchars($vac['expiryDate']) ?></td>
+                            <td class="<?= $vac['expiryStatus'] === 'expired' ? 'mvi-expiry-warning' : '' ?>">
+                                <?= htmlspecialchars($vac['expiryDate']) ?>
+                                <?php if ($expiryBadge): ?>
+                                <span class="mvi-badge mvi-expiry-badge" style="background:<?= htmlspecialchars($expiryBadge['bg']) ?>; color:<?= htmlspecialchars($expiryBadge['color']) ?>;"><?= htmlspecialchars($expiryBadge['label']) ?></span>
+                                <?php endif; ?>
+                            </td>
                             <td><span class="mvi-badge" style="background:<?= htmlspecialchars($status['bg']) ?>; color:<?= htmlspecialchars($status['color']) ?>;"><?= htmlspecialchars($status['label']) ?></span></td>
                             <td class="mvi-updated-cell"><?= htmlspecialchars($vac['lastUpdated']) ?></td>
                             <td>

@@ -5,10 +5,10 @@
  * ---------------------------------------------------------------------
  * Backs subadmin/dashboard.php's 3 filterable cards (Consultations
  * Trend, Patients by Age Group, Top 5 Common Health Conditions) —
- * assets/js/subadmin-dashboard-filters.js calls this instead of
- * following the filter dropdown's own href (a full ?trendRange=...
- * page reload), so picking a range only re-fetches and re-renders that
- * ONE card instead of the whole page.
+ * assets/js/dashboard-range-filters.js (shared by every role's
+ * dashboard) calls this instead of following the filter dropdown's own
+ * href (a full ?trendRange=... page reload), so picking a range only
+ * re-fetches and re-renders that ONE card instead of the whole page.
  *
  * Reuses includes/subadmin/subadmin_dashboard_firestore.php AS-IS — the
  * exact same file/computation subadmin/dashboard.php's own full load

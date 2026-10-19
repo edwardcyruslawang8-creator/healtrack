@@ -119,3 +119,25 @@
 @media (max-width: 575.98px){
   .reg-grid{ grid-template-columns: 1fr; }
 }
+
+/* Terms of Service / Privacy Policy modals (register.php) — plain
+   Bootstrap modal structure, just themed to match the rest of this
+   page's maroon brand accent and given readable spacing for the longer
+   legal text inside. */
+#termsModal .modal-header,
+#privacyModal .modal-header{
+  background: var(--maroon);
+  color: #fff;
+}
+#termsModal .btn-close,
+#privacyModal .btn-close{ filter: invert(1) grayscale(100%) brightness(200%); }
+.reg-legal-body{ color: var(--text-dark); font-size: 13.5px; line-height: 1.65; }
+.reg-legal-body h6{
+  color: var(--maroon);
+  font-weight: 700;
+  font-size: 13.5px;
+  margin: 18px 0 6px;
+}
+.reg-legal-body h6:first-of-type{ margin-top: 0; }
+.reg-legal-body p{ margin: 0 0 4px; }
+.reg-legal-updated{ color: var(--text-soft); font-size: 12px; margin-bottom: 14px; }

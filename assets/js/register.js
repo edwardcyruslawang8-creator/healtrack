@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function () {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Creating account...';
 
-        const payload = { firstName: firstName, lastName: lastName, email: email, phone: phone, role: role };
+        const payload = { firstName: firstName, lastName: lastName, email: email, phone: phone, role: role, termsAccepted: termsAccepted };
         if (googleIdToken) {
             payload.googleIdToken = googleIdToken;
         } else {

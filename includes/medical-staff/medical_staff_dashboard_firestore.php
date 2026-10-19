@@ -101,32 +101,17 @@ $statCards = [
 // This Week (last 7 days)/This Month (month-to-date), monthly points
 // for This Year (Jan through the current month).
 // ---------------------------------------------------------------------
-$consultationsTrendRangeOptions = ['this_week' => 'This Week', 'this_month' => 'This Month', 'this_year' => 'This Year'];
-$consultationsTrendRangeKey = array_key_exists($_GET['trendRange'] ?? '', $consultationsTrendRangeOptions) ? $_GET['trendRange'] : 'this_week';
-$consultationsTrendRange = $consultationsTrendRangeOptions[$consultationsTrendRangeKey];
+$consultationsTrendRangeState = hc_resolve_dashboard_range('trendRange', ['this_week' => 'This Week', 'this_month' => 'This Month', 'this_year' => 'This Year'], 'this_week');
+$consultationsTrendRangeKey = $consultationsTrendRangeState['key'];
+$consultationsTrendRange = $consultationsTrendRangeState['label'];
 
-$trendLabels = [];
-$trendValues = [];
-if ($consultationsTrendRangeKey === 'this_year') {
-    $monthsSoFar = (int) date('n');
-    for ($m = 1; $m <= $monthsSoFar; $m++) {
-        $monthStart = mktime(0, 0, 0, $m, 1, (int) date('Y'));
-        $trendLabels[] = date('M', $monthStart);
-        $monthPrefix = date('Y-m', $monthStart);
-        $trendValues[] = count(array_filter($allConsultations, fn ($c) => str_starts_with($c['dateTime'], $monthPrefix)));
-    }
-} else {
-    $daysBack = $consultationsTrendRangeKey === 'this_month' ? ((int) date('j') - 1) : 6;
-    for ($i = $daysBack; $i >= 0; $i--) {
-        $day = date('Y-m-d', strtotime("-{$i} day"));
-        $trendLabels[] = date('M j', strtotime($day));
-        $trendValues[] = count(array_filter($allConsultations, fn ($c) => str_starts_with($c['dateTime'], $day)));
-    }
-}
-$consultationsTrend = [
-    'labels' => $trendLabels,
-    'values' => $trendValues,
-];
+$consultationsTrend = hc_dashboard_trend_series(
+    $allConsultations,
+    fn ($c) => $c['dateTime'],
+    $consultationsTrendRangeKey,
+    $consultationsTrendRangeState['customFrom'],
+    $consultationsTrendRangeState['customTo']
+);
 
 // ---------------------------------------------------------------------
 // Patients by Age Group — bar chart. Real distribution over every
@@ -134,14 +119,14 @@ $consultationsTrend = [
 // date (dateRegisteredRaw) when a range other than All Time is
 // selected.
 // ---------------------------------------------------------------------
-$patientsByAgeRangeOptions = ['all' => 'All Time', 'today' => 'Today', 'this_week' => 'This Week', 'this_month' => 'This Month'];
-$patientsByAgeRangeKey = array_key_exists($_GET['ageRange'] ?? '', $patientsByAgeRangeOptions) ? $_GET['ageRange'] : 'all';
-$patientsByAgeRange = $patientsByAgeRangeOptions[$patientsByAgeRangeKey];
+$patientsByAgeRangeState = hc_resolve_dashboard_range('ageRange', ['all' => 'All Time', 'today' => 'Today', 'this_week' => 'This Week', 'this_month' => 'This Month'], 'all');
+$patientsByAgeRangeKey = $patientsByAgeRangeState['key'];
+$patientsByAgeRange = $patientsByAgeRangeState['label'];
 
 $ageGroupLabels = ['0-12', '13-17', '18-30', '31-45', '46-60', '60+'];
 $ageGroupCounts = array_fill_keys($ageGroupLabels, 0);
 foreach ($allPatients as $p) {
-    if (!hc_matches_date_range_key($p['dateRegisteredRaw'] ?? '', $patientsByAgeRangeKey)) {
+    if (!hc_matches_date_range_key($p['dateRegisteredRaw'] ?? '', $patientsByAgeRangeKey, $patientsByAgeRangeState['customFrom'], $patientsByAgeRangeState['customTo'])) {
         continue;
     }
     $ageGroupCounts[hc_patient_age_group($p['age'])]++;

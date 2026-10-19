@@ -168,46 +168,31 @@ $statCards = [
 // This Week (last 7 days)/This Month (month-to-date), monthly points
 // for This Year (Jan through the current month).
 // ---------------------------------------------------------------------
-$consultationsTrendRangeOptions = ['this_week' => 'This Week', 'this_month' => 'This Month', 'this_year' => 'This Year'];
-$consultationsTrendRangeKey = array_key_exists($_GET['trendRange'] ?? '', $consultationsTrendRangeOptions) ? $_GET['trendRange'] : 'this_week';
-$consultationsTrendRange = $consultationsTrendRangeOptions[$consultationsTrendRangeKey];
+$consultationsTrendRangeState = hc_resolve_dashboard_range('trendRange', ['this_week' => 'This Week', 'this_month' => 'This Month', 'this_year' => 'This Year'], 'this_week');
+$consultationsTrendRangeKey = $consultationsTrendRangeState['key'];
+$consultationsTrendRange = $consultationsTrendRangeState['label'];
 
-$trendLabelsSub = [];
-$trendValuesSub = [];
-if ($consultationsTrendRangeKey === 'this_year') {
-    $monthsSoFar = (int) date('n');
-    for ($m = 1; $m <= $monthsSoFar; $m++) {
-        $monthStart = mktime(0, 0, 0, $m, 1, (int) date('Y'));
-        $trendLabelsSub[] = date('M', $monthStart);
-        $monthPrefix = date('Y-m', $monthStart);
-        $trendValuesSub[] = count(array_filter($allConsultations, fn ($c) => str_starts_with($c['dateTime'], $monthPrefix)));
-    }
-} else {
-    $daysBack = $consultationsTrendRangeKey === 'this_month' ? ((int) date('j') - 1) : 6;
-    for ($i = $daysBack; $i >= 0; $i--) {
-        $day = date('Y-m-d', strtotime("-{$i} day"));
-        $trendLabelsSub[] = date('M j', strtotime($day));
-        $trendValuesSub[] = count(array_filter($allConsultations, fn ($c) => str_starts_with($c['dateTime'], $day)));
-    }
-}
-$consultationsTrend = [
-    'labels' => $trendLabelsSub,
-    'values' => $trendValuesSub,
-];
+$consultationsTrend = hc_dashboard_trend_series(
+    $allConsultations,
+    fn ($c) => $c['dateTime'],
+    $consultationsTrendRangeKey,
+    $consultationsTrendRangeState['customFrom'],
+    $consultationsTrendRangeState['customTo']
+);
 
 // ---------------------------------------------------------------------
 // Patients by Age Group — real, computed from $realPatients, scoped by
 // each patient's own real registration date (dateRegisteredRaw) when a
 // range other than All Time is selected.
 // ---------------------------------------------------------------------
-$patientsByAgeRangeOptions = ['all' => 'All Time', 'today' => 'Today', 'this_week' => 'This Week', 'this_month' => 'This Month'];
-$patientsByAgeRangeKey = array_key_exists($_GET['ageRange'] ?? '', $patientsByAgeRangeOptions) ? $_GET['ageRange'] : 'all';
-$patientsByAgeRange = $patientsByAgeRangeOptions[$patientsByAgeRangeKey];
+$patientsByAgeRangeState = hc_resolve_dashboard_range('ageRange', ['all' => 'All Time', 'today' => 'Today', 'this_week' => 'This Week', 'this_month' => 'This Month'], 'all');
+$patientsByAgeRangeKey = $patientsByAgeRangeState['key'];
+$patientsByAgeRange = $patientsByAgeRangeState['label'];
 
 $ageGroupOrder = ['0-12', '13-17', '18-30', '31-45', '46-60', '60+'];
 $ageGroupCounts = array_fill_keys($ageGroupOrder, 0);
 foreach ($realPatients as $p) {
-    if (!hc_matches_date_range_key($p['dateRegisteredRaw'] ?? '', $patientsByAgeRangeKey)) {
+    if (!hc_matches_date_range_key($p['dateRegisteredRaw'] ?? '', $patientsByAgeRangeKey, $patientsByAgeRangeState['customFrom'], $patientsByAgeRangeState['customTo'])) {
         continue;
     }
     $ageGroupCounts[hc_patient_age_group((int) ($p['age'] ?? 0))]++;
@@ -237,16 +222,16 @@ $patientsByGender = [
 // instead. Fewer than 5 real conditions on record shows fewer than 5
 // rows — that's accurate, not a bug.
 // ---------------------------------------------------------------------
-$healthConditionsRangeOptions = ['all' => 'All Time', 'today' => 'Today', 'this_week' => 'This Week', 'this_month' => 'This Month'];
-$healthConditionsRangeKey = array_key_exists($_GET['conditionsRange'] ?? '', $healthConditionsRangeOptions) ? $_GET['conditionsRange'] : 'all';
-$healthConditionsRange = $healthConditionsRangeOptions[$healthConditionsRangeKey];
+$healthConditionsRangeState = hc_resolve_dashboard_range('conditionsRange', ['all' => 'All Time', 'today' => 'Today', 'this_week' => 'This Week', 'this_month' => 'This Month'], 'all');
+$healthConditionsRangeKey = $healthConditionsRangeState['key'];
+$healthConditionsRange = $healthConditionsRangeState['label'];
 
 $conditionCounts = [];
 foreach ($firestore->listDocuments('medical_conditions') as $doc) {
     if (!in_array($doc['fields']['patientId'] ?? null, $facilityPatientIds, true)) {
         continue;
     }
-    if (!hc_matches_date_range_key($doc['fields']['diagnosedOn'] ?? '', $healthConditionsRangeKey)) {
+    if (!hc_matches_date_range_key($doc['fields']['diagnosedOn'] ?? '', $healthConditionsRangeKey, $healthConditionsRangeState['customFrom'], $healthConditionsRangeState['customTo'])) {
         continue;
     }
     $label = $doc['fields']['label'] ?? null;

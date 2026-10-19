@@ -81,8 +81,9 @@ $auditSearchTerm = trim($_GET['q'] ?? '');
 $auditModuleFilter = $_GET['module'] ?? 'All Modules';
 // Both blank by default — every real date span, not a preset Today/
 // This Week/This Month bucket; either end can be left open-ended.
-$auditDateFrom = trim($_GET['from'] ?? '');
-$auditDateTo = trim($_GET['to'] ?? '');
+// Always-visible From/To inputs (medical_technician/audit_logs.php), not a dropdown.
+$auditDateFrom = trim($_GET['dateRangeFrom'] ?? '');
+$auditDateTo = trim($_GET['dateRangeTo'] ?? '');
 
 $filteredAuditLogs = hc_filter_audit_logs($myAuditLogs, [
     'q' => $auditSearchTerm,
@@ -153,8 +154,8 @@ if (!function_exists('hc_audit_query')) {
         $params = array_merge([
             'q' => $_GET['q'] ?? '',
             'module' => $_GET['module'] ?? 'All Modules',
-            'from' => $_GET['from'] ?? '',
-            'to' => $_GET['to'] ?? '',
+            'dateRangeFrom' => $_GET['dateRangeFrom'] ?? '',
+            'dateRangeTo' => $_GET['dateRangeTo'] ?? '',
             'page' => $_GET['page'] ?? 1,
         ], $overrides);
 

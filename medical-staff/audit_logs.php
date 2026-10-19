@@ -200,21 +200,23 @@ $staffNavItems = [
         <i class="bi bi-search"></i>
         <input type="text" name="q" value="<?= htmlspecialchars($auditSearchTerm) ?>" placeholder="Search by action, module, or details..." autocomplete="off">
         <input type="hidden" name="module" value="<?= htmlspecialchars($auditModuleFilter) ?>">
-        <input type="hidden" name="from" value="<?= htmlspecialchars($auditDateFrom) ?>">
-        <input type="hidden" name="to" value="<?= htmlspecialchars($auditDateTo) ?>">
+        <input type="hidden" name="dateRangeFrom" value="<?= htmlspecialchars($auditDateFrom) ?>">
+        <input type="hidden" name="dateRangeTo" value="<?= htmlspecialchars($auditDateTo) ?>">
     </form>
 
     <!-- ============ FILTER TOOLBAR ============ -->
     <div class="aud-filter-toolbar">
         <!-- Real From/To date range — any span, not a preset Today/This
-             Week/This Month bucket. Auto-submits on change, carrying
-             the Module filter/search term via hidden inputs so picking
-             a date never drops them. -->
+             Week/This Month bucket. Always visible, not a dropdown.
+             Auto-submits on change, carrying the Module filter/search
+             term via hidden inputs so picking a date never drops them. -->
         <form class="aud-daterange" method="get" action="audit_logs.php">
             <i class="bi bi-calendar3"></i>
-            <input type="date" name="from" value="<?= htmlspecialchars($auditDateFrom) ?>" aria-label="From date" onchange="this.form.submit()">
+            <label for="auditDateFrom">From</label>
+            <input type="date" id="auditDateFrom" name="dateRangeFrom" value="<?= htmlspecialchars($auditDateFrom) ?>" onchange="this.form.submit()">
             <span class="aud-dot"></span>
-            <input type="date" name="to" value="<?= htmlspecialchars($auditDateTo) ?>" aria-label="To date" onchange="this.form.submit()">
+            <label for="auditDateTo">To</label>
+            <input type="date" id="auditDateTo" name="dateRangeTo" value="<?= htmlspecialchars($auditDateTo) ?>" onchange="this.form.submit()">
             <input type="hidden" name="q" value="<?= htmlspecialchars($auditSearchTerm) ?>">
             <input type="hidden" name="module" value="<?= htmlspecialchars($auditModuleFilter) ?>">
         </form>

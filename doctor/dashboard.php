@@ -257,19 +257,10 @@ $doctorNavItems = [
     <!-- ============ CONSULTATIONS TREND + AGE GROUP + GENDER ============ -->
     <div class="doc-row-3">
 
-        <div class="adm-card doc-chart-card">
+        <div class="adm-card doc-chart-card" data-dashboard-card="consultationsTrend" data-range-param="trendRange">
             <div class="doc-card-header">
                 <h2>My Consultations Trend</h2>
-                <div class="dropdown">
-                    <button class="doc-range-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <?= htmlspecialchars($consultationsTrendRange) ?>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['trendRange' => 'this_week'])) ?>">This Week</a></li>
-                        <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['trendRange' => 'this_month'])) ?>">This Month</a></li>
-                        <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['trendRange' => 'this_year'])) ?>">This Year</a></li>
-                    </ul>
-                </div>
+                <?php $range = $consultationsTrendRangeState; $drBtnClass = 'doc-range-btn'; require __DIR__ . '/../includes/shared/dashboard_range_dropdown.php'; ?>
             </div>
             <div class="doc-canvas-box">
                 <canvas id="consultationsTrendChart"></canvas>
@@ -279,20 +270,10 @@ $doctorNavItems = [
             </div>
         </div>
 
-        <div class="adm-card doc-chart-card">
+        <div class="adm-card doc-chart-card" data-dashboard-card="patientsByAge" data-range-param="ageRange">
             <div class="doc-card-header">
                 <h2>My Patients by Age Group</h2>
-                <div class="dropdown">
-                    <button class="doc-range-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <?= htmlspecialchars($patientsByAgeRange) ?>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['ageRange' => 'all'])) ?>">All Time</a></li>
-                        <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['ageRange' => 'today'])) ?>">Today</a></li>
-                        <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['ageRange' => 'this_week'])) ?>">This Week</a></li>
-                        <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['ageRange' => 'this_month'])) ?>">This Month</a></li>
-                    </ul>
-                </div>
+                <?php $range = $patientsByAgeRangeState; $drBtnClass = 'doc-range-btn'; require __DIR__ . '/../includes/shared/dashboard_range_dropdown.php'; ?>
             </div>
             <div class="doc-canvas-box">
                 <canvas id="patientsByAgeChart"></canvas>
@@ -476,6 +457,8 @@ $doctorNavItems = [
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
+<script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 
 <script>
     // Hands all chart numbers to assets/js/doctor_dashboard.js without
@@ -495,8 +478,10 @@ $doctorNavItems = [
             'colors' => array_column($consultationStatus, 'color'),
         ],
     ]) ?>;
+    window.HC_DASHBOARD_CARD_ENDPOINT = '../api/doctor-dashboard-card.php';
 </script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/doctor_dashboard.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/dashboard-range-filters.js') ?>"></script>
 </body>
 </html>

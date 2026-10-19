@@ -18,9 +18,12 @@
  *   - 'consultation' — doctor/medical-staff's real follow-up
  *     notifications (includes/firestore/consultations.php's
  *     hc_get_followup_notifications()).
- *   - 'inventory' — pharmacist's real low-stock + pending pharmacy
- *     order notifications (includes/firestore/medicines.php /
- *     pharmacy_orders.php).
+ *   - 'inventory' — pharmacist's real low-stock + expiring/expired
+ *     medicine/vaccine + pending pharmacy order notifications
+ *     (includes/firestore/medicines.php / pharmacy_orders.php); subadmin
+ *     also gets the expiring/expired medicine/vaccine source (same
+ *     hc_get_medicine_expiry_notifications()), but not low-stock or
+ *     pending-order, which stay pharmacist-only.
  *   - 'email' — the one real staff-facing notification EMAIL that
  *     exists (the weekly 2FA reminder — see
  *     hc_2fa_reminder_email_due() in two_fa_reminder.php, the only

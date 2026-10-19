@@ -68,6 +68,13 @@
   flex-shrink: 0;
 }
 .his-daterange i{ color: var(--adm-text-soft); font-size: 13px; }
+.his-daterange label{
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--adm-text-muted);
+  margin: 0;
+  cursor: pointer;
+}
 .his-daterange input[type="date"]{
   border: none;
   background: transparent;
@@ -90,6 +97,15 @@
 .his-type-cell{ display: flex; align-items: center; gap: 8px; }
 .his-type-cell i{ font-size: 15px; flex-shrink: 0; }
 
+/* The table's default auto-layout gives the Actions column whatever
+   width is left over once every other column has what it needs — with
+   only one button in it, that leftover space reads as the button
+   floating in a big empty gutter. Shrinking the column to its content
+   (the classic "width: 1%" trick) pulls that space back into the
+   Reason for Visit/Diagnosis column instead, where it's actually used. */
+.his-table th:last-child,
+.his-table td:last-child{ width: 1%; white-space: nowrap; }
+
 .his-badge{
   display: inline-flex;
   align-items: center;
@@ -105,19 +121,12 @@
    response lands, so this never lingers. */
 #hisRecordTableWrap.his-table-loading{ opacity: .5; pointer-events: none; transition: opacity .1s ease; }
 
-/* -- "View Details" (.vdm-trigger, includes/shared/view_details_modal.php)
-   restyled here as a filled button matching this app's primary-action
-   theme (same blue used for e.g. the Laboratory & X-ray page's "View
-   Result"/"Consult" buttons) instead of its generic outlined default —
-   scoped to this table only (higher specificity than ".vdm-trigger"
-   alone) so the shared base style other pages reuse it with elsewhere
-   is untouched. -- */
-.his-table .vdm-trigger{
-  background: var(--adm-blue);
-  border: none;
-  color: #fff;
-}
-.his-table .vdm-trigger:hover{ background: #1558B0; color: #fff; }
+/* "View Details" (.vdm-trigger) keeps its shared default look from
+   includes/shared/view_details_modal.php's own CSS — a red/maroon
+   outlined button, matching this app's actual primary brand color
+   everywhere else (sidebar, Apply/active-filter buttons, ...). This
+   table used to override it to blue; that read as off-theme, so the
+   override was removed rather than reworded. */
 
 /* =============================================================
    RESPONSIVE

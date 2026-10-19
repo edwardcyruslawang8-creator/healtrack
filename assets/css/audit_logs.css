@@ -115,11 +115,11 @@
 .aud-filter-btn i{ color: var(--adm-text-soft); }
 .aud-filter-btn:hover{ background: var(--adm-hover-bg); }
 
-/* -- Real From/To date range (any span, not a preset Today/This Week/
-   This Month bucket) — replaces what used to be a plain dropdown of
-   those three fixed buckets, same look as .aud-filter-btn above and
-   the equivalent widget doctor/consultations.php and the Patient
-   Profile's Consultation History tab already use. -- */
+/* -- Real From/To date range (any span, not a preset bucket) — always
+   visible, not tucked behind a dropdown, so both ends are one click
+   away. Same look as .aud-filter-btn above and the equivalent labeled
+   widget the Patient Profile's Consultation History tab uses
+   (assets/css/history.css's .his-daterange). -- */
 .aud-daterange{
   display: flex;
   align-items: center;
@@ -130,6 +130,13 @@
   padding: 10px 16px;
 }
 .aud-daterange i{ color: var(--adm-text-soft); font-size: 13px; }
+.aud-daterange label{
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--adm-text-muted);
+  margin: 0;
+  cursor: pointer;
+}
 .aud-daterange input[type="date"]{
   border: none;
   background: transparent;

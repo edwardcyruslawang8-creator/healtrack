@@ -198,9 +198,3 @@
   .sad-stats-row{ grid-template-columns: 1fr; }
   .sad-condition-label{ width: 34%; }
 }
-
-/* Brief dim while a card's own filter dropdown (assets/js/
-   subadmin-dashboard-filters.js) is fetching a new range — the card
-   stays in place and interactive underneath, it just isn't a jarring
-   instant swap. */
-.sad-card-loading{ opacity: 0.55; transition: opacity 0.15s ease; pointer-events: none; }

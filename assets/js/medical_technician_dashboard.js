@@ -23,10 +23,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const gridColor = rootStyle.getPropertyValue('--adm-border').trim() || '#ECEDF3';
     const tickColor = rootStyle.getPropertyValue('--adm-text-muted').trim() || '#6B7280';
 
+    // Exposes the 2 range-filterable charts (Tests Processed Trend,
+    // Tests by Type) so assets/js/dashboard-range-filters.js can
+    // live-update them in place (chart.data = ...; chart.update())
+    // instead of a full page reload when their dropdown filter changes.
+    window.HC_DASHBOARD_CHARTS = window.HC_DASHBOARD_CHARTS || {};
+
     /* ---------- Tests Processed Trend (line) ---------- */
     const trendCanvas = document.getElementById('testsTrendChart');
     if (trendCanvas) {
-        new Chart(trendCanvas, {
+        window.HC_DASHBOARD_CHARTS.testsTrend = new Chart(trendCanvas, {
             type: 'line',
             data: {
                 labels: data.testsTrend.labels,
@@ -61,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
     /* ---------- Tests by Type (bar) ---------- */
     const typeCanvas = document.getElementById('testsByTypeChart');
     if (typeCanvas) {
-        new Chart(typeCanvas, {
+        window.HC_DASHBOARD_CHARTS.testsByType = new Chart(typeCanvas, {
             type: 'bar',
             data: {
                 labels: data.testsByType.labels,

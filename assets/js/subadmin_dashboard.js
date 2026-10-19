@@ -19,15 +19,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const tickColor = rootStyle.getPropertyValue('--adm-text-muted').trim() || '#6B7280';
 
     // Exposes the 2 range-filterable charts (Consultations Trend,
-    // Patients by Age Group) so assets/js/subadmin-dashboard-filters.js
-    // can live-update them in place (chart.data = ...; chart.update())
+    // Patients by Age Group) so assets/js/dashboard-range-filters.js can
+    // live-update them in place (chart.data = ...; chart.update())
     // instead of a full page reload when their dropdown filter changes.
-    window.HC_SUBADMIN_DASHBOARD_CHARTS = window.HC_SUBADMIN_DASHBOARD_CHARTS || {};
+    window.HC_DASHBOARD_CHARTS = window.HC_DASHBOARD_CHARTS || {};
 
     /* ---------- Consultations Trend (line) ---------- */
     const trendCanvas = document.getElementById('consultationsTrendChart');
     if (trendCanvas) {
-        window.HC_SUBADMIN_DASHBOARD_CHARTS.consultationsTrend = new Chart(trendCanvas, {
+        window.HC_DASHBOARD_CHARTS.consultationsTrend = new Chart(trendCanvas, {
             type: 'line',
             data: {
                 labels: data.consultationsTrend.labels,
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function () {
     /* ---------- Patients by Age Group (bar) ---------- */
     const ageCanvas = document.getElementById('patientsByAgeChart');
     if (ageCanvas) {
-        window.HC_SUBADMIN_DASHBOARD_CHARTS.patientsByAge = new Chart(ageCanvas, {
+        window.HC_DASHBOARD_CHARTS.patientsByAge = new Chart(ageCanvas, {
             type: 'bar',
             data: {
                 labels: data.patientsByAge.labels,

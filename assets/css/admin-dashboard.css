@@ -616,6 +616,65 @@ body.adm-body{
   padding: 22px;
   margin-bottom: 22px;
 }
+
+/* -- AJAX single-card refresh loading state (assets/js/dashboard-range-filters.js)
+      — the card dims and stops accepting clicks for a moment instead of
+      jumping straight from one range's data to another's with no
+      visual transition. Shared by every role's dashboard since they all
+      load this stylesheet. -- */
+.hc-dashboard-card-loading{ opacity: 0.55; transition: opacity 0.15s ease; pointer-events: none; }
+
+/* -- "Custom Date" row + panel inside a dashboard range dropdown
+      (includes/shared/dashboard_range_dropdown.php, assets/js/
+      dashboard-range-filters.js). The row itself is a plain
+      .dropdown-item (gets the theme's usual rounded red-accent hover/
+      active look for free — see "Dropdown menus" above) with a chevron
+      that rotates to show open/closed state. The panel below it
+      expands/collapses via max-height so it animates smoothly instead
+      of an abrupt display:none/block jump; overflow stays hidden
+      mid-animation (so the panel can't poke out while it's still
+      growing) and switches to visible once fully expanded (so a
+      focused input's outline/a native date-picker popover isn't
+      clipped at the edge). The form itself gets its own subtly shaded,
+      bordered card so it reads as a distinct "fill in a range" step
+      rather than more dropdown options. -- */
+.hc-custom-toggle{ width: 100%; border: none; background: none; }
+.hc-custom-chevron{ font-size: 11px; transition: transform 0.2s ease; }
+.hc-custom-toggle.hc-expanded .hc-custom-chevron{ transform: rotate(180deg); }
+
+.hc-custom-range-wrap{
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.22s ease, opacity 0.18s ease;
+}
+.hc-custom-range-wrap.hc-expanded{
+  max-height: 180px;
+  opacity: 1;
+}
+.hc-custom-range-form{
+  margin: 6px 2px 2px;
+  padding: 12px;
+  min-width: 230px;
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.hc-custom-range-fields{ display: flex; gap: 8px; }
+.hc-custom-range-field{
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--adm-text-muted);
+  margin: 0;
+}
+.hc-custom-range-field input{ font-size: 12.5px; }
 .adm-card-header{
   display: flex;
   align-items: center;

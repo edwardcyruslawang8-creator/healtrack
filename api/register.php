@@ -57,6 +57,7 @@ $phone = trim((string) ($body['phone'] ?? ''));
 $password = (string) ($body['password'] ?? '');
 $confirmPassword = (string) ($body['confirmPassword'] ?? '');
 $jobTitle = trim((string) ($body['role'] ?? ''));
+$termsAccepted = (bool) ($body['termsAccepted'] ?? false);
 // Set only by "Sign up with Google" (assets/js/register.js) — an
 // alternate CREDENTIAL method, not a shortcut around anything below:
 // same required fields, same $jobTitleToRole enforcement, same
@@ -112,6 +113,14 @@ if (!$isGoogleSignup) {
 if (!isset($jobTitleToRole[$jobTitle])) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Please select a valid role.']);
+    exit;
+}
+// The checkbox's own required attribute + register.js's client-side
+// check already stop this in the normal UI flow — this is the real
+// enforcement point, since a request could always be sent by hand.
+if (!$termsAccepted) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please agree to the Terms of Service and Privacy Policy to continue.']);
     exit;
 }
 
@@ -201,6 +210,11 @@ $saved = $firestore->setDocument('users', $uid, [
     'facility' => 'North Super Health Center',
     'status' => 'pending',
     'createdAt' => date('c'),
+    // A real record of when this account agreed to the Terms of
+    // Service/Privacy Policy (register.php's modals) — the request
+    // itself is already refused above if termsAccepted wasn't true, so
+    // reaching this point means "now" always is that moment.
+    'termsAcceptedAt' => date('c'),
     // Display/audit only — api/session-login.php's actual password-setup
     // GATE checks the real Firebase Auth provider list at login time
     // (see that file's comment), not this field, so it stays correct

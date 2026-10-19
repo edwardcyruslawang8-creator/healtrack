@@ -206,7 +206,7 @@ require_once __DIR__ . '/config/constants.php'; // BASE_URL
 
                 <div class="reg-terms">
                     <input type="checkbox" id="regTerms" required>
-                    <label for="regTerms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</label>
+                    <label for="regTerms">I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms of Service</a> and <a href="#" data-bs-toggle="modal" data-bs-target="#privacyModal">Privacy Policy</a>.</label>
                 </div>
 
                 <!-- Every request here is reviewed before it grants any access —
@@ -261,6 +261,96 @@ require_once __DIR__ . '/config/constants.php'; // BASE_URL
 
     </div>
 
+</div>
+
+<!-- =========================================================
+     TERMS OF SERVICE / PRIVACY POLICY — read-only reference the
+     Terms checkbox's two links open (register.php's "I agree to
+     the Terms of Service and Privacy Policy" row). Agreement
+     itself is still only ever recorded via that checkbox + its
+     required "termsAccepted" flag (assets/js/register.js posts
+     it, api/register.php refuses any request without it, and the
+     approved account's own users/{uid} doc keeps "termsAcceptedAt"
+     as a real record of when) — these modals are just what "the
+     Terms of Service" and "the Privacy Policy" actually say.
+     ========================================================= -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="termsModalLabel">Terms of Service</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body reg-legal-body">
+                <p class="reg-legal-updated">Last updated: <?= date('F Y') ?></p>
+
+                <h6>1. Who this account is for</h6>
+                <p>HEALTrack is a clinical information system for North Super Health Center's own staff — Healthcare Staff, Pharmacists, Medical Technologists, and Doctors. By registering, you confirm that the name, email, phone number, and role you provide are accurate and your own, and that you are a real member of this facility's staff requesting access in that capacity.</p>
+
+                <h6>2. Account review and approval</h6>
+                <p>Creating an account here only submits a request. Every new account starts in a pending state and has no access to any patient or facility data until a sub-administrator reviews and approves it. Submitting a request does not guarantee approval, and a request may be rejected or the role you asked for may be questioned before approval.</p>
+
+                <h6>3. Acceptable use</h6>
+                <p>Once approved, your access is for legitimate clinical and administrative work at this facility only. You agree not to: share your login credentials with anyone else; access patient records you have no clinical or administrative reason to view; attempt to bypass the role-based access controls built into the system; or use the system in any way that could compromise patient safety, data integrity, or the privacy of patients or other staff.</p>
+
+                <h6>4. Confidentiality of health information</h6>
+                <p>Any patient health information you can see through your approved role is confidential. You agree to access, use, and disclose it only as required for your clinical or administrative duties, and never for personal curiosity, convenience, or any purpose outside your role — consistent with this facility's own confidentiality policies and applicable health-data regulations.</p>
+
+                <h6>5. Account security</h6>
+                <p>You are responsible for keeping your password confidential and for all activity under your account. Tell a sub-administrator immediately if you believe your account has been accessed without your authorization. Sessions are automatically signed out after a period of inactivity for everyone's protection.</p>
+
+                <h6>6. Service availability</h6>
+                <p>HEALTrack is provided on an as-available basis for this facility's internal use. Features, pages, and this agreement may change as the system evolves; continued use after a change means you accept the updated terms.</p>
+
+                <h6>7. Suspension and termination</h6>
+                <p>Access may be suspended or removed at any time for a violation of these terms, at the end of your employment or engagement with this facility, or at a sub-administrator's or administrator's discretion.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="privacyModal" tabindex="-1" aria-labelledby="privacyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="privacyModalLabel">Privacy Policy</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body reg-legal-body">
+                <p class="reg-legal-updated">Last updated: <?= date('F Y') ?></p>
+
+                <h6>1. What we collect when you register</h6>
+                <p>Your first and last name, email address, phone number, and the role/job title you select. If you sign up with Google, we also receive the name and email already associated with that Google account instead of asking you to type them. None of this is shared with or sold to any outside party — it exists only to identify you within this facility's own HEALTrack system.</p>
+
+                <h6>2. What we collect once you're approved</h6>
+                <p>Your day-to-day use of the system — the pages you visit, actions you take (such as updating a record), and sign-in activity — is recorded in an internal audit log, the same as every other staff account. This exists for accountability and security, not general monitoring, and is visible only to administrators and sub-administrators.</p>
+
+                <h6>3. How your account information is used</h6>
+                <p>To create and manage your staff account, route your registration request to a sub-administrator for review, let you sign in once approved, enforce what your specific role is allowed to see and do, and contact you (by email) about your account — for example, when your request is approved or rejected.</p>
+
+                <h6>4. Who can see your account information</h6>
+                <p>Administrators and sub-administrators can see your registration details while reviewing your request and afterward, as part of staff account management. Your name and role are visible to other staff in ordinary places the system already shows who did what (for example, audit logs and assignment lists) — your password is never visible to anyone, including administrators; it is stored only as a secure credential inside Firebase Authentication.</p>
+
+                <h6>5. Patient health information</h6>
+                <p>This policy covers your own account data. Any patient health information you access once approved is governed separately by this facility's confidentiality obligations and the Terms of Service's Section 4 — it is never used for anything beyond the clinical/administrative purpose it was accessed for.</p>
+
+                <h6>6. Data retention</h6>
+                <p>Your account information is kept for as long as your account exists, and for a reasonable period afterward for legitimate recordkeeping (for example, audit history tied to actions you took while active). A rejected registration request is retained only long enough to prevent a duplicate request under the same email.</p>
+
+                <h6>7. Your choices</h6>
+                <p>You can ask an administrator or sub-administrator to review, correct, or deactivate your account at any time. If you signed up with a password, you can change it from your own Profile / Settings once your account is approved.</p>
+
+                <h6>8. Contact</h6>
+                <p>Questions about this policy or your data can be directed to a sub-administrator or administrator at North Super Health Center.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Bootstrap 5 JS Bundle -->

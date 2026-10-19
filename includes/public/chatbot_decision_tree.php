@@ -196,6 +196,19 @@ if (!function_exists('hc_chatbot_decide')) {
                 return ['outcome' => 'doctors_info', 'intent' => $intent, 'data' => ['doctors' => hc_chatbot_list_doctors()]];
 
             case 'ask_services':
+                // Dialogflow's single 'ask_services' intent doesn't
+                // distinguish a specific "what lab tests do you offer?"
+                // from a general "what services do you offer?" — same
+                // reasoning/pattern as 'ask_hours_contact' below:
+                // hc_chatbot_is_lab_tests_question() scopes this to the
+                // real, detailed lab catalog when that's actually what
+                // was asked (shared with the legacy engine's own
+                // identical check, so both paths agree), falling back to
+                // the general services summary otherwise.
+                if (hc_chatbot_is_lab_tests_question(strtolower($rawMessage))) {
+                    return ['outcome' => 'lab_tests_info', 'intent' => $intent, 'data' => ['labTestCategories' => hc_lab_test_catalog()]];
+                }
+
                 return [
                     'outcome' => 'services_info',
                     'intent' => $intent,
@@ -284,6 +297,7 @@ if (!function_exists('hc_chatbot_phrase_decision')) {
                 . ($d['postedAt'] !== '' ? " (posted {$d['postedAt']})" : '') . ": \"{$d['title']}\" — {$d['desc']}",
             'no_vaccination_announcement' => 'There\'s no upcoming vaccination announcement on file right now. Please check our Announcements page or contact us directly.',
             'services_info' => hc_chatbot_bullet_list('🏥 NSHC offers:', $d['services']),
+            'lab_tests_info' => hc_chatbot_lab_tests_reply(),
             'covered_barangays_info' => hc_chatbot_bullet_list('📍 NSHC covers the following barangays:', $d['barangays']),
             'health_topic_info' => (hc_chatbot_health_topic_answer($d['topic']) ?? 'I don\'t have verified information on that topic yet.')
                 . ' This is general information, not a diagnosis — for anything specific to you, please consult our healthcare staff directly.',

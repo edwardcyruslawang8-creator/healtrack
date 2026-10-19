@@ -284,16 +284,7 @@ $adminNavItems = [
         <div class="adm-card sad-chart-card" data-dashboard-card="consultationsTrend" data-range-param="trendRange">
             <div class="sad-card-header">
                 <h2>Consultations Trend</h2>
-                <div class="dropdown">
-                    <button class="sad-range-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-range-label>
-                        <?= htmlspecialchars($consultationsTrendRange) ?>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item <?= $consultationsTrendRangeKey === 'this_week' ? 'active' : '' ?>" data-range-value="this_week" href="<?= htmlspecialchars(hc_url_with_params(['trendRange' => 'this_week'])) ?>">This Week</a></li>
-                        <li><a class="dropdown-item <?= $consultationsTrendRangeKey === 'this_month' ? 'active' : '' ?>" data-range-value="this_month" href="<?= htmlspecialchars(hc_url_with_params(['trendRange' => 'this_month'])) ?>">This Month</a></li>
-                        <li><a class="dropdown-item <?= $consultationsTrendRangeKey === 'this_year' ? 'active' : '' ?>" data-range-value="this_year" href="<?= htmlspecialchars(hc_url_with_params(['trendRange' => 'this_year'])) ?>">This Year</a></li>
-                    </ul>
-                </div>
+                <?php $range = $consultationsTrendRangeState; $drBtnClass = 'sad-range-btn'; require __DIR__ . '/../includes/shared/dashboard_range_dropdown.php'; ?>
             </div>
             <div class="sad-canvas-box">
                 <canvas id="consultationsTrendChart"></canvas>
@@ -306,17 +297,7 @@ $adminNavItems = [
         <div class="adm-card sad-chart-card" data-dashboard-card="patientsByAge" data-range-param="ageRange">
             <div class="sad-card-header">
                 <h2>Patients by Age Group</h2>
-                <div class="dropdown">
-                    <button class="sad-range-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-range-label>
-                        <?= htmlspecialchars($patientsByAgeRange) ?>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item <?= $patientsByAgeRangeKey === 'all' ? 'active' : '' ?>" data-range-value="all" href="<?= htmlspecialchars(hc_url_with_params(['ageRange' => 'all'])) ?>">All Time</a></li>
-                        <li><a class="dropdown-item <?= $patientsByAgeRangeKey === 'today' ? 'active' : '' ?>" data-range-value="today" href="<?= htmlspecialchars(hc_url_with_params(['ageRange' => 'today'])) ?>">Today</a></li>
-                        <li><a class="dropdown-item <?= $patientsByAgeRangeKey === 'this_week' ? 'active' : '' ?>" data-range-value="this_week" href="<?= htmlspecialchars(hc_url_with_params(['ageRange' => 'this_week'])) ?>">This Week</a></li>
-                        <li><a class="dropdown-item <?= $patientsByAgeRangeKey === 'this_month' ? 'active' : '' ?>" data-range-value="this_month" href="<?= htmlspecialchars(hc_url_with_params(['ageRange' => 'this_month'])) ?>">This Month</a></li>
-                    </ul>
-                </div>
+                <?php $range = $patientsByAgeRangeState; $drBtnClass = 'sad-range-btn'; require __DIR__ . '/../includes/shared/dashboard_range_dropdown.php'; ?>
             </div>
             <div class="sad-canvas-box">
                 <canvas id="patientsByAgeChart"></canvas>
@@ -351,19 +332,9 @@ $adminNavItems = [
     <div class="adm-card sad-chart-card" data-dashboard-card="healthConditions" data-range-param="conditionsRange">
         <div class="sad-card-header">
             <h2>Top 5 Common Health Conditions</h2>
-            <div class="dropdown">
-                <button class="sad-range-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-range-label>
-                    <?= htmlspecialchars($healthConditionsRange) ?>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item <?= $healthConditionsRangeKey === 'all' ? 'active' : '' ?>" data-range-value="all" href="<?= htmlspecialchars(hc_url_with_params(['conditionsRange' => 'all'])) ?>">All Time</a></li>
-                    <li><a class="dropdown-item <?= $healthConditionsRangeKey === 'today' ? 'active' : '' ?>" data-range-value="today" href="<?= htmlspecialchars(hc_url_with_params(['conditionsRange' => 'today'])) ?>">Today</a></li>
-                    <li><a class="dropdown-item <?= $healthConditionsRangeKey === 'this_week' ? 'active' : '' ?>" data-range-value="this_week" href="<?= htmlspecialchars(hc_url_with_params(['conditionsRange' => 'this_week'])) ?>">This Week</a></li>
-                    <li><a class="dropdown-item <?= $healthConditionsRangeKey === 'this_month' ? 'active' : '' ?>" data-range-value="this_month" href="<?= htmlspecialchars(hc_url_with_params(['conditionsRange' => 'this_month'])) ?>">This Month</a></li>
-                </ul>
-            </div>
+            <?php $range = $healthConditionsRangeState; $drBtnClass = 'sad-range-btn'; require __DIR__ . '/../includes/shared/dashboard_range_dropdown.php'; ?>
         </div>
-        <div data-condition-list-wrap>
+        <div data-card-list-wrap>
             <?php require __DIR__ . '/../includes/subadmin/_dashboard_health_conditions_list.php'; ?>
         </div>
     </div>
@@ -390,10 +361,11 @@ $adminNavItems = [
             'colors' => array_column($patientsByGender, 'color'),
         ],
     ]) ?>;
+    window.HC_DASHBOARD_CARD_ENDPOINT = '../api/subadmin-dashboard-card.php';
 </script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/subadmin_dashboard.js') ?>"></script>
-<script src="<?= asset_url('/assets/js/subadmin-dashboard-filters.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/dashboard-range-filters.js') ?>"></script>
 </body>
 </html>

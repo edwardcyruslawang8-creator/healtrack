@@ -25,20 +25,26 @@
  * Risk/alert indicators, Recommendation cards — the full breakdown, all
  * 5 of those, only lives on the page/tab this card's own link points
  * to; this preview keeps the 3 lightest-weight ones: prediction cards,
- * one forecast trend chart, and risk alerts). Two real shapes are
+ * one forecast trend chart, and risk alerts). Three real shapes are
  * supported, auto-detected by which keys are present:
  *   - hc_disease_demand_forecast()'s own 'forecastTrend'
  *     ({labels, actual, forecast}) — solid "Actual" line up to today,
  *     dashed "Forecast" line for the next 7 days. Used by every role
  *     whose card includes 6.3.1 (admin/subadmin/medical-staff).
- *   - hc_medicine_vaccine_shortage()'s own 'stockProjection'
- *     ({labels, forecast, reorderLevel, itemName}) — a single declining
- *     projected-stock line for the most urgent item, against a flat
- *     "Reorder Level" reference line. Used by
+ *   - hc_medicine_vaccine_shortage()'s own 'shortageTrend'
+ *     ({labels, datasets: [{label, data, color}, ...]}) — one declining
+ *     projected-stock line per at-risk medicine/vaccine (up to 5), all
+ *     at once — same renderMultiLineChart() shape/pattern
+ *     assets/js/predictive-analytics.js already uses for the full
+ *     Predictive Analytics page's own identical chart. Used by
  *     includes/pharmacist/predictive_overview_firestore.php, whose card
  *     keeps only 6.3.2/6.3.3 (no disease forecast — not this role's
  *     job), so there's no "actual vs. forecast" consultation trend to
- *     show instead.
+ *     show instead. Replaces this card's own previous single-item
+ *     'stockProjection' shape, which only ever showed whichever one
+ *     medicine happened to be most urgent (e.g. always "Paracetamol")
+ *     instead of the full at-risk picture across every medicine AND
+ *     vaccine.
  * Rendered with a small self-contained inline <script> (Chart.js is
  * already loaded on every page that includes this partial) rather than
  * a shared JS file, since multiple pages with different existing JS
@@ -89,15 +95,18 @@ $predictiveOverviewTrend = $predictiveOverviewTrend ?? null;
 
     <?php
     $predictiveOverviewTrendIsStock = array_key_exists('reorderLevel', $predictiveOverviewTrend ?? []);
+    $predictiveOverviewTrendIsMultiStock = array_key_exists('datasets', $predictiveOverviewTrend ?? []);
     // Callers whose actual/forecast trend isn't about consultations (e.g.
     // medical_technician's lab/x-ray volume forecast) set
     // $predictiveOverviewTrendLabel themselves beforehand to override this
     // default — see includes/medical_technician/predictive_overview_firestore.php.
-    $predictiveOverviewTrendLabel = $predictiveOverviewTrendLabel ?? ($predictiveOverviewTrendIsStock
-        ? 'Projected Stock Trend' . ($predictiveOverviewTrend['itemName'] !== null ? ' — ' . $predictiveOverviewTrend['itemName'] : '')
-        : 'Consultation Forecast Trend (actual vs. next 7 days)');
+    $predictiveOverviewTrendLabel = $predictiveOverviewTrendLabel ?? match (true) {
+        $predictiveOverviewTrendIsMultiStock => 'Projected Stock Decline — All At-Risk Items',
+        $predictiveOverviewTrendIsStock => 'Projected Stock Trend' . ($predictiveOverviewTrend['itemName'] !== null ? ' — ' . $predictiveOverviewTrend['itemName'] : ''),
+        default => 'Consultation Forecast Trend (actual vs. next 7 days)',
+    };
     ?>
-    <?php if (!empty($predictiveOverviewTrend['labels'])): ?>
+    <?php if (!empty($predictiveOverviewTrend['labels']) && ($predictiveOverviewTrendIsMultiStock ? $predictiveOverviewTrend['datasets'] !== [] : true)): ?>
     <div class="adm-mini-trend-wrap">
         <div class="adm-mini-trend-label"><?= htmlspecialchars($predictiveOverviewTrendLabel) ?></div>
         <div class="adm-mini-trend-canvas-box">
@@ -125,47 +134,70 @@ $predictiveOverviewTrend = $predictiveOverviewTrend ?? null;
 
         var trend = <?= json_encode($predictiveOverviewTrend) ?>;
         var isStock = <?= $predictiveOverviewTrendIsStock ? 'true' : 'false' ?>;
+        var isMultiStock = <?= $predictiveOverviewTrendIsMultiStock ? 'true' : 'false' ?>;
         var rootStyle = getComputedStyle(document.documentElement);
         var gridColor = rootStyle.getPropertyValue('--adm-border').trim() || '#ECEDF3';
         var tickColor = rootStyle.getPropertyValue('--adm-text-muted').trim() || '#6B7280';
 
-        // The stock-projection shape renders as a bar chart (projected
-        // stock per day, as discrete bars) with the reorder level drawn
-        // as a flat reference LINE on top of it — a Chart.js "combo"
-        // chart (base type 'bar' below, this one dataset overridden to
-        // type 'line') rather than two bar series, since "Reorder Level"
-        // is a constant threshold, not its own quantity to compare bar-
-        // for-bar. The actual/forecast shape stays a line chart — an
-        // actual-vs-forecast trend is a continuous quantity over time,
-        // not a per-period count, so a bar per day wouldn't read as
-        // naturally as it does for the stock-projection days.
-        var datasets = isStock ? [
-            {
-                type: 'bar',
-                label: 'Projected Stock', data: trend.forecast,
-                backgroundColor: '#D93025', borderRadius: 3,
-            },
-            {
-                type: 'line',
-                label: 'Reorder Level', data: trend.labels.map(function () { return trend.reorderLevel; }),
-                borderColor: '#9AA0AC', borderDash: [4, 4],
-                borderWidth: 1.5, fill: false, pointRadius: 0, tension: 0,
-            },
-        ] : [
-            {
-                label: 'Actual', data: trend.actual,
-                borderColor: '#1A73E8', backgroundColor: 'rgba(26, 115, 232, 0.10)',
-                borderWidth: 2, fill: true, tension: 0.35, pointRadius: 2,
-            },
-            {
-                label: 'Forecast', data: trend.forecast,
-                borderColor: '#D93025', borderDash: [6, 4],
-                borderWidth: 2, fill: false, tension: 0.35, pointRadius: 2, spanGaps: true,
-            },
-        ];
+        var chartType, datasets;
+        if (isMultiStock) {
+            // One declining projected-stock line per at-risk medicine/
+            // vaccine (up to 5), all at once — same renderMultiLineChart()
+            // shape/pattern assets/js/predictive-analytics.js uses for the
+            // full Predictive Analytics page's own identical chart, so
+            // both read consistently.
+            chartType = 'line';
+            datasets = trend.datasets.map(function (ds) {
+                return {
+                    label: ds.label, data: ds.data,
+                    borderColor: ds.color, backgroundColor: ds.color,
+                    borderWidth: 2, tension: 0.3, pointRadius: 2,
+                };
+            });
+        } else if (isStock) {
+            // The single-item stock-projection shape renders as a bar
+            // chart (projected stock per day, as discrete bars) with the
+            // reorder level drawn as a flat reference LINE on top of it —
+            // a Chart.js "combo" chart (base type 'bar' below, this one
+            // dataset overridden to type 'line') rather than two bar
+            // series, since "Reorder Level" is a constant threshold, not
+            // its own quantity to compare bar-for-bar.
+            chartType = 'bar';
+            datasets = [
+                {
+                    type: 'bar',
+                    label: 'Projected Stock', data: trend.forecast,
+                    backgroundColor: '#D93025', borderRadius: 3,
+                },
+                {
+                    type: 'line',
+                    label: 'Reorder Level', data: trend.labels.map(function () { return trend.reorderLevel; }),
+                    borderColor: '#9AA0AC', borderDash: [4, 4],
+                    borderWidth: 1.5, fill: false, pointRadius: 0, tension: 0,
+                },
+            ];
+        } else {
+            // The actual/forecast shape stays a line chart — an actual-
+            // vs-forecast trend is a continuous quantity over time, not a
+            // per-period count, so a bar per day wouldn't read as
+            // naturally as it does for the stock-projection days.
+            chartType = 'line';
+            datasets = [
+                {
+                    label: 'Actual', data: trend.actual,
+                    borderColor: '#1A73E8', backgroundColor: 'rgba(26, 115, 232, 0.10)',
+                    borderWidth: 2, fill: true, tension: 0.35, pointRadius: 2,
+                },
+                {
+                    label: 'Forecast', data: trend.forecast,
+                    borderColor: '#D93025', borderDash: [6, 4],
+                    borderWidth: 2, fill: false, tension: 0.35, pointRadius: 2, spanGaps: true,
+                },
+            ];
+        }
 
         new Chart(canvas, {
-            type: isStock ? 'bar' : 'line',
+            type: chartType,
             data: { labels: trend.labels, datasets: datasets },
             options: {
                 responsive: true,

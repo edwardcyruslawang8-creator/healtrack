@@ -48,6 +48,13 @@ $medicineStatusMeta['out_of_stock'] = $medicineStatusMeta['unavailable'];
 $medicineStatusOptions = ['All Status', 'In Stock', 'Low Stock', 'Out of Stock'];
 $statusLabelToKey = ['In Stock' => 'available', 'Low Stock' => 'low', 'Out of Stock' => 'unavailable'];
 
+// Real expiry badge ("Expired"/"Expiring Soon") shown per row next to
+// the Expiry Date column — see includes/firestore/medicines.php's
+// hc_inventory_expiry_status()/hc_medicine_expiry_badge_meta() (each
+// item from hc_get_inventory_items() below already carries its own
+// real 'expiryStatus').
+$medicineExpiryBadgeMeta = hc_medicine_expiry_badge_meta();
+
 // ---------------------------------------------------------------------
 // Medicines tab — real list, search, category/status filters, pagination.
 // ---------------------------------------------------------------------

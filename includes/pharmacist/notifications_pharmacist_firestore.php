@@ -3,12 +3,14 @@
  * =====================================================================
  * Notifications (Pharmacist) — Data
  * ---------------------------------------------------------------------
- * CONNECTED — every row is a real notification generated live from TWO
- * merged sources: includes/firestore/medicines.php's
+ * CONNECTED — every row is a real notification generated live from
+ * THREE merged sources: includes/firestore/medicines.php's
  * hc_get_low_stock_notifications() (one entry per medicine/vaccine
  * currently at "low" or "unavailable" stock status, across both the
- * Medicines and Vaccines inventory) and
- * includes/firestore/pharmacy_orders.php's
+ * Medicines and Vaccines inventory), that same file's
+ * hc_get_medicine_expiry_notifications() (one entry per medicine/
+ * vaccine already past its real expiryDate or expiring within 30 days),
+ * and includes/firestore/pharmacy_orders.php's
  * hc_get_pending_pharmacy_order_notifications() (one entry per real
  * medicine/vaccine a doctor prescribed — api/complete-consultation.php's
  * "pharmacy" routing block — still awaiting a "Dispense" on
@@ -40,7 +42,7 @@
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
-require_once __DIR__ . '/../firestore/medicines.php'; // hc_get_low_stock_notifications()
+require_once __DIR__ . '/../firestore/medicines.php'; // hc_get_low_stock_notifications(), hc_get_medicine_expiry_notifications()
 require_once __DIR__ . '/../firestore/pharmacy_orders.php'; // hc_get_pending_pharmacy_order_notifications()
 require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav()
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
@@ -75,6 +77,7 @@ $ntfArchivedIds = $_SESSION['ntfDismissedIds'] ?? [];
 $rawNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'system') ? array_merge(
     array_filter([hc_get_2fa_reminder_notification($myUid, $myDoc ?? [])]),
     hc_notification_preference_enabled_for_doc($myDoc ?? [], 'inventory') ? hc_get_low_stock_notifications() : [],
+    hc_notification_preference_enabled_for_doc($myDoc ?? [], 'inventory') ? hc_get_medicine_expiry_notifications() : [],
     hc_notification_preference_enabled_for_doc($myDoc ?? [], 'inventory') ? hc_get_pending_pharmacy_order_notifications() : []
 ) : [];
 $notifications = array_map(function ($n) use ($ntfReadIds, $ntfArchivedIds) {

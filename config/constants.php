@@ -163,6 +163,7 @@ function subadmin_seed_unread_notification_ids(): array
  */
 function subadmin_unread_notification_count(): int
 {
+    require_once __DIR__ . '/../includes/firestore/medicines.php'; // hc_get_medicine_expiry_notifications()
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_my_2fa_reminder_notification()
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
@@ -172,13 +173,15 @@ function subadmin_unread_notification_count(): int
 
     $readIds = $_SESSION['ntfReadIds'] ?? [];
     $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
-    // The real 2FA reminder is merged in alongside the rest of this
-    // role's own notification list, which is still fixed seed data
+    // The real 2FA reminder and real medicine/vaccine expiry alerts are
+    // merged in alongside the rest of this role's own notification
+    // list, which is still fixed seed data
     // (subadmin_seed_unread_notification_ids() above) — a separate,
-    // pre-existing gap outside this change's scope. This one item is
-    // real regardless.
+    // pre-existing gap outside this change's scope. These two sources
+    // are real regardless.
     $allIds = array_merge(
         subadmin_seed_unread_notification_ids(),
+        hc_notification_preference_enabled('inventory') ? array_column(hc_get_medicine_expiry_notifications(), 'id') : [],
         array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id')
     );
 
@@ -190,9 +193,11 @@ function subadmin_unread_notification_count(): int
  * nav badge + topbar bell badge — same $_SESSION['ntfReadIds']
  * mechanism as subadmin_unread_notification_count() above, but the
  * "universe of ids" isn't a fixed seed list: it's real, generated live
- * from TWO sources merged together — includes/firestore/medicines.php's
+ * from THREE sources merged together — includes/firestore/medicines.php's
  * hc_get_low_stock_notifications() (every medicine/vaccine currently
- * low or out of stock) AND includes/firestore/pharmacy_orders.php's
+ * low or out of stock), hc_get_medicine_expiry_notifications() (every
+ * medicine/vaccine already expired or expiring soon), AND
+ * includes/firestore/pharmacy_orders.php's
  * hc_get_pending_pharmacy_order_notifications() (every medicine/vaccine
  * a doctor prescribed that's still awaiting dispensing) — so the count
  * rises and falls with real inventory AND real prescriptions instead of
@@ -215,6 +220,7 @@ function hc_pharmacist_unread_notification_count(): int
     $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
     $allIds = array_merge(
         hc_notification_preference_enabled('inventory') ? array_column(hc_get_low_stock_notifications(), 'id') : [],
+        hc_notification_preference_enabled('inventory') ? array_column(hc_get_medicine_expiry_notifications(), 'id') : [],
         hc_notification_preference_enabled('inventory') ? array_column(hc_get_pending_pharmacy_order_notifications(), 'id') : [],
         array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id')
     );

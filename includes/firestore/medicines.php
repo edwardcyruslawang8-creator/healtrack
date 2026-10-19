@@ -43,12 +43,62 @@ if (!function_exists('hc_medicine_status_meta')) {
     }
 }
 
+if (!function_exists('hc_inventory_expiry_status')) {
+    /**
+     * 'expired' | 'soon' | 'ok' for a real expiryDate raw string ('Y-m-d',
+     * as hc_get_inventory_items() stores it in 'expiryDateRaw') — blank
+     * or unparseable means 'ok' (nothing real to warn about). Same
+     * 30-day "soon" window hc_get_medicine_expiry_notifications() and
+     * includes/subadmin/inventory_reports_firestore.php's own "Expiring
+     * Soon" stat/table already use, so the Medicine & Vaccine Inventory
+     * table's per-row badge (see hc_medicine_expiry_badge_meta()) never
+     * disagrees with either of those about what counts as "soon".
+     */
+    function hc_inventory_expiry_status(string $expiryDateRaw, int $daysSoon = 30): string
+    {
+        if ($expiryDateRaw === '') {
+            return 'ok';
+        }
+        $expiry = strtotime($expiryDateRaw);
+        if ($expiry === false) {
+            return 'ok';
+        }
+        $today = strtotime(date('Y-m-d'));
+        if ($expiry < $today) {
+            return 'expired';
+        }
+        if ($expiry <= strtotime("+{$daysSoon} days", $today)) {
+            return 'soon';
+        }
+
+        return 'ok';
+    }
+}
+
+if (!function_exists('hc_medicine_expiry_badge_meta')) {
+    /**
+     * hc_inventory_expiry_status() key -> badge meta, same {label, bg,
+     * color} shape hc_medicine_status_meta() already uses for the Status
+     * column — rendered as a second badge next to the Expiry Date column
+     * on the Medicine & Vaccine Inventory table whenever a row's real
+     * expiry isn't 'ok'. No 'ok' entry on purpose — a normal, far-off
+     * expiry date has nothing to flag.
+     */
+    function hc_medicine_expiry_badge_meta(): array
+    {
+        return [
+            'expired' => ['label' => 'Expired',       'bg' => '#FCE4E4', 'color' => '#D93025'],
+            'soon'    => ['label' => 'Expiring Soon',  'bg' => '#FDF3DC', 'color' => '#B7791F'],
+        ];
+    }
+}
+
 if (!function_exists('hc_get_inventory_items')) {
     /**
      * Every medicines/{id} doc matching $type ("medicine" or "vaccine"),
      * newest-name-first (alphabetical) with human-formatted date strings.
      *
-     * @return array<int, array{id: string, name: string, category: string, unit: string, form: string, desc: string, currentStock: int, minLevel: int, reorderLevel: int, expiryDate: string, expiryDateRaw: string, status: string, lastUpdatedRaw: string, lastUpdated: string, icon: string, colorMeta: array}>
+     * @return array<int, array{id: string, name: string, category: string, unit: string, form: string, desc: string, currentStock: int, minLevel: int, reorderLevel: int, expiryDate: string, expiryDateRaw: string, expiryStatus: string, status: string, lastUpdatedRaw: string, lastUpdated: string, icon: string, colorMeta: array}>
      */
     function hc_get_inventory_items(string $type): array
     {
@@ -81,6 +131,7 @@ if (!function_exists('hc_get_inventory_items')) {
                 'reorderLevel' => (int) ($f['reorderLevel'] ?? 0),
                 'expiryDateRaw' => $f['expiryDate'] ?? '',
                 'expiryDate' => isset($f['expiryDate']) && $f['expiryDate'] !== '' ? strtoupper(date('M d, Y', strtotime($f['expiryDate']))) : '—',
+                'expiryStatus' => hc_inventory_expiry_status($f['expiryDate'] ?? ''),
                 'status' => $f['status'] ?? 'available',
                 'lastUpdatedRaw' => $f['lastUpdated'] ?? '',
                 'lastUpdated' => isset($f['lastUpdated']) && $f['lastUpdated'] !== '' ? date('M j, Y g:i A', strtotime($f['lastUpdated'])) : '—',
@@ -257,6 +308,68 @@ if (!function_exists('hc_get_low_stock_notifications')) {
                 'icon' => $item['icon'],
                 'iconBg' => $isOut ? '#FCE4E4' : '#FDECDD',
                 'iconColor' => $isOut ? '#D93025' : '#E8710A',
+            ];
+        }, $items);
+    }
+}
+
+if (!function_exists('hc_get_medicine_expiry_notifications')) {
+    /**
+     * One real notification row per medicine/vaccine that's either
+     * already past its real expiryDate or will reach it within
+     * $daysSoon days (default 30 — the same window
+     * includes/subadmin/inventory_reports_firestore.php's own "Expiring
+     * Soon" stat/table already uses, so this page never disagrees with
+     * that one about what counts as "soon"), across both
+     * hc_get_inventory_items() types — for pharmacist/notifications.php,
+     * subadmin/notifications.php, and their two unread badges (see
+     * config/constants.php's hc_pharmacist_unread_notification_count()
+     * and subadmin_unread_notification_count()). Items with no recorded
+     * expiry are skipped entirely — nothing real to alert on. Already-
+     * expired items surface before still-expiring-soon ones (more
+     * urgent), ties broken by soonest real expiry date first.
+     *
+     * 'id' is crc32() of "expiry:{doc id}" rather than crc32($item['id'])
+     * alone (the scheme hc_get_low_stock_notifications() already uses) —
+     * the SAME medicine doc can be both low-stock AND expiring soon at
+     * once, and the shared read-tracking session field
+     * ($_SESSION['ntfReadIds']) can't tell two different notifications
+     * about the same item apart if they collide on one int id.
+     *
+     * @return array<int, array{id: int, title: string, description: string, type: string, date: string, time: string, icon: string, iconBg: string, iconColor: string}>
+     */
+    function hc_get_medicine_expiry_notifications(int $daysSoon = 30): array
+    {
+        $items = array_merge(hc_get_inventory_items('medicine'), hc_get_inventory_items('vaccine'));
+        $items = array_values(array_filter($items, fn ($item) => hc_inventory_expiry_status($item['expiryDateRaw'], $daysSoon) !== 'ok'));
+
+        usort($items, fn ($a, $b) => strcmp($a['expiryDateRaw'], $b['expiryDateRaw']));
+
+        $today = strtotime(date('Y-m-d'));
+
+        return array_map(function ($item) use ($today) {
+            $expiry = strtotime($item['expiryDateRaw']);
+            $isExpired = $expiry < $today;
+            $daysUntil = (int) floor(($expiry - $today) / 86400);
+
+            if ($isExpired) {
+                $description = $item['name'] . ' expired on ' . date('M j, Y', $expiry) . '.';
+            } elseif ($daysUntil === 0) {
+                $description = $item['name'] . ' expires today (' . date('M j, Y', $expiry) . ').';
+            } else {
+                $description = $item['name'] . ' expires in ' . $daysUntil . ' day' . ($daysUntil === 1 ? '' : 's') . ' (' . date('M j, Y', $expiry) . ').';
+            }
+
+            return [
+                'id' => crc32('expiry:' . $item['id']),
+                'title' => $isExpired ? 'Expired' : 'Expiring soon',
+                'description' => $description,
+                'type' => 'Inventory',
+                'date' => date('M j, Y', $expiry),
+                'time' => '',
+                'icon' => $item['icon'],
+                'iconBg' => $isExpired ? '#FCE4E4' : '#FDF3DC',
+                'iconColor' => $isExpired ? '#D93025' : '#B7791F',
             ];
         }, $items);
     }

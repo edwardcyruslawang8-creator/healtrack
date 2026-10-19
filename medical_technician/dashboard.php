@@ -240,19 +240,10 @@ $staffNavItems = [
     <!-- ============ TESTS TREND + TESTS BY TYPE + RESULT STATUS ============ -->
     <div class="mt-row-3">
 
-        <div class="adm-card mt-chart-card">
+        <div class="adm-card mt-chart-card" data-dashboard-card="testsTrend" data-range-param="trendRange">
             <div class="mt-card-header">
                 <h2>Tests Processed Trend</h2>
-                <div class="dropdown">
-                    <button class="mt-range-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <?= htmlspecialchars($testsTrendRange) ?>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['trendRange' => 'this_week'])) ?>">This Week</a></li>
-                        <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['trendRange' => 'this_month'])) ?>">This Month</a></li>
-                        <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['trendRange' => 'this_year'])) ?>">This Year</a></li>
-                    </ul>
-                </div>
+                <?php $range = $testsTrendRangeState; $drBtnClass = 'mt-range-btn'; require __DIR__ . '/../includes/shared/dashboard_range_dropdown.php'; ?>
             </div>
             <div class="mt-canvas-box">
                 <canvas id="testsTrendChart"></canvas>
@@ -262,19 +253,10 @@ $staffNavItems = [
             </div>
         </div>
 
-        <div class="adm-card mt-chart-card">
+        <div class="adm-card mt-chart-card" data-dashboard-card="testsByType" data-range-param="typeRange">
             <div class="mt-card-header">
                 <h2>Tests by Type</h2>
-                <div class="dropdown">
-                    <button class="mt-range-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <?= htmlspecialchars($testsByTypeRange) ?>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['typeRange' => 'this_week'])) ?>">This Week</a></li>
-                        <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['typeRange' => 'this_month'])) ?>">This Month</a></li>
-                        <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['typeRange' => 'this_year'])) ?>">This Year</a></li>
-                    </ul>
-                </div>
+                <?php $range = $testsByTypeRangeState; $drBtnClass = 'mt-range-btn'; require __DIR__ . '/../includes/shared/dashboard_range_dropdown.php'; ?>
             </div>
             <div class="mt-canvas-box">
                 <canvas id="testsByTypeChart"></canvas>
@@ -456,6 +438,8 @@ $staffNavItems = [
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
+<script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 
 <script>
     // Hands all chart numbers to assets/js/medical_technician_dashboard.js
@@ -475,8 +459,10 @@ $staffNavItems = [
             'colors' => array_column($requestType, 'color'),
         ],
     ]) ?>;
+    window.HC_DASHBOARD_CARD_ENDPOINT = '../api/medical-technician-dashboard-card.php';
 </script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/medical_technician_dashboard.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/dashboard-range-filters.js') ?>"></script>
 </body>
 </html>

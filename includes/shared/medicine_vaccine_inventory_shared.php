@@ -23,6 +23,7 @@
  */
 
 require_once __DIR__ . '/fuzzy_search.php'; // hc_fuzzy_match()
+require_once __DIR__ . '/../firestore/medicines.php'; // hc_inventory_expiry_status(), hc_medicine_expiry_badge_meta()
 
 if (!function_exists('hc_compute_medicine_vaccine_inventory')) {
     function hc_compute_medicine_vaccine_inventory(): array
@@ -58,6 +59,10 @@ if (!function_exists('hc_compute_medicine_vaccine_inventory')) {
         $medicineStatusMeta['low_stock'] = $medicineStatusMeta['low'];
         $medicineStatusMeta['out_of_stock'] = $medicineStatusMeta['unavailable'];
         $result['medicineStatusMeta'] = $medicineStatusMeta;
+
+        // Real expiry badge ("Expired"/"Expiring Soon") meta, keyed by
+        // each row's own real 'expiryStatus' (set below in $formatDates).
+        $result['medicineExpiryBadgeMeta'] = hc_medicine_expiry_badge_meta();
 
         // -------------------------------------------------------------
         // Real medicine + vaccine lists — every medicines/{id} doc, split
@@ -115,6 +120,7 @@ if (!function_exists('hc_compute_medicine_vaccine_inventory')) {
 
         $formatDates = function (&$row) {
             $row['expiryDateRaw'] = $row['expiryDate'];
+            $row['expiryStatus'] = hc_inventory_expiry_status($row['expiryDate']);
             $row['expiryDate'] = $row['expiryDate'] !== '' ? strtoupper(date('M d, Y', strtotime($row['expiryDate']))) : '—';
             $row['lastUpdated'] = $row['lastUpdated'] !== '' ? date('M j, Y g:i A', strtotime($row['lastUpdated'])) : '—';
         };
