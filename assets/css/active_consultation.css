@@ -233,6 +233,10 @@
 .acv-lab-test-title{ font-size: 13.5px; font-weight: 700; color: var(--adm-text); }
 .acv-lab-test-desc{ font-size: 11.5px; color: var(--adm-text-muted); margin-top: 1px; }
 
+/* Scrollable instead of letting Serology's long list (the tallest
+   category) stretch this whole panel — and with it the rest of the
+   routing card below it — far down the page with a mostly-empty
+   second column next to it. */
 .acv-lab-test-grid{
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -240,7 +244,12 @@
   grid-template-rows: repeat(3, auto);
   gap: 16px;
   margin-bottom: 12px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 10px;
 }
+.acv-lab-test-grid::-webkit-scrollbar{ width: 6px; }
+.acv-lab-test-grid::-webkit-scrollbar-thumb{ background: var(--adm-border); border-radius: 3px; }
 .acv-lab-test-category-title{ font-size: 12px; font-weight: 700; color: var(--adm-text); margin-bottom: 8px; }
 .acv-lab-test-checkbox{
   display: flex;
