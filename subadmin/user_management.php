@@ -306,15 +306,18 @@ $adminNavItems = [
     <!-- ============ PENDING APPROVALS ============
          Self-registered accounts (register.php) awaiting a decision —
          see includes/subadmin/user_management_firestore.php's header
-         comment. Approve grants real access (status -> active);
-         Reject deletes the request entirely (both the Firestore doc
-         and the Firebase Auth account), since there's no "rejected"
-         state to leave it in. -->
+         comment. Each row's "Manage User" button opens
+         #usmPendingDetailsModal so a sub-admin reviews the real
+         submitted details first, rather than approving/rejecting blind
+         from the table row alone — same reasoning #usmManageUserModal
+         already applies to the active User List below. Approve grants
+         real access (status -> active); Reject deletes the request
+         entirely (both the Firestore doc and the Firebase Auth
+         account), since there's no "rejected" state to leave it in. -->
     <div class="adm-card" id="pendingApprovals" style="margin-bottom:24px;">
         <div class="adm-card-header">
             <h2>Pending Approvals</h2>
         </div>
-        <div id="pendingApprovalsError" class="alert alert-danger py-2 px-3 small d-none mx-3" role="alert"></div>
         <div class="adm-table-wrap">
             <table class="adm-table">
                 <thead>
@@ -342,8 +345,15 @@ $adminNavItems = [
                         <td><?= htmlspecialchars($p['requestedAt']) ?></td>
                         <td>
                             <div class="adm-action-btns">
-                                <button type="button" class="adm-action-btn continue acm-approve-btn" aria-label="Approve" data-bs-toggle="modal" data-bs-target="#usmApproveModal" data-user-id="<?= htmlspecialchars((string) $p['uid']) ?>" data-user-name="<?= htmlspecialchars($p['name']) ?>"><i class="bi bi-check-lg"></i></button>
-                                <button type="button" class="adm-action-btn delete acm-reject-btn" aria-label="Reject"><i class="bi bi-x-lg"></i></button>
+                                <button type="button" class="usm-manage-btn" data-bs-toggle="modal" data-bs-target="#usmPendingDetailsModal"
+                                        data-user-id="<?= htmlspecialchars((string) $p['uid']) ?>"
+                                        data-user-name="<?= htmlspecialchars($p['name']) ?>"
+                                        data-user-email="<?= htmlspecialchars($p['email']) ?>"
+                                        data-user-phone="<?= htmlspecialchars($p['phone']) ?>"
+                                        data-user-role="<?= htmlspecialchars($p['jobTitle']) ?>"
+                                        data-user-role-bg="<?= htmlspecialchars($p['roleBg']) ?>"
+                                        data-user-role-color="<?= htmlspecialchars($p['roleColor']) ?>"
+                                        data-user-requested-at="<?= htmlspecialchars($p['requestedAt']) ?>">Manage User</button>
                             </div>
                         </td>
                     </tr>
@@ -444,7 +454,9 @@ $adminNavItems = [
 
         <div class="adm-table-footer">
             <span class="adm-showing-text"><?= $usersTotal > 0 ? 'Showing ' . (($usersCurrentPage - 1) * $usersPerPage + 1) . ' to ' . (($usersCurrentPage - 1) * $usersPerPage + count($users)) . ' of ' . $usersTotal . ' entries' : 'No entries to show' ?></span>
+            <?php if ($usersTotalPages > 1): ?>
             <?= hc_render_pagination_nav('Users pages', 'page', $usersCurrentPage, $usersTotalPages) ?>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -642,8 +654,55 @@ $adminNavItems = [
     </div>
 </div>
 
+<!-- ============ PENDING ACCOUNT DETAILS MODAL ============
+     Triggered by each Pending Approvals row's own "Manage User" button
+     — lets a sub-admin review a self-registered account's real
+     submitted details (register.php) before deciding, instead of
+     approving/rejecting blind from the table row alone. Populated
+     purely from the clicked button's own data-user-* attributes (same
+     no-network-request pattern as #usmManageUserModal above, since the
+     page already rendered every field server-side). "Approve"/"Reject"
+     hand off to their own confirmation modals below, carrying the
+     uid/name along — same hand-off pattern #usmManageUserModal already
+     uses for Suspend/Lock/etc. -->
+<div class="modal fade am-modal" id="usmPendingDetailsModal" tabindex="-1" aria-labelledby="usmPendingDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="usmPendingDetailsModalLabel">Account Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="usm-profile-header">
+                    <span class="usm-profile-avatar"><i class="bi bi-person-fill"></i></span>
+                    <div class="usm-profile-identity">
+                        <h5 class="usm-profile-name" id="updName"></h5>
+                        <div class="usm-profile-badges">
+                            <span class="usm-badge" id="updRoleBadge"></span>
+                            <span class="usm-badge" style="background:#FDF3DC; color:#B7791F;">Pending</span>
+                        </div>
+                    </div>
+                </div>
+
+                <dl class="am-detail-list">
+                    <div class="am-detail-row"><dt>Email</dt><dd id="updEmail"></dd></div>
+                    <div class="am-detail-row"><dt>Phone</dt><dd id="updPhone"></dd></div>
+                    <div class="am-detail-row"><dt>Requested On</dt><dd id="updRequestedAt"></dd></div>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="usm-modal-btn-cancel" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="usm-modal-btn-delete" id="updRejectTrigger"><i class="bi bi-x-lg"></i> Reject</button>
+                <button type="button" class="usm-modal-btn-approve" id="updApproveTrigger"><i class="bi bi-check-lg"></i> Approve</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ============ APPROVE (ASSIGN FACILITY) MODAL ============
-     Self-registered accounts (register.php) never have a Facility on
+     Opened from #usmPendingDetailsModal's own Approve button (not the
+     table row directly any more). Self-registered accounts
+     (register.php) never have a Facility on
      file — nothing on that public form asks for one — so this is the
      first real point sub-admin can set it, required before access is
      granted. Facility drives real downstream filtering (e.g.
@@ -674,6 +733,31 @@ $adminNavItems = [
     </div>
 </div>
 
+<!-- ============ REJECT ACCOUNT REQUEST MODAL ============
+     Opened from #usmPendingDetailsModal's own Reject button (not the
+     table row directly any more, and no longer a plain browser
+     confirm() — a real confirmation modal matching every other
+     destructive action on this page). Deletes the request entirely
+     (both the Firestore doc and the Firebase Auth account), since
+     there's no "rejected" state to leave it in — same real
+     api/reject-account.php this page always used. -->
+<div class="modal fade" id="usmRejectModal" tabindex="-1" aria-labelledby="usmRejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content usm-delete-modal">
+            <div class="modal-body">
+                <div class="usm-delete-icon"><i class="bi bi-x-lg"></i></div>
+                <h5 id="usmRejectModalLabel">Reject Account Request</h5>
+                <p>Reject <strong id="usmRejectModalUserName">this account</strong>? This cannot be undone — the request will be deleted entirely.</p>
+                <div id="usmRejectModalError" class="alert alert-danger py-2 px-3 small d-none text-start" role="alert"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="usm-modal-btn-cancel" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="usm-modal-btn-delete" id="usmRejectModalConfirmBtn">Reject Request</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ============ UNLOCK ACCOUNT MODAL ============
      Only ever offered on a row whose status is "locked" — set for real
      by includes/shared/login_lockout.php after 7 failed sign-in
@@ -698,10 +782,7 @@ $adminNavItems = [
 
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
-<script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
-<script src="<?= asset_url('/assets/js/account-approvals.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/add-user-subadmin.js') ?>"></script>
 <script>
@@ -890,56 +971,86 @@ var hcUnlockModal = hcCreateUserStatusModal({
     if (unlockTrigger) unlockTrigger.addEventListener('click', function () { handOffTo(hcUnlockModal); });
 })();
 
-// Approve modal — fills in the clicked row's user id/name, then
+// Approve modal — opened programmatically (via .open(uid, name)) from
+// #usmPendingDetailsModal's own Approve button below, same
+// hcCreateUserStatusModal() controller Suspend/Lock/Reactivate/Unlock
+// already use, rather than its own hand-rolled copy of the same logic.
 // "Approve" POSTs {uid} to api/approve-account.php, which assigns this
 // sub-admin's own real facility server-side (never a client-supplied
 // one — see that file's header comment), so there's nothing to pick
 // here any more.
+var hcApproveModal = hcCreateUserStatusModal({
+    modalId: 'usmApproveModal',
+    nameId: 'usmApproveModalUserName',
+    errorId: 'usmApproveModalError',
+    confirmBtnId: 'usmApproveModalConfirmBtn',
+    endpoint: '../api/approve-account.php',
+    busyLabel: 'Approving…',
+});
+
+// Reject modal — same controller, opened from #usmPendingDetailsModal's
+// own Reject button. Replaces the old plain browser confirm() +
+// immediate POST (assets/js/account-approvals.js, now removed) with a
+// real confirmation modal matching every other destructive action here.
+var hcRejectModal = hcCreateUserStatusModal({
+    modalId: 'usmRejectModal',
+    nameId: 'usmRejectModalUserName',
+    errorId: 'usmRejectModalError',
+    confirmBtnId: 'usmRejectModalConfirmBtn',
+    endpoint: '../api/reject-account.php',
+    busyLabel: 'Rejecting…',
+});
+
+// Pending Account Details modal — detail list populated purely from
+// the clicked row's own data-user-* attributes (same no-network-
+// request pattern as #usmManageUserModal above). Approve/Reject hand
+// off to their own confirmation modals above, same handOffTo()
+// reasoning #usmManageUserModal already uses for Suspend/Lock/etc.
 (function () {
-    var modalEl = document.getElementById('usmApproveModal');
-    var nameEl = document.getElementById('usmApproveModalUserName');
-    var errorEl = document.getElementById('usmApproveModalError');
-    var confirmBtn = document.getElementById('usmApproveModalConfirmBtn');
-    var confirmBtnDefaultHtml = confirmBtn.innerHTML;
-    var pendingUid = null;
+    var modalEl = document.getElementById('usmPendingDetailsModal');
+    if (!modalEl) return;
+
+    var fields = {
+        name: document.getElementById('updName'),
+        roleBadge: document.getElementById('updRoleBadge'),
+        email: document.getElementById('updEmail'),
+        phone: document.getElementById('updPhone'),
+        requestedAt: document.getElementById('updRequestedAt'),
+    };
+
+    var currentUid = null;
+    var currentName = null;
 
     modalEl.addEventListener('show.bs.modal', function (event) {
         var trigger = event.relatedTarget;
-        pendingUid = trigger ? trigger.getAttribute('data-user-id') : null;
-        nameEl.textContent = (trigger && trigger.getAttribute('data-user-name')) || 'this account';
-        errorEl.classList.add('d-none');
-        confirmBtn.disabled = false;
-        confirmBtn.innerHTML = confirmBtnDefaultHtml;
+        if (!trigger) return;
+
+        currentUid = trigger.getAttribute('data-user-id');
+        currentName = trigger.getAttribute('data-user-name');
+
+        fields.name.textContent = currentName || '—';
+        fields.email.textContent = trigger.getAttribute('data-user-email') || '—';
+        fields.phone.textContent = trigger.getAttribute('data-user-phone') || '—';
+        fields.requestedAt.textContent = trigger.getAttribute('data-user-requested-at') || '—';
+
+        fields.roleBadge.textContent = trigger.getAttribute('data-user-role') || '—';
+        fields.roleBadge.style.background = trigger.getAttribute('data-user-role-bg') || '';
+        fields.roleBadge.style.color = trigger.getAttribute('data-user-role-color') || '';
     });
 
-    confirmBtn.addEventListener('click', function () {
-        if (!pendingUid) return;
+    function handOffTo(targetModal) {
+        if (!targetModal || !currentUid) return;
+        modalEl.addEventListener('hidden.bs.modal', function once() {
+            modalEl.removeEventListener('hidden.bs.modal', once);
+            targetModal.open(currentUid, currentName);
+        });
+        bootstrap.Modal.getInstance(modalEl).hide();
+    }
 
-        errorEl.classList.add('d-none');
-        confirmBtn.disabled = true;
-        confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Approving…';
-
-        fetch('../api/approve-account.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ uid: pendingUid }),
-        })
-            .then(function (res) {
-                return res.json().then(function (data) { return { ok: res.ok, data: data }; });
-            })
-            .then(function (result) {
-                if (!result.ok || !result.data.success) {
-                    throw new Error(result.data.error || 'Something went wrong. Please try again.');
-                }
-                window.location.reload();
-            })
-            .catch(function (err) {
-                errorEl.textContent = err.message;
-                errorEl.classList.remove('d-none');
-                confirmBtn.disabled = false;
-                confirmBtn.innerHTML = confirmBtnDefaultHtml;
-            });
-    });
+    var approveTrigger = document.getElementById('updApproveTrigger');
+    var rejectTrigger = document.getElementById('updRejectTrigger');
+    if (approveTrigger) approveTrigger.addEventListener('click', function () { handOffTo(hcApproveModal); });
+    if (rejectTrigger) rejectTrigger.addEventListener('click', function () { handOffTo(hcRejectModal); });
 })();
 
 </script>

@@ -21,11 +21,17 @@
  *     assets/js/gis.js already uses client-side for barangay search).
  *   - Vaccination schedule -> the most recent REAL "announcements" doc
  *     that actually mentions vaccination, not an invented date.
- * The remaining intents (services/hours/health-tips/greeting) are
- * genuinely static institutional information (same real values as
- * index.php's own footer), which is honest — there's no Firestore
- * collection for "services offered" or "health tips" to query, so
- * nothing here pretends otherwise.
+ * Contact details (phone/email/address) and operating hours are read
+ * live from includes/shared/homepage_settings.php's
+ * hc_get_homepage_settings() — the same real, subadmin-editable
+ * settings index.php's own footer reads — via
+ * hc_chatbot_contact_settings() below, rather than a hardcoded copy
+ * that would silently drift out of sync the moment a sub-admin changes
+ * the real contact info in subadmin/homepage_settings.php. The
+ * remaining intents (services/health-tips/greeting) are genuinely
+ * static institutional information with no Firestore collection of
+ * their own to query, which is honest — nothing here pretends
+ * otherwise.
  * =====================================================================
  */
 
@@ -35,6 +41,34 @@ require_once __DIR__ . '/../shared/predictive_analytics_core.php'; // HC_COVERED
 require_once __DIR__ . '/../../firebase/firestore.php'; // getAnnouncements()
 require_once __DIR__ . '/../firestore/consultations.php'; // hc_get_physician_options()
 require_once __DIR__ . '/../firestore/lab_results.php'; // hc_lab_test_catalog()
+require_once __DIR__ . '/../shared/homepage_settings.php'; // hc_get_homepage_settings()
+
+if (!function_exists('hc_chatbot_contact_settings')) {
+    /** @internal Memoized per request — every chatbot reply that needs contact info/hours calls this instead of its own Firestore read. */
+    function hc_chatbot_contact_settings(): array
+    {
+        static $settings = null;
+        if ($settings === null) {
+            $settings = hc_get_homepage_settings();
+        }
+
+        return $settings;
+    }
+}
+
+if (!function_exists('hc_chatbot_hours_sentence')) {
+    /** Turns the real operatingHours array into one plain sentence, e.g. "Monday - Friday 8:00 AM - 5:00 PM, Saturday: Closed, Sunday & Holidays: Closed." — never a hardcoded guess at what the hours currently are. */
+    function hc_chatbot_hours_sentence(array $operatingHours): string
+    {
+        $parts = array_map(function ($row) {
+            $hours = (string) ($row['hours'] ?? '');
+            $label = (string) ($row['label'] ?? '');
+            return strcasecmp($hours, 'closed') === 0 ? ($label . ': Closed') : ($label . ' ' . $hours);
+        }, $operatingHours);
+
+        return 'We\'re open ' . implode(', ', $parts) . '.';
+    }
+}
 
 if (!function_exists('hc_chatbot_bullet_list')) {
     /**
@@ -579,7 +613,7 @@ if (!function_exists('hc_chatbot_followup_reply')) {
         }
 
         $d = $topic['data'];
-        $doctorOutro = 'We don\'t have live schedule/duty data online yet, so for who\'s available today, please call us at (02) 8123-4567 or visit in person.';
+        $doctorOutro = 'We don\'t have live schedule/duty data online yet, so for who\'s available today, please call us at ' . hc_chatbot_contact_settings()['contactPhone'] . ' or visit in person.';
 
         return match ($topic['type']) {
             'medicine' => hc_chatbot_item_status_reply($d),
@@ -1002,29 +1036,31 @@ if (!function_exists('hc_chatbot_contact_reply')) {
      */
     function hc_chatbot_contact_reply(string $lowerQuestion): string
     {
+        $c = hc_chatbot_contact_settings();
+
         if (preg_match('/\b(contact number|phone number|phone|call (us|you)?)\b/i', $lowerQuestion) === 1) {
-            return 'You can reach us at (02) 8123-4567.';
+            return 'You can reach us at ' . $c['contactPhone'] . '.';
         }
         if (preg_match('/\bemail\b/i', $lowerQuestion) === 1) {
-            return 'You can email us at info@northsuperhealthcenter.gov.ph.';
+            return 'You can email us at ' . $c['contactEmail'] . '.';
         }
         if (preg_match('/\b(address|location|where are you|where is (nshc|the clinic|the health center))\b/i', $lowerQuestion) === 1) {
-            return 'We\'re located at 123 Health Center Road, Barangay Central.';
+            return 'We\'re located at ' . $c['contactAddress'] . '.';
         }
         if (preg_match('/\b(hours?|open|close[ds]?)\b/i', $lowerQuestion) === 1) {
-            return 'We\'re open Monday-Friday 8:00 AM-5:00 PM and Saturday 8:00 AM-12:00 PM, closed Sundays & holidays.';
+            return hc_chatbot_hours_sentence($c['operatingHours']);
         }
 
         // Generic "how can I contact you?" with no specific channel
         // named — the only case that still gets the full bundle.
-        return 'We\'re open Monday-Friday 8:00 AM-5:00 PM and Saturday 8:00 AM-12:00 PM, closed Sundays & holidays. Reach us at (02) 8123-4567 or info@northsuperhealthcenter.gov.ph, or visit us at 123 Health Center Road, Barangay Central.';
+        return hc_chatbot_hours_sentence($c['operatingHours']) . ' Reach us at ' . $c['contactPhone'] . ' or ' . $c['contactEmail'] . ', or visit us at ' . $c['contactAddress'] . '.';
     }
 }
 
 if (!function_exists('hc_chatbot_confidential_reply')) {
     function hc_chatbot_confidential_reply(): string
     {
-        return 'For your privacy and security, I can\'t access or share patient records, lab results, IDs, or any personal medical information through this chat — I don\'t have that data at all. To request your own records securely, please visit us in person or call (02) 8123-4567 and bring a valid ID.';
+        return 'For your privacy and security, I can\'t access or share patient records, lab results, IDs, or any personal medical information through this chat — I don\'t have that data at all. To request your own records securely, please visit us in person or call ' . hc_chatbot_contact_settings()['contactPhone'] . ' and bring a valid ID.';
     }
 }
 
@@ -1231,7 +1267,7 @@ if (!function_exists('hc_chatbot_answer')) {
                 return $decline . ' Here\'s some general information instead: ' . hc_chatbot_health_topic_answer($topicKey);
             }
 
-            return $decline . ' Please visit us or call (02) 8123-4567 to get a proper recommendation.';
+            return $decline . ' Please visit us or call ' . hc_chatbot_contact_settings()['contactPhone'] . ' to get a proper recommendation.';
         }
 
         // 1b. General "what medicines/vaccines are available?" — no
@@ -1289,7 +1325,7 @@ if (!function_exists('hc_chatbot_answer')) {
         // from "available right now"/schedule, which this system has no
         // real data for at all.
         if (preg_match('/\bdoctors?\b|\bphysicians?\b|\bdr\.?\b/i', $lower) === 1) {
-            $outro = 'We don\'t have live schedule/duty data online yet, so for who\'s available today, please call us at (02) 8123-4567 or visit in person.';
+            $outro = 'We don\'t have live schedule/duty data online yet, so for who\'s available today, please call us at ' . hc_chatbot_contact_settings()['contactPhone'] . ' or visit in person.';
 
             // A specific name was asked about (e.g. "who is Dr.
             // Villareal?") — confirm that one doctor, not the whole
@@ -1372,33 +1408,34 @@ if (!function_exists('hc_chatbot_answer')) {
         // and can't do online rather than guessing (there's no patient
         // login/booking flow anywhere in this app).
         if (preg_match('/\bappointment(s)?\b|\bbook(ing)?\b/i', $lower) === 1) {
-            return 'We don\'t currently support booking appointments online — walk-ins are welcome during our operating hours, or you can call us at (02) 8123-4567 to ask about scheduling a visit.';
+            return 'We don\'t currently support booking appointments online — walk-ins are welcome during our operating hours, or you can call us at ' . hc_chatbot_contact_settings()['contactPhone'] . ' to ask about scheduling a visit.';
         }
 
         // 4d. Insurance/PhilHealth — honest deflect; this system has no
         // real data on accepted insurance/PhilHealth arrangements, so it
         // asks the patient to confirm with staff rather than guessing.
         if (preg_match('/\binsurance\b|\bphilhealth\b|\bhmo\b/i', $lower) === 1) {
-            return 'For insurance and PhilHealth coverage questions, please contact us directly at (02) 8123-4567 or ask our staff during your visit — that way you get the most accurate, up-to-date answer.';
+            return 'For insurance and PhilHealth coverage questions, please contact us directly at ' . hc_chatbot_contact_settings()['contactPhone'] . ' or ask our staff during your visit — that way you get the most accurate, up-to-date answer.';
         }
 
         // 4e. Prescription refills — same honest deflect; no online
         // refill-request flow exists in this system.
         if (preg_match('/\brefill\b|\bprescription\b/i', $lower) === 1) {
-            return 'We don\'t currently support prescription refill requests online. Please visit us in person or call (02) 8123-4567, and bring your prescription or medicine record with you.';
+            return 'We don\'t currently support prescription refill requests online. Please visit us in person or call ' . hc_chatbot_contact_settings()['contactPhone'] . ', and bring your prescription or medicine record with you.';
         }
 
         // 4f. New-patient registration — honest deflect; this app has no
         // real self-registration flow/requirements to relay (patient
         // records here are created by staff, not by patients).
         if (preg_match('/\bregist(er|ration)\b|\bnew patient\b|\bsign\s?up\b|\bbecome a patient\b/i', $lower) === 1) {
-            return 'To register as a new patient, please visit us in person at 123 Health Center Road, Barangay Central, or call (02) 8123-4567 for what to bring — we don\'t currently support registering online.';
+            $c = hc_chatbot_contact_settings();
+            return 'To register as a new patient, please visit us in person at ' . $c['contactAddress'] . ', or call ' . $c['contactPhone'] . ' for what to bring — we don\'t currently support registering online.';
         }
 
         // 4g. Cost/fees/pricing — honest deflect; no real pricing data
         // exists in this system to quote.
         if (preg_match('/\b(cost|price|pricing|fee|fees|how much)\b/i', $lower) === 1) {
-            return 'For the most accurate pricing and fees, please contact us at (02) 8123-4567 or ask our staff directly — costs can depend on the specific service.';
+            return 'For the most accurate pricing and fees, please contact us at ' . hc_chatbot_contact_settings()['contactPhone'] . ' or ask our staff directly — costs can depend on the specific service.';
         }
 
         // 5. General health tips — genuinely general, not personalized

@@ -182,12 +182,15 @@ foreach ($rawUsers as $doc) {
     if (($f['status'] ?? '') !== 'pending') {
         continue;
     }
+    $pendingRoleMeta = $roleMeta[$f['role'] ?? ''] ?? ['bg' => '#EEF0F3', 'color' => '#6B7280'];
     $pendingAccounts[] = [
         'uid' => $doc['id'],
         'name' => $f['name'] ?? '(no name)',
         'email' => $f['email'] ?? '—',
         'phone' => $f['phone'] ?? '—',
         'jobTitle' => $f['jobTitle'] ?? ucfirst($f['role'] ?? 'Unknown'),
+        'roleBg' => $pendingRoleMeta['bg'],
+        'roleColor' => $pendingRoleMeta['color'],
         'requestedAtRaw' => $f['createdAt'] ?? '',
         'requestedAt' => isset($f['createdAt']) ? date('M j, Y g:i A', strtotime($f['createdAt'])) : '—',
     ];

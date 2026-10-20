@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const submitBtn = document.getElementById('registerBtn');
     const submitBtnDefaultHtml = submitBtn.innerHTML;
     const BASE_URL = window.APP_BASE_URL || '';
+    const termsCheckbox = document.getElementById('regTerms');
 
     function showError(message) {
         errorBox.textContent = message;
@@ -54,6 +55,36 @@ document.addEventListener('DOMContentLoaded', function () {
     function hideMessages() {
         errorBox.classList.add('d-none');
         successBox.classList.add('d-none');
+    }
+
+    /* ---------- Terms of Service / Privacy Policy gate ----------
+       Forces the Terms modal open (rather than just leaving the
+       checkbox unexamined) the moment Create Account or Sign up with
+       Google is clicked without #regTerms checked yet — see
+       register.php's header comment above these modals. Each modal's
+       own "I Agree" button checks the one #regTerms checkbox and
+       closes the modal; the user then clicks Create Account/Google
+       again to actually proceed. */
+    const termsModalEl = document.getElementById('termsModal');
+    function showTermsModal() {
+        if (termsModalEl && typeof bootstrap !== 'undefined') {
+            bootstrap.Modal.getOrCreateInstance(termsModalEl).show();
+        }
+    }
+    function agreeAndCloseModal(modalEl) {
+        termsCheckbox.checked = true;
+        if (modalEl && typeof bootstrap !== 'undefined') {
+            const instance = bootstrap.Modal.getInstance(modalEl);
+            if (instance) instance.hide();
+        }
+    }
+    const termsAgreeBtn = document.getElementById('termsAgreeBtn');
+    if (termsAgreeBtn) {
+        termsAgreeBtn.addEventListener('click', function () { agreeAndCloseModal(termsModalEl); });
+    }
+    const privacyAgreeBtn = document.getElementById('privacyAgreeBtn');
+    if (privacyAgreeBtn) {
+        privacyAgreeBtn.addEventListener('click', function () { agreeAndCloseModal(document.getElementById('privacyModal')); });
     }
 
     /* ---------- "Sign up with Google" ----------
@@ -77,6 +108,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const googleBtnDefaultHtml = googleBtn.innerHTML;
         googleBtn.addEventListener('click', function () {
             hideMessages();
+            if (!termsCheckbox.checked) {
+                showTermsModal();
+                return;
+            }
             googleBtn.disabled = true;
             googleBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Signing in...';
 
@@ -161,6 +196,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (!termsAccepted) {
             showError('Please agree to the Terms of Service and Privacy Policy to continue.');
+            showTermsModal();
             return;
         }
 

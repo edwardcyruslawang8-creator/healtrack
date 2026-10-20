@@ -44,6 +44,15 @@ require_once __DIR__ . '/../includes/medical-staff/patient_profile_medstaff_fire
 // $labStatusMeta, $recentLabResults, $recentXray, $vaccineStatusMeta,
 // $vaccinationHistory
 
+// A real PHI-access record every time this page actually resolves a
+// patient (never for a blocked/not-found id — nothing was really
+// viewed then) — see subadmin/audit_logs.php and this account's own
+// Audit Logs tab for where this shows up.
+if ($patient !== null) {
+    require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
+    write_audit_log('viewed', 'Patient Management', 'Viewed ' . $patient['name'] . "'s patient profile.");
+}
+
 // Sidebar nav — same Medical Staff nav list as medical-staff/dashboard.php.
 // Patient Management stays active (this page is reached from it).
 $staffNavItems = [

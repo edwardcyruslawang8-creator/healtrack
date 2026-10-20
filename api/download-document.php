@@ -26,6 +26,7 @@ session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/shared/document_storage.php';
+require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 
 if (!in_array($_SESSION['role'] ?? null, ['doctor', 'healthcare_staff', 'subadmin'], true)) {
     http_response_code(403);
@@ -73,6 +74,8 @@ if ($storedFileName === '' || !is_file($filePath)) {
 $ext = strtolower(pathinfo($storedFileName, PATHINFO_EXTENSION));
 $downloadName = (string) ($doc['name'] ?? ('document.' . $ext));
 $disposition = (($_GET['view'] ?? '') === '1') ? 'inline' : 'attachment';
+
+write_audit_log('viewed', 'Patient Management', ($disposition === 'inline' ? 'Viewed' : 'Downloaded') . ' ' . $downloadName . ' for ' . ($patient['name'] ?? 'a patient') . '.');
 
 header('Content-Type: ' . hc_document_mime_for_extension($ext));
 header('Content-Disposition: ' . $disposition . '; filename="' . str_replace('"', '', $downloadName) . '"');

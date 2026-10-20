@@ -29,6 +29,8 @@
  */
 
 require_once __DIR__ . '/../public/chatbot-data.php'; // $chatSuggestionCards, $otherActions
+require_once __DIR__ . '/homepage_settings.php'; // hc_get_homepage_settings()
+$hcWidgetContact = hc_get_homepage_settings();
 ?>
 <!-- ============ CHATBOT WIDGET: FLOATING LAUNCHER ============ -->
 <div class="chatbot-fab-wrap" id="chatbotFabWrap">
@@ -135,7 +137,7 @@ require_once __DIR__ . '/../public/chatbot-data.php'; // $chatSuggestionCards, $
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p class="contact-modal-phone"><i class="bi bi-telephone-fill"></i> (02) 8123-4567</p>
+                <p class="contact-modal-phone"><i class="bi bi-telephone-fill"></i> <?= htmlspecialchars($hcWidgetContact['contactPhone']) ?></p>
                 <p class="contact-modal-hint">Or write your message below and we'll open it in your email app, addressed to our office.</p>
                 <div class="mb-0">
                     <label for="contactMessage" class="form-label">Your message</label>
@@ -143,7 +145,12 @@ require_once __DIR__ . '/../public/chatbot-data.php'; // $chatSuggestionCards, $
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn-email-us" id="emailUsBtn">
+                <!-- Real office email (includes/shared/homepage_settings.php),
+                     never hardcoded — assets/js/chatbot-widget.js reads it
+                     from this attribute instead of its own copy, so the
+                     mailto: link can't drift out of sync with what a
+                     sub-admin has actually set. -->
+                <button type="button" class="btn-email-us" id="emailUsBtn" data-office-email="<?= htmlspecialchars($hcWidgetContact['contactEmail']) ?>">
                     <i class="bi bi-envelope-fill"></i> Email Us
                 </button>
             </div>

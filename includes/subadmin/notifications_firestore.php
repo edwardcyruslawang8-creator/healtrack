@@ -10,10 +10,13 @@
  * there's no general-purpose notifications collection anywhere in this
  * app yet (every real notification across every role is computed live
  * from its own real data source instead, same as the rest of this
- * app's notification pages). Two sources here ARE real: the medicine/
- * vaccine expiry alerts (includes/firestore/medicines.php's
+ * app's notification pages). Three sources here ARE real: new-account
+ * requests awaiting approval (includes/firestore/accounts.php's
+ * hc_get_pending_account_notifications() — a sub-admin is notified the
+ * moment someone registers via register.php), the medicine/vaccine
+ * expiry alerts (includes/firestore/medicines.php's
  * hc_get_medicine_expiry_notifications(), replacing what used to be a
- * single fake "Expired Medicine Alert" seed row) and the 2FA reminder
+ * single fake "Expired Medicine Alert" seed row), and the 2FA reminder
  * below. $adminProfile is real too — read from the signed-in sub-
  * admin's own Firestore users/{uid} document.
  *
@@ -27,6 +30,7 @@
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/medicines.php'; // hc_get_medicine_expiry_notifications()
+require_once __DIR__ . '/../firestore/accounts.php'; // hc_get_pending_account_notifications()
 require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav()
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
 require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
@@ -79,7 +83,24 @@ foreach ($expiryNotifications as &$expiryNotification) {
     $expiryNotification['unread'] = true;
 }
 unset($expiryNotification);
-$notifications = array_merge($expiryNotifications, $notifications);
+
+// Real new-account requests awaiting this sub-admin's approval
+// (includes/firestore/accounts.php's hc_get_pending_account_notifications(),
+// register.php/api/register.php) — same facility-scoped isolation
+// subadmin/user_management.php's "Pending Approvals" table already
+// applies. Doesn't fit 'inventory'/'consultation'/'consent' any more
+// cleanly than doctor's patient-access-request notifications or
+// medical_technician's pending lab/x-ray ones do, so it's gated by
+// 'system' only too — see notification_preferences.php's header comment.
+$pendingAccountNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'system')
+    ? hc_get_pending_account_notifications()
+    : [];
+foreach ($pendingAccountNotifications as &$pendingAccountNotification) {
+    $pendingAccountNotification['unread'] = true;
+}
+unset($pendingAccountNotification);
+
+$notifications = array_merge($pendingAccountNotifications, $expiryNotifications, $notifications);
 
 // The real 2FA reminder (see config/constants.php's
 // subadmin_unread_notification_count(), which already counts this toward

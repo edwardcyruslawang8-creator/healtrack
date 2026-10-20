@@ -372,14 +372,17 @@ document.addEventListener('DOMContentLoaded', function () {
        whatever they typed in the textarea. ---------- */
     const emailUsBtn = document.getElementById('emailUsBtn');
     const contactMessageBox = document.getElementById('contactMessage');
-    const NSHC_OFFICE_EMAIL = 'info@northsuperhealthcenter.gov.ph';
 
     if (emailUsBtn) {
         emailUsBtn.addEventListener('click', function () {
+            // Real office email (includes/shared/homepage_settings.php),
+            // rendered into data-office-email server-side — never a
+            // hardcoded address here that could drift out of sync.
+            const officeEmail = emailUsBtn.dataset.officeEmail || '';
             const message = contactMessageBox ? contactMessageBox.value.trim() : '';
             const subject = encodeURIComponent('Message from NSHC Assistant');
             const body = encodeURIComponent(message || 'Hello NSHC team,\n\n');
-            window.location.href = 'mailto:' + NSHC_OFFICE_EMAIL + '?subject=' + subject + '&body=' + body;
+            window.location.href = 'mailto:' + officeEmail + '?subject=' + subject + '&body=' + body;
         });
     }
 

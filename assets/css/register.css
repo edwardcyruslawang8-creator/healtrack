@@ -141,3 +141,17 @@
 .reg-legal-body h6:first-of-type{ margin-top: 0; }
 .reg-legal-body p{ margin: 0 0 4px; }
 .reg-legal-updated{ color: var(--text-soft); font-size: 12px; margin-bottom: 14px; }
+
+/* "I Agree" button — each legal modal's actual affirmative action,
+   same visual weight as .btn-sign-in (assets/css/login.css). */
+.reg-legal-agree-btn{
+  background: var(--maroon);
+  color: #fff;
+  border: none;
+  padding: 9px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  transition: background .15s ease;
+}
+.reg-legal-agree-btn:hover{ background: var(--maroon-dark); color: #fff; }

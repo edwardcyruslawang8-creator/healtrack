@@ -264,15 +264,19 @@ require_once __DIR__ . '/config/constants.php'; // BASE_URL
 </div>
 
 <!-- =========================================================
-     TERMS OF SERVICE / PRIVACY POLICY — read-only reference the
-     Terms checkbox's two links open (register.php's "I agree to
-     the Terms of Service and Privacy Policy" row). Agreement
-     itself is still only ever recorded via that checkbox + its
-     required "termsAccepted" flag (assets/js/register.js posts
-     it, api/register.php refuses any request without it, and the
+     TERMS OF SERVICE / PRIVACY POLICY — opened either by their own
+     links in the "I agree to..." row, OR forced open automatically
+     (assets/js/register.js) the moment someone clicks "Create
+     Account" or "Sign up with Google" before having checked
+     #regTerms — so the actual text is shown, not just an easy
+     checkbox to tick unread. Each modal's own "I Agree" button
+     checks #regTerms and closes it; clicking Create Account/Google
+     again then proceeds normally. Agreement itself is still only
+     ever recorded via that one checkbox + its required
+     "termsAccepted" flag (assets/js/register.js posts it,
+     api/register.php refuses any request without it, and the
      approved account's own users/{uid} doc keeps "termsAcceptedAt"
-     as a real record of when) — these modals are just what "the
-     Terms of Service" and "the Privacy Policy" actually say.
+     as a real record of when).
      ========================================================= -->
 <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-lg">
@@ -307,6 +311,12 @@ require_once __DIR__ . '/config/constants.php'; // BASE_URL
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <!-- Checks the single #regTerms checkbox and closes the
+                     modal (assets/js/register.js) — the actual
+                     affirmative "I read this" action, since this modal
+                     is now forced open before Create Account/Google
+                     sign-up can proceed without it. -->
+                <button type="button" class="reg-legal-agree-btn" id="termsAgreeBtn">I Agree</button>
             </div>
         </div>
     </div>
@@ -348,6 +358,7 @@ require_once __DIR__ . '/config/constants.php'; // BASE_URL
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="reg-legal-agree-btn" id="privacyAgreeBtn">I Agree</button>
             </div>
         </div>
     </div>
