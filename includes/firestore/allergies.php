@@ -15,7 +15,7 @@ if (!function_exists('hc_get_allergies_for_patient')) {
     /**
      * Every allergies/{id} doc for $patientId, newest added first.
      *
-     * @return array<int, array{id: string, allergen: string, subtype: ?string, type: string, icon: string, iconBg: string, iconColor: string, reaction: string, severity: string, onsetDate: string, lastOccurred: string, addedOn: string, status: string, notes: string, recommendations: string, summary: string, description: string, symptoms: array, history: array}>
+     * @return array<int, array{id: string, allergen: string, subtype: ?string, type: string, icon: string, iconBg: string, iconColor: string, reaction: string, severity: string, onsetDate: string, lastOccurred: string, addedOn: string, updatedOn: string, status: string, notes: string, recommendations: string, summary: string, description: string, symptoms: array, history: array}>
      */
     function hc_get_allergies_for_patient(string $patientId): array
     {
@@ -42,6 +42,9 @@ if (!function_exists('hc_get_allergies_for_patient')) {
                 'onsetDate' => date('M j, Y', strtotime($f['onsetDate'])),
                 'lastOccurred' => date('M j, Y', strtotime($f['lastOccurred'])),
                 'addedOn' => date('M j, Y', strtotime($f['addedOn'])),
+                // Last status change (api/update-allergy-status.php);
+                // records never changed since being added fall back to addedOn.
+                'updatedOn' => date('M j, Y', strtotime($f['statusUpdatedOn'] ?? $f['addedOn'])),
                 'status' => $f['status'],
                 'notes' => $f['notes'],
                 'recommendations' => $f['recommendations'],
@@ -60,7 +63,7 @@ if (!function_exists('hc_empty_allergy')) {
         return [
             'id' => '', 'allergen' => 'No allergies on record.', 'subtype' => null, 'type' => '—',
             'icon' => 'bi-shield-fill-check', 'iconBg' => '#EEF0F3', 'iconColor' => '#6B7280',
-            'reaction' => '—', 'severity' => 'mild', 'onsetDate' => '—', 'lastOccurred' => '—', 'addedOn' => '—',
+            'reaction' => '—', 'severity' => 'mild', 'onsetDate' => '—', 'lastOccurred' => '—', 'addedOn' => '—', 'updatedOn' => '—',
             'status' => 'resolved', 'notes' => '—', 'recommendations' => '—', 'summary' => 'No allergies on record for this patient.',
             'description' => '—', 'symptoms' => [], 'history' => [],
         ];
@@ -83,16 +86,54 @@ if (!function_exists('hc_resolve_selected_allergy')) {
     }
 }
 
+if (!function_exists('hc_allergy_type_meta')) {
+    /**
+     * Allergy Type -> table icon/colors, for allergies added from the
+     * medical-staff "Add Allergy Record" modal (api/create-allergy-record.php).
+     * "Other" matches the icon/colors api/create-patient.php and
+     * api/add-allergy.php already store.
+     *
+     * @return array<string, array{icon: string, iconBg: string, iconColor: string}>
+     */
+    function hc_allergy_type_meta(): array
+    {
+        return [
+            'Environmental' => ['icon' => 'bi-tree-fill',                 'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E'],
+            'Food'          => ['icon' => 'bi-egg-fried',                 'iconBg' => '#FDECDD', 'iconColor' => '#E8710A'],
+            'Medication'    => ['icon' => 'bi-capsule',                   'iconBg' => '#FCE4E4', 'iconColor' => '#D93025'],
+            'Other'         => ['icon' => 'bi-exclamation-triangle-fill', 'iconBg' => '#FDECDD', 'iconColor' => '#E8710A'],
+        ];
+    }
+}
+
 if (!function_exists('hc_allergy_summary')) {
-    /** Real counts/summary over an already-fetched $allergyRecords list. */
+    /**
+     * Real counts/summary over an already-fetched $allergyRecords list.
+     *
+     * - totalAllergies: every record, active or not — each record is
+     *   counted once no matter which table it's in.
+     * - activeAllergies: status "active" only.
+     * - severeAllergies: ACTIVE severe allergies only ("Requires
+     *   caution") — a resolved severe allergy no longer needs it.
+     * - lastUpdated: newest of any record's added date / last status change.
+     */
     function hc_allergy_summary(array $allergyRecords): array
     {
         $total = count($allergyRecords);
+        $active = array_filter($allergyRecords, fn ($a) => $a['status'] === 'active');
+
+        $latest = 0;
+        foreach ($allergyRecords as $a) {
+            foreach ([$a['addedOn'], $a['updatedOn'] ?? $a['addedOn']] as $d) {
+                $latest = max($latest, (int) strtotime($d));
+            }
+        }
 
         return [
             'totalAllergies' => $total,
-            'severeAllergies' => count(array_filter($allergyRecords, fn ($a) => $a['severity'] === 'severe')),
-            'lastUpdated' => $allergyRecords[0]['addedOn'] ?? '—',
+            'activeAllergies' => count($active),
+            'severeAllergies' => count(array_filter($active, fn ($a) => $a['severity'] === 'severe')),
+            'lastUpdated' => $latest > 0 ? date('M j, Y', $latest) : '—',
             'status' => $total > 0 ? 'Up to date' : 'No records',
         ];
     }

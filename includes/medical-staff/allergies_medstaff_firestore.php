@@ -45,12 +45,15 @@ $allergyRecordsTotal = count($allergyRecords);
 $activeAllergies = array_values(array_filter($allergyRecords, fn ($a) => $a['status'] === 'active'));
 $inactiveAllergies = array_values(array_filter($allergyRecords, fn ($a) => $a['status'] !== 'active'));
 
-// The record shown in the "Allergy Details" panel below the table —
-// whichever row's "Select" action was clicked (?recordId=), falling
-// back to the most recently added record.
-$selectedAllergy = hc_resolve_selected_allergy($allergyRecords, $_GET['recordId'] ?? null);
-
 // ---------------------------------------------------------------------
 // Allergy Summary — real counts over $allergyRecords.
 // ---------------------------------------------------------------------
 $allergySummary = hc_allergy_summary($allergyRecords);
+
+// ---------------------------------------------------------------------
+// "Add Allergy Record" modal (includes/medical-staff/add_allergy_modal.php)
+// ---------------------------------------------------------------------
+$allergyTypeOptions = array_keys(hc_allergy_type_meta()); // Environmental, Food, Medication, Other
+// Onset Date can't predate birth. $patient only has the display-formatted
+// birth date ("Mar 4, 1990"), which strtotime() parses.
+$algBirthDateRaw = $patient['birthDate'] !== '—' && strtotime($patient['birthDate']) ? date('Y-m-d', strtotime($patient['birthDate'])) : '';
