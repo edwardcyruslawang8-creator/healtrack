@@ -18,7 +18,8 @@ require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_recor
 
 header('Content-Type: application/json');
 
-if (!in_array($_SESSION['role'] ?? null, ['doctor', 'healthcare_staff', 'subadmin'], true)) {
+// Sub-admins have read-only access to medical history.
+if (!in_array($_SESSION['role'] ?? null, ['doctor', 'healthcare_staff'], true)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Not authorized.']);
     exit;

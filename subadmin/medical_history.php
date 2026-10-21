@@ -13,10 +13,9 @@
  *
  * CONNECTED to real Firestore data across all three sections — see
  * includes/subadmin/medical_history_firestore.php's header comment.
- * Chronic Conditions/Past Surgeries/Family History each have real
- * Add/Edit/Delete (assets/js/medical-history.js,
- * includes/shared/medical_history_modals.php, api/add-condition.php
- * and its siblings).
+ * Read-only for sub-admins: no Add/Edit/Delete on any section (the
+ * shared api/add-*, api/update-* and api/delete-* endpoints also reject
+ * the subadmin role).
  *
  * Every profile-tab link (data-ajax-tab) is smooth-swapped by
  * assets/js/ajax-tab-nav.js instead of a real navigation — see that
@@ -317,36 +316,29 @@ $adminNavItems = [
     <!-- ============ MEDICAL HISTORY SECTION HEADER ============ -->
     <div class="mhx-intro">
         <h2>Medical History</h2>
-        <p>View and manage patient's past and existing medical history.</p>
+        <p>View patient's past and existing medical history.</p>
     </div>
 
     <!-- ============ CHRONIC CONDITIONS ============ -->
     <div class="adm-card mhx-section">
         <div class="mhx-section-header">
             <h3><i class="bi bi-heart-pulse-fill"></i> Chronic Conditions</h3>
-            <button type="button" class="mhx-add-btn" data-mhx-add="condition"><i class="bi bi-plus-lg"></i> Add</button>
         </div>
         <div class="adm-table-wrap">
             <table class="adm-table mhx-table">
                 <thead>
-                    <tr><th>Condition</th><th>Date Diagnosed</th><th>Status</th><th>Notes</th><th>Actions</th></tr>
+                    <tr><th>Condition</th><th>Date Diagnosed</th><th>Status</th><th>Notes</th></tr>
                 </thead>
                 <tbody>
                     <?php if (empty($chronicConditions)): ?>
-                    <tr><td colspan="5" class="adm-table-empty">No chronic conditions on record.</td></tr>
+                    <tr><td colspan="4" class="adm-table-empty">No chronic conditions on record.</td></tr>
                     <?php endif; ?>
-                    <?php foreach ($chronicConditions as $c): $rowJson = htmlspecialchars(json_encode($c), ENT_QUOTES); ?>
+                    <?php foreach ($chronicConditions as $c): ?>
                     <tr>
                         <td class="mhx-cond-label"><?= htmlspecialchars($c['label']) ?></td>
                         <td><?= htmlspecialchars($c['diagnosedOn']) ?></td>
                         <td><span class="mhx-status-badge <?= strtolower($c['status']) ?>"><?= htmlspecialchars($c['status']) ?></span></td>
                         <td class="mhx-notes-cell"><?= htmlspecialchars($c['details'] ?? '—') ?></td>
-                        <td>
-                            <div class="adm-action-btns">
-                                <button type="button" class="adm-action-btn edit" aria-label="Edit" data-mhx-edit="condition" data-id="<?= htmlspecialchars($c['id']) ?>" data-row='<?= $rowJson ?>'><i class="bi bi-pencil"></i></button>
-                                <button type="button" class="adm-action-btn delete" aria-label="Delete" data-mhx-delete="condition" data-id="<?= htmlspecialchars($c['id']) ?>" data-label="&quot;<?= htmlspecialchars($c['label']) ?>&quot;"><i class="bi bi-trash"></i></button>
-                            </div>
-                        </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -361,29 +353,22 @@ $adminNavItems = [
     <div class="adm-card mhx-section">
         <div class="mhx-section-header">
             <h3><i class="bi bi-bandaid-fill"></i> Past Surgeries / Procedures</h3>
-            <button type="button" class="mhx-add-btn" data-mhx-add="surgery"><i class="bi bi-plus-lg"></i> Add</button>
         </div>
         <div class="adm-table-wrap">
             <table class="adm-table mhx-table">
                 <thead>
-                    <tr><th>Procedure</th><th>Date</th><th>Surgeon / Facility</th><th>Notes</th><th>Actions</th></tr>
+                    <tr><th>Procedure</th><th>Date</th><th>Surgeon / Facility</th><th>Notes</th></tr>
                 </thead>
                 <tbody>
                     <?php if (empty($surgicalHistory)): ?>
-                    <tr><td colspan="5" class="adm-table-empty">No past surgeries or procedures on record.</td></tr>
+                    <tr><td colspan="4" class="adm-table-empty">No past surgeries or procedures on record.</td></tr>
                     <?php endif; ?>
-                    <?php foreach ($surgicalHistory as $s): $rowJson = htmlspecialchars(json_encode($s), ENT_QUOTES); ?>
+                    <?php foreach ($surgicalHistory as $s): ?>
                     <tr>
                         <td class="mhx-cond-label"><?= htmlspecialchars($s['procedure']) ?></td>
                         <td><?= htmlspecialchars($s['date']) ?></td>
                         <td><?= htmlspecialchars($s['surgeonFacility'] ?? '—') ?></td>
                         <td class="mhx-notes-cell"><?= htmlspecialchars($s['details'] ?? '—') ?></td>
-                        <td>
-                            <div class="adm-action-btns">
-                                <button type="button" class="adm-action-btn edit" aria-label="Edit" data-mhx-edit="surgery" data-id="<?= htmlspecialchars($s['id']) ?>" data-row='<?= $rowJson ?>'><i class="bi bi-pencil"></i></button>
-                                <button type="button" class="adm-action-btn delete" aria-label="Delete" data-mhx-delete="surgery" data-id="<?= htmlspecialchars($s['id']) ?>" data-label="&quot;<?= htmlspecialchars($s['procedure']) ?>&quot;"><i class="bi bi-trash"></i></button>
-                            </div>
-                        </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -398,27 +383,20 @@ $adminNavItems = [
     <div class="adm-card mhx-section">
         <div class="mhx-section-header">
             <h3><i class="bi bi-people-fill"></i> Family History</h3>
-            <button type="button" class="mhx-add-btn" data-mhx-add="family"><i class="bi bi-plus-lg"></i> Add</button>
         </div>
         <div class="adm-table-wrap">
             <table class="adm-table mhx-table">
                 <thead>
-                    <tr><th>Condition</th><th>Relation</th><th>Actions</th></tr>
+                    <tr><th>Condition</th><th>Relation</th></tr>
                 </thead>
                 <tbody>
                     <?php if (empty($familyHistory)): ?>
-                    <tr><td colspan="3" class="adm-table-empty">No family history on record.</td></tr>
+                    <tr><td colspan="2" class="adm-table-empty">No family history on record.</td></tr>
                     <?php endif; ?>
-                    <?php foreach ($familyHistory as $f): $rowJson = htmlspecialchars(json_encode($f), ENT_QUOTES); ?>
+                    <?php foreach ($familyHistory as $f): ?>
                     <tr>
                         <td class="mhx-cond-label"><?= htmlspecialchars($f['condition']) ?></td>
                         <td><?= htmlspecialchars($f['relation']) ?></td>
-                        <td>
-                            <div class="adm-action-btns">
-                                <button type="button" class="adm-action-btn edit" aria-label="Edit" data-mhx-edit="family" data-id="<?= htmlspecialchars($f['id']) ?>" data-row='<?= $rowJson ?>'><i class="bi bi-pencil"></i></button>
-                                <button type="button" class="adm-action-btn delete" aria-label="Delete" data-mhx-delete="family" data-id="<?= htmlspecialchars($f['id']) ?>" data-label="&quot;<?= htmlspecialchars($f['condition']) ?>&quot;"><i class="bi bi-trash"></i></button>
-                            </div>
-                        </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -429,8 +407,6 @@ $adminNavItems = [
         <?php endif; ?>
     </div>
 
-    <?php require __DIR__ . '/../includes/shared/medical_history_modals.php'; ?>
-
 </main>
 
 <!-- Bootstrap 5 JS Bundle -->
@@ -439,6 +415,5 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-tab-nav.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
-<script src="<?= asset_url('/assets/js/medical-history.js') ?>"></script>
 </body>
 </html>
