@@ -1,10 +1,10 @@
 <?php
 /**
  * =====================================================================
- * Radio Technologist X-ray Queue Status (api/radiotech-xray-queue-status.php)
+ * Radiologic Technologist X-ray Queue Status (api/radiotech-xray-queue-status.php)
  * ---------------------------------------------------------------------
  * Polled every few seconds by assets/js/radiotech_xray_consultation.js
- * on radio_technologist/xray_consultation.php so the stat card
+ * on radiologic_technologist/xray_consultation.php so the stat card
  * (#xcReferralStats) and the referrals table (#xcReferralTable) refresh
  * themselves in place — e.g. the moment a doctor completes a
  * consultation routed to X-ray (api/complete-consultation.php), a new
@@ -31,17 +31,17 @@ if (($_SESSION['role'] ?? null) !== 'radio_technologist') {
     exit;
 }
 
-require_once __DIR__ . '/../includes/radio_technologist/xray_consultation_firestore.php';
+require_once __DIR__ . '/../includes/radiologic_technologist/xray_consultation_firestore.php';
 // $referralsSummary, $referralRows, $referralsTotal, $referralsPerPage,
 // $referralsCurrentPage, $referralsTotalPages, $referralsPaginationWindow,
 // $referralsStatsSignature, $referralsTableSignature
 
 ob_start();
-require __DIR__ . '/../includes/radio_technologist/_xray_referral_stats.php';
+require __DIR__ . '/../includes/radiologic_technologist/_xray_referral_stats.php';
 $statsHtml = ob_get_clean();
 
 ob_start();
-require __DIR__ . '/../includes/radio_technologist/_xray_referral_table.php';
+require __DIR__ . '/../includes/radiologic_technologist/_xray_referral_table.php';
 $tableHtml = ob_get_clean();
 
 echo json_encode([

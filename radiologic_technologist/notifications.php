@@ -2,17 +2,17 @@
 /**
  * =====================================================================
  * HEALTrack — Health Information System
- * Notifications (radio_technologist/notifications.php)
+ * Notifications (radiologic_technologist/notifications.php)
  * ---------------------------------------------------------------------
- * Top-level Radio Technologist section (its own sidebar nav item).
+ * Top-level Radiologic Technologist section (its own sidebar nav item).
  * Reuses the exact same sidebar/topbar shell as the rest of
- * radio_technologist/*.php plus assets/css/notifications.css AND
+ * radiologic_technologist/*.php plus assets/css/notifications.css AND
  * assets/js/notifications.js directly — both are already generic (DOM
  * ids only, no role-specific logic). Modeled directly on
  * medical_technician/notifications.php.
  *
  * CONNECTED — every notification is real (see
- * includes/radio_technologist/notifications_radiotech_firestore.php's
+ * includes/radiologic_technologist/notifications_radiotech_firestore.php's
  * header comment) and Mark as read genuinely persists via
  * $_SESSION['ntfReadIds'] (+ the signed-in technologist's own Firestore
  * doc, surviving logout/login too).
@@ -27,7 +27,7 @@ if (($_SESSION['role'] ?? null) !== 'radio_technologist') {
     exit;
 }
 
-require_once __DIR__ . '/../includes/radio_technologist/notifications_radiotech_firestore.php';
+require_once __DIR__ . '/../includes/radiologic_technologist/notifications_radiotech_firestore.php';
 // $staffProfile, $dashboardDateLabel, $facilityOptions, $notificationTabs,
 // $notificationTypeOptions, $notifications, $notificationsTotal,
 // $notificationsPerPage, $notificationsCurrentPage, $notificationsTotalPages
@@ -36,7 +36,7 @@ require_once __DIR__ . '/../includes/firestore/xray_results.php'; // hc_get_pend
 
 $staffNavItems = [
     ['icon' => 'bi-grid-fill',                 'label' => 'Dashboard',          'href' => 'dashboard.php'],
-    ['icon' => 'bi-file-earmark-medical-fill', 'label' => 'X-ray Consultation', 'href' => 'xray_consultation.php', 'badge' => hc_get_pending_xray_count()],
+    ['icon' => 'bi-file-earmark-medical-fill', 'label' => 'X-ray Management', 'href' => 'xray_consultation.php', 'badge' => hc_get_pending_xray_count()],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',

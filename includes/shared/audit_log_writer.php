@@ -41,7 +41,7 @@ if (!function_exists('write_audit_log')) {
             'pharmacist' => 'Pharmacist',
             'doctor' => 'Doctor',
             'medical_technician' => 'Medical Technologist',
-            'radio_technologist' => 'Radio Technologist',
+            'radio_technologist' => 'Radiologic Technologist',
             default => 'System',
         };
 
@@ -180,10 +180,13 @@ if (!function_exists('hc_filter_audit_logs')) {
         $statusLabel = (string) ($filters['status'] ?? 'All Statuses');
         $dateFrom = trim((string) ($filters['from'] ?? ''));
         $dateTo = trim((string) ($filters['to'] ?? ''));
-        // 'subadmin'/'user' — driven by admin/audit_logs.php's sidebar
-        // dropdown (Audit Logs > Sub Admin / User), never a real
-        // dropdown option of its own, so no "All ..." placeholder to
-        // check for; anything else (including '') means no role split.
+        // 'subadmin'/'doctor'/'healthcare_staff'/'medical_technician'/
+        // 'radio_technologist'/'pharmacist' — driven by admin/audit_logs.php's
+        // and subadmin/audit_logs.php's own sidebar dropdowns (Audit Logs
+        // > Sub Admin / Doctor / Medical Staff / Medical Technologist /
+        // Radiologic Technologist / Pharmacist), never a real dropdown
+        // option of its own, so no "All ..." placeholder to check for;
+        // anything else (including '') means no role split.
         $roleFilter = (string) ($filters['role'] ?? '');
 
         return array_values(array_filter($logs, function ($log) use ($q, $user, $module, $actionLabel, $statusLabel, $dateFrom, $dateTo, $roleFilter) {
@@ -208,25 +211,15 @@ if (!function_exists('hc_filter_audit_logs')) {
             if ($roleFilter === 'subadmin' && $log['actorRole'] !== 'Sub-Administrator') {
                 return false;
             }
-            // 'user' means a real user account only — Healthcare Staff,
-            // Doctor, Pharmacist, or Medical Technologist — not System
-            // Administrator/Sub-Administrator, and not the 'System'
-            // actorRole hc_send_login_lockout_alert() writes for its own
-            // lockout-notice entries (includes/shared/login_lockout.php),
-            // which isn't tied to any one real account.
-            if ($roleFilter === 'user' && !in_array($log['actorRole'], ['Healthcare Staff', 'Doctor', 'Pharmacist', 'Medical Technologist', 'Radio Technologist'], true)) {
-                return false;
-            }
-            // 'doctor'/'healthcare_staff'/'medical_technician'/'pharmacist'
-            // — driven by subadmin/audit_logs.php's own sidebar dropdown
-            // (Audit Logs > Doctor / Medical Staff / Medical Technologist /
-            // Pharmacist), one specific staff role at a time rather than
-            // the admin side's broader 'user' bucket.
+            // 'doctor'/'healthcare_staff'/'medical_technician'/
+            // 'radio_technologist'/'pharmacist' — one specific staff role
+            // at a time, same granular breakdown on both the admin and
+            // subadmin sidebars now.
             $specificRoleToActorRole = [
                 'doctor' => 'Doctor',
                 'healthcare_staff' => 'Healthcare Staff',
                 'medical_technician' => 'Medical Technologist',
-                'radio_technologist' => 'Radio Technologist',
+                'radio_technologist' => 'Radiologic Technologist',
                 'pharmacist' => 'Pharmacist',
             ];
             if (isset($specificRoleToActorRole[$roleFilter]) && $log['actorRole'] !== $specificRoleToActorRole[$roleFilter]) {

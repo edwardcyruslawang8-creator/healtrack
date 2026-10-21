@@ -226,11 +226,11 @@ foreach ($resultIdsToShow as $resultId) {
         continue;
     }
     // xray_results has no resultBadgeLabel/resultBadgeColor of its own
-    // (that's a lab_results-only field) — same real "no active"
-    // heuristic includes/firestore/patient_overview.php's Overview tab
-    // already uses to call an x-ray normal vs. abnormal from its
-    // impression text.
-    $isNormal = str_contains(strtolower($xrayDoc['impression'] ?? ''), 'no active');
+    // (that's a lab_results-only field) — same real keyword heuristic
+    // includes/firestore/patient_overview.php's Overview tab uses to
+    // call an x-ray normal vs. abnormal from its impression text (see
+    // hc_xray_impression_is_normal()'s own header comment).
+    $isNormal = hc_xray_impression_is_normal($xrayDoc['impression'] ?? '');
     $linkedLabResults[] = [
         'id' => $resultId,
         'type' => 'xray',

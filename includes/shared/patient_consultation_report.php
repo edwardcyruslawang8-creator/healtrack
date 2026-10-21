@@ -2,7 +2,7 @@
 /**
  * =====================================================================
  * Shared — "My Patients Report" (doctor / medical-staff / medical
- * technologist / radio technologist Analytics & Reports page)
+ * technologist / radiologic technologist Analytics & Reports page)
  * ---------------------------------------------------------------------
  * A date-filtered, exportable list of the patients the SIGNED-IN staff
  * member personally consulted/tested — today or any past date range.
@@ -28,11 +28,11 @@
  *     "who did this" trail, just recorded on a different collection
  *     than lab_results/xray_results themselves. hc_lab_report_rows()
  *     reads that.
- *   - Radio technologist: same medical_records/{id} trail as medical
+ *   - Radiologic technologist: same medical_records/{id} trail as medical
  *     technologist above (api/complete-xray-result.php writes the same
  *     shape, 'title' prefixed "X-ray — ") — hc_xray_report_rows() below
  *     reads the same collection, narrowed to just the X-ray-prefixed
- *     rows, so a radio technologist's own report never includes a lab
+ *     rows, so a radiologic technologist's own report never includes a lab
  *     test some other technologist completed.
  * =====================================================================
  */
@@ -153,7 +153,7 @@ if (!function_exists('hc_xray_report_rows')) {
      * since neither lab_results nor xray_results itself records who
      * completed a test — see this file's header comment), narrowed to
      * ONLY the X-ray-prefixed rows ('provider' === their name AND
-     * 'title' starts with "X-ray — ") so a radio technologist's own
+     * 'title' starts with "X-ray — ") so a radiologic technologist's own
      * report never includes a lab test some other technologist entered
      * under the same shared medical_records type.
      *

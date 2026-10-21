@@ -1,9 +1,9 @@
 <?php
 /**
  * =====================================================================
- * X-ray Result Form (Radio Technologist) — Data
+ * X-ray Result Form (Radiologic Technologist) — Data
  * ---------------------------------------------------------------------
- * Backs radio_technologist/xray_result_form.php — the generic "fill in
+ * Backs radiologic_technologist/xray_result_form.php — the generic "fill in
  * a result" form for X-ray exams. Modeled directly on
  * includes/medical_technician/xray_result_form_firestore.php. Reached
  * with an explicit &recordId= so the exact xray_results doc is targeted
@@ -19,8 +19,8 @@ $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
 
 $staffProfile = [
-    'name'     => $_SESSION['name'] ?? 'Radio Technologist',
-    'role'     => 'Radio Technologist',
+    'name'     => $_SESSION['name'] ?? 'Radiologic Technologist',
+    'role'     => 'Radiologic Technologist',
     'facility' => $myDoc['facility'] ?? 'North Super Health Center',
 ];
 

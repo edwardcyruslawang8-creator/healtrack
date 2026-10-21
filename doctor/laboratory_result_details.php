@@ -239,6 +239,7 @@ $backHref = $backConsultationId !== '' ? 'active_consultation.php?id=' . urlenco
         </div>
     </div>
 
+    <?php if ($resultType === 'lab'): ?>
     <?php if ($paperFormUrl !== null): ?>
     <!-- ============ PAPER FORM LAYOUT (single column, full width) ============
          One of the 4 tests with a real Lipa City Health Office paper
@@ -380,14 +381,17 @@ $backHref = $backConsultationId !== '' ? 'active_consultation.php?id=' . urlenco
 
     </div>
     <?php endif; ?>
+    <?php endif; // $resultType === 'lab' ?>
 
+    <?php if ($resultType === 'xray'): ?>
     <!-- ============ X-RAY EXAMINATION DETAILS + FINDINGS ============
          Added so this page also serves doctor/patient_laboratory_xray.php's
          X-ray "View" buttons (&type=xray&recordId=) — see this page's
-         data file header comment. Shown unconditionally, same as every
-         other role's copy of this page: clicking a lab row shows that
-         lab test paired with the patient's most recent x-ray (and vice
-         versa) rather than hiding whichever half wasn't clicked. -->
+         data file header comment. Only shown when the X-ray is actually
+         what was requested ($resultType) — a doctor opening a specific
+         lab result's "View Full Result" no longer also sees an unrelated
+         X-ray (whichever one happened to be this patient's most recent),
+         and vice versa. -->
     <div class="adm-card lrd-detail-card">
         <div class="lrd-card-header"><i class="bi bi-clipboard2-pulse-fill"></i> <h3>X-ray Examination Details</h3></div>
 
@@ -427,6 +431,7 @@ $backHref = $backConsultationId !== '' ? 'active_consultation.php?id=' . urlenco
             </div>
         </div>
     </div>
+    <?php endif; // $resultType === 'xray' ?>
 
 </main>
 

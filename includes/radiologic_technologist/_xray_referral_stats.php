@@ -3,7 +3,7 @@
  * =====================================================================
  * Referral Inbox stat card partial
  * ---------------------------------------------------------------------
- * Shared verbatim between radio_technologist/xray_consultation.php's
+ * Shared verbatim between radiologic_technologist/xray_consultation.php's
  * initial page load (wrapped in #xcReferralStats there) and
  * api/radiotech-xray-queue-status.php (polled by
  * assets/js/radiotech_xray_consultation.js) — split out from
@@ -13,7 +13,7 @@
  * is still typing).
  *
  * Expects $referralsSummary already set by the includer (see
- * includes/radio_technologist/xray_consultation_firestore.php).
+ * includes/radiologic_technologist/xray_consultation_firestore.php).
  * =====================================================================
  */
 ?>

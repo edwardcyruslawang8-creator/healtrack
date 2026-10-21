@@ -1,7 +1,7 @@
 <?php
 /**
  * =====================================================================
- * Notifications (Radio Technologist) — Data
+ * Notifications (Radiologic Technologist) — Data
  * ---------------------------------------------------------------------
  * CONNECTED — every row is a real notification generated live from
  * includes/firestore/lab_results.php's hc_get_pending_lab_xray_notifications(),
@@ -15,7 +15,7 @@
  * api/mark-notifications-read.php -> $_SESSION['ntfReadIds'], which is
  * what config/constants.php's hc_radiotech_unread_notification_count() —
  * this page's tab badges, the sidebar nav badge, and the topbar bell
- * badge, on THIS page and every other radio_technologist/*.php page —
+ * badge, on THIS page and every other radiologic_technologist/*.php page —
  * counts against.
  * =====================================================================
  */
@@ -31,8 +31,8 @@ $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
 
 $staffProfile = [
-    'name'     => $_SESSION['name'] ?? 'Radio Technologist',
-    'role'     => 'Radio Technologist',
+    'name'     => $_SESSION['name'] ?? 'Radiologic Technologist',
+    'role'     => 'Radiologic Technologist',
     'facility' => $myDoc['facility'] ?? 'North Super Health Center',
 ];
 

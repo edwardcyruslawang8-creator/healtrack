@@ -66,7 +66,11 @@ $adminNavItems = [
         'label' => t('nav.audit_logs'),
         'children' => [
             ['label' => 'Sub Admin', 'href' => 'audit_logs.php?role=subadmin'],
-            ['label' => 'User',      'href' => 'audit_logs.php?role=user'],
+            ['label' => 'Doctor', 'href' => 'audit_logs.php?role=doctor'],
+            ['label' => 'Medical Staff', 'href' => 'audit_logs.php?role=healthcare_staff'],
+            ['label' => 'Medical Technologist', 'href' => 'audit_logs.php?role=medical_technician'],
+            ['label' => 'Radiologic Technologist', 'href' => 'audit_logs.php?role=radio_technologist'],
+            ['label' => 'Pharmacist', 'href' => 'audit_logs.php?role=pharmacist'],
         ],
     ],
     ['icon' => 'bi-gear-fill',           'label' => t('nav.profile_settings'),    'href' => 'profile_settings.php'],

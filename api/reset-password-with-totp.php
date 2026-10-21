@@ -118,7 +118,7 @@ $actorRole = match ($userDoc['role'] ?? null) {
     'pharmacist' => 'Pharmacist',
     'doctor' => 'Doctor',
     'medical_technician' => 'Medical Technologist',
-    'radio_technologist' => 'Radio Technologist',
+    'radio_technologist' => 'Radiologic Technologist',
     default => 'System',
 };
 $firestore->addDocument('audit_logs', [

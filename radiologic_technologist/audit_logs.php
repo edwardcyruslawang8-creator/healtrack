@@ -2,11 +2,11 @@
 /**
  * =====================================================================
  * HEALTrack — Health Information System
- * Audit Logs (radio_technologist/audit_logs.php)
+ * Audit Logs (radiologic_technologist/audit_logs.php)
  * ---------------------------------------------------------------------
- * Top-level Radio Technologist section (its own sidebar nav item) —
- * same shape as radio_technologist/notifications.php. Reuses the exact
- * same sidebar/topbar shell as the rest of radio_technologist/*.php
+ * Top-level Radiologic Technologist section (its own sidebar nav item) —
+ * same shape as radiologic_technologist/notifications.php. Reuses the exact
+ * same sidebar/topbar shell as the rest of radiologic_technologist/*.php
  * plus assets/css/audit_logs.css directly (the same search bar/filter
  * toolbar/action+status badge styles admin/audit_logs.php and
  * subadmin/audit_logs.php already use).
@@ -14,7 +14,7 @@
  * UNLIKE those two pages, this one shows ONLY the signed-in
  * technologist's OWN activity — never another technologist's, never
  * the whole facility's. See
- * includes/radio_technologist/audit_logs_radiotech_firestore.php's
+ * includes/radiologic_technologist/audit_logs_radiotech_firestore.php's
  * header comment for why that means no User/Role filter and no User
  * column at all. Modeled directly on medical_technician/audit_logs.php.
  * =====================================================================
@@ -28,7 +28,7 @@ if (($_SESSION['role'] ?? null) !== 'radio_technologist') {
     exit;
 }
 
-require_once __DIR__ . '/../includes/radio_technologist/audit_logs_radiotech_firestore.php';
+require_once __DIR__ . '/../includes/radiologic_technologist/audit_logs_radiotech_firestore.php';
 // $staffProfile, $actionTypeMeta, $auditLogs, $auditLogsTotal,
 // $auditLogsPerPage, $auditLogsCurrentPage, $auditLogsTotalPages,
 // $auditPaginationWindow, $filterGroups,
@@ -39,7 +39,7 @@ require_once __DIR__ . '/../includes/firestore/xray_results.php'; // hc_get_pend
 
 $staffNavItems = [
     ['icon' => 'bi-grid-fill',                 'label' => 'Dashboard',          'href' => 'dashboard.php'],
-    ['icon' => 'bi-file-earmark-medical-fill', 'label' => 'X-ray Consultation', 'href' => 'xray_consultation.php', 'badge' => hc_get_pending_xray_count()],
+    ['icon' => 'bi-file-earmark-medical-fill', 'label' => 'X-ray Management', 'href' => 'xray_consultation.php', 'badge' => hc_get_pending_xray_count()],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',
@@ -145,7 +145,7 @@ $staffNavItems = [
     <div class="adm-topbar">
         <div>
             <h1>Audit Logs</h1>
-            <p class="adm-page-subtitle">Your own account activity on HEALTrack — not visible to other radio technologists.</p>
+            <p class="adm-page-subtitle">Your own account activity on HEALTrack — not visible to other radiologic technologists.</p>
         </div>
 
         <div class="adm-topbar-right">

@@ -1,14 +1,14 @@
 <?php
 /**
  * =====================================================================
- * Radio Technologist — Audit Logs — Data
+ * Radiologic Technologist — Audit Logs — Data
  * ---------------------------------------------------------------------
  * UNLIKE admin/audit_logs.php (every facility) or
  * includes/subadmin/subadmin_audit_logs_firestore.php (the whole
  * facility), this is scoped to ONE real actorUid — the signed-in radio
  * technologist's own activity only, via
  * includes/shared/audit_log_writer.php's hc_get_my_audit_logs_annotated().
- * A radio technologist has no reason to see a doctor's or another
+ * A radiologic technologist has no reason to see a doctor's or another
  * technologist's actions, so there's no User or Role filter here at
  * all (there's only ever one possible value: you).
  *
@@ -27,8 +27,8 @@ $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
 
 $staffProfile = [
-    'name'     => $_SESSION['name'] ?? 'Radio Technologist',
-    'role'     => 'Radio Technologist',
+    'name'     => $_SESSION['name'] ?? 'Radiologic Technologist',
+    'role'     => 'Radiologic Technologist',
     'facility' => $myDoc['facility'] ?? 'North Super Health Center',
 ];
 

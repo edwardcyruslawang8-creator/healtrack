@@ -13,7 +13,7 @@
  * exists anywhere), so a per-technician split would have to be
  * fabricated. This shows the same real, honestly-scoped numbers every
  * technician at this facility would see. X-ray is NOT included here —
- * that's radio_technologist/analytics_reports.php's own page now.
+ * that's radiologic_technologist/analytics_reports.php's own page now.
  * =====================================================================
  */
 

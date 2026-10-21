@@ -355,7 +355,7 @@ function hc_medtech_unread_notification_count(): int
 }
 
 /**
- * Unread notification count for every radio_technologist/*.php page's
+ * Unread notification count for every radiologic_technologist/*.php page's
  * sidebar nav badge + topbar bell badge. Same mechanism as
  * hc_medtech_unread_notification_count() above, narrowed to pending
  * X-ray exams only (hc_get_pending_lab_xray_notifications()'s own

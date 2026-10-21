@@ -314,7 +314,7 @@ if (!function_exists('hc_get_pending_xray_notifications')) {
      * The X-ray-only slice of hc_get_pending_lab_xray_notifications()
      * above — the named counterpart to hc_get_pending_lab_notifications(),
      * for radio_technologist's own predictive/prescriptive analytics
-     * card (includes/radio_technologist/predictive_overview_firestore.php)
+     * card (includes/radiologic_technologist/predictive_overview_firestore.php)
      * to reuse instead of inlining the same type==='X-ray' filter again.
      */
     function hc_get_pending_xray_notifications(): array
@@ -444,7 +444,7 @@ if (!function_exists('hc_consultation_is_awaiting_lab_results')) {
      * radiology" — routed there (nextRouting === 'laboratory' or
      * 'xray') AND at least one lab_results/xray_results doc whose
      * sourceConsultationId matches is still 'pending' (the medical
-     * technologist/radio technologist hasn't completed it yet). Once
+     * technologist/radiologic technologist hasn't completed it yet). Once
      * every test/exam ordered from it is 'completed', this flips back
      * to false on its own — nothing to separately clear. Used to block
      * a doctor from resuming the clinical documentation workspace

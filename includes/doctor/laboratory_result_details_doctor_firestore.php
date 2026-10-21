@@ -58,6 +58,19 @@ $backConsultationId = $_GET['consultationId'] ?? '';
 // x-ray support existed here, so none of those links change behavior.
 $requestedType = $_GET['type'] ?? '';
 
+// Which ONE of the two halves below actually gets shown — see
+// doctor/laboratory_result_details.php's own use of this. Resolving
+// BOTH hc_resolve_lab_result()/hc_resolve_xray_result() below
+// regardless of $resultType is intentional (the one that wasn't
+// requested still needs an empty-state-safe value if its section were
+// ever shown), but previously BOTH sections rendered unconditionally —
+// a doctor opening an X-ray's "View Full Result" also saw an unrelated
+// lab test (whichever lab result happened to be this patient's most
+// recent, since hc_resolve_lab_result()'s own $wantThisType=false
+// fallback is "most recent", not "nothing") paired alongside it. Now
+// only the half that was actually requested renders.
+$resultType = $requestedType === 'xray' ? 'xray' : 'lab';
+
 $labBundle = hc_resolve_lab_result($patient['id'], $requestedType !== 'xray', $requestedRecordId);
 $labTest = $labBundle['labTest'];
 $labResultBadge = $labBundle['labResultBadge'];

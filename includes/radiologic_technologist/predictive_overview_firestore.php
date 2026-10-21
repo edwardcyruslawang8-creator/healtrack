@@ -1,16 +1,16 @@
 <?php
 /**
  * =====================================================================
- * Predictive & Prescriptive Analytics — Preview (Radio Technologist,
+ * Predictive & Prescriptive Analytics — Preview (Radiologic Technologist,
  * facility-wide)
  * ---------------------------------------------------------------------
- * A small preview card for radio_technologist/analytics_reports.php,
+ * A small preview card for radiologic_technologist/analytics_reports.php,
  * same shared render partial (includes/admin/predictive_overview_card.php)
  * every other role's card uses. Modeled directly on
  * includes/medical_technician/predictive_overview_firestore.php
  * (X-ray's counterpart to that file's Laboratory one), facility-wide
  * for the same reason: forecasting INCOMING exam volume and tracking
- * the shared pending backlog are both about work any radio technologist
+ * the shared pending backlog are both about work any radiologic technologist
  * at this facility could pick up next — not "exams I personally
  * completed" (which the dashboard's own "My Completed Exams"/"My
  * Completed This Week" cards already cover separately, scoped by the

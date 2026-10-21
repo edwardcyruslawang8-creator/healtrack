@@ -1,10 +1,10 @@
 <?php
 /**
  * =====================================================================
- * Export "My Reports" — CSV (Radio Technologist)
+ * Export "My Reports" — CSV (Radiologic Technologist)
  * ---------------------------------------------------------------------
  * Re-derives the exact same date-filtered rows
- * radio_technologist/patients_report.php's "My Reports" table shows
+ * radiologic_technologist/patients_report.php's "My Reports" table shows
  * (?from=/?to=, hc_xray_report_rows() scoped to this technologist's own
  * name) and streams them as a real CSV download — see
  * includes/shared/patient_consultation_report.php's header comment for

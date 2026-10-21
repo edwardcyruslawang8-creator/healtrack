@@ -6,7 +6,7 @@
  * Called by assets/js/active_consultation.js when a doctor clicks
  * "Save & End Consultation" (or, when routing is "Laboratory"/"X-ray",
  * the SAME button relabeled "Send to Medical Technologist"/"Send to
- * Radio Technologist") on doctor/active_consultation.php — the one
+ * Radiologic Technologist") on doctor/active_consultation.php — the one
  * endpoint that persists everything that page captures (History of
  * Present Illness, Review of Symptoms, Diagnosis, Prescription,
  * this-visit Vitals, Medications/Vaccines given, "Patient Will Be Next
@@ -20,7 +20,7 @@
  * (either by resuming this SAME still-"ongoing" consultation later via
  * consultations.php's "Ongoing Consultation" card, or via the real
  * follow-up consultation api/proceed-lab-result-to-doctor.php creates
- * once a medical/radio technologist finishes a test) — see the
+ * once a medical/radiologic technologist finishes a test) — see the
  * Laboratory/X-ray routing blocks below.
  *
  * Only the doctor this consultation is actually assigned to (by real

@@ -185,6 +185,29 @@
 .acv-vital-field label{ font-size: 11.5px; font-weight: 600; color: var(--adm-text-muted); margin-bottom: 4px; display: block; }
 .acv-view-full-link{ display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--adm-blue); margin-top: 14px; }
 
+/* -- "View Full Result" on the Lab & X-ray Results card — a real
+   themed button (same maroon brand color as .acv-btn-save/the rest of
+   the app's primary actions), not a bare text link. Its own class,
+   deliberately separate from .acv-view-full-link above (shared with
+   "View Full Vital Signs", which stays a plain link in its own
+   context). -- */
+.acv-view-result-btn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 8px;
+  background: var(--adm-red);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.acv-view-result-btn:hover{ background: var(--adm-red-bright-hover); color: #fff; }
+
 /* -- "Patient Will Be Next In" -- */
 .acv-routing-list{ display: flex; flex-direction: column; gap: 10px; }
 .acv-routing-item{
@@ -274,7 +297,7 @@
 .acv-lab-test-actions{ display: flex; justify-content: flex-end; gap: 8px; }
 
 /* -- Laboratory/X-ray "Assign To" staff picker — shown only when more
-   than one active medical technologist/radio technologist exists at
+   than one active medical technologist/radiologic technologist exists at
    this doctor's facility to choose from (see
    includes/doctor/active_consultation_doctor_firestore.php's
    $availableLabStaff/$availableXrayStaff). -- */

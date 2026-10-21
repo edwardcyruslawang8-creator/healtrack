@@ -10,7 +10,7 @@
  * includes/firestore/lab_results.php), joined with each doc's patient
  * name/age via includes/firestore/patients.php. X-ray is deliberately
  * NOT included here — that's radio_technologist's own queue/role now
- * (includes/radio_technologist/xray_consultation_firestore.php), kept
+ * (includes/radiologic_technologist/xray_consultation_firestore.php), kept
  * separate so the same exam is never processed from two different
  * roles' screens.
  *

@@ -3,7 +3,7 @@
  * =====================================================================
  * Complete X-ray Result (api/complete-xray-result.php)
  * ---------------------------------------------------------------------
- * Called by radio_technologist/xray_result_form.php's Save Result
+ * Called by radiologic_technologist/xray_result_form.php's Save Result
  * button. Writes the submitted Findings/Impression AND a real uploaded
  * result document (scanned report/exported image — see
  * includes/shared/xray_result_storage.php's header comment for why this
@@ -23,7 +23,7 @@
  * Also stamps completedByUid/completedByName — real per-technologist
  * attribution that xray_results never had before (every other field on
  * this doc is facility-wide/unattributed; see
- * includes/radio_technologist/radio_technologist_dashboard_firestore.php's
+ * includes/radiologic_technologist/radiologic_technologist_dashboard_firestore.php's
  * header comment for how the dashboard uses this going forward, scoped
  * only to exams completed from this point on — older docs stay
  * unattributed, there's no honest way to backfill who did them).

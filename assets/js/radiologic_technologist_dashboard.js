@@ -1,9 +1,9 @@
 /* =============================================================
-   RADIO TECHNOLOGIST DASHBOARD JS (radio_technologist/dashboard.php)
+   RADIOLOGIC TECHNOLOGIST DASHBOARD JS (radiologic_technologist/dashboard.php)
    ---------------------------------------------------------------
    Renders every Chart.js instance on the page from the data PHP
    printed into window.RADIO_TECHNOLOGIST_DASHBOARD_DATA (see the
-   inline <script> in radio_technologist/dashboard.php). Structurally
+   inline <script> in radiologic_technologist/dashboard.php). Structurally
    identical to assets/js/medical_technician_dashboard.js (same chart
    types, narrower set — X-ray only, no "by type"/"request type" split
    since every exam here already is an X-ray) — kept as its own file

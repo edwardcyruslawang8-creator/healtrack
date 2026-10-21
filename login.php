@@ -149,16 +149,22 @@ $idleTimeoutNotice = ($_GET['reason'] ?? '') === 'idle'
             <!-- The real sign-in happens entirely client-side via the Firebase
                  Auth SDK (assets/js/login.js), which always calls
                  e.preventDefault() before posting the resulting idToken to
-                 api/session-login.php — this action/method are only ever hit
-                 if that JS never attaches (e.g. the Firebase SDK scripts
-                 below failed to load), so this points at a route that at
-                 least exists rather than api/login.php (never existed,
-                 produced a raw 404). It still can't complete a real login
-                 on its own — session-login.php requires a verified Firebase
-                 idToken, which only the client-side SDK can produce — see
-                 the Firebase-availability check in login.js, which shows a
-                 clear error instead of silently leaving the form like this. -->
-            <form action="<?= BASE_URL ?>/api/session-login.php" method="post" autocomplete="off" id="loginForm">
+                 api/session-login.php as JSON — this action/method are only
+                 ever hit if that JS never attaches or never ran in time
+                 (e.g. the Firebase SDK scripts below failed to load, were
+                 blocked, or were still loading when the form was
+                 submitted). Previously pointed at api/session-login.php
+                 itself as "a route that at least exists" — but that
+                 endpoint expects a JSON body with a verified idToken, so a
+                 plain form POST here just produces a confusing raw
+                 {"error":"Missing idToken"} JSON page instead of the login
+                 form — a real case of exactly that happened to a real
+                 account during sign-in. login.php (this same page) is a
+                 genuinely safe fallback: it never 404s, ignores whatever
+                 the browser posted, and simply re-renders the login form,
+                 so a mistimed/blocked JS load just looks like "the page
+                 reloaded" instead of a raw API error. -->
+            <form action="<?= BASE_URL ?>/login.php" method="post" autocomplete="off" id="loginForm">
 
                 <!-- Email field (Firebase Authentication signs in with email + password) -->
                 <div class="login-field">

@@ -126,7 +126,7 @@ if (!function_exists('hc_render_phone_reminder_toast')) {
             'doctor' => 'doctor',
             'healthcare_staff' => 'medical-staff',
             'medical_technician' => 'medical_technician',
-            'radio_technologist' => 'radio_technologist',
+            'radio_technologist' => 'radiologic_technologist',
             'pharmacist' => 'pharmacist',
         ];
 

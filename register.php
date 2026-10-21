@@ -8,7 +8,7 @@
  * explicitly documented "there's no public sign-up here on purpose."
  * This page changes that, but with two safety rails:
  *   1. The Role dropdown is deliberately limited, for now, to
- *      Healthcare Staff / Pharmacist / Medical Technologist / Radio
+ *      Healthcare Staff / Pharmacist / Medical Technologist / Radiologic
  *      Technologist / Doctor — every one of those maps to
  *      "healthcare_staff", "pharmacist", "medical_technician",
  *      "radio_technologist", or "doctor" (api/register.php's
@@ -207,7 +207,7 @@ require_once __DIR__ . '/config/constants.php'; // BASE_URL
                             <option value="Healthcare Staff">Healthcare Staff</option>
                             <option value="Pharmacist">Pharmacist</option>
                             <option value="Medical Technologist">Medical Technologist</option>
-                            <option value="Radio Technologist">Radio Technologist</option>
+                            <option value="Radiologic Technologist">Radiologic Technologist</option>
                             <option value="Doctor">Doctor</option>
                         </select>
                     </div>

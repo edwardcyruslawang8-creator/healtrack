@@ -9,10 +9,12 @@
  * detail view reached via a "View" button, not one of the patient
  * profile's own tabs).
  *
- * This page shows ONE lab test and ONE x-ray exam side by side; both
- * bundles are resolved by includes/firestore/lab_results.php's
- * hc_resolve_lab_result() and includes/firestore/xray_results.php's
- * hc_resolve_xray_result() — shared with subadmin's identical page.
+ * This page shows ONLY the ONE result type actually requested
+ * ($resultType) — lab OR x-ray, never both. Both bundles are still
+ * resolved by includes/firestore/lab_results.php's hc_resolve_lab_result()
+ * and includes/firestore/xray_results.php's hc_resolve_xray_result() —
+ * shared with subadmin's identical page — but the template only renders
+ * the half matching $resultType.
  * =====================================================================
  */
 
@@ -28,6 +30,8 @@ $statusMeta = [
 
 $requestedType = $_GET['type'] ?? '';
 $requestedRecordId = $_GET['recordId'] ?? '';
+// Which ONE of the two halves the template actually renders.
+$resultType = $requestedType === 'xray' ? 'xray' : 'lab';
 
 $labBundle = hc_resolve_lab_result($patient['id'], $requestedType === 'lab', $requestedRecordId);
 $labTest = $labBundle['labTest'];

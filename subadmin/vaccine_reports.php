@@ -89,6 +89,7 @@ $adminNavItems = [
             ['label' => t('nav.audit_logs_doctor'),             'href' => 'audit_logs.php?role=doctor'],
             ['label' => t('nav.audit_logs_medstaff'),      'href' => 'audit_logs.php?role=healthcare_staff'],
             ['label' => t('nav.audit_logs_medtech'), 'href' => 'audit_logs.php?role=medical_technician'],
+            ['label' => t('nav.audit_logs_radiotech'), 'href' => 'audit_logs.php?role=radio_technologist'],
             ['label' => t('nav.audit_logs_pharmacist'),         'href' => 'audit_logs.php?role=pharmacist'],
         ],
     ],

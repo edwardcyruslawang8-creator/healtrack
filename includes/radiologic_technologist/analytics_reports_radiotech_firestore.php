@@ -1,7 +1,7 @@
 <?php
 /**
  * =====================================================================
- * Analytics & Reports (Radio Technologist) — Data
+ * Analytics & Reports (Radiologic Technologist) — Data
  * ---------------------------------------------------------------------
  * Facility-wide over the real "xray_results" collection
  * (hc_get_all_xray_result_docs(), the same shared reader
@@ -11,7 +11,7 @@
  * (see api/complete-xray-result.php — completedDate/completedTime are
  * written, no completedBy field exists), so a per-technologist split
  * would have to be fabricated. This shows the same real, honestly-
- * scoped numbers every radio technologist at this facility would see.
+ * scoped numbers every radiologic technologist at this facility would see.
  * Modeled directly on
  * includes/medical_technician/analytics_reports_medtech_firestore.php.
  * =====================================================================
@@ -25,8 +25,8 @@ $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
 
 $staffProfile = [
-    'name'     => $_SESSION['name'] ?? 'Radio Technologist',
-    'role'     => 'Radio Technologist',
+    'name'     => $_SESSION['name'] ?? 'Radiologic Technologist',
+    'role'     => 'Radiologic Technologist',
     'facility' => $myDoc['facility'] ?? 'North Super Health Center',
 ];
 

@@ -97,7 +97,7 @@ if (!function_exists('hc_get_patient_overview')) {
         $recentXray = $latestXrayDoc !== null ? [
             'name' => $latestXrayDoc['fields']['examName'],
             'date' => date('M j, Y', strtotime($latestXrayDoc['fields']['completedDate'])),
-            'status' => str_contains(strtolower($latestXrayDoc['fields']['impression'] ?? ''), 'no active') ? 'normal' : 'abnormal',
+            'status' => hc_xray_impression_is_normal($latestXrayDoc['fields']['impression'] ?? '') ? 'normal' : 'abnormal',
             'findings' => $latestXrayDoc['fields']['impression'] ?? '—',
         ] : ['name' => 'No x-ray on record.', 'date' => '—', 'status' => 'normal', 'findings' => '—'];
 

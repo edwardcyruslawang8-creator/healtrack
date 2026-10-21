@@ -3,7 +3,7 @@
  * =====================================================================
  * Referral Inbox table + pagination partial
  * ---------------------------------------------------------------------
- * Shared verbatim between radio_technologist/xray_consultation.php's
+ * Shared verbatim between radiologic_technologist/xray_consultation.php's
  * initial page load (wrapped in #xcReferralTable there) and
  * api/radiotech-xray-queue-status.php (polled by
  * assets/js/radiotech_xray_consultation.js so this table updates
@@ -15,7 +15,7 @@
  * Expects $referralRows, $referralsTotal, $referralsPerPage,
  * $referralsCurrentPage, $referralsTotalPages,
  * $referralsPaginationWindow already set by the includer (see
- * includes/radio_technologist/xray_consultation_firestore.php).
+ * includes/radiologic_technologist/xray_consultation_firestore.php).
  * =====================================================================
  */
 ?>

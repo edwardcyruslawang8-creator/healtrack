@@ -1,7 +1,7 @@
 <?php
 /**
  * =====================================================================
- * Laboratory Consultation (Medical Technologist) — Data
+ * Laboratory Management (Medical Technologist) — Data
  * ---------------------------------------------------------------------
  * The referral INBOX, not the full processing queue
  * (medical_technician/laboratory_xray.php's "Laboratory") — every real
@@ -10,7 +10,7 @@
  * api/complete-consultation.php), and no result has been entered yet.
  * X-ray referrals are NOT shown here — those route to
  * radio_technologist's own referral inbox
- * (includes/radio_technologist/xray_consultation_firestore.php)
+ * (includes/radiologic_technologist/xray_consultation_firestore.php)
  * instead, so the same exam is never claimable from two different
  * roles' screens. That file is the ONLY place lab_results is ever
  * written to (confirmed — no other create path exists anywhere in this

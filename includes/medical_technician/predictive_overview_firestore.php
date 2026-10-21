@@ -13,7 +13,7 @@
  * completed a given test, so a per-technician split would have to be
  * fabricated. Laboratory only — X-ray is radio_technologist's own
  * predictive/prescriptive card now
- * (includes/radio_technologist/predictive_overview_firestore.php).
+ * (includes/radiologic_technologist/predictive_overview_firestore.php).
  *
  * This role's job isn't disease/consultation forecasting (6.3.1) or
  * medicine/vaccine inventory (6.3.2/6.3.3) — those belong to doctor/

@@ -80,7 +80,7 @@ $jobTitleToRole = [
     'Healthcare Staff' => 'healthcare_staff',
     'Pharmacist' => 'pharmacist',
     'Medical Technologist' => 'medical_technician',
-    'Radio Technologist' => 'radio_technologist',
+    'Radiologic Technologist' => 'radio_technologist',
     'Doctor' => 'doctor',
 ];
 

@@ -94,12 +94,39 @@ function resolveActionMeta(array $actionTypeMeta, string $type): array
 // ---------------------------------------------------------------------
 $allAuditLogs = hc_get_all_audit_logs_annotated();
 
-// Driven only by the sidebar's Audit Logs > Sub Admin / User dropdown
-// (see the nav array below) — not a filter-toolbar dropdown of its
-// own, so any value other than these two just means "no role split".
-// Resolved up here (rather than down with the rest of the filters,
-// where it used to live) because $seenUsers below needs it too.
-$auditRoleFilter = in_array($_GET['role'] ?? '', ['subadmin', 'user'], true) ? $_GET['role'] : '';
+// Driven only by the sidebar's Audit Logs > Sub Admin / Doctor / Medical
+// Staff / Medical Technologist / Radiologic Technologist / Pharmacist
+// dropdown (see the nav array below) — not a filter-toolbar dropdown of
+// its own, so any value other than these six just means "no role
+// split". Same granular per-role breakdown as
+// includes/subadmin/subadmin_audit_logs_firestore.php's own Audit Logs
+// dropdown, just system-wide (every facility) here instead of scoped to
+// one. Resolved up here (rather than down with the rest of the
+// filters, where it used to live) because $seenUsers below needs it
+// too.
+$auditRoleOptions = ['subadmin', 'doctor', 'healthcare_staff', 'medical_technician', 'radio_technologist', 'pharmacist'];
+$auditRoleFilter = in_array($_GET['role'] ?? '', $auditRoleOptions, true) ? $_GET['role'] : '';
+$auditRoleFilterLabels = [
+    'subadmin' => 'Sub-Admin',
+    'doctor' => 'Doctor',
+    'healthcare_staff' => 'Medical Staff',
+    'medical_technician' => 'Medical Technologist',
+    'radio_technologist' => 'Radiologic Technologist',
+    'pharmacist' => 'Pharmacist',
+];
+// $log['actorRole'] is the real display label write_audit_log() already
+// stamps (includes/shared/audit_log_writer.php) — distinct from
+// $auditRoleFilterLabels above only where that label differs from the
+// role-filter's own nav label (Healthcare Staff's real actorRole vs.
+// this page's "Medical Staff" nav wording).
+$auditRoleActorRoles = [
+    'subadmin' => 'Sub-Administrator',
+    'doctor' => 'Doctor',
+    'healthcare_staff' => 'Healthcare Staff',
+    'medical_technician' => 'Medical Technologist',
+    'radio_technologist' => 'Radiologic Technologist',
+    'pharmacist' => 'Pharmacist',
+];
 
 // User/Module filter dropdown options — every real name/module that
 // appears ANYWHERE in the CURRENT role scope (not just the current
@@ -108,20 +135,17 @@ $auditRoleFilter = in_array($_GET['role'] ?? '', ['subadmin', 'user'], true) ? $
 // back. Scoped to $auditRoleFilter so the "All Users" dropdown (and
 // the search bar's own autocomplete, which reuses $seenUsers) never
 // offers a name that can't actually match anything once combined with
-// the active Sub Admin/User section — e.g. while on Audit Logs >
-// Sub Admin, this only ever lists real Sub-Administrator names, never
-// a doctor/pharmacist/healthcare-staff name that would just come back
-// empty. A System Administrator's own name is left out unconditionally
-// (not a role this page's Sub Admin/User split ever exposes a bucket
-// for).
+// the active role section — e.g. while on Audit Logs > Sub Admin, this
+// only ever lists real Sub-Administrator names, never a doctor/
+// pharmacist/healthcare-staff name that would just come back empty. A
+// System Administrator's own name is left out unconditionally (not a
+// role this page's role split ever exposes a bucket for).
 $seenUsers = [];
 $seenModules = [];
 foreach ($allAuditLogs as $log) {
-    $matchesRoleScope = match ($auditRoleFilter) {
-        'subadmin' => $log['actorRole'] === 'Sub-Administrator',
-        'user' => in_array($log['actorRole'], ['Healthcare Staff', 'Doctor', 'Pharmacist', 'Medical Technologist', 'Radio Technologist'], true),
-        default => $log['actorRole'] !== 'System Administrator',
-    };
+    $matchesRoleScope = $auditRoleFilter === ''
+        ? $log['actorRole'] !== 'System Administrator'
+        : $log['actorRole'] === ($auditRoleActorRoles[$auditRoleFilter] ?? null);
     if ($matchesRoleScope) {
         $seenUsers[$log['actorName']] = true;
     }
@@ -157,7 +181,7 @@ $filteredAuditLogs = hc_filter_audit_logs($allAuditLogs, [
     'role' => $auditRoleFilter,
 ]);
 
-$auditRoleFilterLabel = ['subadmin' => 'Sub-Admin', 'user' => 'User'][$auditRoleFilter] ?? '';
+$auditRoleFilterLabel = $auditRoleFilterLabels[$auditRoleFilter] ?? '';
 
 // ---------------------------------------------------------------------
 // Real pagination over the filtered result.

@@ -1,11 +1,11 @@
 <?php
 /**
  * =====================================================================
- * Radio Technologist Profile / Settings — Data
+ * Radiologic Technologist Profile / Settings — Data
  * ---------------------------------------------------------------------
- * Data for radio_technologist/profile_settings.php. Modeled directly on
+ * Data for radiologic_technologist/profile_settings.php. Modeled directly on
  * includes/medical_technician/profile_settings_medtech_firestore.php —
- * $roleOptions is just ['Radio Technologist'], this role has no other
+ * $roleOptions is just ['Radiologic Technologist'], this role has no other
  * options to switch between here (Role renders read-only either way).
  *
  * $profileInfo, $notificationPreferences' checked state, and
@@ -26,8 +26,8 @@ $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
 
 $staffProfile = [
-    'name'     => $_SESSION['name'] ?? 'Radio Technologist',
-    'role'     => 'Radio Technologist',
+    'name'     => $_SESSION['name'] ?? 'Radiologic Technologist',
+    'role'     => 'Radiologic Technologist',
     'facility' => $myDoc['facility'] ?? 'North Super Health Center',
 ];
 
@@ -42,7 +42,7 @@ $profileInfo = [
     'healthCenter' => $myDoc['healthCenter'] ?? $staffProfile['facility'],
 ];
 
-$roleOptions = ['Radio Technologist'];
+$roleOptions = ['Radiologic Technologist'];
 $healthCenterOptions = ['North Super Health Center', 'East Super Health Center', 'West Super Health Center'];
 
 $passwordLastChanged = isset($myDoc['passwordChangedAt'])

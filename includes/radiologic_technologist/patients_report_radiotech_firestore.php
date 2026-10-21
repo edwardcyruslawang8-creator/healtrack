@@ -1,7 +1,7 @@
 <?php
 /**
  * =====================================================================
- * Patients Report (Radio Technologist) — Data
+ * Patients Report (Radiologic Technologist) — Data
  * ---------------------------------------------------------------------
  * The "My Reports" child under the Analytics & Reports dropdown
  * (sibling of analytics_reports.php's "Overview") — a date-filtered,
@@ -20,8 +20,8 @@ $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
 
 $staffProfile = [
-    'name'     => $_SESSION['name'] ?? 'Radio Technologist',
-    'role'     => 'Radio Technologist',
+    'name'     => $_SESSION['name'] ?? 'Radiologic Technologist',
+    'role'     => 'Radiologic Technologist',
     'facility' => $myDoc['facility'] ?? 'North Super Health Center',
 ];
 

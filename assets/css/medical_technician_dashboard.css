@@ -110,7 +110,7 @@ button.mt-topbar-select-btn{ cursor: pointer; }
    was dropped (X-ray is radio_technologist's own now, so a Laboratory-
    only split would always be 100% one slice). Scoped to this page's
    own body class rather than changing .mt-row-4's base 4-column rule,
-   which radio_technologist/dashboard.php still relies on for its own
+   which radiologic_technologist/dashboard.php still relies on for its own
    (differently-shaped) 4-column row. */
 .medtech-dashboard-page .mt-row-4{
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1.2fr);

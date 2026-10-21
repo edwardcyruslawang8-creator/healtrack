@@ -2,9 +2,9 @@
 /**
  * =====================================================================
  * HEALTrack — Health Information System
- * Radio Technologist Dashboard (radio_technologist/dashboard.php)
+ * Radiologic Technologist Dashboard (radiologic_technologist/dashboard.php)
  * ---------------------------------------------------------------------
- * Landing dashboard for the Radio Technologist role (Firestore role
+ * Landing dashboard for the Radiologic Technologist role (Firestore role
  * value "radio_technologist" — see assets/js/login.js's routeByRole()).
  * Reuses the exact same visual shell (280px dark-red gradient sidebar,
  * card/table/donut atoms, all "adm-" prefixed, assets/css/admin-dashboard.css)
@@ -14,7 +14,7 @@
  * reuses it rather than a near-identical copy.
  *
  * Scoped to X-ray only — see
- * includes/radio_technologist/radio_technologist_dashboard_firestore.php's
+ * includes/radiologic_technologist/radiologic_technologist_dashboard_firestore.php's
  * header comment for why this reads hc_get_all_xray_result_docs()
  * alone, never lab_results (that stays medical_technician's own), and
  * for which cards are genuinely "my own work" (completedByUid-scoped)
@@ -25,13 +25,13 @@ session_start();
 
 require_once __DIR__ . '/../config/constants.php'; // BASE_URL, asset_url()
 
-// Only a signed-in radio technologist may view this page.
+// Only a signed-in radiologic technologist may view this page.
 if (($_SESSION['role'] ?? null) !== 'radio_technologist') {
     header('Location: ' . BASE_URL . '/login.php');
     exit;
 }
 
-require_once __DIR__ . '/../includes/radio_technologist/radio_technologist_dashboard_firestore.php';
+require_once __DIR__ . '/../includes/radiologic_technologist/radiologic_technologist_dashboard_firestore.php';
 // $staffProfile, $dashboardDateLabel, $facilityOptions, $statCards,
 // $examsTrendRange, $examsTrend, $resultStatusTotal, $resultStatus,
 // $recentlyOrderedExams, $pendingExamsQueue, $examStatusMeta,
@@ -42,7 +42,7 @@ require_once __DIR__ . '/../includes/firestore/xray_results.php'; // hc_get_pend
 // Sidebar nav — Dashboard is active on this page.
 $staffNavItems = [
     ['icon' => 'bi-grid-fill',              'label' => 'Dashboard',          'href' => 'dashboard.php', 'active' => true],
-    ['icon' => 'bi-file-earmark-medical-fill', 'label' => 'X-ray Consultation', 'href' => 'xray_consultation.php', 'badge' => hc_get_pending_xray_count()],
+    ['icon' => 'bi-file-earmark-medical-fill', 'label' => 'X-ray Management', 'href' => 'xray_consultation.php', 'badge' => hc_get_pending_xray_count()],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',
@@ -104,7 +104,7 @@ $staffNavItems = [
 
     <hr class="adm-sidebar-divider">
 
-    <!-- Radio technologist profile -->
+    <!-- Radiologic technologist profile -->
     <div class="adm-profile">
         <div class="adm-avatar"><?php require_once __DIR__ . '/../includes/shared/profile_photo_storage.php'; echo hc_render_sidebar_avatar(); ?></div>
         <div class="adm-profile-text">
@@ -364,7 +364,7 @@ $staffNavItems = [
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 
 <script>
-    // Hands all chart numbers to assets/js/radio_technologist_dashboard.js
+    // Hands all chart numbers to assets/js/radiologic_technologist_dashboard.js
     // without it needing to parse PHP-rendered HTML — same pattern as
     // medical_technician/dashboard.php's own inline script.
     window.RADIO_TECHNOLOGIST_DASHBOARD_DATA = <?= json_encode([
@@ -378,7 +378,7 @@ $staffNavItems = [
     window.HC_DASHBOARD_CARD_ENDPOINT = '../api/radiotech-dashboard-card.php';
 </script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
-<script src="<?= asset_url('/assets/js/radio_technologist_dashboard.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/radiologic_technologist_dashboard.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/dashboard-range-filters.js') ?>"></script>
 </body>
 </html>

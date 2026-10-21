@@ -2,7 +2,7 @@
 /**
  * =====================================================================
  * HEALTrack — Health Information System
- * Laboratory Consultation (medical_technician/lab_xray_consultation.php)
+ * Laboratory Management (medical_technician/lab_xray_consultation.php)
  * ---------------------------------------------------------------------
  * The Medical Technologist's referral INBOX — every patient a doctor has
  * just sent for laboratory testing (a real pending lab_results doc,
@@ -37,11 +37,11 @@ require_once __DIR__ . '/../includes/medical_technician/lab_xray_consultation_fi
 // $referralsPaginationWindow, $referralsStatsSignature,
 // $referralsTableSignature
 
-// Sidebar nav — Laboratory Consultation is active on this page.
+// Sidebar nav — Laboratory Management is active on this page.
 $staffNavItems = [
     ['icon' => 'bi-grid-fill',                 'label' => 'Dashboard',                       'href' => 'dashboard.php'],
     ['icon' => 'bi-clipboard2-pulse-fill',     'label' => 'Laboratory',              'href' => 'laboratory_xray.php'],
-    ['icon' => 'bi-inboxes-fill',              'label' => 'Laboratory Consultation', 'href' => 'lab_xray_consultation.php', 'active' => true, 'badge' => hc_get_pending_lab_count()],
+    ['icon' => 'bi-inboxes-fill',              'label' => 'Laboratory Management', 'href' => 'lab_xray_consultation.php', 'active' => true, 'badge' => hc_get_pending_lab_count()],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',
@@ -62,7 +62,7 @@ $staffNavItems = [
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Laboratory Consultation — HEALTrack</title>
+<title>Laboratory Management — HEALTrack</title>
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -166,7 +166,7 @@ $staffNavItems = [
     <!-- ============ TOP HEADER ============ -->
     <div class="adm-topbar lxc-topbar">
         <div class="lxc-topbar-title">
-            <h1>Laboratory Consultation</h1>
+            <h1>Laboratory Management</h1>
             <p class="adm-page-subtitle">Patients sent by doctors for laboratory testing, awaiting processing.</p>
         </div>
 

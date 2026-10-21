@@ -279,7 +279,7 @@ $doctorNavItems = [
                         </div>
                         <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
                             <span class="cns-badge" style="background:<?= htmlspecialchars($lr['resultBadgeBg']) ?>; color:<?= htmlspecialchars($lr['resultBadgeColor']) ?>;"><?= htmlspecialchars($lr['resultBadgeLabel']) ?></span>
-                            <a href="laboratory_result_details.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($lr['id']) ?>&type=<?= urlencode($lr['type']) ?>&consultationId=<?= urlencode($consultation['id']) ?>" class="acv-view-full-link" style="margin-top:0;" target="_blank" rel="noopener"><i class="bi bi-eye"></i> View Full Result</a>
+                            <a href="laboratory_result_details.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($lr['id']) ?>&type=<?= urlencode($lr['type']) ?>&consultationId=<?= urlencode($consultation['id']) ?>" class="acv-view-result-btn" target="_blank" rel="noopener"><i class="bi bi-eye"></i> View Full Result</a>
                         </div>
                     </div>
                     <?php endforeach; ?>
@@ -576,7 +576,7 @@ $doctorNavItems = [
                          rather than duplicated), own catalog
                          (hc_xray_exam_catalog(), includes/firestore/xray_results.php)
                          and own staff picker ($availableXrayStaff, real
-                         active radio technologists at this facility). -->
+                         active radiologic technologists at this facility). -->
                     <div class="acv-lab-test-panel d-none" id="acvXrayTestPanel">
                         <div class="acv-lab-test-header">
                             <span class="acv-lab-test-icon"><i class="bi bi-file-earmark-medical"></i></span>
@@ -609,7 +609,7 @@ $doctorNavItems = [
                         <?php if (count($availableXrayStaff) > 1): ?>
                         <div class="acv-staff-picker">
                             <div class="acv-staff-picker-title">Assign To</div>
-                            <div class="acv-staff-picker-desc">Choose which radio technologist will receive this order.</div>
+                            <div class="acv-staff-picker-desc">Choose which radiologic technologist will receive this order.</div>
                             <div class="acv-staff-picker-list">
                                 <?php foreach ($availableXrayStaff as $staff): ?>
                                 <label class="acv-staff-picker-option">
@@ -622,9 +622,9 @@ $doctorNavItems = [
                         </div>
                         <?php elseif (count($availableXrayStaff) === 1): ?>
                         <input type="hidden" id="acvXrayAssignToSingle" value="<?= htmlspecialchars($availableXrayStaff[0]['uid']) ?>">
-                        <div class="acv-staff-picker-note"><i class="bi bi-person-check"></i> Will be sent to <strong><?= htmlspecialchars($availableXrayStaff[0]['name']) ?></strong> — the only active radio technologist on staff.</div>
+                        <div class="acv-staff-picker-note"><i class="bi bi-person-check"></i> Will be sent to <strong><?= htmlspecialchars($availableXrayStaff[0]['name']) ?></strong> — the only active radiologic technologist on staff.</div>
                         <?php else: ?>
-                        <div class="acv-staff-picker-note acv-staff-picker-note-muted"><i class="bi bi-exclamation-circle"></i> No active radio technologist on staff right now — this will stay in the general queue.</div>
+                        <div class="acv-staff-picker-note acv-staff-picker-note-muted"><i class="bi bi-exclamation-circle"></i> No active radiologic technologist on staff right now — this will stay in the general queue.</div>
                         <?php endif; ?>
 
                         <div class="acv-lab-test-error text-danger small d-none" id="acvXrayTestError"></div>

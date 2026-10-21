@@ -2,11 +2,11 @@
 /**
  * =====================================================================
  * HEALTrack — Health Information System
- * Profile / Settings (radio_technologist/profile_settings.php)
+ * Profile / Settings (radiologic_technologist/profile_settings.php)
  * ---------------------------------------------------------------------
- * Top-level Radio Technologist section (its own sidebar nav item).
+ * Top-level Radiologic Technologist section (its own sidebar nav item).
  * Reuses the exact same sidebar/topbar shell as the rest of
- * radio_technologist/*.php plus assets/css/profile_settings.css
+ * radiologic_technologist/*.php plus assets/css/profile_settings.css
  * directly, since this page's profile form/password fields/toggles are
  * visually identical to every other role's profile_settings.php.
  * Modeled directly on medical_technician/profile_settings.php.
@@ -15,7 +15,7 @@
  * the signed-in technologist's own Firestore users/{uid} doc, and Save
  * Changes / Update Password / the notification toggles / theme /
  * language all persist for real — see
- * includes/radio_technologist/profile_settings_radiotech_firestore.php's
+ * includes/radiologic_technologist/profile_settings_radiotech_firestore.php's
  * header comment. Reuses assets/js/subadmin-profile-settings.js as-is.
  * =====================================================================
  */
@@ -31,7 +31,7 @@ if (($_SESSION['role'] ?? null) !== 'radio_technologist') {
 require_once __DIR__ . '/../includes/shared/account_password_helpers.php'; // hc_account_has_password()
 $hasPassword = hc_account_has_password($_SESSION['uid'] ?? '');
 
-require_once __DIR__ . '/../includes/radio_technologist/profile_settings_radiotech_firestore.php';
+require_once __DIR__ . '/../includes/radiologic_technologist/profile_settings_radiotech_firestore.php';
 // $staffProfile, $profileInfo, $roleOptions, $healthCenterOptions,
 // $passwordLastChanged, $securitySettings, $notificationPreferences,
 // $themeOptions, $languageOptions, $currentTheme, $currentLanguage,
@@ -44,7 +44,7 @@ $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'We
 
 $staffNavItems = [
     ['icon' => 'bi-grid-fill',                 'label' => 'Dashboard',          'href' => 'dashboard.php'],
-    ['icon' => 'bi-file-earmark-medical-fill', 'label' => 'X-ray Consultation', 'href' => 'xray_consultation.php', 'badge' => hc_get_pending_xray_count()],
+    ['icon' => 'bi-file-earmark-medical-fill', 'label' => 'X-ray Management', 'href' => 'xray_consultation.php', 'badge' => hc_get_pending_xray_count()],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',

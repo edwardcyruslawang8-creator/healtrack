@@ -10,7 +10,7 @@
  * joined with real patient names via includes/firestore/patients.php.
  * $staffProfile is real too, same as every other role's dashboard.
  * X-ray is NOT included — that's radio_technologist's own dashboard
- * now (includes/radio_technologist/radio_technologist_dashboard_firestore.php).
+ * now (includes/radiologic_technologist/radiologic_technologist_dashboard_firestore.php).
  *
  * With only a handful of real seed lab docs right now, these numbers
  * are genuinely small (not the rounder placeholder figures this file

@@ -537,7 +537,7 @@ $staffRoleMeta = [
     'healthcare_staff'   => ['label' => 'Medical Staff',     'color' => '#1E8E3E'],
     'pharmacist'         => ['label' => 'Pharmacist',        'color' => '#4F46E5'],
     'medical_technician' => ['label' => 'Medical Technologist','color' => '#1A73E8'],
-    'radio_technologist' => ['label' => 'Radio Technologist', 'color' => '#8B5CF6'],
+    'radio_technologist' => ['label' => 'Radiologic Technologist', 'color' => '#8B5CF6'],
     'subadmin'           => ['label' => 'Sub-Admin',         'color' => '#D93025'],
 ];
 $facilityStaffDocs = array_values(array_filter(

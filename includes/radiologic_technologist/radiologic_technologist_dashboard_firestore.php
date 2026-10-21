@@ -1,9 +1,9 @@
 <?php
 /**
  * =====================================================================
- * Radio Technologist Dashboard — Data
+ * Radiologic Technologist Dashboard — Data
  * ---------------------------------------------------------------------
- * Landing dashboard for the Radio Technologist role (Firestore role
+ * Landing dashboard for the Radiologic Technologist role (Firestore role
  * value "radio_technologist" — see assets/js/login.js's routeByRole()).
  * Modeled directly on
  * includes/medical_technician/medical_technician_dashboard_firestore.php
@@ -22,7 +22,7 @@
  * before this change (no completedBy field existed at all), so those
  * stay out of "mine" rather than being guessed at. The Pending queue
  * stays facility-wide/unscoped on purpose — a pending exam has no
- * owner yet; any radio technologist at this facility can pick it up
+ * owner yet; any radiologic technologist at this facility can pick it up
  * (same shared-inbox model as medical_technician/lab_xray_consultation.php),
  * so there's no real "my pending" to show.
  * =====================================================================
@@ -37,8 +37,8 @@ $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
 
 $staffProfile = [
-    'name'     => $_SESSION['name'] ?? 'Radio Technologist',
-    'role'     => 'Radio Technologist',
+    'name'     => $_SESSION['name'] ?? 'Radiologic Technologist',
+    'role'     => 'Radiologic Technologist',
     'facility' => $myDoc['facility'] ?? 'North Super Health Center',
 ];
 

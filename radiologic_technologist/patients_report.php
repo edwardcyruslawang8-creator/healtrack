@@ -2,49 +2,43 @@
 /**
  * =====================================================================
  * HEALTrack — Health Information System
- * X-ray Consultation (radio_technologist/xray_consultation.php)
+ * My Reports (radiologic_technologist/patients_report.php)
  * ---------------------------------------------------------------------
- * The Radio Technologist's referral INBOX — every patient a doctor has
- * just sent for an X-ray examination (a real pending xray_results doc —
- * see includes/radio_technologist/xray_consultation_firestore.php's
- * header comment). Modeled directly on
- * medical_technician/lab_xray_consultation.php, narrowed to X-ray only.
- *
- * Reuses the exact same visual shell and CSS as that page (280px
- * dark-red gradient sidebar "adm-" atoms, "mt-" stat cards, "lxr-"
- * table/filter atoms from assets/css/medical_technician_lab_xray.css)
- * — this page introduces no new CSS of its own.
+ * The "My Reports" child under the sidebar's Analytics & Reports
+ * dropdown — sibling of analytics_reports.php's "Overview" (the
+ * KPI/chart page). A date-filtered, exportable list of X-ray exams this
+ * technologist personally completed — see
+ * includes/radiologic_technologist/patients_report_radiotech_firestore.php's
+ * header comment and includes/shared/patient_consultation_report.php's
+ * for the full per-role design.
  * =====================================================================
  */
 session_start();
 
 require_once __DIR__ . '/../config/constants.php'; // BASE_URL, asset_url()
 
-// Only a signed-in radio technologist may view this page.
 if (($_SESSION['role'] ?? null) !== 'radio_technologist') {
     header('Location: ' . BASE_URL . '/login.php');
     exit;
 }
 
-require_once __DIR__ . '/../includes/radio_technologist/xray_consultation_firestore.php';
-// $staffProfile, $dashboardDateLabel, $referralsSummary, $searchTerm,
-// $dateFrom, $dateTo, $referralRows, $referralsTotal, $referralsPerPage,
-// $referralsCurrentPage, $referralsTotalPages, $referralsPaginationWindow,
-// $referralsStatsSignature, $referralsTableSignature
+require_once __DIR__ . '/../includes/radiologic_technologist/patients_report_radiotech_firestore.php';
+// $staffProfile, $dashboardDateLabel, $myReportRange, $myPatientReportRows
 
 require_once __DIR__ . '/../includes/firestore/xray_results.php'; // hc_get_pending_xray_count() for the sidebar badge below
 
-// Sidebar nav — X-ray Consultation is active on this page.
 $staffNavItems = [
     ['icon' => 'bi-grid-fill',                 'label' => 'Dashboard',          'href' => 'dashboard.php'],
-    ['icon' => 'bi-file-earmark-medical-fill', 'label' => 'X-ray Consultation', 'href' => 'xray_consultation.php', 'active' => true, 'badge' => hc_get_pending_xray_count()],
+    ['icon' => 'bi-file-earmark-medical-fill', 'label' => 'X-ray Management', 'href' => 'xray_consultation.php', 'badge' => hc_get_pending_xray_count()],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',
         'id' => 'rtNavAnalyticsReports',
+        'active' => true,
+        'open' => true,
         'children' => [
             ['label' => 'Analytics', 'href' => 'analytics_reports.php'],
-            ['label' => 'My Reports', 'href' => 'patients_report.php'],
+            ['label' => 'My Reports', 'href' => 'patients_report.php', 'active' => true],
         ],
     ],
     ['icon' => 'bi-bell-fill',                 'label' => 'Notifications',      'href' => 'notifications.php', 'badge' => hc_radiotech_unread_notification_count()],
@@ -57,40 +51,28 @@ $staffNavItems = [
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>X-ray Consultation — HEALTrack</title>
+<title>My Reports — HEALTrack</title>
 
-<!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<!-- Bootstrap 5 -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<!-- Bootstrap Icons -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-<!-- Font Awesome (available per project spec; Bootstrap Icons cover this page's icons) -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-<!-- Shared admin/subadmin/medical-staff/pharmacist shell (sidebar, topbar, cards, tabs, table, etc.) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/admin-dashboard.css') ?>">
-<!-- Medical Technologist Dashboard styles, reused here for the nav badge + topbar select buttons + stat card row -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/medical_technician_dashboard.css') ?>">
-<!-- Laboratory & X-ray Processing page styles, reused verbatim (filter toolbar, request table) -->
-<link rel="stylesheet" href="<?= asset_url('/assets/css/medical_technician_lab_xray.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/subadmin_dashboard.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/analytics_reports.css') ?>">
 </head>
 <body class="adm-body">
 
-<!-- Mobile sidebar trigger -->
 <button class="adm-mobile-menu-btn" id="admSidebarToggle" aria-label="Open menu">
     <i class="bi bi-list"></i>
 </button>
 <div class="adm-sidebar-backdrop" id="admSidebarBackdrop"></div>
 
-<!-- =============================================================
-     SIDEBAR
-     ============================================================= -->
 <aside class="adm-sidebar" id="admSidebar">
-
-    <!-- Brand -->
     <div class="adm-brand">
         <div class="adm-logo-badge"><i class="bi bi-heart-pulse-fill"></i></div>
         <div class="adm-brand-text">
@@ -101,7 +83,6 @@ $staffNavItems = [
 
     <hr class="adm-sidebar-divider">
 
-    <!-- Radio technologist profile -->
     <div class="adm-profile">
         <div class="adm-avatar"><?php require_once __DIR__ . '/../includes/shared/profile_photo_storage.php'; echo hc_render_sidebar_avatar(); ?></div>
         <div class="adm-profile-text">
@@ -112,7 +93,6 @@ $staffNavItems = [
 
     <hr class="adm-sidebar-divider">
 
-    <!-- Navigation -->
     <ul class="adm-nav">
         <?php foreach ($staffNavItems as $item): ?>
         <?php if (!empty($item['children'])): ?>
@@ -153,27 +133,19 @@ $staffNavItems = [
     </div>
 </aside>
 
-<!-- =============================================================
-     MAIN CONTENT
-     ============================================================= -->
 <main class="adm-main">
 
-    <!-- ============ TOP HEADER ============ -->
-    <div class="adm-topbar lxc-topbar">
-        <div class="lxc-topbar-title">
-            <h1>X-ray Consultation</h1>
-            <p class="adm-page-subtitle">Patients sent by doctors for X-ray examination, awaiting processing.</p>
+    <div class="adm-topbar">
+        <div>
+            <h1>My Reports</h1>
+            <p class="adm-page-subtitle">Every patient whose X-ray exam you personally completed, filtered by date.</p>
         </div>
 
         <div class="adm-topbar-right">
             <div class="adm-topbar-actions">
-                <!-- Fixed — display only, not a range picker. -->
                 <div class="mt-topbar-select-btn">
                     <i class="bi bi-calendar3"></i> <?= htmlspecialchars($dashboardDateLabel) ?>
                 </div>
-
-                <!-- Fixed — shows only the facility this technologist is
-                     actually assigned to; not a switcher. -->
                 <div class="mt-topbar-select-btn">
                     <i class="bi bi-building"></i> <?= htmlspecialchars($staffProfile['facility']) ?>
                 </div>
@@ -201,46 +173,64 @@ $staffNavItems = [
         </div>
     </div>
 
-    <!-- ============ SUMMARY STAT CARD ============
-         Polled independently from the table below (own container, own
-         signature) by assets/js/radiotech_xray_consultation.js
-         (api/radiotech-xray-queue-status.php). -->
-    <div id="xcReferralStats" data-signature="<?= htmlspecialchars($referralsStatsSignature) ?>">
-        <?php require __DIR__ . '/../includes/radio_technologist/_xray_referral_stats.php'; ?>
-    </div>
+    <!-- ============ MY REPORTS ============ -->
+    <div class="adm-card arp-report-card">
+        <div class="sad-card-header"><h2>My Reports</h2></div>
+        <p class="adm-page-subtitle">Every patient whose X-ray exam you personally completed, filtered by date — export or print for your records.</p>
 
-    <!-- ============ FILTER TOOLBAR ============ -->
-    <div class="adm-card lxr-filter-card">
-        <form method="get" class="lxr-filter-row">
-            <div class="lxr-search">
-                <i class="bi bi-search"></i>
-                <input type="text" name="q" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Search by patient name, ID, or request ID...">
-            </div>
-
-            <div class="lxr-daterange">
-                <i class="bi bi-calendar3"></i>
-                <input type="date" name="from" value="<?= htmlspecialchars($dateFrom) ?>" aria-label="From date">
-                <span class="lxr-dot"></span>
-                <input type="date" name="to" value="<?= htmlspecialchars($dateTo) ?>" aria-label="To date">
-            </div>
-
-            <button type="submit" class="lxr-btn-filter"><i class="bi bi-funnel"></i> Filter</button>
+        <form class="arp-report-filter" method="get">
+            <label>From <input type="date" name="from" value="<?= htmlspecialchars($myReportRange['from']) ?>"></label>
+            <label>To <input type="date" name="to" value="<?= htmlspecialchars($myReportRange['to']) ?>"></label>
+            <button type="submit" class="arp-report-filter-btn">Apply</button>
+            <a href="patients_report.php" class="arp-report-today-link">Today</a>
+            <div class="arp-filter-spacer"></div>
+            <a href="../api/export-radiotech-patient-report.php?from=<?= urlencode($myReportRange['from']) ?>&to=<?= urlencode($myReportRange['to']) ?>" class="arp-report-export-btn"><i class="bi bi-download"></i> Export CSV</a>
+            <button type="button" class="arp-report-export-btn arp-report-print-btn"><i class="bi bi-printer"></i> Print</button>
         </form>
-    </div>
 
-    <!-- ============ REFERRALS TABLE ============
-         Polled by assets/js/radiotech_xray_consultation.js
-         (api/radiotech-xray-queue-status.php) so a new referral (or one
-         someone else completed) shows up here without a manual reload. -->
-    <div id="xcReferralTable" data-signature="<?= htmlspecialchars($referralsTableSignature) ?>">
-        <?php require __DIR__ . '/../includes/radio_technologist/_xray_referral_table.php'; ?>
+        <div class="adm-table-wrap">
+            <table class="adm-table">
+                <thead>
+                    <tr>
+                        <th>Patient</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Type</th>
+                        <th>Details</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($myPatientReportRows)): ?>
+                    <tr>
+                        <td colspan="6" class="adm-table-empty">No exams completed in this date range.</td>
+                    </tr>
+                    <?php endif; ?>
+                    <?php foreach ($myPatientReportRows as $r): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($r['patientName']) ?></td>
+                        <td><?= htmlspecialchars($r['date']) ?></td>
+                        <td><?= htmlspecialchars($r['time']) ?></td>
+                        <td><?= htmlspecialchars($r['type']) ?></td>
+                        <td><?= htmlspecialchars($r['detail']) ?></td>
+                        <td><?= htmlspecialchars($r['status']) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <div class="adm-table-footer">
+            <span class="adm-showing-text"><?= count($myPatientReportRows) ?> patient(s) in this range</span>
+        </div>
     </div>
 
 </main>
 
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
+<script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
-<script src="<?= asset_url('/assets/js/radiotech_xray_consultation.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/analytics_reports.js') ?>"></script>
 </body>
 </html>

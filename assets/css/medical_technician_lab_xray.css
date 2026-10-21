@@ -9,7 +9,7 @@
    ============================================================= */
 
 /* -- Topbar (lab_xray_consultation.php only, "lxc-" prefixed) --
-   "Laboratory & X-ray Consultation" is the longest title/subtitle of
+   "Laboratory & X-ray Management" is the longest title/subtitle of
    any medical_technician page, so at some window widths
    admin-dashboard.css's .adm-topbar (flex-wrap:wrap) drops the date/
    facility/bell/profile cluster onto its own line below the title

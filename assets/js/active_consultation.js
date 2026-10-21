@@ -415,7 +415,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Routing to Laboratory/X-ray doesn't end the consultation (see
     // api/complete-consultation.php's header comment) — the main
     // action button reflects that: "Send to Medical Technologist"/
-    // "Send to Radio Technologist" instead of "Save & End Consultation",
+    // "Send to Radiologic Technologist" instead of "Save & End Consultation",
     // same button/handler either way, just a different label/confirm
     // message read at click time (see the click handler below).
     // -----------------------------------------------------------
@@ -425,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (routingValue === 'laboratory') {
             btn.innerHTML = '<i class="bi bi-send-fill"></i> Send to Medical Technologist';
         } else if (routingValue === 'xray') {
-            btn.innerHTML = '<i class="bi bi-send-fill"></i> Send to Radio Technologist';
+            btn.innerHTML = '<i class="bi bi-send-fill"></i> Send to Radiologic Technologist';
         } else {
             btn.innerHTML = '<i class="bi bi-save"></i> Save &amp; End Consultation';
         }
@@ -601,7 +601,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         if (nextRouting === 'xray' && xrayStaffError && !selectedXrayStaffUid()) {
-            await HCDialog.alert('Please choose which radio technologist this should be sent to.');
+            await HCDialog.alert('Please choose which radiologic technologist this should be sent to.');
             showXrayTestPanel();
             return;
         }
@@ -614,7 +614,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const confirmMessages = {
             laboratory: 'Send this patient to the Laboratory? This saves the consultation and notifies the medical technologist — it does NOT end the consultation.',
-            xray: 'Send this patient for X-ray? This saves the consultation and notifies the radio technologist — it does NOT end the consultation.',
+            xray: 'Send this patient for X-ray? This saves the consultation and notifies the radiologic technologist — it does NOT end the consultation.',
         };
         const confirmMessage = confirmMessages[nextRouting] || 'Save and end this consultation? This marks it as completed.';
         const confirmed = await HCDialog.confirm(confirmMessage);

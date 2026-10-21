@@ -249,7 +249,10 @@ $staffNavItems = [
         </div>
     </div>
 
-    <!-- ============ DETAIL LAYOUT: LEFT (test details) + RIGHT (results table) ============ -->
+    <?php if ($resultType === 'lab'): ?>
+    <!-- ============ DETAIL LAYOUT: LEFT (test details) + RIGHT (results table) ============
+         Only the lab half — see includes/medical-staff/laboratory_result_details_medstaff_firestore.php's
+         header comment for why the x-ray half is never rendered here. -->
     <div class="lrd-layout">
 
         <!-- ============ LEFT COLUMN ============ -->
@@ -287,19 +290,6 @@ $staffNavItems = [
                         </div>
                         <button type="button" class="lrd-download-btn" aria-label="Download"><i class="bi bi-download"></i></button>
                     </div>
-                </div>
-            </div>
-
-            <!-- X-ray Examination Details -->
-            <div class="adm-card lrd-detail-card">
-                <div class="lrd-card-header"><i class="bi bi-clipboard2-pulse-fill"></i> <h3>X-ray Examination Details</h3></div>
-
-                <div class="lrd-field-list">
-                    <div class="lrd-field"><span class="lrd-field-label">Exam Name</span><span class="lrd-field-value"><?= htmlspecialchars($xrayExam['examName']) ?></span></div>
-                    <div class="lrd-field"><span class="lrd-field-label">Body Part</span><span class="lrd-field-value"><?= htmlspecialchars($xrayExam['bodyPart']) ?></span></div>
-                    <div class="lrd-field"><span class="lrd-field-label">Date &amp; Time Ordered</span><span class="lrd-field-value"><?= htmlspecialchars($xrayExam['orderedDate']) ?> <span class="lrd-dot"></span> <?= htmlspecialchars($xrayExam['orderedTime']) ?></span></div>
-                    <div class="lrd-field"><span class="lrd-field-label">Date &amp; Time Completed</span><span class="lrd-field-value"><?= htmlspecialchars($xrayExam['completedDate']) ?> <span class="lrd-dot"></span> <?= htmlspecialchars($xrayExam['completedTime']) ?></span></div>
-                    <div class="lrd-field"><span class="lrd-field-label">Ordered By</span><span class="lrd-field-value"><?= htmlspecialchars($xrayExam['orderedBy']) ?></span></div>
                 </div>
             </div>
 
@@ -359,7 +349,29 @@ $staffNavItems = [
         </div>
 
     </div>
+    <?php else: ?>
+    <!-- ============ DETAIL LAYOUT: X-ray only (single column) ============ -->
+    <div class="lrd-layout" style="grid-template-columns: 1fr;">
+        <div class="lrd-col">
 
+            <!-- X-ray Examination Details -->
+            <div class="adm-card lrd-detail-card">
+                <div class="lrd-card-header"><i class="bi bi-clipboard2-pulse-fill"></i> <h3>X-ray Examination Details</h3></div>
+
+                <div class="lrd-field-list">
+                    <div class="lrd-field"><span class="lrd-field-label">Exam Name</span><span class="lrd-field-value"><?= htmlspecialchars($xrayExam['examName']) ?></span></div>
+                    <div class="lrd-field"><span class="lrd-field-label">Body Part</span><span class="lrd-field-value"><?= htmlspecialchars($xrayExam['bodyPart']) ?></span></div>
+                    <div class="lrd-field"><span class="lrd-field-label">Date &amp; Time Ordered</span><span class="lrd-field-value"><?= htmlspecialchars($xrayExam['orderedDate']) ?> <span class="lrd-dot"></span> <?= htmlspecialchars($xrayExam['orderedTime']) ?></span></div>
+                    <div class="lrd-field"><span class="lrd-field-label">Date &amp; Time Completed</span><span class="lrd-field-value"><?= htmlspecialchars($xrayExam['completedDate']) ?> <span class="lrd-dot"></span> <?= htmlspecialchars($xrayExam['completedTime']) ?></span></div>
+                    <div class="lrd-field"><span class="lrd-field-label">Ordered By</span><span class="lrd-field-value"><?= htmlspecialchars($xrayExam['orderedBy']) ?></span></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if ($resultType === 'xray'): ?>
     <!-- ============ X-RAY FINDINGS (full width) ============ -->
     <div class="adm-card lrd-detail-card lrd-xray-findings-card">
         <div class="lrd-card-header"><h3>X-ray Findings</h3></div>
@@ -403,6 +415,7 @@ $staffNavItems = [
             </div>
         </div>
     </div>
+    <?php endif; // $resultType === 'xray' ?>
 
 </main>
 

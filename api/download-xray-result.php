@@ -9,7 +9,7 @@
  * place a stored X-ray result file ever gets read back. Gated to the
  * clinical staff roles that can already reach a patient's lab/x-ray
  * result details (same role list laboratory_result_details.php-family
- * pages across medical_technician/radio_technologist/doctor/
+ * pages across medical_technician/radiologic_technologist/doctor/
  * healthcare_staff/subadmin already allow); addressed by a bare ?id=
  * (the xray_results doc id), so it can't trust a referring page already
  * filtered what's visible.

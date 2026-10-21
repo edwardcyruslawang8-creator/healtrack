@@ -16,7 +16,7 @@
  * meaning the same page structure (stat cards, 3-chart row, 4-card
  * row, bottom table), not literally the same content. X-ray is
  * deliberately NOT part of this role's dashboard — that's
- * radio_technologist/dashboard.php's own, separate page.
+ * radiologic_technologist/dashboard.php's own, separate page.
  *
  * FRONT-END ONLY for the test-processing numbers — there's no
  * per-technician view over the existing lab_results collection yet
@@ -52,7 +52,7 @@ require_once __DIR__ . '/../includes/medical_technician/medical_technician_dashb
 $staffNavItems = [
     ['icon' => 'bi-grid-fill',             'label' => 'Dashboard',                       'href' => 'dashboard.php', 'active' => true],
     ['icon' => 'bi-clipboard2-pulse-fill', 'label' => 'Laboratory',              'href' => 'laboratory_xray.php'],
-    ['icon' => 'bi-inboxes-fill',          'label' => 'Laboratory Consultation', 'href' => 'lab_xray_consultation.php', 'badge' => hc_get_pending_lab_count()],
+    ['icon' => 'bi-inboxes-fill',          'label' => 'Laboratory Management', 'href' => 'lab_xray_consultation.php', 'badge' => hc_get_pending_lab_count()],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',

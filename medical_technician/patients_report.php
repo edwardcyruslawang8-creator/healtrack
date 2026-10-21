@@ -37,7 +37,7 @@ require_once __DIR__ . '/../includes/firestore/lab_results.php'; // hc_get_pendi
 $staffNavItems = [
     ['icon' => 'bi-grid-fill',             'label' => 'Dashboard',                       'href' => 'dashboard.php'],
     ['icon' => 'bi-clipboard2-pulse-fill', 'label' => 'Laboratory',              'href' => 'laboratory_xray.php'],
-    ['icon' => 'bi-inboxes-fill',          'label' => 'Laboratory Consultation', 'href' => 'lab_xray_consultation.php', 'badge' => hc_get_pending_lab_count()],
+    ['icon' => 'bi-inboxes-fill',          'label' => 'Laboratory Management', 'href' => 'lab_xray_consultation.php', 'badge' => hc_get_pending_lab_count()],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',

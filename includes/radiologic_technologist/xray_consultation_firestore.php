@@ -1,7 +1,7 @@
 <?php
 /**
  * =====================================================================
- * X-ray Consultation (Radio Technologist) — Data
+ * X-ray Management (Radiologic Technologist) — Data
  * ---------------------------------------------------------------------
  * The referral INBOX — every real xray_results doc still "pending": a
  * doctor completed a consultation, routed it to X-ray (see
@@ -22,8 +22,8 @@ $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
 
 $staffProfile = [
-    'name'     => $_SESSION['name'] ?? 'Radio Technologist',
-    'role'     => 'Radio Technologist',
+    'name'     => $_SESSION['name'] ?? 'Radiologic Technologist',
+    'role'     => 'Radiologic Technologist',
     'facility' => $myDoc['facility'] ?? 'North Super Health Center',
 ];
 
@@ -33,7 +33,7 @@ if (!function_exists('hc_radiotech_xc_query')) {
     /**
      * Builds a ?query string carrying every current filter except the
      * ones in $overrides — used by both this page's own pagination
-     * links and includes/radio_technologist/_xray_referral_table.php
+     * links and includes/radiologic_technologist/_xray_referral_table.php
      * (shared verbatim with api/radiotech-xray-queue-status.php, so the
      * live-polled fragment's pagination links match exactly).
      */

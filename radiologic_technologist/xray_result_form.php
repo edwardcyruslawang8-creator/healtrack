@@ -2,11 +2,11 @@
 /**
  * =====================================================================
  * HEALTrack — Health Information System
- * X-ray Result Form (radio_technologist/xray_result_form.php)
+ * X-ray Result Form (radiologic_technologist/xray_result_form.php)
  * ---------------------------------------------------------------------
  * Reached via the "Consult" row action on xray_consultation.php for a
  * pending X-ray referral — see
- * includes/radio_technologist/xray_result_form_firestore.php's header
+ * includes/radiologic_technologist/xray_result_form_firestore.php's header
  * comment. Findings + Impression + a required result document upload
  * (the scanned report/exported image — see
  * includes/shared/xray_result_storage.php's header comment), submitted
@@ -22,14 +22,14 @@ if (($_SESSION['role'] ?? null) !== 'radio_technologist') {
     exit;
 }
 
-require_once __DIR__ . '/../includes/radio_technologist/xray_result_form_firestore.php';
+require_once __DIR__ . '/../includes/radiologic_technologist/xray_result_form_firestore.php';
 // $staffProfile, $dashboardDateLabel, $patientId, $recordId, $patient, $currentDoc, $isEditable, $routedToDoctorName
 
 require_once __DIR__ . '/../includes/firestore/xray_results.php'; // hc_get_pending_xray_count() for the sidebar badge below
 
 $staffNavItems = [
     ['icon' => 'bi-grid-fill',                 'label' => 'Dashboard',          'href' => 'dashboard.php'],
-    ['icon' => 'bi-file-earmark-medical-fill', 'label' => 'X-ray Consultation', 'href' => 'xray_consultation.php', 'active' => true, 'badge' => hc_get_pending_xray_count()],
+    ['icon' => 'bi-file-earmark-medical-fill', 'label' => 'X-ray Management', 'href' => 'xray_consultation.php', 'active' => true, 'badge' => hc_get_pending_xray_count()],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',

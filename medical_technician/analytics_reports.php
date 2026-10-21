@@ -20,7 +20,7 @@
  * (lab_results never records who completed a test — see
  * includes/medical_technician/analytics_reports_medtech_firestore.php's
  * header comment for why). Laboratory only — X-ray is
- * radio_technologist/analytics_reports.php's own page now.
+ * radiologic_technologist/analytics_reports.php's own page now.
  * =====================================================================
  */
 session_start();
@@ -52,7 +52,7 @@ require_once __DIR__ . '/../includes/medical_technician/predictive_overview_fire
 $staffNavItems = [
     ['icon' => 'bi-grid-fill',             'label' => 'Dashboard',                       'href' => 'dashboard.php'],
     ['icon' => 'bi-clipboard2-pulse-fill', 'label' => 'Laboratory',              'href' => 'laboratory_xray.php'],
-    ['icon' => 'bi-inboxes-fill',          'label' => 'Laboratory Consultation', 'href' => 'lab_xray_consultation.php', 'badge' => hc_get_pending_lab_count()],
+    ['icon' => 'bi-inboxes-fill',          'label' => 'Laboratory Management', 'href' => 'lab_xray_consultation.php', 'badge' => hc_get_pending_lab_count()],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',

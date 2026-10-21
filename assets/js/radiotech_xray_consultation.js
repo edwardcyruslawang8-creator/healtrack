@@ -1,6 +1,6 @@
 /* =============================================================
-   RADIO TECHNOLOGIST X-RAY CONSULTATION JS
-   (radio_technologist/xray_consultation.php)
+   RADIOLOGIC TECHNOLOGIST X-RAY CONSULTATION JS
+   (radiologic_technologist/xray_consultation.php)
    ---------------------------------------------------------------
    This page has no other interactivity of its own (every action is a
    plain <a href> link or GET filter form) — the one thing here is a

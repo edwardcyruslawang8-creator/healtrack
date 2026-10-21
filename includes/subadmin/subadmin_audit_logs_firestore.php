@@ -107,7 +107,7 @@ $auditRoleFilterLabels = [
     'doctor' => 'Doctor',
     'healthcare_staff' => 'Medical Staff',
     'medical_technician' => 'Medical Technologist',
-    'radio_technologist' => 'Radio Technologist',
+    'radio_technologist' => 'Radiologic Technologist',
     'pharmacist' => 'Pharmacist',
 ];
 $auditRoleFilterLabel = $auditRoleFilterLabels[$auditRoleFilter] ?? '';
@@ -115,7 +115,7 @@ $auditRoleActorRoles = [
     'doctor' => 'Doctor',
     'healthcare_staff' => 'Healthcare Staff',
     'medical_technician' => 'Medical Technologist',
-    'radio_technologist' => 'Radio Technologist',
+    'radio_technologist' => 'Radiologic Technologist',
     'pharmacist' => 'Pharmacist',
 ];
 

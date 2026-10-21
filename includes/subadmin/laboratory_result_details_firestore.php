@@ -9,14 +9,15 @@
  * view reached via a "View" button, not one of the patient profile's
  * own tabs).
  *
- * This page shows ONE lab test and ONE x-ray exam side by side; both
- * bundles are resolved by includes/firestore/lab_results.php's
- * hc_resolve_lab_result() and includes/firestore/xray_results.php's
- * hc_resolve_xray_result() — shared with medical-staff's identical
- * page. Clicking a lab row shows that lab test paired with the
- * patient's most recent x-ray (and vice versa); if the patient has no
- * lab result (or no x-ray) at all, that half shows an empty-state
- * shape instead of erroring.
+ * This page shows ONLY the ONE result type actually requested
+ * ($resultType) — lab OR x-ray, never both. Both bundles are still
+ * resolved by includes/firestore/lab_results.php's hc_resolve_lab_result()
+ * and includes/firestore/xray_results.php's hc_resolve_xray_result() —
+ * shared with medical-staff's identical page — but the template only
+ * renders the half matching $resultType; the other bundle's
+ * $wantThisType=false fallback ("this patient's most recent") is never
+ * shown, so it's effectively unused output rather than an unrelated
+ * result appearing alongside the one actually asked for.
  * =====================================================================
  */
 
@@ -32,6 +33,8 @@ $statusMeta = [
 
 $requestedType = $_GET['type'] ?? '';
 $requestedRecordId = $_GET['recordId'] ?? '';
+// Which ONE of the two halves the template actually renders.
+$resultType = $requestedType === 'xray' ? 'xray' : 'lab';
 
 $labBundle = hc_resolve_lab_result($patient['id'], $requestedType === 'lab', $requestedRecordId);
 $labTest = $labBundle['labTest'];

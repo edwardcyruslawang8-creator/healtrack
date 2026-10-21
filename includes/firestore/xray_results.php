@@ -11,6 +11,39 @@
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 
+if (!function_exists('hc_xray_impression_is_normal')) {
+    /**
+     * xray_results has no structured normal/abnormal field of its own
+     * (that's a lab_results-only field, resultBadgeLabel/Color) — this
+     * is the one real signal available, the exam's own free-text
+     * impression, keyword-matched the same way every "Normal"/"Abnormal"
+     * badge derived from an X-ray impression in this app uses (doctor's
+     * Active Consultation "Lab & X-ray Results" card, the Patient
+     * Profile Overview tab's "Recent X-ray" card). Previously
+     * inconsistent: some call sites only matched 'no active', which
+     * missed a genuinely normal impression phrased as e.g. "Normal
+     * chest findings." or "Lungs are clear, unremarkable." — showing
+     * "Abnormal" for a result that, read in full, was actually normal.
+     * An empty impression is NOT normal — nothing to go on yet, so
+     * don't guess.
+     */
+    function hc_xray_impression_is_normal(?string $impression): bool
+    {
+        $impressionLower = strtolower((string) $impression);
+        if ($impressionLower === '') {
+            return false;
+        }
+
+        foreach (['no active', 'unremarkable', 'normal'] as $keyword) {
+            if (str_contains($impressionLower, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
 if (!function_exists('hc_xray_exam_catalog')) {
     /**
      * Fixed X-ray exam catalog for doctor/active_consultation.php's

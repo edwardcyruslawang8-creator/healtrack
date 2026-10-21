@@ -46,6 +46,9 @@ $statusMeta = [
 
 $requestedType = $_GET['type'] ?? '';
 $requestedRecordId = $_GET['recordId'] ?? '';
+// Which ONE of the two halves the template actually renders — this
+// page shows only the result type actually requested, never both.
+$resultType = $requestedType === 'xray' ? 'xray' : 'lab';
 
 $labBundle = hc_resolve_lab_result($patient['id'], $requestedType === 'lab', $requestedRecordId);
 $labTest = $labBundle['labTest'];
