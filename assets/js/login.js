@@ -177,12 +177,12 @@ document.addEventListener('DOMContentLoaded', function () {
      * starts (routeByRole), the account isn't active yet (sign back
      * out, show why), or twoFactorEnabled is true and NEITHER of those
      * happened — $_SESSION['pending2faUid'] is set server-side instead,
-     * so the code-entry step (#loginStep2fa) needs to appear. `user` is
-     * stashed in the outer pendingTwoFaUser so the later, separate
-     * "Verify" click (api/verify-2fa.php) still has it for
-     * routeByRole() once a correct code comes back.
+     * so the code-entry step (#loginStep2fa) needs to appear. The later,
+     * separate "Verify" click (api/verify-2fa.php) gets its own `role`
+     * straight from THAT endpoint's response once a correct code comes
+     * back, so nothing about the original sign-in needs to be held onto
+     * across that gap.
      */
-    let pendingTwoFaUser = null;
     const loginStepCredentials = document.getElementById('loginStepCredentials');
     const loginStep2fa = document.getElementById('loginStep2fa');
 
@@ -202,9 +202,8 @@ document.addEventListener('DOMContentLoaded', function () {
         loginStepCredentials.classList.remove('d-none');
     }
 
-    function handleSessionResult(sessionResult, user, setLoadingFn) {
+    function handleSessionResult(sessionResult, setLoadingFn) {
         if (sessionResult.requires2fa) {
-            pendingTwoFaUser = user;
             setLoadingFn(false);
             showTwoFaStep();
             return null;
@@ -229,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 showError(sessionResult.message || 'This account is not active yet. Please contact your system administrator.');
             });
         }
-        return routeByRole(user);
+        return routeByRole(sessionResult.role);
     }
 
     if (loginForm && typeof firebase !== 'undefined') {
@@ -266,7 +265,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                     .then(function (credential) {
                         return startServerSession(credential.user, remember).then(function (sessionResult) {
-                            return handleSessionResult(sessionResult, credential.user, setLoading);
+                            return handleSessionResult(sessionResult, setLoading);
                         });
                     })
                     .catch(function (error) {
@@ -343,7 +342,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (!result.ok || !result.data.success) {
                         throw new Error(result.data.error || 'That code is incorrect or has expired. Please try again.');
                     }
-                    return routeByRole(pendingTwoFaUser);
+                    return routeByRole(result.data.role);
                 })
                 .catch(function (err) {
                     twoFaErrorBox.textContent = err.message;
@@ -357,7 +356,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (twoFaBackLink) {
         twoFaBackLink.addEventListener('click', function (e) {
             e.preventDefault();
-            pendingTwoFaUser = null;
             firebase.auth().signOut().then(showCredentialsStep);
         });
     }
@@ -391,7 +389,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                 .then(function (result) {
                     return startServerSession(result.user, remember).then(function (sessionResult) {
-                        return handleSessionResult(sessionResult, result.user, setGoogleLoading);
+                        return handleSessionResult(sessionResult, setGoogleLoading);
                     });
                 })
                 .catch(function (error) {
@@ -446,19 +444,41 @@ document.addEventListener('DOMContentLoaded', function () {
                     // it went straight to routeByRole() instead of the
                     // code-entry step, skipping 2FA entirely. Same
                     // reasoning for requiresPasswordSetup below.
+                    //
+                    // `role` is api/session-login.php's own real read of
+                    // users/{uid} (Admin SDK — not subject to Firestore
+                    // security rules) — routeByRole() uses THIS instead of
+                    // a second, redundant client-side Firestore read of
+                    // the same document. That client-side read used to be
+                    // the only way the browser learned the role, but it
+                    // depends on Firestore security rules permitting it,
+                    // which isn't guaranteed to hold for every account/
+                    // browser the same way — a real case of this: a
+                    // teammate signing in with a real, correct password
+                    // for a real active account got "no role set up" purely
+                    // because that second read came back empty, even
+                    // though the server had already confirmed the role
+                    // and started the session.
                     return {
                         success: !!data.success,
                         message: data.message,
                         requires2fa: !!data.requires2fa,
                         requiresPasswordSetup: !!data.requiresPasswordSetup,
+                        role: data.role || null,
                     };
                 });
             });
     }
 
     /**
-     * Looks up the signed-in user's role at Firestore doc users/{uid}
-     * and redirects to the matching dashboard.
+     * Redirects to the dashboard matching $role — $role comes from
+     * api/session-login.php's (or api/verify-2fa.php's) own JSON
+     * response, a real Admin-SDK read of users/{uid}/role already
+     * performed server-side to decide whether to start this session at
+     * all. No separate client-side Firestore read here — see
+     * startServerSession()'s comment for why that used to exist and why
+     * it was removed (a Firestore-security-rules-dependent read that
+     * could come back empty for a real, correctly-authenticated account).
      *
      *   - "admin"           → admin/admin_dashboard.php (built)
      *   - "subadmin"        → subadmin/dashboard.php (built)
@@ -471,52 +491,42 @@ document.addEventListener('DOMContentLoaded', function () {
      *     (index.php is the public homepage, not a patient dashboard —
      *     it isn't gated behind login), so we tell the person instead
      *     of redirecting them there.
-     *   - no users/{uid} doc at all → same "not set up yet" message,
-     *     rather than guessing a role.
+     *   - anything else (no role, or one not listed above) → same
+     *     "not set up yet" message, rather than guessing.
      */
-    function routeByRole(user) {
-        return db.collection('users').doc(user.uid).get()
-            .then(function (doc) {
-                const role = doc.exists ? doc.data().role : null;
-
-                switch (role) {
-                    case 'admin':
-                        window.location.href = BASE_URL + '/admin/admin_dashboard.php';
-                        break;
-                    case 'subadmin':
-                        window.location.href = BASE_URL + '/subadmin/dashboard.php';
-                        break;
-                    case 'healthcare_staff':
-                        window.location.href = BASE_URL + '/medical-staff/dashboard.php';
-                        break;
-                    case 'pharmacist':
-                        window.location.href = BASE_URL + '/pharmacist/dashboard.php';
-                        break;
-                    case 'medical_technician':
-                        window.location.href = BASE_URL + '/medical_technician/dashboard.php';
-                        break;
-                    case 'radio_technologist':
-                        window.location.href = BASE_URL + '/radio_technologist/dashboard.php';
-                        break;
-                    case 'doctor':
-                        window.location.href = BASE_URL + '/doctor/dashboard.php';
-                        break;
-                    case 'patient':
-                        setLoading(false);
-                        showCredentialsStep(); // in case this ran after a successful 2FA step, whose error box isn't visible
-                        showError('Signed in successfully, but the dashboard for your role isn\'t built yet. Please check back soon.');
-                        break;
-                    default:
-                        setLoading(false);
-                        showCredentialsStep();
-                        showError('Signed in, but no role is set up for this account yet. Please contact the system administrator.');
-                }
-            })
-            .catch(function () {
+    function routeByRole(role) {
+        switch (role) {
+            case 'admin':
+                window.location.href = BASE_URL + '/admin/admin_dashboard.php';
+                break;
+            case 'subadmin':
+                window.location.href = BASE_URL + '/subadmin/dashboard.php';
+                break;
+            case 'healthcare_staff':
+                window.location.href = BASE_URL + '/medical-staff/dashboard.php';
+                break;
+            case 'pharmacist':
+                window.location.href = BASE_URL + '/pharmacist/dashboard.php';
+                break;
+            case 'medical_technician':
+                window.location.href = BASE_URL + '/medical_technician/dashboard.php';
+                break;
+            case 'radio_technologist':
+                window.location.href = BASE_URL + '/radio_technologist/dashboard.php';
+                break;
+            case 'doctor':
+                window.location.href = BASE_URL + '/doctor/dashboard.php';
+                break;
+            case 'patient':
+                setLoading(false);
+                showCredentialsStep(); // in case this ran after a successful 2FA step, whose error box isn't visible
+                showError('Signed in successfully, but the dashboard for your role isn\'t built yet. Please check back soon.');
+                break;
+            default:
                 setLoading(false);
                 showCredentialsStep();
-                showError('Signed in, but we couldn\'t determine where to send you. Please contact the system administrator.');
-            });
+                showError('Signed in, but no role is set up for this account yet. Please contact the system administrator.');
+        }
     }
 
 });

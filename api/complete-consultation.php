@@ -4,31 +4,31 @@
  * Complete Consultation (api/complete-consultation.php)
  * ---------------------------------------------------------------------
  * Called by assets/js/active_consultation.js when a doctor clicks
- * "Save & End Consultation" (or, when routing is "Laboratory", the
- * SAME button relabeled "Send to Medical Technologist") on
- * doctor/active_consultation.php — the one endpoint that persists
- * everything that page captures (History of Present Illness, Review
- * of Symptoms, Diagnosis, Prescription, this-visit Vitals,
- * Medications/Vaccines given, "Patient Will Be Next In" routing,
- * doctor's own Additional Notes — see
+ * "Save & End Consultation" (or, when routing is "Laboratory"/"X-ray",
+ * the SAME button relabeled "Send to Medical Technologist"/"Send to
+ * Radio Technologist") on doctor/active_consultation.php — the one
+ * endpoint that persists everything that page captures (History of
+ * Present Illness, Review of Symptoms, Diagnosis, Prescription,
+ * this-visit Vitals, Medications/Vaccines given, "Patient Will Be Next
+ * In" routing, doctor's own Additional Notes — see
  * includes/firestore/consultations.php's hc_map_consultation_doc()
  * for the full new-field list) onto the real consultations/{id} doc.
  *
  * Status only flips to "completed" for every OTHER routing (or none).
- * Routing to Laboratory does NOT end the consultation — the doctor
- * still owes this patient a real visit once results are back (either
- * by resuming this SAME still-"ongoing" consultation later via
+ * Routing to Laboratory/X-ray does NOT end the consultation — the
+ * doctor still owes this patient a real visit once results are back
+ * (either by resuming this SAME still-"ongoing" consultation later via
  * consultations.php's "Ongoing Consultation" card, or via the real
  * follow-up consultation api/proceed-lab-result-to-doctor.php creates
- * once a medical technologist finishes a test) — see the "Laboratory"
- * routing block below.
+ * once a medical/radio technologist finishes a test) — see the
+ * Laboratory/X-ray routing blocks below.
  *
  * Only the doctor this consultation is actually assigned to (by real
  * name match, same limitation as every other doctor/*.php page) may
  * save it, and only while it's genuinely "ongoing" — matches the
  * same guard doctor/active_consultation.php itself enforces on page
  * load, re-checked here since this is the real write boundary. Since
- * a Laboratory save keeps it "ongoing", the doctor can call this
+ * a Laboratory/X-ray save keeps it "ongoing", the doctor can call this
  * endpoint again later on the same consultation (e.g. to actually end
  * it once they're done, or to change routing) — not a one-shot action
  * the way completing it is.
@@ -40,28 +40,33 @@
  * this patient's ongoing Medications list immediately — not just
  * buried inside this one consultation's own record.
  *
- * "Patient Will Be Next In" = Laboratory ALSO creates one real pending
- * lab_results/{new-id} doc PER selected test (the first write path
- * that collection has ever had — previously seed/read-only), chosen
- * from doctor/active_consultation.php's "Select Laboratory Tests"
- * checkbox panel and validated here against the same fixed catalog
- * (hc_lab_test_catalog(), includes/firestore/lab_results.php) rather
- * than trusted as free text. Every field
- * includes/firestore/lab_results.php's hc_resolve_lab_result() reads
- * (used by the medical technologist's own result-detail page) is written
- * on each one, not just the ones a "pending" row's queue view shows —
- * that function has no "??" fallback on most of them, so a technician
- * opening an order's detail page before completing it would otherwise
- * hit undefined-key warnings. hc_get_pending_lab_xray_notifications()
- * (config/constants.php's hc_medtech_unread_notification_count()) picks
- * up any "pending" doc automatically — no separate notification write
- * needed here.
+ * "Patient Will Be Next In" = Laboratory/X-ray ALSO creates one real
+ * pending lab_results/xray_results/{new-id} doc PER selected test/exam
+ * (lab_results' first write path, previously seed/read-only; the FIRST
+ * write path xray_results has ever had at all — every xray_results doc
+ * before this was seed data, never created by any real flow), chosen
+ * from doctor/active_consultation.php's "Select Laboratory Tests"/
+ * "Select X-ray Exams" checkbox panel and validated here against the
+ * same fixed catalogs (hc_lab_test_catalog()/hc_xray_exam_catalog())
+ * rather than trusted as free text. Each one also carries a real
+ * assignedToUid/assignedToName — see $assignedToUid's own resolution
+ * below for why that's re-validated server-side rather than trusted
+ * from the client. Every field hc_resolve_lab_result()/
+ * hc_resolve_xray_result() reads is written on each one, not just the
+ * ones a "pending" row's queue view shows — those functions have no
+ * "??" fallback on most fields, so a technician opening an order's
+ * detail page before completing it would otherwise hit undefined-key
+ * warnings. hc_get_pending_lab_xray_notifications()
+ * (config/constants.php's hc_medtech_unread_notification_count()/
+ * hc_radiotech_unread_notification_count()) picks up any "pending" doc
+ * automatically — no separate notification write needed here.
  *
  * Whenever the consultation genuinely ends (every routing except
- * Laboratory), it ALSO writes one real medical_records/{new-id} doc
- * (type "consultation") and refreshes patients/{id}'s own "lastVisit"
- * field — see the block right before the Laboratory routing block below
- * for why those two were previously always dead/blank.
+ * Laboratory/X-ray), it ALSO writes one real medical_records/{new-id}
+ * doc (type "consultation") and refreshes patients/{id}'s own
+ * "lastVisit" field — see the block right before the Laboratory
+ * routing block below for why those two were previously always
+ * dead/blank.
  * =====================================================================
  */
 
@@ -70,6 +75,8 @@ session_start();
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/firestore/consultations.php';
 require_once __DIR__ . '/../includes/firestore/lab_results.php'; // hc_lab_test_catalog()
+require_once __DIR__ . '/../includes/firestore/xray_results.php'; // hc_xray_exam_catalog(), hc_get_xray_result_docs_for_patient()
+require_once __DIR__ . '/../includes/firestore/accounts.php'; // hc_get_active_staff_by_role()
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 require_once __DIR__ . '/../includes/shared/vitals_validation.php'; // hc_validate_vitals()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
@@ -143,7 +150,7 @@ if ($prescriptionHtml !== '') {
 // also being routed somewhere today.
 $needsFollowUp = (bool) ($body['needsFollowUp'] ?? false);
 
-$validRouting = ['laboratory', 'pharmacy', 'vaccination'];
+$validRouting = ['laboratory', 'xray', 'pharmacy', 'vaccination'];
 $nextRouting = trim((string) ($body['nextRouting'] ?? ''));
 if ($nextRouting !== '' && !in_array($nextRouting, $validRouting, true)) {
     http_response_code(422);
@@ -170,6 +177,21 @@ $labTests = array_values(array_unique(array_filter(array_map(
 if ($nextRouting === 'laboratory' && count($labTests) === 0) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Please select at least one laboratory test.']);
+    exit;
+}
+
+// X-ray exam names are validated against the real catalog the same way
+// lab tests are above — a flat examName -> bodyPart map.
+$bodyPartByExamName = hc_xray_exam_catalog();
+$rawXrayExams = is_array($body['xrayExams'] ?? null) ? $body['xrayExams'] : [];
+$xrayExams = array_values(array_unique(array_filter(array_map(
+    fn ($t) => trim((string) $t),
+    $rawXrayExams
+), fn ($t) => isset($bodyPartByExamName[$t]))));
+
+if ($nextRouting === 'xray' && count($xrayExams) === 0) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please select at least one X-ray exam.']);
     exit;
 }
 
@@ -232,10 +254,10 @@ if ($nextRouting === 'pharmacy' && count($medications) === 0) {
 }
 
 $updated = $existing;
-// "Laboratory" keeps the consultation "ongoing" instead of completing
-// it — see this file's header comment for why. Every other routing
-// (or none selected) completes it exactly as before.
-if ($nextRouting !== 'laboratory') {
+// "Laboratory"/"X-ray" both keep the consultation "ongoing" instead of
+// completing it — see this file's header comment for why. Every other
+// routing (or none selected) completes it exactly as before.
+if (!in_array($nextRouting, ['laboratory', 'xray'], true)) {
     $updated['status'] = 'completed';
     $updated['endedAt'] = date('c');
 }
@@ -248,6 +270,7 @@ $updated['medications'] = $medications;
 $updated['nextRouting'] = $nextRouting !== '' ? $nextRouting : null;
 $updated['needsFollowUp'] = $needsFollowUp;
 $updated['labTests'] = $labTests;
+$updated['xrayExams'] = $xrayExams;
 $updated['doctorNotes'] = $doctorNotes !== '' ? $doctorNotes : null;
 
 $saved = $firestore->setDocument('consultations', $id, $updated);
@@ -298,8 +321,33 @@ $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
 $doctorFacility = $myDoc['facility'] ?? 'North Super Health Center';
 
-// Consultation genuinely ending (not routed to Laboratory, which keeps
-// it "ongoing") -> a real medical_records/{new-id} doc, type
+// Staff picker — "who should this order actually go to"
+// (doctor/active_consultation.php's Laboratory/X-ray "Assign To"
+// picker). The client-supplied uid is re-validated here against the
+// SAME real active-staff list the picker was built from
+// (hc_get_active_staff_by_role()) — never trusted as-is, since a
+// crafted request could otherwise assign an order to any arbitrary uid
+// (wrong role, wrong facility, inactive account). Resolves to null (no
+// assignment — stays in the general queue, same as before this
+// existed) if the submitted uid doesn't match a real, currently-active
+// account of the right role at this doctor's own facility.
+$assignedToUid = trim((string) ($body['assignedToUid'] ?? ''));
+$assignedToName = null;
+if ($assignedToUid !== '' && in_array($nextRouting, ['laboratory', 'xray'], true)) {
+    $assignRole = $nextRouting === 'laboratory' ? 'medical_technician' : 'radio_technologist';
+    foreach (hc_get_active_staff_by_role($assignRole, $doctorFacility) as $staff) {
+        if ($staff['uid'] === $assignedToUid) {
+            $assignedToName = $staff['name'];
+            break;
+        }
+    }
+    if ($assignedToName === null) {
+        $assignedToUid = '';
+    }
+}
+
+// Consultation genuinely ending (not routed to Laboratory/X-ray, which
+// keeps it "ongoing") -> a real medical_records/{new-id} doc, type
 // "consultation", so this patient's Profile > Overview "Latest
 // Consultation" card (doctor/medical-staff/subadmin patient_profile.php,
 // via hc_get_patient_overview()) actually reflects it — previously
@@ -308,7 +356,7 @@ $doctorFacility = $myDoc['facility'] ?? 'North Super Health Center';
 // Also refreshes patients/{id}'s own "lastVisit" field, read by every
 // Patient Profile header card's "Last Visit" field but, likewise, never
 // written anywhere until now.
-if ($nextRouting !== 'laboratory') {
+if (!in_array($nextRouting, ['laboratory', 'xray'], true)) {
     $completionDate = date('Y-m-d');
     $completionTime = date('g:i A');
     $chiefComplaint = $existing['chiefComplaint'] ?? '';
@@ -384,6 +432,57 @@ if ($nextRouting === 'laboratory' && count($labTests) > 0) {
             'resultBadgeColor' => '#B45309',
             'interpretation' => '',
             'resultGroups' => [],
+            // Real "who should do this" — see $assignedToUid's own
+            // resolution above. Null (not assigned) is a normal,
+            // expected value: the order simply stays in the shared
+            // medical-technician queue for anyone to pick up, same
+            // behavior this app had before staff assignment existed.
+            'assignedToUid' => $nextRouting === 'laboratory' && $assignedToUid !== '' ? $assignedToUid : null,
+            'assignedToName' => $nextRouting === 'laboratory' ? $assignedToName : null,
+        ]);
+    }
+}
+
+// "X-ray" routing -> one real pending xray_results doc PER selected
+// exam — same shape/reasoning as the "Laboratory" block above, just
+// examName/bodyPart (hc_xray_exam_catalog()) instead of testName/
+// testType, and no resultGroups/interpretation (xray_results has never
+// modeled those — see includes/firestore/xray_results.php's
+// hc_resolve_xray_result()).
+if ($nextRouting === 'xray' && count($xrayExams) > 0) {
+    $orderedDate = date('Y-m-d');
+    $orderedTime = date('g:i A');
+
+    // Same server-side duplicate-order backstop as Laboratory above.
+    $alreadyOrderedExamNames = [];
+    foreach (hc_get_xray_result_docs_for_patient($existing['patientId'] ?? '') as $doc) {
+        if (($doc['fields']['sourceConsultationId'] ?? '') === $id) {
+            $alreadyOrderedExamNames[] = $doc['fields']['examName'] ?? '';
+        }
+    }
+
+    foreach ($xrayExams as $examName) {
+        if (in_array($examName, $alreadyOrderedExamNames, true)) {
+            continue;
+        }
+        $firestore->addDocument('xray_results', [
+            'patientId' => $existing['patientId'] ?? '',
+            'examName' => $examName,
+            'bodyPart' => $bodyPartByExamName[$examName] ?? 'Not specified',
+            'orderedBy' => $_SESSION['name'] ?? 'Not specified',
+            'orderedDate' => $orderedDate,
+            'orderedTime' => $orderedTime,
+            'completedDate' => '',
+            'completedTime' => '',
+            'facility' => $doctorFacility,
+            'status' => 'pending',
+            'sourceConsultationId' => $id,
+            'findings' => [],
+            'impression' => '',
+            'attachedFileName' => null,
+            'attachedFileSize' => null,
+            'assignedToUid' => $nextRouting === 'xray' && $assignedToUid !== '' ? $assignedToUid : null,
+            'assignedToName' => $nextRouting === 'xray' ? $assignedToName : null,
         ]);
     }
 }
@@ -429,13 +528,23 @@ $historyPatientId = $existing['patientId'] ?? '';
 $consultationLabel = $existing['consultationCode'] ?? $id;
 
 if ($nextRouting === 'laboratory') {
+    $assignedSuffix = $assignedToName !== null ? ' (assigned to ' . $assignedToName . ')' : '';
     write_audit_log(
         'updated',
         'Consultations',
-        'Sent ' . ($existing['patientName'] ?? '') . ' to the laboratory for ' . count($labTests) . ' test(s) — consultation ' . $consultationLabel . '.'
+        'Sent ' . ($existing['patientName'] ?? '') . ' to the laboratory for ' . count($labTests) . ' test(s)' . $assignedSuffix . ' — consultation ' . $consultationLabel . '.'
     );
-    hc_record_patient_history($historyPatientId, 'medical_record', 'updated', 'Consultation ' . $consultationLabel . ' sent to the laboratory — ' . count($labTests) . ' test(s) ordered.');
-    hc_record_patient_activity($historyPatientId, 'Sent to laboratory for ' . count($labTests) . ' test(s).');
+    hc_record_patient_history($historyPatientId, 'medical_record', 'updated', 'Consultation ' . $consultationLabel . ' sent to the laboratory — ' . count($labTests) . ' test(s) ordered' . $assignedSuffix . '.');
+    hc_record_patient_activity($historyPatientId, 'Sent to laboratory for ' . count($labTests) . ' test(s)' . $assignedSuffix . '.');
+} elseif ($nextRouting === 'xray') {
+    $assignedSuffix = $assignedToName !== null ? ' (assigned to ' . $assignedToName . ')' : '';
+    write_audit_log(
+        'updated',
+        'Consultations',
+        'Sent ' . ($existing['patientName'] ?? '') . ' for X-ray — ' . count($xrayExams) . ' exam(s)' . $assignedSuffix . ' — consultation ' . $consultationLabel . '.'
+    );
+    hc_record_patient_history($historyPatientId, 'medical_record', 'updated', 'Consultation ' . $consultationLabel . ' sent for X-ray — ' . count($xrayExams) . ' exam(s) ordered' . $assignedSuffix . '.');
+    hc_record_patient_activity($historyPatientId, 'Sent for X-ray — ' . count($xrayExams) . ' exam(s)' . $assignedSuffix . '.');
 } elseif ($nextRouting === 'pharmacy' && count($medications) > 0) {
     write_audit_log(
         'completed',

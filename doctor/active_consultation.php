@@ -522,6 +522,39 @@ $doctorNavItems = [
                             </div>
                             <?php endforeach; ?>
                         </div>
+
+                        <!-- Staff picker — "who should actually get this
+                             order" (api/complete-consultation.php's
+                             assignedToUid/assignedToName). Only shown as
+                             an actual choice when there's more than one
+                             active medical technologist at this doctor's
+                             facility to pick from; with exactly one,
+                             they're auto-assigned; with none, the order
+                             is left unassigned (stays in the general
+                             queue, same as before this existed). See
+                             includes/doctor/active_consultation_doctor_firestore.php's
+                             $availableLabStaff. -->
+                        <?php if (count($availableLabStaff) > 1): ?>
+                        <div class="acv-staff-picker">
+                            <div class="acv-staff-picker-title">Assign To</div>
+                            <div class="acv-staff-picker-desc">Choose which medical technologist will receive this order.</div>
+                            <div class="acv-staff-picker-list">
+                                <?php foreach ($availableLabStaff as $staff): ?>
+                                <label class="acv-staff-picker-option">
+                                    <input type="radio" name="acvLabAssignTo" value="<?= htmlspecialchars($staff['uid']) ?>">
+                                    <?= htmlspecialchars($staff['name']) ?>
+                                </label>
+                                <?php endforeach; ?>
+                            </div>
+                            <div class="acv-staff-picker-error text-danger small d-none" id="acvLabStaffError">Please choose who this should be sent to.</div>
+                        </div>
+                        <?php elseif (count($availableLabStaff) === 1): ?>
+                        <input type="hidden" id="acvLabAssignToSingle" value="<?= htmlspecialchars($availableLabStaff[0]['uid']) ?>">
+                        <div class="acv-staff-picker-note"><i class="bi bi-person-check"></i> Will be sent to <strong><?= htmlspecialchars($availableLabStaff[0]['name']) ?></strong> — the only active medical technologist on staff.</div>
+                        <?php else: ?>
+                        <div class="acv-staff-picker-note acv-staff-picker-note-muted"><i class="bi bi-exclamation-circle"></i> No active medical technologist on staff right now — this will stay in the general queue.</div>
+                        <?php endif; ?>
+
                         <div class="acv-lab-test-error text-danger small d-none" id="acvLabTestError"></div>
                         <div class="acv-lab-test-actions">
                             <button type="button" class="btn btn-outline-secondary btn-sm" id="acvLabTestCancel">Cancel</button>
@@ -535,6 +568,75 @@ $doctorNavItems = [
                         <i class="bi bi-check-circle-fill"></i>
                         <span id="acvLabTestSummaryText"></span>
                         <button type="button" class="acv-lab-test-change-btn" id="acvLabTestChange">Change</button>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($key === 'xray'): ?>
+                    <!-- X-ray counterpart of the Laboratory panel above —
+                         same structure/classes (acv-lab-test-*, reused
+                         rather than duplicated), own catalog
+                         (hc_xray_exam_catalog(), includes/firestore/xray_results.php)
+                         and own staff picker ($availableXrayStaff, real
+                         active radio technologists at this facility). -->
+                    <div class="acv-lab-test-panel d-none" id="acvXrayTestPanel">
+                        <div class="acv-lab-test-header">
+                            <span class="acv-lab-test-icon"><i class="bi bi-file-earmark-medical"></i></span>
+                            <div>
+                                <div class="acv-lab-test-title">Select X-ray Exams</div>
+                                <div class="acv-lab-test-desc">Choose the X-ray exams needed for this patient.</div>
+                            </div>
+                        </div>
+                        <div class="acv-lab-test-grid">
+                            <div class="acv-lab-test-category">
+                                <?php foreach ($xrayExamCatalog as $examName => $bodyPart):
+                                    $orderedStatus = $xrayExamsAlreadyOrdered[$examName] ?? null;
+                                ?>
+                                <?php if ($orderedStatus !== null): ?>
+                                <label class="acv-lab-test-checkbox acv-lab-test-checkbox-locked" title="<?= $orderedStatus === 'completed' ? 'Result already received' : 'Already sent — awaiting result' ?>">
+                                    <input type="checkbox" value="<?= htmlspecialchars($examName) ?>" checked disabled>
+                                    <?= htmlspecialchars($examName) ?>
+                                    <span class="acv-source-tag">(<?= $orderedStatus === 'completed' ? 'result received' : 'awaiting result' ?>)</span>
+                                </label>
+                                <?php else: ?>
+                                <label class="acv-lab-test-checkbox">
+                                    <input type="checkbox" value="<?= htmlspecialchars($examName) ?>" <?= in_array($examName, $consultation['xrayExams'], true) ? 'checked' : '' ?>>
+                                    <?= htmlspecialchars($examName) ?>
+                                </label>
+                                <?php endif; ?>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+
+                        <?php if (count($availableXrayStaff) > 1): ?>
+                        <div class="acv-staff-picker">
+                            <div class="acv-staff-picker-title">Assign To</div>
+                            <div class="acv-staff-picker-desc">Choose which radio technologist will receive this order.</div>
+                            <div class="acv-staff-picker-list">
+                                <?php foreach ($availableXrayStaff as $staff): ?>
+                                <label class="acv-staff-picker-option">
+                                    <input type="radio" name="acvXrayAssignTo" value="<?= htmlspecialchars($staff['uid']) ?>">
+                                    <?= htmlspecialchars($staff['name']) ?>
+                                </label>
+                                <?php endforeach; ?>
+                            </div>
+                            <div class="acv-staff-picker-error text-danger small d-none" id="acvXrayStaffError">Please choose who this should be sent to.</div>
+                        </div>
+                        <?php elseif (count($availableXrayStaff) === 1): ?>
+                        <input type="hidden" id="acvXrayAssignToSingle" value="<?= htmlspecialchars($availableXrayStaff[0]['uid']) ?>">
+                        <div class="acv-staff-picker-note"><i class="bi bi-person-check"></i> Will be sent to <strong><?= htmlspecialchars($availableXrayStaff[0]['name']) ?></strong> — the only active radio technologist on staff.</div>
+                        <?php else: ?>
+                        <div class="acv-staff-picker-note acv-staff-picker-note-muted"><i class="bi bi-exclamation-circle"></i> No active radio technologist on staff right now — this will stay in the general queue.</div>
+                        <?php endif; ?>
+
+                        <div class="acv-lab-test-error text-danger small d-none" id="acvXrayTestError"></div>
+                        <div class="acv-lab-test-actions">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="acvXrayTestCancel">Cancel</button>
+                            <button type="button" class="btn btn-sm acv-btn-save" id="acvXrayTestConfirm">Confirm</button>
+                        </div>
+                    </div>
+                    <div class="acv-lab-test-summary d-none" id="acvXrayTestSummary">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span id="acvXrayTestSummaryText"></span>
+                        <button type="button" class="acv-lab-test-change-btn" id="acvXrayTestChange">Change</button>
                     </div>
                     <?php endif; ?>
                     <?php endforeach; ?>

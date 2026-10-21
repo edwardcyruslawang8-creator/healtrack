@@ -21,6 +21,12 @@ storage/patient_documents/*
 storage/profile_photos/*
 !storage/profile_photos/.htaccess
 
+# --- Uploaded X-ray result documents: same reasoning — real patient
+# imagery, never belongs in git. The .htaccess guarding this folder is
+# kept.
+storage/xray_results/*
+!storage/xray_results/.htaccess
+
 # --- Local Claude Code tool state (session scratch, local permissions) —
 # not part of the application.
 .claude/

@@ -440,22 +440,23 @@ if (!function_exists('hc_get_doctor_result_ready_notifications')) {
 
 if (!function_exists('hc_consultation_is_awaiting_lab_results')) {
     /**
-     * True while this consultation is genuinely "with the lab" — routed
-     * there (nextRouting === 'laboratory') AND at least one lab_results/
-     * xray_results doc whose sourceConsultationId matches is still
-     * 'pending' (the medical technologist hasn't completed it yet).
-     * Once every test ordered from it is 'completed', this flips back
+     * True while this consultation is genuinely "with the lab or
+     * radiology" — routed there (nextRouting === 'laboratory' or
+     * 'xray') AND at least one lab_results/xray_results doc whose
+     * sourceConsultationId matches is still 'pending' (the medical
+     * technologist/radio technologist hasn't completed it yet). Once
+     * every test/exam ordered from it is 'completed', this flips back
      * to false on its own — nothing to separately clear. Used to block
      * a doctor from resuming the clinical documentation workspace
      * (doctor/active_consultation.php) for a patient who's physically
-     * at the lab right now, same real signal
+     * at the lab/radiology room right now, same real signal
      * hc_get_doctor_result_ready_notifications() above already reads
      * (sourceConsultationId + status), just checking for ANY remaining
      * 'pending' instead of a completed one.
      */
     function hc_consultation_is_awaiting_lab_results(array $consultation): bool
     {
-        if (($consultation['nextRouting'] ?? '') !== 'laboratory') {
+        if (!in_array($consultation['nextRouting'] ?? '', ['laboratory', 'xray'], true)) {
             return false;
         }
 

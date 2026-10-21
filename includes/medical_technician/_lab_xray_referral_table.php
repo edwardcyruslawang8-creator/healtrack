@@ -33,13 +33,14 @@
                     <th>Facility</th>
                     <th>Date &amp; Time</th>
                     <th>Priority</th>
+                    <th>Assigned To</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($referralRows)): ?>
                 <tr>
-                    <td colspan="8" class="adm-table-empty">No patients currently waiting on laboratory testing.</td>
+                    <td colspan="9" class="adm-table-empty">No patients currently waiting on laboratory testing.</td>
                 </tr>
                 <?php endif; ?>
                 <?php foreach ($referralRows as $r): ?>
@@ -54,6 +55,7 @@
                     <td><?= htmlspecialchars($r['facility']) ?></td>
                     <td class="lxr-datetime"><?= htmlspecialchars($r['date']) ?><span class="lxr-dot"></span><?= htmlspecialchars($r['time']) ?></td>
                     <td><span class="lxr-badge" style="background:<?= htmlspecialchars($r['priority']['bg']) ?>; color:<?= htmlspecialchars($r['priority']['color']) ?>;"><?= htmlspecialchars($r['priority']['label']) ?></span></td>
+                    <td><?= $r['assignedToName'] !== null ? htmlspecialchars($r['assignedToName']) : '<span class="lxr-report-none">Unassigned</span>' ?></td>
                     <?php
                     // "Consult" always goes straight to whichever form
                     // actually lets the technician fill in THIS test's

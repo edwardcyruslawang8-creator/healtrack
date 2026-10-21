@@ -54,6 +54,8 @@ require_once __DIR__ . '/../firestore/allergies.php';
 require_once __DIR__ . '/../firestore/medical_records.php'; // hc_get_medical_conditions_for_patient()
 require_once __DIR__ . '/../firestore/medicines.php'; // hc_get_inventory_items() — Medications/Vaccines name datalists
 require_once __DIR__ . '/../firestore/lab_results.php'; // hc_lab_test_catalog()
+require_once __DIR__ . '/../firestore/xray_results.php'; // hc_xray_exam_catalog(), hc_get_xray_result_docs_for_patient()
+require_once __DIR__ . '/../firestore/accounts.php'; // hc_get_active_staff_by_role()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -258,17 +260,29 @@ foreach ($labDocsForPatient as $doc) {
     }
 }
 
-// "Patient Will Be Next In" — one of three mutually-exclusive "right
+// X-ray counterpart of the lock above — same reasoning, keyed by exam
+// name instead of test name.
+$xrayExamsAlreadyOrdered = [];
+foreach ($xrayDocsForPatient as $doc) {
+    $f = $doc['fields'];
+    if (($f['sourceConsultationId'] ?? '') === $consultation['id']) {
+        $xrayExamsAlreadyOrdered[$f['examName'] ?? ''] = $f['status'] ?? 'pending';
+    }
+}
+
+// "Patient Will Be Next In" — one of four mutually-exclusive "right
 // now" destinations (recorded on the consultation only, nothing
-// auto-created elsewhere besides Laboratory's own real lab_results/
-// xray_results docs and Pharmacy's own real pharmacy_orders docs — see
-// api/complete-consultation.php). "Needs a follow-up visit" is a
-// SEPARATE, independent checkbox below this list (not a fourth radio
-// here) — a patient can need a follow-up scheduled AND still go to the
-// pharmacy today for medicine from THIS visit, so it can't be mutually
-// exclusive with the other three the way they are with each other.
+// auto-created elsewhere besides Laboratory's/X-ray's own real
+// lab_results/xray_results docs and Pharmacy's own real pharmacy_orders
+// docs — see api/complete-consultation.php). "Needs a follow-up visit"
+// is a SEPARATE, independent checkbox below this list (not a fifth
+// radio here) — a patient can need a follow-up scheduled AND still go
+// to the pharmacy today for medicine from THIS visit, so it can't be
+// mutually exclusive with the other four the way they are with each
+// other.
 $routingOptions = [
     'laboratory'  => ['label' => 'Laboratory',  'desc' => 'Send patient to laboratory for tests.',   'icon' => 'bi-droplet-half'],
+    'xray'        => ['label' => 'X-ray',       'desc' => 'Send patient for X-ray examination.',     'icon' => 'bi-file-earmark-medical'],
     'pharmacy'    => ['label' => 'Pharmacy',    'desc' => 'Send patient to pharmacy for medicines.', 'icon' => 'bi-capsule'],
     'vaccination' => ['label' => 'Vaccination', 'desc' => 'Send patient for vaccination.',            'icon' => 'bi-shield-plus'],
 ];
@@ -278,8 +292,24 @@ $routingOptions = [
 // (hc_lab_test_catalog(), includes/firestore/lab_results.php) — reused
 // server-side by api/complete-consultation.php to validate submitted
 // test names and look up each one's real category, rather than
-// trusting a client-supplied category string.
+// trusting a client-supplied category string. "X-ray" works the same
+// way against hc_xray_exam_catalog() (includes/firestore/xray_results.php).
 $labTestCategories = hc_lab_test_catalog();
+$xrayExamCatalog = hc_xray_exam_catalog();
+
+// Laboratory/X-ray staff picker — "who should this actually go to"
+// (api/complete-consultation.php's new assignedToUid/assignedToName).
+// Only the real, currently-active medical_technician/radio_technologist
+// accounts at THIS doctor's own facility are offered — see
+// includes/firestore/accounts.php's hc_get_active_staff_by_role()
+// header comment. The UI (doctor/active_consultation.php,
+// assets/js/active_consultation.js) only shows an actual picker when
+// there's more than one to choose from; with exactly one, that person
+// is auto-assigned without asking; with none, the order is left
+// unassigned (same shared-queue behavior as before this existed) rather
+// than blocking the doctor from sending it.
+$availableLabStaff = hc_get_active_staff_by_role('medical_technician', $doctorProfile['facility']);
+$availableXrayStaff = hc_get_active_staff_by_role('radio_technologist', $doctorProfile['facility']);
 
 // Medications & Vaccines table — real names for autocomplete only (free
 // text is still valid, same convention as

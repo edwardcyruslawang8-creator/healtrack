@@ -86,8 +86,8 @@ function hc_medtech_lxc_priority(string $docId): array
 }
 
 // ---------------------------------------------------------------------
-// Build the referral inbox — real lab_results + xray_results docs still
-// pending, across every patient.
+// Build the referral inbox — real lab_results docs still pending,
+// across every patient.
 // ---------------------------------------------------------------------
 $referrals = [];
 
@@ -125,6 +125,13 @@ foreach (hc_get_all_lab_result_docs() as $doc) {
         // Same idea for the real "GRAM STAIN" paper form — drives the
         // "Fill Gram Stain Form" action link below.
         'isGramStain' => ($f['testName'] ?? '') === 'Gram Stain',
+        // Real "who the doctor sent this to" — api/complete-consultation.php's
+        // Laboratory staff picker. Null for every referral sent before
+        // that existed (and for one nobody was assigned, by choice or
+        // because no active medical technologist was on staff at the
+        // time) — still shows up in this shared queue either way, this
+        // just surfaces who it's actually meant for.
+        'assignedToName' => $f['assignedToName'] ?? null,
     ];
 }
 

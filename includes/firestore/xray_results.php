@@ -11,6 +11,33 @@
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 
+if (!function_exists('hc_xray_exam_catalog')) {
+    /**
+     * Fixed X-ray exam catalog for doctor/active_consultation.php's
+     * "Select X-ray Exams" checkbox panel (the X-ray counterpart to
+     * hc_lab_test_catalog() in includes/firestore/lab_results.php) —
+     * the real enforcement point api/complete-consultation.php validates
+     * a submitted exam name against, same reasoning as the lab catalog:
+     * never trusted as client-supplied free text. Values are each exam's
+     * default "bodyPart" (xray_results' own field), covering the common
+     * real exam types already seen in this app's xray_results seed data
+     * (Chest/Abdominal/Pelvic/Extremity X-ray, etc.).
+     *
+     * @return array<string, string>
+     */
+    function hc_xray_exam_catalog(): array
+    {
+        return [
+            'Chest X-ray' => 'Chest',
+            'Abdominal X-ray' => 'Abdomen',
+            'Pelvic X-ray' => 'Pelvis',
+            'Skull X-ray' => 'Skull',
+            'Spine X-ray' => 'Spine',
+            'Extremity X-ray' => 'Extremity',
+        ];
+    }
+}
+
 if (!function_exists('hc_get_xray_results_for_patient')) {
     /**
      * Every xray_results/{id} doc for $patientId in the compact

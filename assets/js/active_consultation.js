@@ -318,13 +318,24 @@ document.addEventListener('DOMContentLoaded', function () {
     const labTestSummary = document.getElementById('acvLabTestSummary');
     const labTestSummaryText = document.getElementById('acvLabTestSummaryText');
     const labTestError = document.getElementById('acvLabTestError');
-    const labTestCheckboxes = document.querySelectorAll('.acv-lab-test-checkbox input');
+    // Scoped to #acvLabTestPanel, not a bare '.acv-lab-test-checkbox
+    // input' — the X-ray panel below reuses the same checkbox class
+    // name (same generic styling), so an unscoped query here would also
+    // pick up X-ray's own checkboxes.
+    const labTestCheckboxes = labTestPanel.querySelectorAll('.acv-lab-test-checkbox input');
     const labTestCancelBtn = document.getElementById('acvLabTestCancel');
     const labTestConfirmBtn = document.getElementById('acvLabTestConfirm');
     const labTestChangeBtn = document.getElementById('acvLabTestChange');
+    const labStaffSingleInput = document.getElementById('acvLabAssignToSingle');
+    const labStaffError = document.getElementById('acvLabStaffError');
 
     function checkedLabTests() {
         return Array.from(labTestCheckboxes).filter(function (cb) { return cb.checked; }).map(function (cb) { return cb.value; });
+    }
+    function selectedLabStaffUid() {
+        if (labStaffSingleInput) return labStaffSingleInput.value;
+        const checked = document.querySelector('input[name="acvLabAssignTo"]:checked');
+        return checked ? checked.value : '';
     }
 
     function showLabTestPanel() {
@@ -343,6 +354,49 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // -----------------------------------------------------------
+    // "Patient Will Be Next In" -> X-ray reveals a "Select X-ray Exams"
+    // checkbox panel — same confirm/summary/cancel pattern as the
+    // Laboratory panel above, just its own elements/catalog.
+    // -----------------------------------------------------------
+    const xrayTestPanel = document.getElementById('acvXrayTestPanel');
+    const xrayTestSummary = document.getElementById('acvXrayTestSummary');
+    const xrayTestSummaryText = document.getElementById('acvXrayTestSummaryText');
+    const xrayTestError = document.getElementById('acvXrayTestError');
+    const xrayTestCheckboxes = xrayTestPanel ? xrayTestPanel.querySelectorAll('.acv-lab-test-checkbox input') : [];
+    const xrayTestCancelBtn = document.getElementById('acvXrayTestCancel');
+    const xrayTestConfirmBtn = document.getElementById('acvXrayTestConfirm');
+    const xrayTestChangeBtn = document.getElementById('acvXrayTestChange');
+    const xrayStaffSingleInput = document.getElementById('acvXrayAssignToSingle');
+    const xrayStaffError = document.getElementById('acvXrayStaffError');
+
+    function checkedXrayExams() {
+        return Array.from(xrayTestCheckboxes).filter(function (cb) { return cb.checked; }).map(function (cb) { return cb.value; });
+    }
+    function selectedXrayStaffUid() {
+        if (xrayStaffSingleInput) return xrayStaffSingleInput.value;
+        const checked = document.querySelector('input[name="acvXrayAssignTo"]:checked');
+        return checked ? checked.value : '';
+    }
+
+    function showXrayTestPanel() {
+        if (!xrayTestPanel) return;
+        xrayTestPanel.classList.remove('d-none');
+        xrayTestSummary.classList.add('d-none');
+    }
+    function showXrayTestSummary() {
+        if (!xrayTestPanel) return;
+        const exams = checkedXrayExams();
+        xrayTestSummaryText.textContent = exams.length + ' exam' + (exams.length === 1 ? '' : 's') + ' selected: ' + exams.join(', ');
+        xrayTestSummary.classList.remove('d-none');
+        xrayTestPanel.classList.add('d-none');
+    }
+    function hideXrayTestUi() {
+        if (!xrayTestPanel) return;
+        xrayTestPanel.classList.add('d-none');
+        xrayTestSummary.classList.add('d-none');
+    }
+
+    // -----------------------------------------------------------
     // "Patient Will Be Next In" -> Pharmacy or Vaccination reveals the
     // Medications & Vaccines table (left column) — same routing-driven
     // show/hide as the lab test panel above, just without a confirm/
@@ -358,19 +412,23 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // -----------------------------------------------------------
-    // Routing to Laboratory doesn't end the consultation (see
+    // Routing to Laboratory/X-ray doesn't end the consultation (see
     // api/complete-consultation.php's header comment) — the main
-    // action button reflects that: "Send to Medical Technologist"
-    // instead of "Save & End Consultation", same button/handler
-    // either way, just a different label/confirm message read at
-    // click time (see the click handler below).
+    // action button reflects that: "Send to Medical Technologist"/
+    // "Send to Radio Technologist" instead of "Save & End Consultation",
+    // same button/handler either way, just a different label/confirm
+    // message read at click time (see the click handler below).
     // -----------------------------------------------------------
     function updateSaveBtnLabel(routingValue) {
         const btn = document.getElementById('acvSaveBtn');
         if (!btn) return;
-        btn.innerHTML = routingValue === 'laboratory'
-            ? '<i class="bi bi-send-fill"></i> Send to Medical Technologist'
-            : '<i class="bi bi-save"></i> Save &amp; End Consultation';
+        if (routingValue === 'laboratory') {
+            btn.innerHTML = '<i class="bi bi-send-fill"></i> Send to Medical Technologist';
+        } else if (routingValue === 'xray') {
+            btn.innerHTML = '<i class="bi bi-send-fill"></i> Send to Radio Technologist';
+        } else {
+            btn.innerHTML = '<i class="bi bi-save"></i> Save &amp; End Consultation';
+        }
     }
 
     const routingRadios = document.querySelectorAll('input[name="acvRouting"]');
@@ -385,6 +443,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 radio.checked = false;
                 radio.dataset.wasChecked = 'false';
                 hideLabTestUi();
+                hideXrayTestUi();
                 hideMedVaccinePanel();
                 updateSaveBtnLabel('');
                 return;
@@ -401,16 +460,26 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (radio.value !== 'laboratory') {
                 hideLabTestUi();
-                return;
             }
-            // Already has confirmed tests (either from earlier this
-            // session, or re-opening a consultation Saved with some
-            // already picked) — go straight to the summary instead of
-            // making the doctor reopen the grid every time.
-            if (checkedLabTests().length > 0) {
-                showLabTestSummary();
-            } else {
-                showLabTestPanel();
+            if (radio.value !== 'xray') {
+                hideXrayTestUi();
+            }
+            if (radio.value === 'laboratory') {
+                // Already has confirmed tests (either from earlier this
+                // session, or re-opening a consultation Saved with some
+                // already picked) — go straight to the summary instead
+                // of making the doctor reopen the grid every time.
+                if (checkedLabTests().length > 0) {
+                    showLabTestSummary();
+                } else {
+                    showLabTestPanel();
+                }
+            } else if (radio.value === 'xray') {
+                if (checkedXrayExams().length > 0) {
+                    showXrayTestSummary();
+                } else {
+                    showXrayTestPanel();
+                }
             }
         });
     });
@@ -422,6 +491,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 showLabTestSummary();
             } else {
                 showLabTestPanel();
+            }
+        } else if (initiallyCheckedRadio.value === 'xray') {
+            if (checkedXrayExams().length > 0) {
+                showXrayTestSummary();
+            } else {
+                showXrayTestPanel();
             }
         }
     }
@@ -444,11 +519,47 @@ document.addEventListener('DOMContentLoaded', function () {
             labTestError.classList.remove('d-none');
             return;
         }
+        if (labStaffError && !selectedLabStaffUid()) {
+            labStaffError.classList.remove('d-none');
+            return;
+        }
         labTestError.classList.add('d-none');
+        if (labStaffError) labStaffError.classList.add('d-none');
         showLabTestSummary();
     });
 
     labTestChangeBtn.addEventListener('click', showLabTestPanel);
+
+    if (xrayTestPanel) {
+        xrayTestCancelBtn.addEventListener('click', function () {
+            xrayTestCheckboxes.forEach(function (cb) { cb.checked = false; });
+            const routingInput = document.querySelector('input[name="acvRouting"]:checked');
+            if (routingInput) {
+                routingInput.checked = false;
+                routingInput.dataset.wasChecked = 'false';
+            }
+            hideXrayTestUi();
+            updateSaveBtnLabel('');
+            xrayTestError.classList.add('d-none');
+        });
+
+        xrayTestConfirmBtn.addEventListener('click', function () {
+            if (checkedXrayExams().length === 0) {
+                xrayTestError.textContent = 'Please select at least one X-ray exam.';
+                xrayTestError.classList.remove('d-none');
+                return;
+            }
+            if (xrayStaffError && !selectedXrayStaffUid()) {
+                xrayStaffError.classList.remove('d-none');
+                return;
+            }
+            xrayTestError.classList.add('d-none');
+            if (xrayStaffError) xrayStaffError.classList.add('d-none');
+            showXrayTestSummary();
+        });
+
+        xrayTestChangeBtn.addEventListener('click', showXrayTestPanel);
+    }
 
     // -----------------------------------------------------------
     // Save & End Consultation / Cancel Consultation
@@ -478,6 +589,22 @@ document.addEventListener('DOMContentLoaded', function () {
             showLabTestPanel();
             return;
         }
+        if (nextRouting === 'laboratory' && labStaffError && !selectedLabStaffUid()) {
+            await HCDialog.alert('Please choose which medical technologist this should be sent to.');
+            showLabTestPanel();
+            return;
+        }
+
+        if (nextRouting === 'xray' && checkedXrayExams().length === 0) {
+            await HCDialog.alert('Please select at least one X-ray exam before sending this patient for X-ray.');
+            showXrayTestPanel();
+            return;
+        }
+        if (nextRouting === 'xray' && xrayStaffError && !selectedXrayStaffUid()) {
+            await HCDialog.alert('Please choose which radio technologist this should be sent to.');
+            showXrayTestPanel();
+            return;
+        }
 
         if (nextRouting === 'pharmacy' && medications.length === 0) {
             await HCDialog.alert('Please add at least one medicine or vaccine before sending this patient to the Pharmacy.');
@@ -485,9 +612,11 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const confirmMessage = nextRouting === 'laboratory'
-            ? 'Send this patient to the Laboratory? This saves the consultation and notifies the medical technologist — it does NOT end the consultation.'
-            : 'Save and end this consultation? This marks it as completed.';
+        const confirmMessages = {
+            laboratory: 'Send this patient to the Laboratory? This saves the consultation and notifies the medical technologist — it does NOT end the consultation.',
+            xray: 'Send this patient for X-ray? This saves the consultation and notifies the radio technologist — it does NOT end the consultation.',
+        };
+        const confirmMessage = confirmMessages[nextRouting] || 'Save and end this consultation? This marks it as completed.';
         const confirmed = await HCDialog.confirm(confirmMessage);
         if (!confirmed) return;
 
@@ -507,6 +636,8 @@ document.addEventListener('DOMContentLoaded', function () {
             nextRouting: nextRouting,
             needsFollowUp: needsFollowUp,
             labTests: checkedLabTests(),
+            xrayExams: checkedXrayExams(),
+            assignedToUid: nextRouting === 'laboratory' ? selectedLabStaffUid() : (nextRouting === 'xray' ? selectedXrayStaffUid() : ''),
             doctorNotes: document.getElementById('acvNotes').value.trim(),
         };
 

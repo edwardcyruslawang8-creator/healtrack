@@ -68,3 +68,43 @@ if (!function_exists('hc_get_pending_account_notifications')) {
         }, $pending);
     }
 }
+
+if (!function_exists('hc_get_active_staff_by_role')) {
+    /**
+     * Every real, currently-active users/{uid} account for one $role at
+     * one $facility, sorted by name — "who could this actually be sent
+     * to right now" for doctor/active_consultation.php's Laboratory/
+     * X-ray staff picker (a pending/inactive/locked account can't act on
+     * anything, so those are excluded; see
+     * includes/subadmin/user_management_firestore.php's own status
+     * values for why 'active' is the one real "can sign in and work"
+     * state). Facility-scoped the same way every other per-facility
+     * list in this app already is — a doctor only ever sends a patient
+     * to staff at their OWN facility.
+     *
+     * @return array<int, array{uid: string, name: string}>
+     */
+    function hc_get_active_staff_by_role(string $role, string $facility): array
+    {
+        global $firestore;
+
+        if ($facility === '') {
+            return [];
+        }
+
+        $staff = array_values(array_filter($firestore->listDocuments('users'), function ($doc) use ($role, $facility) {
+            $f = $doc['fields'];
+
+            return ($f['role'] ?? '') === $role
+                && ($f['status'] ?? '') === 'active'
+                && ($f['facility'] ?? '') === $facility;
+        }));
+
+        usort($staff, fn ($a, $b) => strcasecmp($a['fields']['name'] ?? '', $b['fields']['name'] ?? ''));
+
+        return array_map(fn ($doc) => [
+            'uid' => $doc['id'],
+            'name' => $doc['fields']['name'] ?? '(no name)',
+        ], $staff);
+    }
+}

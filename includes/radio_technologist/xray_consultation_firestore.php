@@ -92,6 +92,12 @@ foreach (hc_get_all_xray_result_docs() as $doc) {
         'date' => isset($f['orderedDate']) && $f['orderedDate'] !== '' ? date('M j, Y', strtotime($f['orderedDate'])) : '—',
         'time' => $f['orderedTime'] ?? '—',
         'priority' => hc_radiotech_xc_priority($doc['id']),
+        // Real "who the doctor sent this to" — api/complete-consultation.php's
+        // X-ray staff picker. Null for every referral sent before that
+        // existed, or one nobody was assigned — still shows up in this
+        // shared queue either way, this just surfaces who it's actually
+        // meant for.
+        'assignedToName' => $f['assignedToName'] ?? null,
     ];
 }
 

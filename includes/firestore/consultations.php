@@ -65,6 +65,7 @@ if (!function_exists('hc_map_consultation_doc')) {
             // data.
             'needsFollowUp' => (bool) ($f['needsFollowUp'] ?? (($f['nextRouting'] ?? '') === 'follow_up')),
             'labTests' => $f['labTests'] ?? [],
+            'xrayExams' => $f['xrayExams'] ?? [],
             'doctorNotes' => $f['doctorNotes'] ?? '',
             // The real lab_results doc ids this follow-up consultation
             // was created from (api/proceed-lab-result-to-doctor.php) —
