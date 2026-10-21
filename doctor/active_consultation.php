@@ -279,7 +279,7 @@ $doctorNavItems = [
                         </div>
                         <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
                             <span class="cns-badge" style="background:<?= htmlspecialchars($lr['resultBadgeBg']) ?>; color:<?= htmlspecialchars($lr['resultBadgeColor']) ?>;"><?= htmlspecialchars($lr['resultBadgeLabel']) ?></span>
-                            <a href="laboratory_result_details.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($lr['id']) ?>&type=<?= urlencode($lr['type']) ?>&consultationId=<?= urlencode($consultation['id']) ?>" class="acv-view-result-btn" target="_blank" rel="noopener"><i class="bi bi-eye"></i> View Full Result</a>
+                            <a href="laboratory_result_details.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($lr['id']) ?>&type=<?= urlencode($lr['type']) ?>&consultationId=<?= urlencode($consultation['id']) ?>" class="acv-view-result-btn" target="_blank" rel="noopener"><i class="bi bi-eye"></i> View Full Result <i class="bi bi-box-arrow-up-right"></i></a>
                         </div>
                     </div>
                     <?php endforeach; ?>
