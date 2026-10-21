@@ -2,48 +2,46 @@
 /**
  * =====================================================================
  * HEALTrack — Health Information System
- * X-ray Result Form (medical_technician/xray_result_form.php)
+ * X-ray Result Form (radio_technologist/xray_result_form.php)
  * ---------------------------------------------------------------------
- * Reached via the "Consult" row action on lab_xray_consultation.php for
- * a pending X-ray referral — see
- * includes/medical_technician/xray_result_form_firestore.php's header
- * comment. No real paper form to mirror here (unlike Gram Stain/CD4/
- * Urinalysis/Serology), so this is a general-purpose Findings +
- * Impression form matching what laboratory_result_details.php's own
- * "X-ray Findings" card already renders for a completed exam.
- *
- * Saving posts to api/complete-xray-result.php, which writes onto the
- * exact xray_results doc (&recordId=) and marks it "completed".
+ * Reached via the "Consult" row action on xray_consultation.php for a
+ * pending X-ray referral — see
+ * includes/radio_technologist/xray_result_form_firestore.php's header
+ * comment. Findings + Impression + a required result document upload
+ * (the scanned report/exported image — see
+ * includes/shared/xray_result_storage.php's header comment), submitted
+ * together to api/complete-xray-result.php as multipart/form-data.
  * =====================================================================
  */
 session_start();
 
 require_once __DIR__ . '/../config/constants.php'; // BASE_URL, asset_url()
 
-if (($_SESSION['role'] ?? null) !== 'medical_technician') {
+if (($_SESSION['role'] ?? null) !== 'radio_technologist') {
     header('Location: ' . BASE_URL . '/login.php');
     exit;
 }
 
-require_once __DIR__ . '/../includes/medical_technician/xray_result_form_firestore.php';
+require_once __DIR__ . '/../includes/radio_technologist/xray_result_form_firestore.php';
 // $staffProfile, $dashboardDateLabel, $patientId, $recordId, $patient, $currentDoc, $isEditable, $routedToDoctorName
 
+require_once __DIR__ . '/../includes/firestore/xray_results.php'; // hc_get_pending_xray_count() for the sidebar badge below
+
 $staffNavItems = [
-    ['icon' => 'bi-grid-fill',                 'label' => 'Dashboard',                       'href' => 'dashboard.php'],
-    ['icon' => 'bi-clipboard2-pulse-fill',      'label' => 'Laboratory & X-ray',              'href' => 'laboratory_xray.php'],
-    ['icon' => 'bi-inboxes-fill',              'label' => 'Laboratory & X-ray Consultation', 'href' => 'lab_xray_consultation.php', 'active' => true, 'badge' => hc_get_pending_lab_xray_count()],
+    ['icon' => 'bi-grid-fill',                 'label' => 'Dashboard',          'href' => 'dashboard.php'],
+    ['icon' => 'bi-file-earmark-medical-fill', 'label' => 'X-ray Consultation', 'href' => 'xray_consultation.php', 'active' => true, 'badge' => hc_get_pending_xray_count()],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',
-        'id' => 'mtNavAnalyticsReports',
+        'id' => 'rtNavAnalyticsReports',
         'children' => [
             ['label' => 'Analytics', 'href' => 'analytics_reports.php'],
             ['label' => 'My Reports', 'href' => 'patients_report.php'],
         ],
     ],
-    ['icon' => 'bi-bell-fill',                 'label' => 'Notifications',                   'href' => 'notifications.php', 'badge' => hc_medtech_unread_notification_count()],
-    ['icon' => 'bi-clipboard-data-fill', 'label' => 'Audit Logs', 'href' => 'audit_logs.php'],
-    ['icon' => 'bi-gear-fill',                 'label' => 'Profile / Settings',              'href' => 'profile_settings.php'],
+    ['icon' => 'bi-bell-fill',                 'label' => 'Notifications',      'href' => 'notifications.php', 'badge' => hc_radiotech_unread_notification_count()],
+    ['icon' => 'bi-clipboard-data-fill',       'label' => 'Audit Logs',         'href' => 'audit_logs.php'],
+    ['icon' => 'bi-gear-fill',                 'label' => 'Profile / Settings', 'href' => 'profile_settings.php'],
 ];
 
 $docFields = $currentDoc['fields'] ?? [];
@@ -102,12 +100,12 @@ $savedImpression = $docFields['impression'] ?? '';
         <?php foreach ($staffNavItems as $item): ?>
         <?php if (!empty($item['children'])): ?>
         <li>
-            <a href="#<?= htmlspecialchars($item['id'] ?? 'mtNavAnalyticsReports') ?>" class="adm-nav-link adm-nav-toggle <?= !empty($item['active']) ? 'active' : '' ?> <?= empty($item['open']) ? 'collapsed' : '' ?>" data-bs-toggle="collapse" role="button" aria-expanded="<?= !empty($item['open']) ? 'true' : 'false' ?>" aria-controls="<?= htmlspecialchars($item['id'] ?? 'mtNavAnalyticsReports') ?>">
+            <a href="#<?= htmlspecialchars($item['id'] ?? 'rtNavAnalyticsReports') ?>" class="adm-nav-link adm-nav-toggle <?= !empty($item['active']) ? 'active' : '' ?> <?= empty($item['open']) ? 'collapsed' : '' ?>" data-bs-toggle="collapse" role="button" aria-expanded="<?= !empty($item['open']) ? 'true' : 'false' ?>" aria-controls="<?= htmlspecialchars($item['id'] ?? 'rtNavAnalyticsReports') ?>">
                 <i class="bi <?= htmlspecialchars($item['icon']) ?>"></i>
                 <span><?= htmlspecialchars($item['label']) ?></span>
                 <i class="bi bi-chevron-down adm-nav-caret"></i>
             </a>
-            <div class="collapse <?= !empty($item['open']) ? 'show' : '' ?>" id="<?= htmlspecialchars($item['id'] ?? 'mtNavAnalyticsReports') ?>">
+            <div class="collapse <?= !empty($item['open']) ? 'show' : '' ?>" id="<?= htmlspecialchars($item['id'] ?? 'rtNavAnalyticsReports') ?>">
                 <ul class="adm-nav-submenu">
                     <?php foreach ($item['children'] as $child): ?>
                     <li><a href="<?= htmlspecialchars($child['href']) ?>" class="adm-nav-sublink <?= !empty($child['active']) ? 'active' : '' ?>"><?= htmlspecialchars($child['label']) ?></a></li>
@@ -146,7 +144,7 @@ $savedImpression = $docFields['impression'] ?? '';
             <p class="adm-page-subtitle">Enter Findings and Impression, then it's ready for the ordering doctor to review.</p>
         </div>
         <div class="adm-topbar-right">
-            <a href="lab_xray_consultation.php" class="mt-topbar-select-btn"><i class="bi bi-arrow-left"></i> Back to Consultation</a>
+            <a href="xray_consultation.php" class="mt-topbar-select-btn"><i class="bi bi-arrow-left"></i> Back to Consultation</a>
         </div>
     </div>
 
@@ -170,7 +168,7 @@ $savedImpression = $docFields['impression'] ?? '';
         <h2 style="font-size:16px; font-weight:700; margin-bottom:4px;"><?= htmlspecialchars($examName) ?></h2>
         <p class="adm-page-subtitle" style="margin-bottom:16px;">Body Part: <?= htmlspecialchars($bodyPart) ?></p>
 
-        <form id="xrayResultForm">
+        <form id="xrayResultForm" enctype="multipart/form-data">
             <input type="hidden" name="patientId" value="<?= htmlspecialchars($patientId) ?>">
             <input type="hidden" name="recordId" value="<?= htmlspecialchars($recordId) ?>">
 
@@ -193,6 +191,26 @@ $savedImpression = $docFields['impression'] ?? '';
                 <textarea class="form-control" id="f_impression" name="impression" rows="3" placeholder="e.g. Normal chest findings."><?= htmlspecialchars($savedImpression) ?></textarea>
                 <?php else: ?>
                 <div><strong><?= nl2br(htmlspecialchars($savedImpression ?: '—')) ?></strong></div>
+                <?php endif; ?>
+            </div>
+
+            <div style="margin-bottom:18px;">
+                <label for="f_resultFile" style="display:block; font-size:12.5px; font-weight:600; color:var(--adm-text-muted); margin-bottom:6px;">X-ray Result Document<?php if ($isEditable): ?><span class="text-danger">*</span><?php endif; ?></label>
+                <?php if ($isEditable): ?>
+                <input type="file" class="form-control" id="f_resultFile" name="resultFile" accept=".pdf,.jpg,.jpeg,.png" required>
+                <div class="adm-page-subtitle" style="margin-top:4px;">PDF, JPG, or PNG — the scanned report or exported image for this exam, up to 10MB.</div>
+                <?php elseif (!empty($docFields['attachedFileName'])): ?>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <i class="bi bi-file-earmark-medical-fill" style="font-size:20px; color:#1A73E8;"></i>
+                    <div>
+                        <strong><?= htmlspecialchars($docFields['attachedFileName']) ?></strong>
+                        <div class="adm-page-subtitle"><?= htmlspecialchars($docFields['attachedFileSize'] ?? '') ?></div>
+                    </div>
+                    <a href="<?= BASE_URL ?>/api/download-xray-result.php?id=<?= urlencode($recordId) ?>&view=1" target="_blank" class="mt-topbar-select-btn" style="margin-left:auto;"><i class="bi bi-eye"></i> View</a>
+                    <a href="<?= BASE_URL ?>/api/download-xray-result.php?id=<?= urlencode($recordId) ?>" class="mt-topbar-select-btn"><i class="bi bi-download"></i> Download</a>
+                </div>
+                <?php else: ?>
+                <div class="adm-page-subtitle">No result document on file (completed before this was added).</div>
                 <?php endif; ?>
             </div>
 
@@ -233,6 +251,8 @@ $savedImpression = $docFields['impression'] ?? '';
 
             var findings = form.querySelector('textarea[name="findings"]').value.trim();
             var impression = form.querySelector('textarea[name="impression"]').value.trim();
+            var fileInput = form.querySelector('input[name="resultFile"]');
+            var file = fileInput && fileInput.files.length ? fileInput.files[0] : null;
 
             if (findings === '' || impression === '') {
                 msg.style.display = 'block';
@@ -240,19 +260,26 @@ $savedImpression = $docFields['impression'] ?? '';
                 msg.textContent = 'Please fill in both Findings and Impression before saving.';
                 return;
             }
+            if (!file) {
+                msg.style.display = 'block';
+                msg.className = 'adm-page-subtitle';
+                msg.textContent = 'Please attach the X-ray result document.';
+                return;
+            }
 
             var btn = document.getElementById('btnSaveXrayResult');
             btn.disabled = true;
 
+            var payload = new FormData();
+            payload.append('patientId', patientId);
+            payload.append('recordId', recordId);
+            payload.append('findings', findings);
+            payload.append('impression', impression);
+            payload.append('resultFile', file);
+
             fetch('<?= BASE_URL ?>/api/complete-xray-result.php', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    patientId: patientId,
-                    recordId: recordId,
-                    findings: findings,
-                    impression: impression,
-                })
+                body: payload,
             })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {

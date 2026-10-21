@@ -1,30 +1,26 @@
 <?php
 /**
  * =====================================================================
- * X-ray Result Form — Data
+ * X-ray Result Form (Radio Technologist) — Data
  * ---------------------------------------------------------------------
- * Backs medical_technician/xray_result_form.php — the generic "fill in
- * a result" form for X-ray exams (unlike lab tests, X-ray has no named
- * paper-form-replica pages at all — see
- * includes/medical_technician/_lab_xray_referral_table.php's Consult
- * button routing). Reached with an explicit &recordId= so the exact
- * xray_results doc is targeted directly, same reasoning as
- * includes/medical_technician/lab_result_form_firestore.php's header
- * comment.
+ * Backs radio_technologist/xray_result_form.php — the generic "fill in
+ * a result" form for X-ray exams. Modeled directly on
+ * includes/medical_technician/xray_result_form_firestore.php. Reached
+ * with an explicit &recordId= so the exact xray_results doc is targeted
+ * directly.
  * =====================================================================
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
-require_once __DIR__ . '/../firestore/lab_results.php'; // hc_get_pending_lab_xray_count() (sidebar badge) needs both collections
 require_once __DIR__ . '/../firestore/xray_results.php';
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
 
 $staffProfile = [
-    'name'     => $_SESSION['name'] ?? 'Medical Technologist',
-    'role'     => 'Medical Technologist',
+    'name'     => $_SESSION['name'] ?? 'Radio Technologist',
+    'role'     => 'Radio Technologist',
     'facility' => $myDoc['facility'] ?? 'North Super Health Center',
 ];
 

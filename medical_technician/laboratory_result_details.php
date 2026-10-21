@@ -16,8 +16,11 @@
  * CONNECTED to real Firestore data — see
  * includes/medical_technician/laboratory_result_details_medtech_firestore.php's
  * header comment for how the &type=lab|xray&recordId= querystring
- * (sent by laboratory_xray.php's links) resolves which lab test and
- * which x-ray exam this page shows.
+ * resolves which lab test or (historical only — laboratory_xray.php's
+ * queue no longer links here with type=xray, since X-ray is
+ * radio_technologist's own now) x-ray exam this page shows. Left in
+ * place as a read-only viewer so an x-ray a medical technologist
+ * completed before this role split still has somewhere to be reviewed.
  * =====================================================================
  */
 session_start();
@@ -36,11 +39,11 @@ require_once __DIR__ . '/../includes/medical_technician/laboratory_result_detail
 // $xrayExam, $xrayFindings, $xrayImpression
 
 // Sidebar nav — same Medical Technologist nav list as dashboard.php.
-// Laboratory & X-ray stays active (this page is reached from it).
+// Laboratory stays active (this page is reached from it).
 $staffNavItems = [
     ['icon' => 'bi-grid-fill',                 'label' => 'Dashboard',                       'href' => 'dashboard.php'],
-    ['icon' => 'bi-clipboard2-pulse-fill',      'label' => 'Laboratory & X-ray',              'href' => 'laboratory_xray.php', 'active' => true],
-    ['icon' => 'bi-inboxes-fill',              'label' => 'Laboratory & X-ray Consultation', 'href' => 'lab_xray_consultation.php', 'badge' => hc_get_pending_lab_xray_count()],
+    ['icon' => 'bi-clipboard2-pulse-fill',      'label' => 'Laboratory',              'href' => 'laboratory_xray.php', 'active' => true],
+    ['icon' => 'bi-inboxes-fill',              'label' => 'Laboratory Consultation', 'href' => 'lab_xray_consultation.php', 'badge' => hc_get_pending_lab_count()],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',
@@ -175,7 +178,7 @@ $staffNavItems = [
             <nav class="ppf-breadcrumb" aria-label="Breadcrumb">
                 <a href="dashboard.php">Dashboard</a>
                 <span class="ppf-breadcrumb-sep">&gt;</span>
-                <a href="laboratory_xray.php">Laboratory &amp; X-ray</a>
+                <a href="laboratory_xray.php">Laboratory</a>
                 <span class="ppf-breadcrumb-sep">&gt;</span>
                 <span class="ppf-breadcrumb-current">Laboratory Result Details</span>
             </nav>

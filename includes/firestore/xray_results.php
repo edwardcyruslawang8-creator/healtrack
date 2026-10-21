@@ -56,6 +56,27 @@ if (!function_exists('hc_get_all_xray_result_docs')) {
     }
 }
 
+if (!function_exists('hc_get_pending_xray_count')) {
+    /**
+     * Count of real xray_results docs still "pending" (ordered, no
+     * result entered yet) — for radio_technologist's own sidebar nav
+     * badge, scoped to X-ray only unlike
+     * includes/firestore/lab_results.php's hc_get_pending_lab_xray_count()
+     * (which also counts pending lab_results, meaningless for this role).
+     */
+    function hc_get_pending_xray_count(): int
+    {
+        $count = 0;
+        foreach (hc_get_all_xray_result_docs() as $doc) {
+            if (($doc['fields']['status'] ?? '') === 'pending') {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+}
+
 if (!function_exists('hc_get_xray_result_docs_for_patient')) {
     /** @internal Raw (unmapped) docs, newest completed first — shared by the list and detail resolvers above/below. */
     function hc_get_xray_result_docs_for_patient(string $patientId): array

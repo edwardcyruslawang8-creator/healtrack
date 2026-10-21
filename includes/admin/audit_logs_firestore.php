@@ -119,7 +119,7 @@ $seenModules = [];
 foreach ($allAuditLogs as $log) {
     $matchesRoleScope = match ($auditRoleFilter) {
         'subadmin' => $log['actorRole'] === 'Sub-Administrator',
-        'user' => in_array($log['actorRole'], ['Healthcare Staff', 'Doctor', 'Pharmacist', 'Medical Technologist'], true),
+        'user' => in_array($log['actorRole'], ['Healthcare Staff', 'Doctor', 'Pharmacist', 'Medical Technologist', 'Radio Technologist'], true),
         default => $log['actorRole'] !== 'System Administrator',
     };
     if ($matchesRoleScope) {

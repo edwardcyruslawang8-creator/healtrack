@@ -7,7 +7,7 @@
  * initial page load (wrapped in #lxcReferralTable there) and
  * api/medtech-referral-queue-status.php (polled by
  * assets/js/medtech_lab_xray_consultation.js so this table updates
- * itself once a doctor sends a new lab/x-ray referral, without the
+ * itself once a doctor sends a new laboratory referral, without the
  * technician needing to reload the page) — the SAME markup either way,
  * so a live refresh can never show something different than a real
  * page load would have. See includes/medical_technician/_lab_xray_referral_stats.php's
@@ -39,7 +39,7 @@
             <tbody>
                 <?php if (empty($referralRows)): ?>
                 <tr>
-                    <td colspan="8" class="adm-table-empty">No patients currently waiting on laboratory or X-ray testing.</td>
+                    <td colspan="8" class="adm-table-empty">No patients currently waiting on laboratory testing.</td>
                 </tr>
                 <?php endif; ?>
                 <?php foreach ($referralRows as $r): ?>
@@ -48,7 +48,7 @@
                         <div class="lxr-strong"><?= htmlspecialchars($r['patientName']) ?></div>
                         <div class="lxr-patient-meta"><?= (int) $r['patientAge'] ?> years old</div>
                     </td>
-                    <td><span class="lxr-badge" style="background:<?= $r['type'] === 'xray' ? '#FCE4E4' : '#EFE7FB' ?>; color:<?= $r['type'] === 'xray' ? '#D93025' : '#7C3AED' ?>;"><?= htmlspecialchars($r['typeLabel']) ?></span></td>
+                    <td><span class="lxr-badge" style="background:#EFE7FB; color:#7C3AED;"><?= htmlspecialchars($r['typeLabel']) ?></span></td>
                     <td><?= htmlspecialchars($r['examination']) ?></td>
                     <td><?= htmlspecialchars($r['requestedBy']) ?></td>
                     <td><?= htmlspecialchars($r['facility']) ?></td>
@@ -59,12 +59,14 @@
                     // actually lets the technician fill in THIS test's
                     // result — one of the 4 named paper-form replicas
                     // when the test matches one of those, otherwise the
-                    // generic lab/X-ray result form (medical_technician/
-                    // lab_result_form.php, xray_result_form.php — see
-                    // their own header comments) covering every other
-                    // test in hc_lab_test_catalog(). Never
-                    // laboratory_result_details.php directly — that's a
-                    // read-only view, not where a result gets entered.
+                    // generic lab result form (medical_technician/
+                    // lab_result_form.php — see its own header comment)
+                    // covering every other test in hc_lab_test_catalog().
+                    // Never laboratory_result_details.php directly —
+                    // that's a read-only view, not where a result gets
+                    // entered. No X-ray branch here — every row on this
+                    // page is 'lab' by construction (see this file's
+                    // header comment).
                     if ($r['isSerologyRapid']) {
                         $consultHref = 'serology_rapid_test_form.php?patientId=' . urlencode($r['patientId']);
                     } elseif ($r['isUrinalysis']) {
@@ -73,8 +75,6 @@
                         $consultHref = 'cd4_count_form.php?patientId=' . urlencode($r['patientId']);
                     } elseif ($r['isGramStain']) {
                         $consultHref = 'gram_stain_form.php?patientId=' . urlencode($r['patientId']);
-                    } elseif ($r['type'] === 'xray') {
-                        $consultHref = 'xray_result_form.php?patientId=' . urlencode($r['patientId']) . '&recordId=' . urlencode($r['id']);
                     } else {
                         $consultHref = 'lab_result_form.php?patientId=' . urlencode($r['patientId']) . '&recordId=' . urlencode($r['id']);
                     }

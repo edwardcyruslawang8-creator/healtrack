@@ -16,7 +16,7 @@ session_start();
 require_once __DIR__ . '/../config/constants.php'; // asset_url() not needed here, but keeps require style consistent
 require_once __DIR__ . '/../includes/shared/profile_photo_storage.php';
 
-if (!in_array($_SESSION['role'] ?? null, ['admin', 'subadmin', 'healthcare_staff', 'pharmacist', 'medical_technician', 'doctor'], true)) {
+if (!in_array($_SESSION['role'] ?? null, ['admin', 'subadmin', 'healthcare_staff', 'pharmacist', 'medical_technician', 'radio_technologist', 'doctor'], true)) {
     http_response_code(403);
     exit;
 }

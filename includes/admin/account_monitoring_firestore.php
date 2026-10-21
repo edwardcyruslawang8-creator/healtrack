@@ -154,6 +154,7 @@ $roleDisplayMeta = [
     'healthcare_staff' => ['label' => 'Healthcare Staff',     'color' => '#E8710A'],
     'pharmacist'       => ['label' => 'Pharmacist',           'color' => '#4F46E5'],
     'medical_technician' => ['label' => 'Medical Technologist', 'color' => '#12A6C6'],
+    'radio_technologist' => ['label' => 'Radio Technologist', 'color' => '#8B5CF6'],
     'doctor'           => ['label' => 'Doctor',                'color' => '#B45309'],
     'patient'          => ['label' => 'Patient',              'color' => '#7C3AED'],
     'other'            => ['label' => 'Other',                'color' => '#0E9CA8'],

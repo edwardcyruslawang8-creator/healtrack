@@ -8,9 +8,10 @@
  * explicitly documented "there's no public sign-up here on purpose."
  * This page changes that, but with two safety rails:
  *   1. The Role dropdown is deliberately limited, for now, to
- *      Healthcare Staff / Pharmacist / Medical Technologist / Doctor —
- *      every one of those maps to "healthcare_staff", "pharmacist",
- *      "medical_technician", or "doctor" (api/register.php's
+ *      Healthcare Staff / Pharmacist / Medical Technologist / Radio
+ *      Technologist / Doctor — every one of those maps to
+ *      "healthcare_staff", "pharmacist", "medical_technician",
+ *      "radio_technologist", or "doctor" (api/register.php's
  *      $jobTitleToRole), so self-registration can never itself
  *      produce an admin or subadmin account, no matter what's selected.
  *   2. Regardless of role, every account created here starts with
@@ -158,7 +159,14 @@ require_once __DIR__ . '/config/constants.php'; // BASE_URL
                         </div>
                     </div>
                     <div class="login-field">
-                        <label for="regPhone">Phone Number</label>
+                        <!-- "(optional)" shown only after a successful "Sign up with
+                             Google" — Google doesn't hand over a phone number, so this
+                             is no longer required to finish that path; it can be added
+                             later from Profile Settings instead (see
+                             includes/shared/phone_reminder.php for the in-app/toast
+                             reminder that nudges that). Still required for the manual
+                             password path. assets/js/register.js toggles this. -->
+                        <label for="regPhone">Phone Number<span id="regPhoneOptionalNote" class="reg-optional-note d-none"> (optional — you can add this later in Profile Settings)</span></label>
                         <div class="login-input-wrap">
                             <i class="bi bi-telephone-fill field-icon"></i>
                             <input type="text" id="regPhone" placeholder="Enter your phone number" required>
@@ -199,6 +207,7 @@ require_once __DIR__ . '/config/constants.php'; // BASE_URL
                             <option value="Healthcare Staff">Healthcare Staff</option>
                             <option value="Pharmacist">Pharmacist</option>
                             <option value="Medical Technologist">Medical Technologist</option>
+                            <option value="Radio Technologist">Radio Technologist</option>
                             <option value="Doctor">Doctor</option>
                         </select>
                     </div>

@@ -21,7 +21,7 @@ require_once __DIR__ . '/../config/firebase.php'; // $firestore
 
 header('Content-Type: application/json');
 
-if (!in_array($_SESSION['role'] ?? null, ['subadmin', 'medical_technician', 'pharmacist', 'doctor', 'healthcare_staff'], true)) {
+if (!in_array($_SESSION['role'] ?? null, ['subadmin', 'medical_technician', 'radio_technologist', 'pharmacist', 'doctor', 'healthcare_staff'], true)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Not authorized.']);
     exit;

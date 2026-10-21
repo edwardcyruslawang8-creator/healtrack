@@ -28,9 +28,4 @@
         <div class="mt-stat-label">Laboratory</div>
         <div class="mt-stat-value"><?= number_format($referralsSummary['lab']) ?></div>
     </div>
-    <div class="mt-stat-card">
-        <div class="mt-stat-icon" style="background:#FCE4E4; color:#D93025;"><i class="bi bi-lungs-fill"></i></div>
-        <div class="mt-stat-label">X-ray</div>
-        <div class="mt-stat-value"><?= number_format($referralsSummary['xray']) ?></div>
-    </div>
 </div>

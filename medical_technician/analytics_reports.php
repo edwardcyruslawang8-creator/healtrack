@@ -17,9 +17,10 @@
  * page.
  *
  * CONNECTED to real Firestore data — facility-wide, not per-technician
- * (neither lab_results nor xray_results records who completed a test —
- * see includes/medical_technician/analytics_reports_medtech_firestore.php's
- * header comment for why).
+ * (lab_results never records who completed a test — see
+ * includes/medical_technician/analytics_reports_medtech_firestore.php's
+ * header comment for why). Laboratory only — X-ray is
+ * radio_technologist/analytics_reports.php's own page now.
  * =====================================================================
  */
 session_start();
@@ -39,7 +40,7 @@ require_once __DIR__ . '/../includes/medical_technician/analytics_reports_medtec
 // hc_medtech_unread_notification_count() (sidebar/topbar badge) already
 // comes from config/constants.php, required above.
 
-require_once __DIR__ . '/../includes/firestore/lab_results.php'; // hc_get_pending_lab_xray_count() for the sidebar badge below
+require_once __DIR__ . '/../includes/firestore/lab_results.php'; // hc_get_pending_lab_count() for the sidebar badge below
 
 require_once __DIR__ . '/../includes/medical_technician/predictive_overview_firestore.php';
 // $predictiveOverviewCards, $predictiveOverviewTrend, $predictiveOverviewTopAlerts,
@@ -50,8 +51,8 @@ require_once __DIR__ . '/../includes/medical_technician/predictive_overview_fire
 // (this IS that page).
 $staffNavItems = [
     ['icon' => 'bi-grid-fill',             'label' => 'Dashboard',                       'href' => 'dashboard.php'],
-    ['icon' => 'bi-clipboard2-pulse-fill', 'label' => 'Laboratory & X-ray',              'href' => 'laboratory_xray.php'],
-    ['icon' => 'bi-inboxes-fill',          'label' => 'Laboratory & X-ray Consultation', 'href' => 'lab_xray_consultation.php', 'badge' => hc_get_pending_lab_xray_count()],
+    ['icon' => 'bi-clipboard2-pulse-fill', 'label' => 'Laboratory',              'href' => 'laboratory_xray.php'],
+    ['icon' => 'bi-inboxes-fill',          'label' => 'Laboratory Consultation', 'href' => 'lab_xray_consultation.php', 'badge' => hc_get_pending_lab_count()],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',
@@ -180,7 +181,7 @@ $staffNavItems = [
     <div class="adm-topbar">
         <div>
             <h1>Analytics &amp; Reports</h1>
-            <p class="adm-page-subtitle">Laboratory &amp; X-ray activity — <?= htmlspecialchars($analyticsDateRangeLabel) ?> trend, all-time totals.</p>
+            <p class="adm-page-subtitle">Laboratory activity — <?= htmlspecialchars($analyticsDateRangeLabel) ?> trend, all-time totals.</p>
         </div>
 
         <div class="adm-topbar-right">
@@ -239,7 +240,7 @@ $staffNavItems = [
          header comment. -->
     <?php
     $predictiveOverviewLinkHref = null; // no dedicated full predictive page for this role yet
-    $predictiveOverviewTrendLabel = 'Lab & X-ray Volume Forecast (actual vs. next 7 days)';
+    $predictiveOverviewTrendLabel = 'Laboratory Volume Forecast (actual vs. next 7 days)';
     require __DIR__ . '/../includes/admin/predictive_overview_card.php';
     ?>
 

@@ -11,7 +11,7 @@
  *
  * Role labels/options are trimmed to the roles that actually exist in
  * this app (admin, subadmin, healthcare_staff, pharmacist,
- * medical_technician, doctor) — an earlier placeholder version had
+ * medical_technician, radio_technologist, doctor) — an earlier placeholder version had
  * invented roles ("Nurse", "Inventory Staff", "Receptionist") that
  * didn't correspond to any real Firestore role value or login flow,
  * so those stayed gone. "Doctor" WAS one of those placeholder-only
@@ -94,10 +94,11 @@ $roleMeta = [
     'healthcare_staff'   => ['label' => 'Medical Staff',       'bg' => '#E4F7EA', 'color' => '#1E8E3E', 'department' => 'Medical'],
     'pharmacist'         => ['label' => 'Pharmacist',          'bg' => '#E8E9FD', 'color' => '#4F46E5', 'department' => 'Pharmacy'],
     'medical_technician' => ['label' => 'Medical Technologist', 'bg' => '#E8F0FE', 'color' => '#1A73E8', 'department' => 'Laboratory'],
+    'radio_technologist' => ['label' => 'Radio Technologist',  'bg' => '#F1E8FD', 'color' => '#8B5CF6', 'department' => 'Radiology'],
     'doctor'             => ['label' => 'Doctor',              'bg' => '#FEF3C7', 'color' => '#B45309', 'department' => 'Medical'],
 ];
 
-$roleOptions = ['All Roles', 'Sub-Admin', 'Medical Staff', 'Pharmacist', 'Medical Technologist', 'Doctor'];
+$roleOptions = ['All Roles', 'Sub-Admin', 'Medical Staff', 'Pharmacist', 'Medical Technologist', 'Radio Technologist', 'Doctor'];
 $userStatusOptions = ['All Statuses', 'Active', 'Inactive', 'Locked'];
 
 // Status key -> badge meta.

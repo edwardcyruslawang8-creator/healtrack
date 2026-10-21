@@ -1,15 +1,18 @@
 <?php
 /**
  * =====================================================================
- * Laboratory & X-ray Processing (Medical Technologist) — Data
+ * Laboratory Processing (Medical Technologist) — Data
  * ---------------------------------------------------------------------
  * Unlike medical-staff/subadmin's patient_laboratory_xray.php (a single
- * PATIENT's own lab/x-ray history, reached from their profile), this is
- * a technician-facing QUEUE across every patient — every real
- * lab_results/{id} and xray_results/{id} doc (hc_get_all_lab_result_docs(),
- * hc_get_all_xray_result_docs() in includes/firestore/lab_results.php
- * and xray_results.php), joined with each doc's patient name/age via
- * includes/firestore/patients.php.
+ * PATIENT's own lab history, reached from their profile), this is a
+ * technician-facing QUEUE across every patient — every real
+ * lab_results/{id} doc (hc_get_all_lab_result_docs() in
+ * includes/firestore/lab_results.php), joined with each doc's patient
+ * name/age via includes/firestore/patients.php. X-ray is deliberately
+ * NOT included here — that's radio_technologist's own queue/role now
+ * (includes/radio_technologist/xray_consultation_firestore.php), kept
+ * separate so the same exam is never processed from two different
+ * roles' screens.
  *
  * REAL for everything the schema actually models: patient, examination
  * name, ordered by, date/time, and status (only "pending"/"completed"
@@ -19,23 +22,17 @@
  * same principle as includes/subadmin/user_management_firestore.php's
  * trimmed role list).
  *
- * PLACEHOLDER for "Priority" only — lab_results/xray_results docs have
- * no priority field yet. Rather than a per-page-load random value,
- * it's inferred deterministically from the doc id (crc32 % 3) so a
- * given record always shows the same priority — a stand-in exactly
- * like $roleMeta's inferred "Department" column, not real data.
- *
- * The "Recent X-ray Reports" badge (Normal / Findings Noted) is
- * inferred from the real free-text $impression field (keyword match),
- * since there's no structured normal/abnormal field on xray_results
- * either.
+ * PLACEHOLDER for "Priority" only — lab_results docs have no priority
+ * field yet. Rather than a per-page-load random value, it's inferred
+ * deterministically from the doc id (crc32 % 3) so a given record
+ * always shows the same priority — a stand-in exactly like $roleMeta's
+ * inferred "Department" column, not real data.
  * =====================================================================
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/lab_results.php';
-require_once __DIR__ . '/../firestore/xray_results.php';
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -90,8 +87,7 @@ $statusMeta = [
 ];
 
 // ---------------------------------------------------------------------
-// Build the unified request queue — real lab_results + xray_results
-// docs across every patient.
+// Build the request queue — real lab_results docs across every patient.
 // ---------------------------------------------------------------------
 $allRequests = [];
 
@@ -120,29 +116,6 @@ foreach (hc_get_all_lab_result_docs() as $doc) {
     ];
 }
 
-foreach (hc_get_all_xray_result_docs() as $doc) {
-    $f = $doc['fields'];
-    $patient = $patientsById[$f['patientId'] ?? ''] ?? null;
-    $priority = hc_medtech_inferred_priority($doc['id']);
-    $allRequests[] = [
-        'id' => $doc['id'],
-        'type' => 'xray',
-        'typeLabel' => 'X-ray',
-        'patientId' => $f['patientId'] ?? '',
-        'patientName' => $patient['name'] ?? 'Unknown Patient',
-        'patientAge' => $patient['age'] ?? 0,
-        'examination' => $f['examName'] ?? '—',
-        'requestedBy' => $f['orderedBy'] ?? '—',
-        'orderedDateRaw' => $f['orderedDate'] ?? '',
-        'date' => isset($f['orderedDate']) ? date('M j, Y', strtotime($f['orderedDate'])) : '—',
-        'time' => $f['orderedTime'] ?? '—',
-        'status' => $f['status'] ?? 'pending',
-        'priority' => $priority,
-        'hasReport' => ($f['status'] ?? '') === 'completed',
-        'impression' => $f['impression'] ?? '',
-    ];
-}
-
 usort($allRequests, fn ($a, $b) => strcmp($b['orderedDateRaw'], $a['orderedDateRaw']));
 
 // ---------------------------------------------------------------------
@@ -153,14 +126,14 @@ $requestsSummary = [
     'pending' => count(array_filter($allRequests, fn ($r) => $r['status'] === 'pending')),
     'completed' => count(array_filter($allRequests, fn ($r) => $r['status'] === 'completed')),
     'labCount' => count(array_filter($allRequests, fn ($r) => $r['type'] === 'lab')),
-    'xrayCount' => count(array_filter($allRequests, fn ($r) => $r['type'] === 'xray')),
 ];
 
 // ---------------------------------------------------------------------
-// Tabs — All Requests / Laboratory / X-ray (?tab=).
+// Tabs — All Requests / Laboratory (?tab=). X-ray dropped — that's
+// radio_technologist's own queue now, never medtech's.
 // ---------------------------------------------------------------------
 $activeTab = $_GET['tab'] ?? 'all';
-if (!in_array($activeTab, ['all', 'lab', 'xray'], true)) {
+if (!in_array($activeTab, ['all', 'lab'], true)) {
     $activeTab = 'all';
 }
 
@@ -231,23 +204,3 @@ if ($requestsTotalPages <= 5) {
 // ---------------------------------------------------------------------
 $recentLabResults = array_values(array_filter($allRequests, fn ($r) => $r['type'] === 'lab' && $r['hasReport']));
 $recentLabResults = array_slice($recentLabResults, 0, 5);
-
-// ---------------------------------------------------------------------
-// Recent X-ray Reports — newest completed x-ray docs, badge inferred
-// from the real $impression text (see header comment).
-// ---------------------------------------------------------------------
-$recentXrayReports = array_values(array_filter($allRequests, fn ($r) => $r['type'] === 'xray' && $r['hasReport']));
-$recentXrayReports = array_slice($recentXrayReports, 0, 5);
-
-foreach ($recentXrayReports as &$report) {
-    $impressionLower = strtolower($report['impression'] ?? '');
-    $isNormal = $impressionLower !== '' && (
-        str_contains($impressionLower, 'no active') ||
-        str_contains($impressionLower, 'unremarkable') ||
-        str_contains($impressionLower, 'normal')
-    );
-    $report['resultBadge'] = $isNormal
-        ? ['label' => 'Normal', 'bg' => '#E4F7EA', 'color' => '#1E8E3E']
-        : ['label' => 'Findings Noted', 'bg' => '#FDECDD', 'color' => '#E8710A'];
-}
-unset($report);

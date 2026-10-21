@@ -93,6 +93,12 @@ ob_start(function ($buffer) {
     } catch (\Throwable $e) {
         error_log('[2FA reminder toast] Skipped after a late-stage failure: ' . $e->getMessage());
     }
+    try {
+        require_once __DIR__ . '/../includes/shared/phone_reminder.php';
+        $script .= hc_render_phone_reminder_toast();
+    } catch (\Throwable $e) {
+        error_log('[Phone reminder toast] Skipped after a late-stage failure: ' . $e->getMessage());
+    }
 
     return str_replace('</body>', $script . '</body>', $buffer);
 });
@@ -216,6 +222,7 @@ function hc_pharmacist_unread_notification_count(): int
     require_once __DIR__ . '/../includes/firestore/medicines.php';
     require_once __DIR__ . '/../includes/firestore/pharmacy_orders.php';
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
+    require_once __DIR__ . '/../includes/shared/phone_reminder.php'; // hc_my_phone_reminder_notification()
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
     if (!hc_notification_preference_enabled('system')) {
@@ -228,7 +235,8 @@ function hc_pharmacist_unread_notification_count(): int
         hc_notification_preference_enabled('inventory') ? array_column(hc_get_low_stock_notifications(), 'id') : [],
         hc_notification_preference_enabled('inventory') ? array_column(hc_get_medicine_expiry_notifications(), 'id') : [],
         hc_notification_preference_enabled('inventory') ? array_column(hc_get_pending_pharmacy_order_notifications(), 'id') : [],
-        array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id')
+        array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
+        array_column(array_filter([hc_my_phone_reminder_notification()]), 'id')
     );
 
     return count(array_diff($allIds, $readIds, $dismissedIds));
@@ -248,6 +256,7 @@ function hc_doctor_unread_notification_count(): int
     require_once __DIR__ . '/../includes/firestore/consultations.php';
     require_once __DIR__ . '/../includes/firestore/lab_results.php'; // hc_get_doctor_result_ready_notifications()
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_my_2fa_reminder_notification()
+    require_once __DIR__ . '/../includes/shared/phone_reminder.php'; // hc_my_phone_reminder_notification()
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
     if (!hc_notification_preference_enabled('system')) {
@@ -259,7 +268,8 @@ function hc_doctor_unread_notification_count(): int
     $allIds = array_merge(
         hc_notification_preference_enabled('consultation') ? array_column(hc_get_followup_notifications($_SESSION['name'] ?? null), 'id') : [],
         array_column(hc_get_doctor_result_ready_notifications($_SESSION['name'] ?? ''), 'id'),
-        array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id')
+        array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
+        array_column(array_filter([hc_my_phone_reminder_notification()]), 'id')
     );
 
     return count(array_diff($allIds, $readIds, $dismissedIds));
@@ -293,6 +303,7 @@ function hc_medstaff_unread_notification_count(): int
 {
     require_once __DIR__ . '/../includes/firestore/consultations.php';
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_my_2fa_reminder_notification()
+    require_once __DIR__ . '/../includes/shared/phone_reminder.php'; // hc_my_phone_reminder_notification()
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
     if (!hc_notification_preference_enabled('system')) {
@@ -303,7 +314,8 @@ function hc_medstaff_unread_notification_count(): int
     $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
     $allIds = array_merge(
         hc_notification_preference_enabled('consultation') ? array_column(hc_get_followup_notifications(), 'id') : [],
-        array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id')
+        array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
+        array_column(array_filter([hc_my_phone_reminder_notification()]), 'id')
     );
 
     return count(array_diff($allIds, $readIds, $dismissedIds));
@@ -313,9 +325,10 @@ function hc_medstaff_unread_notification_count(): int
  * Unread notification count for every medical_technician/*.php page's
  * sidebar nav badge + topbar bell badge — same mechanism as
  * hc_pharmacist_unread_notification_count() above, but the "universe of
- * ids" is real pending lab/x-ray results still awaiting a result
- * (includes/firestore/lab_results.php's hc_get_pending_lab_xray_notifications())
- * rather than inventory. Replaces the old reuse of
+ * ids" is real pending Laboratory results still awaiting a result
+ * (includes/firestore/lab_results.php's hc_get_pending_lab_notifications()
+ * — X-ray referrals are radio_technologist's own queue/badge now, not
+ * this role's) rather than inventory. Replaces the old reuse of
  * subadmin_unread_notification_count() (a coincidental fit against a
  * fixed 1-5 seed list, not this role's own real data).
  */
@@ -323,6 +336,7 @@ function hc_medtech_unread_notification_count(): int
 {
     require_once __DIR__ . '/../includes/firestore/lab_results.php';
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_my_2fa_reminder_notification()
+    require_once __DIR__ . '/../includes/shared/phone_reminder.php'; // hc_my_phone_reminder_notification()
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
     if (!hc_notification_preference_enabled('system')) {
@@ -332,8 +346,40 @@ function hc_medtech_unread_notification_count(): int
     $readIds = $_SESSION['ntfReadIds'] ?? [];
     $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
     $allIds = array_merge(
-        array_column(hc_get_pending_lab_xray_notifications(), 'id'),
-        array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id')
+        array_column(hc_get_pending_lab_notifications(), 'id'),
+        array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
+        array_column(array_filter([hc_my_phone_reminder_notification()]), 'id')
+    );
+
+    return count(array_diff($allIds, $readIds, $dismissedIds));
+}
+
+/**
+ * Unread notification count for every radio_technologist/*.php page's
+ * sidebar nav badge + topbar bell badge. Same mechanism as
+ * hc_medtech_unread_notification_count() above, narrowed to pending
+ * X-ray exams only (hc_get_pending_lab_xray_notifications()'s own
+ * 'type' field, filtered to 'X-ray') — this role has no reason to see
+ * pending LABORATORY referrals, which stay medical_technician's own.
+ */
+function hc_radiotech_unread_notification_count(): int
+{
+    require_once __DIR__ . '/../includes/firestore/lab_results.php';
+    require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_my_2fa_reminder_notification()
+    require_once __DIR__ . '/../includes/shared/phone_reminder.php'; // hc_my_phone_reminder_notification()
+    require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
+
+    if (!hc_notification_preference_enabled('system')) {
+        return 0;
+    }
+
+    $readIds = $_SESSION['ntfReadIds'] ?? [];
+    $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
+    $xrayNotifications = array_values(array_filter(hc_get_pending_lab_xray_notifications(), fn ($n) => $n['type'] === 'X-ray'));
+    $allIds = array_merge(
+        array_column($xrayNotifications, 'id'),
+        array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
+        array_column(array_filter([hc_my_phone_reminder_notification()]), 'id')
     );
 
     return count(array_diff($allIds, $readIds, $dismissedIds));

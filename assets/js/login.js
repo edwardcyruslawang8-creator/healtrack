@@ -465,6 +465,7 @@ document.addEventListener('DOMContentLoaded', function () {
      *   - "healthcare_staff" → medical-staff/dashboard.php (built)
      *   - "pharmacist"      → pharmacist/dashboard.php (built)
      *   - "medical_technician" → medical_technician/dashboard.php (built)
+     *   - "radio_technologist" → radio_technologist/dashboard.php (built)
      *   - "doctor"          → doctor/dashboard.php (built)
      *   - "patient" → no dedicated post-login destination exists yet
      *     (index.php is the public homepage, not a patient dashboard —
@@ -493,6 +494,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         break;
                     case 'medical_technician':
                         window.location.href = BASE_URL + '/medical_technician/dashboard.php';
+                        break;
+                    case 'radio_technologist':
+                        window.location.href = BASE_URL + '/radio_technologist/dashboard.php';
                         break;
                     case 'doctor':
                         window.location.href = BASE_URL + '/doctor/dashboard.php';

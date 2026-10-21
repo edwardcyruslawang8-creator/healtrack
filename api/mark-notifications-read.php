@@ -41,7 +41,7 @@ require_once __DIR__ . '/../config/constants.php'; // subadmin_unread_notificati
 
 header('Content-Type: application/json');
 
-if (!in_array($_SESSION['role'] ?? null, ['subadmin', 'medical_technician', 'pharmacist', 'doctor', 'healthcare_staff'], true)) {
+if (!in_array($_SESSION['role'] ?? null, ['subadmin', 'medical_technician', 'radio_technologist', 'pharmacist', 'doctor', 'healthcare_staff'], true)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Not authorized.']);
     exit;
@@ -99,6 +99,9 @@ switch ($_SESSION['role'] ?? null) {
         break;
     case 'medical_technician':
         $unreadCount = hc_medtech_unread_notification_count();
+        break;
+    case 'radio_technologist':
+        $unreadCount = hc_radiotech_unread_notification_count();
         break;
     default:
         $unreadCount = subadmin_unread_notification_count();

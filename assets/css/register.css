@@ -116,6 +116,14 @@
 }
 .reg-pending-note i{ margin-top: 1px; color: var(--maroon); flex-shrink: 0; }
 
+/* Appended to the Phone Number label after a successful "Sign up with
+   Google" — see register.php's header comment on that field. */
+.reg-optional-note{
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
 @media (max-width: 575.98px){
   .reg-grid{ grid-template-columns: 1fr; }
 }

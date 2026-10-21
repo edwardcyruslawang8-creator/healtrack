@@ -2,18 +2,18 @@
 /**
  * =====================================================================
  * HEALTrack — Health Information System
- * Laboratory & X-ray Processing (medical_technician/laboratory_xray.php)
+ * Laboratory Processing (medical_technician/laboratory_xray.php)
  * ---------------------------------------------------------------------
  * The Medical Technologist role's request queue — every real
- * lab_results/xray_results doc across every patient (see
+ * lab_results doc across every patient (see
  * includes/medical_technician/laboratory_xray_firestore.php's header
  * comment), not one patient's own history like medical-staff's/
  * subadmin's patient_laboratory_xray.php. Reuses the exact same visual
  * shell (280px dark-red gradient sidebar, "adm-" prefixed atoms,
- * assets/css/admin-dashboard.css) plus the same 5-card stat row look
- * as medical_technician/dashboard.php (assets/css/medical_technician_dashboard.css,
- * "mt-" prefixed) — page-specific bits (tabs' request table, filter
- * toolbar, recent reports row) are "lxr-" prefixed, in their own
+ * assets/css/admin-dashboard.css) plus the same stat row look as
+ * medical_technician/dashboard.php (assets/css/medical_technician_dashboard.css,
+ * "mt-" prefixed) — page-specific bits (request table, filter toolbar,
+ * recent reports row) are "lxr-" prefixed, in their own
  * assets/css/medical_technician_lab_xray.css.
  *
  * CONNECTED to real Firestore data for everything the schema actually
@@ -37,15 +37,15 @@ require_once __DIR__ . '/../includes/medical_technician/laboratory_xray_firestor
 // $activeTab, $statusOptions, $priorityOptions, $searchTerm, $statusFilter,
 // $priorityFilter, $dateFrom, $dateTo, $statusMeta, $requests, $requestsTotal,
 // $requestsPerPage, $requestsCurrentPage, $requestsTotalPages,
-// $requestsPaginationWindow, $recentLabResults, $recentXrayReports
+// $requestsPaginationWindow, $recentLabResults
 
-// Sidebar nav — Laboratory & X-ray is active on this page. None of the
+// Sidebar nav — Laboratory is active on this page. None of the
 // other not-yet-built links have changed — see dashboard.php's header
 // comment.
 $staffNavItems = [
     ['icon' => 'bi-grid-fill',                 'label' => 'Dashboard',                       'href' => 'dashboard.php'],
-    ['icon' => 'bi-clipboard2-pulse-fill',      'label' => 'Laboratory & X-ray',              'href' => 'laboratory_xray.php', 'active' => true],
-    ['icon' => 'bi-inboxes-fill',              'label' => 'Laboratory & X-ray Consultation', 'href' => 'lab_xray_consultation.php', 'badge' => hc_get_pending_lab_xray_count()],
+    ['icon' => 'bi-clipboard2-pulse-fill',      'label' => 'Laboratory',              'href' => 'laboratory_xray.php', 'active' => true],
+    ['icon' => 'bi-inboxes-fill',              'label' => 'Laboratory Consultation', 'href' => 'lab_xray_consultation.php', 'badge' => hc_get_pending_lab_count()],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',
@@ -81,7 +81,7 @@ function hc_medtech_lxr_query(array $overrides = []): string
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Laboratory &amp; X-ray — HEALTrack</title>
+<title>Laboratory — HEALTrack</title>
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -98,10 +98,10 @@ function hc_medtech_lxr_query(array $overrides = []): string
 <link rel="stylesheet" href="<?= asset_url('/assets/css/admin-dashboard.css') ?>">
 <!-- Medical Technologist Dashboard styles, reused here for the nav badge + topbar select buttons + 5-card stat row -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/medical_technician_dashboard.css') ?>">
-<!-- Laboratory & X-ray Processing page styles (filter toolbar, request table, recent reports row) -->
+<!-- Laboratory Processing page styles (filter toolbar, request table, recent reports row) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/medical_technician_lab_xray.css') ?>">
 </head>
-<body class="adm-body">
+<body class="adm-body laboratory-xray-page">
 
 <!-- Mobile sidebar trigger -->
 <button class="adm-mobile-menu-btn" id="admSidebarToggle" aria-label="Open menu">
@@ -185,8 +185,8 @@ function hc_medtech_lxr_query(array $overrides = []): string
     <!-- ============ TOP HEADER ============ -->
     <div class="adm-topbar">
         <div>
-            <h1>Laboratory &amp; X-ray</h1>
-            <p class="adm-page-subtitle">View and manage laboratory test and x-ray requests, results, and reports.</p>
+            <h1>Laboratory</h1>
+            <p class="adm-page-subtitle">View and manage laboratory test requests, results, and reports.</p>
         </div>
 
         <div class="adm-topbar-right">
@@ -245,30 +245,7 @@ function hc_medtech_lxr_query(array $overrides = []): string
             <div class="mt-stat-label">Completed</div>
             <div class="mt-stat-value"><?= number_format($requestsSummary['completed']) ?></div>
         </div>
-        <div class="mt-stat-card">
-            <div class="mt-stat-icon" style="background:#EFE7FB; color:#7C3AED;"><i class="bi bi-droplet-fill"></i></div>
-            <div class="mt-stat-label">Laboratory Requests</div>
-            <div class="mt-stat-value"><?= number_format($requestsSummary['labCount']) ?></div>
-        </div>
-        <div class="mt-stat-card">
-            <div class="mt-stat-icon" style="background:#FCE4E4; color:#D93025;"><i class="bi bi-lungs-fill"></i></div>
-            <div class="mt-stat-label">X-ray Requests</div>
-            <div class="mt-stat-value"><?= number_format($requestsSummary['xrayCount']) ?></div>
-        </div>
     </div>
-
-    <!-- ============ REQUEST TYPE TABS ============ -->
-    <ul class="nav adm-tabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <a href="?<?= hc_medtech_lxr_query(['tab' => 'all', 'page' => 1]) ?>" class="nav-link <?= $activeTab === 'all' ? 'active' : '' ?>">All Requests</a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a href="?<?= hc_medtech_lxr_query(['tab' => 'lab', 'page' => 1]) ?>" class="nav-link <?= $activeTab === 'lab' ? 'active' : '' ?>">Laboratory</a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a href="?<?= hc_medtech_lxr_query(['tab' => 'xray', 'page' => 1]) ?>" class="nav-link <?= $activeTab === 'xray' ? 'active' : '' ?>">X-ray</a>
-        </li>
-    </ul>
 
     <!-- ============ FILTER TOOLBAR ============ -->
     <div class="adm-card lxr-filter-card">
@@ -310,7 +287,7 @@ function hc_medtech_lxr_query(array $overrides = []): string
                 <thead>
                     <tr>
                         <th>Patient</th>
-                        <th><?= $activeTab === 'xray' ? 'X-ray Examination' : ($activeTab === 'lab' ? 'Laboratory Test' : 'Examination') ?></th>
+                        <th>Laboratory Test</th>
                         <th>Requested By</th>
                         <th>Date &amp; Time</th>
                         <th>Priority</th>
@@ -337,7 +314,7 @@ function hc_medtech_lxr_query(array $overrides = []): string
                         <td><span class="lxr-badge" style="background:<?= htmlspecialchars($status['bg']) ?>; color:<?= htmlspecialchars($status['color']) ?>;"><?= htmlspecialchars($status['label']) ?></span></td>
                         <td>
                             <?php if ($r['hasReport']): ?>
-                            <a href="laboratory_result_details.php?id=<?= urlencode($r['patientId']) ?>&type=<?= urlencode($r['type']) ?>&recordId=<?= urlencode($r['id']) ?>" class="lxr-consult-btn"><?= $r['type'] === 'lab' ? 'View Result' : 'View Report' ?></a>
+                            <a href="laboratory_result_details.php?id=<?= urlencode($r['patientId']) ?>&type=<?= urlencode($r['type']) ?>&recordId=<?= urlencode($r['id']) ?>" class="lxr-consult-btn">View Result</a>
                             <?php else: ?>
                             <span class="lxr-report-none">&mdash;</span>
                             <?php endif; ?>
@@ -366,10 +343,7 @@ function hc_medtech_lxr_query(array $overrides = []): string
         </div>
     </div>
 
-    <!-- ============ RECENT RESULTS — Laboratory on the Laboratory tab,
-         X-ray everywhere else (All Requests defaults to X-ray, same as
-         this page's original build) ============ -->
-    <?php if ($activeTab === 'lab'): ?>
+    <!-- ============ RECENT LABORATORY RESULTS ============ -->
     <div class="adm-card">
         <div class="adm-card-header">
             <h2>Recent Laboratory Results</h2>
@@ -392,28 +366,6 @@ function hc_medtech_lxr_query(array $overrides = []): string
             <?php endforeach; ?>
         </div>
     </div>
-    <?php else: ?>
-    <div class="adm-card">
-        <div class="adm-card-header">
-            <h2>Recent X-ray Reports</h2>
-            <a href="?<?= hc_medtech_lxr_query(['tab' => 'xray', 'page' => 1]) ?>" class="adm-card-footer-link" style="margin-top:0;">View All <i class="bi bi-arrow-right"></i></a>
-        </div>
-        <div class="lxr-reports-row">
-            <?php if (empty($recentXrayReports)): ?>
-            <p class="adm-table-empty">No completed x-ray reports yet.</p>
-            <?php endif; ?>
-            <?php foreach ($recentXrayReports as $rep): ?>
-            <div class="lxr-report-card">
-                <div class="lxr-report-name"><?= htmlspecialchars($rep['patientName']) ?></div>
-                <div class="lxr-report-exam"><?= htmlspecialchars($rep['examination']) ?></div>
-                <span class="lxr-badge" style="background:<?= htmlspecialchars($rep['resultBadge']['bg']) ?>; color:<?= htmlspecialchars($rep['resultBadge']['color']) ?>;"><?= htmlspecialchars($rep['resultBadge']['label']) ?></span>
-                <div class="lxr-report-date"><i class="bi bi-calendar3"></i> <?= htmlspecialchars($rep['date']) ?></div>
-                <a href="laboratory_result_details.php?id=<?= urlencode($rep['patientId']) ?>&type=xray&recordId=<?= urlencode($rep['id']) ?>" class="lxr-report-link">View Report.</a>
-            </div>
-            <?php endforeach; ?>
-        </div>
-    </div>
-    <?php endif; ?>
 
 </main>
 

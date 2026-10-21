@@ -52,6 +52,9 @@ document.addEventListener('DOMContentLoaded', function () {
             case 'medical_technician':
                 window.location.href = BASE_URL + '/medical_technician/dashboard.php';
                 break;
+            case 'radio_technologist':
+                window.location.href = BASE_URL + '/radio_technologist/dashboard.php';
+                break;
             case 'doctor':
                 window.location.href = BASE_URL + '/doctor/dashboard.php';
                 break;

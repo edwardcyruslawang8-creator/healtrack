@@ -102,6 +102,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const passwordField = document.getElementById('regPasswordField');
     const confirmPasswordField = document.getElementById('regConfirmPasswordField');
     const emailInput = document.getElementById('regEmail');
+    const phoneOptionalNote = document.getElementById('regPhoneOptionalNote');
     let googleIdToken = null;
 
     if (googleBtn && typeof firebase !== 'undefined') {
@@ -130,6 +131,29 @@ document.addEventListener('DOMContentLoaded', function () {
                         confirmPasswordField.classList.add('d-none');
                         googleBtn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Signed in as ' + (result.user.email || 'Google account');
                         if (googleBackBtn) googleBackBtn.classList.remove('d-none');
+
+                        // Google doesn't hand over a phone number, so it's no longer
+                        // required on this path — only Role is (added later from Profile
+                        // Settings instead, nudged by includes/shared/phone_reminder.php).
+                        // Mark the field optional and drop it from the "still needed"
+                        // check below.
+                        if (phoneOptionalNote) phoneOptionalNote.classList.remove('d-none');
+
+                        // Role is the only thing left Google never provides. If it's
+                        // already selected (the usual case — it sits above this button in
+                        // the form), finish registration right away instead of leaving it
+                        // to a separate "Create Account" click that's easy to miss once
+                        // the button above already says "Signed in". Otherwise, say
+                        // plainly what's still needed so sign-in doesn't look finished
+                        // when it isn't.
+                        const roleValue = document.getElementById('regRole').value;
+                        if (roleValue) {
+                            form.requestSubmit();
+                        } else {
+                            successBox.textContent = 'Signed in as ' + (result.user.email || 'your Google account') + '. Please select your Role above, then click "Create Account" below to finish.';
+                            successBox.classList.remove('d-none');
+                            document.getElementById('regRole').focus();
+                        }
                     });
                 })
                 .catch(function (error) {
@@ -156,6 +180,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 emailInput.readOnly = false;
                 passwordField.classList.remove('d-none');
                 confirmPasswordField.classList.remove('d-none');
+                if (phoneOptionalNote) phoneOptionalNote.classList.add('d-none');
                 googleBtn.disabled = false;
                 googleBtn.innerHTML = googleBtnDefaultHtml;
                 googleBackBtn.classList.add('d-none');
@@ -176,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const role = document.getElementById('regRole').value;
         const termsAccepted = document.getElementById('regTerms').checked;
 
-        if (!firstName || !lastName || !email || !phone || !role) {
+        if (!firstName || !lastName || !email || !role || (!googleIdToken && !phone)) {
             showError('Please fill out every field.');
             return;
         }

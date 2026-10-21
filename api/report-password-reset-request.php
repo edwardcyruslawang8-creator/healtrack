@@ -61,6 +61,7 @@ $actorRole = match ($userDoc['role'] ?? null) {
     'pharmacist' => 'Pharmacist',
     'doctor' => 'Doctor',
     'medical_technician' => 'Medical Technologist',
+    'radio_technologist' => 'Radio Technologist',
     default => 'System',
 };
 

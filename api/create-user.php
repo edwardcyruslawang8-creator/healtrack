@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$allowedRoles = ['subadmin', 'healthcare_staff', 'pharmacist', 'medical_technician', 'doctor'];
+$allowedRoles = ['subadmin', 'healthcare_staff', 'pharmacist', 'medical_technician', 'doctor', 'radio_technologist'];
 
 $body = json_decode(file_get_contents('php://input'), true) ?? [];
 

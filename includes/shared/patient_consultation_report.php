@@ -2,13 +2,13 @@
 /**
  * =====================================================================
  * Shared — "My Patients Report" (doctor / medical-staff / medical
- * technologist Analytics & Reports page)
+ * technologist / radio technologist Analytics & Reports page)
  * ---------------------------------------------------------------------
  * A date-filtered, exportable list of the patients the SIGNED-IN staff
  * member personally consulted/tested — today or any past date range.
- * Three roles, three different real "this is mine" fields, same output
+ * Four roles, different real "this is mine" fields, same output
  * row shape {patientName, date, time, type, detail, status} so one
- * table/CSV renderer works for all three:
+ * table/CSV renderer works for all four:
  *   - Doctor: consultations/{id}.assignedPersonnel === their name
  *     (hc_consultation_report_rows(), fed $myConsultations already
  *     filtered that way by includes/doctor/analytics_reports_doctor_firestore.php
@@ -28,6 +28,12 @@
  *     "who did this" trail, just recorded on a different collection
  *     than lab_results/xray_results themselves. hc_lab_report_rows()
  *     reads that.
+ *   - Radio technologist: same medical_records/{id} trail as medical
+ *     technologist above (api/complete-xray-result.php writes the same
+ *     shape, 'title' prefixed "X-ray — ") — hc_xray_report_rows() below
+ *     reads the same collection, narrowed to just the X-ray-prefixed
+ *     rows, so a radio technologist's own report never includes a lab
+ *     test some other technologist completed.
  * =====================================================================
  */
 
@@ -129,6 +135,62 @@ if (!function_exists('hc_lab_report_rows')) {
                 'patientName' => $patientNamesById[$f['patientId'] ?? ''] ?? '(unknown patient)',
                 'type' => 'Laboratory',
                 'detail' => (string) ($f['title'] ?? 'Laboratory test'),
+                'status' => 'Completed',
+            ];
+        }
+        usort($rows, fn ($a, $b) => strcmp($b['sortKey'], $a['sortKey']));
+
+        return array_map(fn ($r) => array_diff_key($r, ['sortKey' => true]), $rows);
+    }
+}
+
+if (!function_exists('hc_xray_report_rows')) {
+    /**
+     * Every medical_records/{id} doc (type 'laboratory') this radio
+     * technologist personally completed — same underlying collection
+     * hc_lab_report_rows() reads (api/complete-xray-result.php stamps
+     * X-ray completions there too, with 'title' prefixed "X-ray — ",
+     * since neither lab_results nor xray_results itself records who
+     * completed a test — see this file's header comment), narrowed to
+     * ONLY the X-ray-prefixed rows ('provider' === their name AND
+     * 'title' starts with "X-ray — ") so a radio technologist's own
+     * report never includes a lab test some other technologist entered
+     * under the same shared medical_records type.
+     *
+     * @return array<int, array{date: string, time: string, patientName: string, type: string, detail: string, status: string}>
+     */
+    function hc_xray_report_rows(string $myName, string $from, string $to): array
+    {
+        global $firestore;
+
+        $patientNamesById = [];
+        foreach ($firestore->listDocuments('patients') as $doc) {
+            $patientNamesById[$doc['id']] = $doc['fields']['name'] ?? '(unknown patient)';
+        }
+
+        $rows = [];
+        foreach ($firestore->listDocuments('medical_records') as $doc) {
+            $f = $doc['fields'];
+            if (($f['type'] ?? '') !== 'laboratory' || ($f['provider'] ?? '') !== $myName) {
+                continue;
+            }
+            $title = (string) ($f['title'] ?? '');
+            if (!str_starts_with($title, 'X-ray — ')) {
+                continue;
+            }
+            $day = (string) ($f['date'] ?? '');
+            if ($day < $from || $day > $to) {
+                continue;
+            }
+
+            $timestamp = strtotime($day . ' ' . ($f['time'] ?? ''));
+            $rows[] = [
+                'sortKey' => $day . ' ' . ($f['time'] ?? ''),
+                'date' => $timestamp !== false ? date('M j, Y', $timestamp) : $day,
+                'time' => (string) ($f['time'] ?? '—'),
+                'patientName' => $patientNamesById[$f['patientId'] ?? ''] ?? '(unknown patient)',
+                'type' => 'X-ray',
+                'detail' => substr($title, strlen('X-ray — ')) ?: 'X-ray exam',
                 'status' => 'Completed',
             ];
         }

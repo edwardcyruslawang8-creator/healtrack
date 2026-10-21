@@ -2,15 +2,15 @@
 /**
  * =====================================================================
  * HEALTrack — Health Information System
- * Laboratory & X-ray Consultation (medical_technician/lab_xray_consultation.php)
+ * Laboratory Consultation (medical_technician/lab_xray_consultation.php)
  * ---------------------------------------------------------------------
  * The Medical Technologist's referral INBOX — every patient a doctor has
- * just sent for laboratory testing or an X-ray examination (a real
- * pending lab_results/xray_results doc, created when a doctor completes
- * a consultation with that routing — see
- * includes/medical_technician/lab_xray_consultation_firestore.php's
- * header comment for why every doc here genuinely came from a doctor).
- * Distinct from laboratory_xray.php's "Laboratory & X-ray", which is
+ * just sent for laboratory testing (a real pending lab_results doc,
+ * created when a doctor completes a consultation with that routing —
+ * see includes/medical_technician/lab_xray_consultation_firestore.php's
+ * header comment for why every doc here genuinely came from a doctor,
+ * and why X-ray referrals go to radio_technologist's own inbox
+ * instead). Distinct from laboratory_xray.php's "Laboratory", which is
  * the full processing queue/history across every status, not just the
  * newly-referred ones still awaiting action.
  *
@@ -37,11 +37,11 @@ require_once __DIR__ . '/../includes/medical_technician/lab_xray_consultation_fi
 // $referralsPaginationWindow, $referralsStatsSignature,
 // $referralsTableSignature
 
-// Sidebar nav — Laboratory & X-ray Consultation is active on this page.
+// Sidebar nav — Laboratory Consultation is active on this page.
 $staffNavItems = [
     ['icon' => 'bi-grid-fill',                 'label' => 'Dashboard',                       'href' => 'dashboard.php'],
-    ['icon' => 'bi-clipboard2-pulse-fill',     'label' => 'Laboratory & X-ray',              'href' => 'laboratory_xray.php'],
-    ['icon' => 'bi-inboxes-fill',              'label' => 'Laboratory & X-ray Consultation', 'href' => 'lab_xray_consultation.php', 'active' => true, 'badge' => hc_get_pending_lab_xray_count()],
+    ['icon' => 'bi-clipboard2-pulse-fill',     'label' => 'Laboratory',              'href' => 'laboratory_xray.php'],
+    ['icon' => 'bi-inboxes-fill',              'label' => 'Laboratory Consultation', 'href' => 'lab_xray_consultation.php', 'active' => true, 'badge' => hc_get_pending_lab_count()],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',
@@ -62,7 +62,7 @@ $staffNavItems = [
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Laboratory &amp; X-ray Consultation — HEALTrack</title>
+<title>Laboratory Consultation — HEALTrack</title>
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -79,7 +79,7 @@ $staffNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/admin-dashboard.css') ?>">
 <!-- Medical Technologist Dashboard styles, reused here for the nav badge + topbar select buttons + stat card row -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/medical_technician_dashboard.css') ?>">
-<!-- Laboratory & X-ray Processing page styles, reused verbatim (filter toolbar, request table) -->
+<!-- Laboratory Processing page styles, reused verbatim (filter toolbar, request table) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/medical_technician_lab_xray.css') ?>">
 </head>
 <body class="adm-body">
@@ -166,8 +166,8 @@ $staffNavItems = [
     <!-- ============ TOP HEADER ============ -->
     <div class="adm-topbar lxc-topbar">
         <div class="lxc-topbar-title">
-            <h1>Laboratory &amp; X-ray Consultation</h1>
-            <p class="adm-page-subtitle">Patients sent by doctors for laboratory testing and X-ray examination, awaiting processing.</p>
+            <h1>Laboratory Consultation</h1>
+            <p class="adm-page-subtitle">Patients sent by doctors for laboratory testing, awaiting processing.</p>
         </div>
 
         <div class="adm-topbar-right">
@@ -219,19 +219,6 @@ $staffNavItems = [
     <div id="lxcReferralStats" data-signature="<?= htmlspecialchars($referralsStatsSignature) ?>">
         <?php require __DIR__ . '/../includes/medical_technician/_lab_xray_referral_stats.php'; ?>
     </div>
-
-    <!-- ============ TYPE FILTER TABS ============ -->
-    <ul class="nav adm-tabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <a href="?<?= hc_medtech_lxc_query(['type' => 'all', 'page' => 1]) ?>" class="nav-link <?= $typeFilter === 'all' ? 'active' : '' ?>">All Referrals</a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a href="?<?= hc_medtech_lxc_query(['type' => 'lab', 'page' => 1]) ?>" class="nav-link <?= $typeFilter === 'lab' ? 'active' : '' ?>">Laboratory</a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a href="?<?= hc_medtech_lxc_query(['type' => 'xray', 'page' => 1]) ?>" class="nav-link <?= $typeFilter === 'xray' ? 'active' : '' ?>">X-ray</a>
-        </li>
-    </ul>
 
     <!-- ============ FILTER TOOLBAR ============ -->
     <div class="adm-card lxr-filter-card">

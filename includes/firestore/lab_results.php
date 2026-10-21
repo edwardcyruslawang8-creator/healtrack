@@ -286,12 +286,49 @@ if (!function_exists('hc_get_pending_lab_xray_notifications')) {
     }
 }
 
+if (!function_exists('hc_get_pending_lab_notifications')) {
+    /**
+     * The Laboratory-only slice of hc_get_pending_lab_xray_notifications()
+     * above — medical_technician's own badges/notification list no longer
+     * show X-ray referrals (radio_technologist owns that queue/badge
+     * exclusively now, via its own type==='X-ray' filter on this same
+     * shared function), so this is medtech's actual source instead of the
+     * combined one directly.
+     */
+    function hc_get_pending_lab_notifications(): array
+    {
+        return array_values(array_filter(hc_get_pending_lab_xray_notifications(), fn ($n) => $n['type'] === 'Laboratory'));
+    }
+}
+
+if (!function_exists('hc_get_pending_lab_count')) {
+    /** Just the count behind hc_get_pending_lab_notifications() above — for sidebar nav badges that only need the number. */
+    function hc_get_pending_lab_count(): int
+    {
+        return count(hc_get_pending_lab_notifications());
+    }
+}
+
+if (!function_exists('hc_get_pending_xray_notifications')) {
+    /**
+     * The X-ray-only slice of hc_get_pending_lab_xray_notifications()
+     * above — the named counterpart to hc_get_pending_lab_notifications(),
+     * for radio_technologist's own predictive/prescriptive analytics
+     * card (includes/radio_technologist/predictive_overview_firestore.php)
+     * to reuse instead of inlining the same type==='X-ray' filter again.
+     */
+    function hc_get_pending_xray_notifications(): array
+    {
+        return array_values(array_filter(hc_get_pending_lab_xray_notifications(), fn ($n) => $n['type'] === 'X-ray'));
+    }
+}
+
 if (!function_exists('hc_get_pending_lab_xray_count')) {
     /**
      * Just the count behind hc_get_pending_lab_xray_notifications() above,
      * without building the full notification-row shape — for sidebar nav
-     * badges (medical_technician/lab_xray_consultation.php's "Laboratory &
-     * X-ray Consultation" item) that only need the number.
+     * badges that only need the number. kept combined (not Laboratory-only)
+     * since this one isn't tied to a specific role's own queue.
      */
     function hc_get_pending_lab_xray_count(): int
     {

@@ -126,5 +126,4 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     renderDoughnut('resultStatusChart', data.resultStatus);
-    renderDoughnut('requestTypeChart', data.requestType);
 });

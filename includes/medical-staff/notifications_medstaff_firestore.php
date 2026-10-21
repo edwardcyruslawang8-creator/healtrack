@@ -35,6 +35,7 @@ require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/consultations.php'; // hc_get_followup_notifications()
 require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav()
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
+require_once __DIR__ . '/../shared/phone_reminder.php'; // hc_get_phone_reminder_notification()
 require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
 
 $myUid = $_SESSION['uid'] ?? '';
@@ -67,6 +68,7 @@ $ntfArchivedIds = $_SESSION['ntfDismissedIds'] ?? [];
 // header comment for which key covers which real source here.
 $rawNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'system') ? array_merge(
     array_filter([hc_get_2fa_reminder_notification($myUid, $myDoc ?? [])]),
+    array_filter([hc_get_phone_reminder_notification($myUid, $myDoc ?? [])]),
     hc_notification_preference_enabled_for_doc($myDoc ?? [], 'consultation') ? hc_get_followup_notifications() : []
 ) : [];
 $notifications = array_map(function ($n) use ($ntfReadIds, $ntfArchivedIds) {

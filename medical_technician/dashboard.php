@@ -11,23 +11,23 @@
  * assets/css/admin-dashboard.css) as admin/, subadmin/,
  * medical-staff/, and pharmacist/ so the brand reads as one system,
  * but with its OWN nav list and dashboard content scoped to laboratory
- * & x-ray test processing instead of consultations, facility
- * oversight, or pharmacy operations — built "just like"
- * pharmacist/dashboard.php, meaning the same page structure (5 stat
- * cards, 3-chart row, 4-card row, bottom table), not literally the
- * same content.
+ * test processing instead of consultations, facility oversight, or
+ * pharmacy operations — built "just like" pharmacist/dashboard.php,
+ * meaning the same page structure (stat cards, 3-chart row, 4-card
+ * row, bottom table), not literally the same content. X-ray is
+ * deliberately NOT part of this role's dashboard — that's
+ * radio_technologist/dashboard.php's own, separate page.
  *
  * FRONT-END ONLY for the test-processing numbers — there's no
- * per-technician view over the existing lab_results/xray_results
- * collections yet (see
- * includes/medical_technician/medical_technician_dashboard_firestore.php's
+ * per-technician view over the existing lab_results collection yet
+ * (see includes/medical_technician/medical_technician_dashboard_firestore.php's
  * header comment). The signed-in technician's own name and assigned
  * facility ARE real, read from their Firestore users/{uid} document.
  *
- * Laboratory & X-ray (laboratory_xray.php) is built — see its own
- * header comment. Notifications and Profile / Settings aren't yet —
- * each of those sidebar links is ready for when they are, same as
- * every other role's dashboard before its other pages existed.
+ * Laboratory (laboratory_xray.php) is built — see its own header
+ * comment. Notifications and Profile / Settings aren't yet — each of
+ * those sidebar links is ready for when they are, same as every other
+ * role's dashboard before its other pages existed.
  * =====================================================================
  */
 session_start();
@@ -51,8 +51,8 @@ require_once __DIR__ . '/../includes/medical_technician/medical_technician_dashb
 // links are built yet — each is ready for when it is.
 $staffNavItems = [
     ['icon' => 'bi-grid-fill',             'label' => 'Dashboard',                       'href' => 'dashboard.php', 'active' => true],
-    ['icon' => 'bi-clipboard2-pulse-fill', 'label' => 'Laboratory & X-ray',              'href' => 'laboratory_xray.php'],
-    ['icon' => 'bi-inboxes-fill',          'label' => 'Laboratory & X-ray Consultation', 'href' => 'lab_xray_consultation.php', 'badge' => hc_get_pending_lab_xray_count()],
+    ['icon' => 'bi-clipboard2-pulse-fill', 'label' => 'Laboratory',              'href' => 'laboratory_xray.php'],
+    ['icon' => 'bi-inboxes-fill',          'label' => 'Laboratory Consultation', 'href' => 'lab_xray_consultation.php', 'badge' => hc_get_pending_lab_count()],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',
@@ -90,7 +90,7 @@ $staffNavItems = [
 <!-- Medical Technologist Dashboard page styles (stat cards, chart cards, queue/notification lists, table) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/medical_technician_dashboard.css') ?>">
 </head>
-<body class="adm-body">
+<body class="adm-body medtech-dashboard-page">
 
 <!-- Mobile sidebar trigger -->
 <button class="adm-mobile-menu-btn" id="admSidebarToggle" aria-label="Open menu">
@@ -313,28 +313,6 @@ $staffNavItems = [
         </div>
 
         <div class="adm-card mt-chart-card">
-            <div class="mt-card-header"><h2>Requests by Type</h2></div>
-            <div class="adm-donut-wrap">
-                <div class="adm-donut-canvas-box">
-                    <canvas id="requestTypeChart"></canvas>
-                </div>
-            </div>
-            <div class="mt-donut-legend">
-                <?php foreach ($requestType as $s): ?>
-                <div class="mt-legend-row">
-                    <span class="mt-legend-dot" style="background:<?= htmlspecialchars($s['color']) ?>;"></span>
-                    <span class="mt-legend-label"><?= htmlspecialchars($s['label']) ?></span>
-                    <span class="mt-legend-value"><?= (int) round($s['pct']) ?>% (<?= number_format($s['value']) ?>)</span>
-                </div>
-                <?php endforeach; ?>
-                <div class="mt-legend-total">
-                    <span>Total</span>
-                    <span><?= number_format($requestTypeTotal) ?></span>
-                </div>
-            </div>
-        </div>
-
-        <div class="adm-card mt-chart-card">
             <div class="mt-card-header"><h2>Pending Tests</h2></div>
             <div class="adm-table-wrap">
                 <table class="mt-schedule-table">
@@ -393,10 +371,10 @@ $staffNavItems = [
 
     </div>
 
-    <!-- ============ PENDING LAB & X-RAY RESULTS ============ -->
+    <!-- ============ PENDING LABORATORY RESULTS ============ -->
     <div class="adm-card">
         <div class="adm-card-header">
-            <h2>Pending Lab &amp; X-ray Results</h2>
+            <h2>Pending Laboratory Results</h2>
             <a href="test_results.php" class="adm-card-footer-link" style="margin-top:0;">View All Results <i class="bi bi-arrow-right"></i></a>
         </div>
         <div class="adm-table-wrap">
@@ -452,11 +430,6 @@ $staffNavItems = [
             'labels' => array_column($resultStatus, 'label'),
             'values' => array_column($resultStatus, 'value'),
             'colors' => array_column($resultStatus, 'color'),
-        ],
-        'requestType' => [
-            'labels' => array_column($requestType, 'label'),
-            'values' => array_column($requestType, 'value'),
-            'colors' => array_column($requestType, 'color'),
         ],
     ]) ?>;
     window.HC_DASHBOARD_CARD_ENDPOINT = '../api/medical-technician-dashboard-card.php';

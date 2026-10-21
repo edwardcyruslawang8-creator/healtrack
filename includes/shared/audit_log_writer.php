@@ -41,6 +41,7 @@ if (!function_exists('write_audit_log')) {
             'pharmacist' => 'Pharmacist',
             'doctor' => 'Doctor',
             'medical_technician' => 'Medical Technologist',
+            'radio_technologist' => 'Radio Technologist',
             default => 'System',
         };
 
@@ -213,7 +214,7 @@ if (!function_exists('hc_filter_audit_logs')) {
             // actorRole hc_send_login_lockout_alert() writes for its own
             // lockout-notice entries (includes/shared/login_lockout.php),
             // which isn't tied to any one real account.
-            if ($roleFilter === 'user' && !in_array($log['actorRole'], ['Healthcare Staff', 'Doctor', 'Pharmacist', 'Medical Technologist'], true)) {
+            if ($roleFilter === 'user' && !in_array($log['actorRole'], ['Healthcare Staff', 'Doctor', 'Pharmacist', 'Medical Technologist', 'Radio Technologist'], true)) {
                 return false;
             }
             // 'doctor'/'healthcare_staff'/'medical_technician'/'pharmacist'
@@ -225,6 +226,7 @@ if (!function_exists('hc_filter_audit_logs')) {
                 'doctor' => 'Doctor',
                 'healthcare_staff' => 'Healthcare Staff',
                 'medical_technician' => 'Medical Technologist',
+                'radio_technologist' => 'Radio Technologist',
                 'pharmacist' => 'Pharmacist',
             ];
             if (isset($specificRoleToActorRole[$roleFilter]) && $log['actorRole'] !== $specificRoleToActorRole[$roleFilter]) {

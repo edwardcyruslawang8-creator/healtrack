@@ -23,7 +23,7 @@ require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audi
 
 header('Content-Type: application/json');
 
-if (!in_array($_SESSION['role'] ?? null, ['admin', 'subadmin', 'healthcare_staff', 'pharmacist', 'medical_technician', 'doctor'], true)) {
+if (!in_array($_SESSION['role'] ?? null, ['admin', 'subadmin', 'healthcare_staff', 'pharmacist', 'medical_technician', 'radio_technologist', 'doctor'], true)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Not authorized.']);
     exit;

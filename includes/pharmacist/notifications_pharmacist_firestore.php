@@ -46,6 +46,7 @@ require_once __DIR__ . '/../firestore/medicines.php'; // hc_get_low_stock_notifi
 require_once __DIR__ . '/../firestore/pharmacy_orders.php'; // hc_get_pending_pharmacy_order_notifications()
 require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav()
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
+require_once __DIR__ . '/../shared/phone_reminder.php'; // hc_get_phone_reminder_notification()
 require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
 
 $myUid = $_SESSION['uid'] ?? '';
@@ -76,6 +77,7 @@ $ntfArchivedIds = $_SESSION['ntfDismissedIds'] ?? [];
 // header comment for which key covers which real source here.
 $rawNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'system') ? array_merge(
     array_filter([hc_get_2fa_reminder_notification($myUid, $myDoc ?? [])]),
+    array_filter([hc_get_phone_reminder_notification($myUid, $myDoc ?? [])]),
     hc_notification_preference_enabled_for_doc($myDoc ?? [], 'inventory') ? hc_get_low_stock_notifications() : [],
     hc_notification_preference_enabled_for_doc($myDoc ?? [], 'inventory') ? hc_get_medicine_expiry_notifications() : [],
     hc_notification_preference_enabled_for_doc($myDoc ?? [], 'inventory') ? hc_get_pending_pharmacy_order_notifications() : []

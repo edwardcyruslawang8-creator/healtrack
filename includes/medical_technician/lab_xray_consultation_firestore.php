@@ -1,18 +1,22 @@
 <?php
 /**
  * =====================================================================
- * Laboratory & X-ray Consultation (Medical Technologist) — Data
+ * Laboratory Consultation (Medical Technologist) — Data
  * ---------------------------------------------------------------------
  * The referral INBOX, not the full processing queue
- * (medical_technician/laboratory_xray.php's "Laboratory & X-ray") —
- * every real lab_results/xray_results doc that is still "pending": a
- * doctor completed a consultation, routed it to Laboratory/X-ray (see
+ * (medical_technician/laboratory_xray.php's "Laboratory") — every real
+ * lab_results doc that is still "pending": a doctor completed a
+ * consultation, routed it to Laboratory (see
  * api/complete-consultation.php), and no result has been entered yet.
- * That file is the ONLY place either collection is ever written to
- * (confirmed — no other create path exists anywhere in this app), so
- * every doc here genuinely is "a patient sent by a doctor for
- * laboratory/x-ray testing", no separate "source" field needed to
- * prove that.
+ * X-ray referrals are NOT shown here — those route to
+ * radio_technologist's own referral inbox
+ * (includes/radio_technologist/xray_consultation_firestore.php)
+ * instead, so the same exam is never claimable from two different
+ * roles' screens. That file is the ONLY place lab_results is ever
+ * written to (confirmed — no other create path exists anywhere in this
+ * app), so every doc here genuinely is "a patient sent by a doctor for
+ * laboratory testing", no separate "source" field needed to prove
+ * that.
  *
  * Once a technician enters a result and its status flips to
  * "completed", the doc naturally drops off this inbox and continues to
@@ -30,7 +34,6 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/lab_results.php';
-require_once __DIR__ . '/../firestore/xray_results.php';
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -125,33 +128,6 @@ foreach (hc_get_all_lab_result_docs() as $doc) {
     ];
 }
 
-foreach (hc_get_all_xray_result_docs() as $doc) {
-    $f = $doc['fields'];
-    if (($f['status'] ?? '') !== 'pending') {
-        continue;
-    }
-    $patient = $patientsById[$f['patientId'] ?? ''] ?? null;
-    $referrals[] = [
-        'id' => $doc['id'],
-        'type' => 'xray',
-        'typeLabel' => 'X-ray',
-        'patientId' => $f['patientId'] ?? '',
-        'patientName' => $patient['name'] ?? 'Unknown Patient',
-        'patientAge' => $patient['age'] ?? 0,
-        'examination' => $f['examName'] ?? '—',
-        'requestedBy' => $f['orderedBy'] ?? '—',
-        'facility' => $f['facility'] ?? '—',
-        'orderedDateRaw' => $f['orderedDate'] ?? '',
-        'date' => isset($f['orderedDate']) && $f['orderedDate'] !== '' ? date('M j, Y', strtotime($f['orderedDate'])) : '—',
-        'time' => $f['orderedTime'] ?? '—',
-        'priority' => hc_medtech_lxc_priority($doc['id']),
-        'isSerologyRapid' => false,
-        'isUrinalysis' => false,
-        'isCD4Count' => false,
-        'isGramStain' => false,
-    ];
-}
-
 usort($referrals, fn ($a, $b) => strcmp($b['orderedDateRaw'] . $b['time'], $a['orderedDateRaw'] . $a['time']));
 
 // ---------------------------------------------------------------------
@@ -160,16 +136,17 @@ usort($referrals, fn ($a, $b) => strcmp($b['orderedDateRaw'] . $b['time'], $a['o
 $referralsSummary = [
     'total' => count($referrals),
     'lab' => count(array_filter($referrals, fn ($r) => $r['type'] === 'lab')),
-    'xray' => count(array_filter($referrals, fn ($r) => $r['type'] === 'xray')),
 ];
 
 // ---------------------------------------------------------------------
-// Type filter (?type=all|lab|xray) + search (?q=) + date range
-// (?from=, ?to=) — all real over $referrals. No status filter — every
-// row here is already "pending" by definition (see header comment).
+// Type filter (?type=all|lab) + search (?q=) + date range (?from=,
+// ?to=) — all real over $referrals. No status filter — every row here
+// is already "pending" by definition (see header comment). X-ray
+// dropped from this filter — radio_technologist has its own referral
+// inbox for that now.
 // ---------------------------------------------------------------------
 $typeFilter = $_GET['type'] ?? 'all';
-if (!in_array($typeFilter, ['all', 'lab', 'xray'], true)) {
+if (!in_array($typeFilter, ['all', 'lab'], true)) {
     $typeFilter = 'all';
 }
 
@@ -223,5 +200,5 @@ if ($referralsTotalPages <= 5) {
 // this one) and the table (the current page's own visible row ids, so
 // a referral being picked up/completed elsewhere — which changes
 // what's visible without changing the grand total — is caught too).
-$referralsStatsSignature = $referralsSummary['total'] . ':' . $referralsSummary['lab'] . ':' . $referralsSummary['xray'];
+$referralsStatsSignature = $referralsSummary['total'] . ':' . $referralsSummary['lab'];
 $referralsTableSignature = $referralsTotal . ':' . implode(',', array_column($referralRows, 'id'));

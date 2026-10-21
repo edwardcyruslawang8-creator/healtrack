@@ -38,15 +38,15 @@ require_once __DIR__ . '/../includes/medical_technician/audit_logs_medtech_fires
 // $auditSearchTerm, $auditModuleFilter, $auditDateFrom, $auditDateTo,
 // resolveActionMeta(), hc_audit_query()
 
-require_once __DIR__ . '/../includes/firestore/lab_results.php'; // hc_get_pending_lab_xray_count() for the sidebar badge below
+require_once __DIR__ . '/../includes/firestore/lab_results.php'; // hc_get_pending_lab_count() for the sidebar badge below
 
 // Sidebar nav — same Medical Technologist nav list as
 // medical_technician/dashboard.php. Audit Logs stays active (this IS
 // that page).
 $staffNavItems = [
     ['icon' => 'bi-grid-fill',                 'label' => 'Dashboard',                       'href' => 'dashboard.php'],
-    ['icon' => 'bi-clipboard2-pulse-fill',      'label' => 'Laboratory & X-ray',              'href' => 'laboratory_xray.php'],
-    ['icon' => 'bi-inboxes-fill',              'label' => 'Laboratory & X-ray Consultation', 'href' => 'lab_xray_consultation.php', 'badge' => hc_get_pending_lab_xray_count()],
+    ['icon' => 'bi-clipboard2-pulse-fill',      'label' => 'Laboratory',              'href' => 'laboratory_xray.php'],
+    ['icon' => 'bi-inboxes-fill',              'label' => 'Laboratory Consultation', 'href' => 'lab_xray_consultation.php', 'badge' => hc_get_pending_lab_count()],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',

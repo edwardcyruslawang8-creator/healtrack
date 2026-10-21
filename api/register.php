@@ -80,10 +80,15 @@ $jobTitleToRole = [
     'Healthcare Staff' => 'healthcare_staff',
     'Pharmacist' => 'pharmacist',
     'Medical Technologist' => 'medical_technician',
+    'Radio Technologist' => 'radio_technologist',
     'Doctor' => 'doctor',
 ];
 
-if ($firstName === '' || $lastName === '' || $email === '' || $phone === '' || $jobTitle === '') {
+// Phone is required for the manual path, but Google never hands one
+// over — so it's optional there (added later from Profile Settings,
+// nudged by includes/shared/phone_reminder.php's reminder notification/
+// toast), while still required when registering with a password.
+if ($firstName === '' || $lastName === '' || $email === '' || $jobTitle === '' || (!$isGoogleSignup && $phone === '')) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Please fill out every field.']);
     exit;

@@ -4,17 +4,18 @@
  * Medical Technologist Dashboard — Data
  * ---------------------------------------------------------------------
  * CONNECTED to real Firestore data — every stat card and chart below
- * is computed from the actual lab_results/xray_results docs (via
- * includes/firestore/lab_results.php's hc_get_all_lab_result_docs()
- * and includes/firestore/xray_results.php's hc_get_all_xray_result_docs(),
- * the same functions medical_technician/laboratory_xray.php uses),
+ * is computed from the actual lab_results docs (via
+ * includes/firestore/lab_results.php's hc_get_all_lab_result_docs(),
+ * the same function medical_technician/laboratory_xray.php uses),
  * joined with real patient names via includes/firestore/patients.php.
  * $staffProfile is real too, same as every other role's dashboard.
+ * X-ray is NOT included — that's radio_technologist's own dashboard
+ * now (includes/radio_technologist/radio_technologist_dashboard_firestore.php).
  *
- * With only a handful of real seed lab/x-ray docs right now, these
- * numbers are genuinely small (not the rounder placeholder figures
- * this file used to have) — that's expected given the current
- * Firestore data, not a bug. Same tradeoff already made for
+ * With only a handful of real seed lab docs right now, these numbers
+ * are genuinely small (not the rounder placeholder figures this file
+ * used to have) — that's expected given the current Firestore data,
+ * not a bug. Same tradeoff already made for
  * medical_technician/laboratory_xray.php.
  *
  * Two things are still NOT modeled anywhere in Firestore and stay
@@ -34,7 +35,6 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/lab_results.php';
-require_once __DIR__ . '/../firestore/xray_results.php';
 require_once __DIR__ . '/../shared/query_helpers.php'; // hc_url_with_params(), hc_matches_date_range_key()
 
 $myUid = $_SESSION['uid'] ?? '';
@@ -61,8 +61,9 @@ foreach (hc_get_all_patients_summary() as $p) {
 }
 
 // ---------------------------------------------------------------------
-// Build the unified request list — every real lab_results + xray_results
-// doc across every patient, same shape/source as laboratory_xray.php.
+// Build the request list — every real lab_results doc across every
+// patient, same shape/source as laboratory_xray.php. X-ray is NOT
+// included here — that's radio_technologist's own dashboard now.
 // ---------------------------------------------------------------------
 $allRequests = [];
 
@@ -82,39 +83,22 @@ foreach (hc_get_all_lab_result_docs() as $doc) {
     ];
 }
 
-foreach (hc_get_all_xray_result_docs() as $doc) {
-    $f = $doc['fields'];
-    $patient = $patientsById[$f['patientId'] ?? ''] ?? null;
-    $allRequests[] = [
-        'id' => $doc['id'],
-        'type' => 'X-ray',
-        'patientName' => $patient['name'] ?? 'Unknown Patient',
-        'examination' => $f['examName'] ?? '—',
-        'orderedBy' => $f['orderedBy'] ?? '—',
-        'orderedDateRaw' => $f['orderedDate'] ?? '',
-        'orderedDate' => isset($f['orderedDate']) ? date('M j, Y', strtotime($f['orderedDate'])) : '—',
-        'orderedTime' => $f['orderedTime'] ?? '—',
-        'status' => $f['status'] ?? 'pending',
-    ];
-}
-
 usort($allRequests, fn ($a, $b) => strcmp($b['orderedDateRaw'], $a['orderedDateRaw']));
 
 // ---------------------------------------------------------------------
 // Summary stat cards — real counts, same figures
-// medical_technician/laboratory_xray.php's cards use.
+// medical_technician/laboratory_xray.php's cards use. No separate
+// "Laboratory Tests" card — with X-ray gone, that would always equal
+// Total Tests Processed, so it's dropped rather than shown redundant.
 // ---------------------------------------------------------------------
 $totalCount = count($allRequests);
 $pendingCount = count(array_filter($allRequests, fn ($r) => $r['status'] === 'pending'));
 $completedCount = count(array_filter($allRequests, fn ($r) => $r['status'] === 'completed'));
-$labCount = count(array_filter($allRequests, fn ($r) => $r['type'] === 'Lab'));
-$xrayCount = count(array_filter($allRequests, fn ($r) => $r['type'] === 'X-ray'));
 
 $statCards = [
     ['icon' => 'bi-clipboard2-pulse-fill', 'iconBg' => '#E8F0FE', 'iconColor' => '#1A73E8', 'label' => 'Total Tests Processed', 'value' => $totalCount],
     ['icon' => 'bi-hourglass-split',       'iconBg' => '#FDECDD', 'iconColor' => '#E8710A', 'label' => 'Pending Results',        'value' => $pendingCount],
     ['icon' => 'bi-check-circle-fill',     'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E', 'label' => 'Completed Results',      'value' => $completedCount],
-    ['icon' => 'bi-droplet-fill',          'iconBg' => '#EFE7FB', 'iconColor' => '#7C3AED', 'label' => 'Laboratory Tests',       'value' => $labCount],
     ['icon' => 'bi-bell-fill',             'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'label' => 'Unread Notifications',   'value' => hc_medtech_unread_notification_count(), 'link' => ['label' => 'View all notifications', 'href' => 'notifications.php']],
 ];
 
@@ -162,8 +146,8 @@ $testsByType = [
 // ---------------------------------------------------------------------
 // Result Status — doughnut chart. Real Completed/Pending counts —
 // "Flagged" dropped since no status value for it exists anywhere in
-// lab_results/xray_results yet (same reasoning as
-// laboratory_xray_firestore.php's trimmed status filter options).
+// lab_results yet (same reasoning as laboratory_xray_firestore.php's
+// trimmed status filter options).
 // ---------------------------------------------------------------------
 $resultStatusTotal = $totalCount;
 $resultStatus = array_values(array_filter([
@@ -179,19 +163,8 @@ $resultStatus = array_values(array_filter([
 $recentlyOrderedTests = array_slice(array_map(fn ($r) => [
     'name' => $r['examination'] . ' — ' . $r['patientName'],
     'when' => $r['orderedDate'],
-    'time' => $r['type'] . ' · ' . $r['orderedBy'],
+    'time' => $r['orderedBy'],
 ], $allRequests), 0, 3);
-
-// ---------------------------------------------------------------------
-// Requests by Type — doughnut chart (Laboratory / X-ray). Replaces the
-// old fabricated "Reviewed / Awaiting Review" split, which has no
-// backing field in lab_results/xray_results.
-// ---------------------------------------------------------------------
-$requestTypeTotal = $totalCount;
-$requestType = array_values(array_filter([
-    $labCount > 0 ? ['label' => 'Laboratory', 'value' => $labCount, 'pct' => $totalCount > 0 ? $labCount / $totalCount * 100 : 0, 'color' => '#1A73E8'] : null,
-    $xrayCount > 0 ? ['label' => 'X-ray', 'value' => $xrayCount, 'pct' => $totalCount > 0 ? $xrayCount / $totalCount * 100 : 0, 'color' => '#7C3AED'] : null,
-]));
 
 // ---------------------------------------------------------------------
 // Pending Tests queue — real, every request with status=pending
@@ -205,8 +178,7 @@ $testStatusMeta = [
     'pending'     => ['label' => 'Pending',     'bg' => '#FDECDD', 'color' => '#E8710A'],
 ];
 $testTypeMeta = [
-    'Lab'   => ['bg' => '#EEF0F3', 'color' => '#6B7280'],
-    'X-ray' => ['bg' => '#EFE7FB', 'color' => '#7C3AED'],
+    'Lab' => ['bg' => '#EEF0F3', 'color' => '#6B7280'],
 ];
 
 // ---------------------------------------------------------------------
@@ -217,13 +189,12 @@ $testTypeMeta = [
 $recentNotifications = [
     ['icon' => 'bi-exclamation-triangle-fill', 'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'title' => 'Specimen needs pickup',   'desc' => 'Blood sample — Patient PT-000103',        'timeAgo' => '20 minutes ago'],
     ['icon' => 'bi-droplet-fill',              'iconBg' => '#E8F0FE', 'iconColor' => '#1A73E8', 'title' => 'New lab order received',  'desc' => 'Ordered by Dr. Ana Reyes',                'timeAgo' => '50 minutes ago'],
-    ['icon' => 'bi-lungs-fill',                'iconBg' => '#EFE7FB', 'iconColor' => '#7C3AED', 'title' => 'X-ray equipment alert',   'desc' => 'Radiology Room 1 — calibration due soon', 'timeAgo' => '2 hours ago'],
     ['icon' => 'bi-check-circle-fill',         'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E', 'title' => 'Result reviewed',         'desc' => 'Lipid Profile — Ana Reyes',               'timeAgo' => '3 hours ago'],
     ['icon' => 'bi-clipboard2-pulse-fill',     'iconBg' => '#FDECDD', 'iconColor' => '#E8710A', 'title' => 'Test result flagged',     'desc' => 'CBC — Juan Dela Cruz, abnormal reading',  'timeAgo' => '4 hours ago'],
 ];
 
 // ---------------------------------------------------------------------
-// Pending Lab & X-ray Results — real, same rows as $pendingTestsQueue
+// Pending Laboratory Results — real, same rows as $pendingTestsQueue
 // above, shaped for the bottom table (currently empty — no real
 // pending records right now, which is honest given the seed data).
 // ---------------------------------------------------------------------

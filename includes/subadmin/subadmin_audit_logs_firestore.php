@@ -101,12 +101,13 @@ $allAuditLogs = array_values(array_filter(
 // so any value other than these four just means "no role split".
 // Resolved up here (rather than down with the rest of the filters)
 // because $seenUsers below needs it too.
-$auditRoleOptions = ['doctor', 'healthcare_staff', 'medical_technician', 'pharmacist'];
+$auditRoleOptions = ['doctor', 'healthcare_staff', 'medical_technician', 'radio_technologist', 'pharmacist'];
 $auditRoleFilter = in_array($_GET['role'] ?? '', $auditRoleOptions, true) ? $_GET['role'] : '';
 $auditRoleFilterLabels = [
     'doctor' => 'Doctor',
     'healthcare_staff' => 'Medical Staff',
     'medical_technician' => 'Medical Technologist',
+    'radio_technologist' => 'Radio Technologist',
     'pharmacist' => 'Pharmacist',
 ];
 $auditRoleFilterLabel = $auditRoleFilterLabels[$auditRoleFilter] ?? '';
@@ -114,6 +115,7 @@ $auditRoleActorRoles = [
     'doctor' => 'Doctor',
     'healthcare_staff' => 'Healthcare Staff',
     'medical_technician' => 'Medical Technologist',
+    'radio_technologist' => 'Radio Technologist',
     'pharmacist' => 'Pharmacist',
 ];
 
@@ -240,7 +242,7 @@ if (!function_exists('hc_audit_query')) {
             'status' => $_GET['status'] ?? 'All Statuses',
             'dateRangeFrom' => $_GET['dateRangeFrom'] ?? '',
             'dateRangeTo' => $_GET['dateRangeTo'] ?? '',
-            'role' => in_array($_GET['role'] ?? '', ['doctor', 'healthcare_staff', 'medical_technician', 'pharmacist'], true) ? $_GET['role'] : '',
+            'role' => in_array($_GET['role'] ?? '', ['doctor', 'healthcare_staff', 'medical_technician', 'radio_technologist', 'pharmacist'], true) ? $_GET['role'] : '',
             'page' => $_GET['page'] ?? 1,
         ], $overrides);
 

@@ -1,12 +1,11 @@
 /* =============================================================
-   LABORATORY & X-RAY PROCESSING (medical_technician/laboratory_xray.php)
+   LABORATORY PROCESSING (medical_technician/laboratory_xray.php)
    ---------------------------------------------------------------
    Loaded alongside assets/css/admin-dashboard.css (shared shell) and
    assets/css/medical_technician_dashboard.css (reused here for the
-   5-card stat row + topbar select buttons, "mt-" prefixed).
-   Everything here — filter toolbar, request table specifics, recent
-   reports row — is specific to this page and "lxr-" prefixed
-   (Laboratory & X-ray Requests).
+   stat row + topbar select buttons, "mt-" prefixed). Everything here —
+   filter toolbar, request table specifics, recent reports row — is
+   specific to this page and "lxr-" prefixed (Laboratory Requests).
    ============================================================= */
 
 /* -- Topbar (lab_xray_consultation.php only, "lxc-" prefixed) --
@@ -33,12 +32,25 @@
 
 .lxr-stats-row{ margin-bottom: 18px; }
 
-/* lab_xray_consultation.php only — 3 stat cards (Total Referrals,
-   Laboratory, X-ray), not the 5-column grid .mt-stats-row assumes by
-   default (medical_technician_dashboard.css), so they'd otherwise
-   leave two empty column-widths of dead space on the right. */
-.lxc-stats-row{ grid-template-columns: repeat(3, 1fr); }
+/* laboratory_xray.php — 3 stat cards (Total, Pending, Completed) now
+   that X-ray (and the then-redundant "Laboratory Requests" card, since
+   Total === Laboratory with X-ray gone) were dropped — not the
+   5-column grid .mt-stats-row assumes by default
+   (medical_technician_dashboard.css), so they'd otherwise leave empty
+   column-width dead space on the right. */
+.laboratory-xray-page .lxr-stats-row{ grid-template-columns: repeat(3, 1fr); }
+
+/* lab_xray_consultation.php — 2 stat cards (Total Referrals,
+   Laboratory) now that X-ray was dropped — same reasoning as above. */
+.lxc-stats-row{ grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 767.98px){
+  /* Matches .mt-stats-row's own tablet collapse (medical_technician_dashboard.css)
+     — without this, the higher-specificity rule above would stay stuck
+     at 3 columns even as the viewport narrows. */
+  .laboratory-xray-page .lxr-stats-row{ grid-template-columns: repeat(2, 1fr); }
+}
 @media (max-width: 575.98px){
+  .laboratory-xray-page .lxr-stats-row,
   .lxc-stats-row{ grid-template-columns: 1fr; }
 }
 

@@ -4,9 +4,10 @@
  * Notifications (Medical Technologist) — Data
  * ---------------------------------------------------------------------
  * CONNECTED — every row is a real notification generated live from
- * includes/firestore/lab_results.php's hc_get_pending_lab_xray_notifications():
- * one entry per lab_results/xray_results doc still "pending" (ordered
- * but no result entered yet), across both collections. This replaces
+ * includes/firestore/lab_results.php's hc_get_pending_lab_notifications()
+ * (the Laboratory-only slice — X-ray referrals are radio_technologist's
+ * own queue now): one entry per lab_results doc still "pending" (ordered
+ * but no result entered yet). This replaces
  * the previous fully-fabricated 8-row placeholder list (specimen
  * pickups, equipment calibration, etc. — none of which reflect
  * anything real for this role) with the one notification-worthy real
@@ -35,9 +36,10 @@
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
-require_once __DIR__ . '/../firestore/lab_results.php'; // hc_get_pending_lab_xray_notifications()
+require_once __DIR__ . '/../firestore/lab_results.php'; // hc_get_pending_lab_notifications()
 require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav()
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
+require_once __DIR__ . '/../shared/phone_reminder.php'; // hc_get_phone_reminder_notification()
 require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
 
 $myUid = $_SESSION['uid'] ?? '';
@@ -52,7 +54,7 @@ $staffProfile = [
 $dashboardDateLabel = date('F j, Y');
 $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'West Super Health Center'];
 
-$notificationTypeOptions = ['All Types', 'Laboratory', 'X-ray', 'Reminder'];
+$notificationTypeOptions = ['All Types', 'Laboratory', 'Reminder'];
 
 // ---------------------------------------------------------------------
 // Notifications List — real, one row per pending lab/x-ray result.
@@ -70,7 +72,11 @@ $ntfArchivedIds = $_SESSION['ntfDismissedIds'] ?? [];
 // header comment. Lab/x-ray referrals don't map to any more specific
 // category, so they're only gated by the 'system' master switch.
 $rawNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'system')
-    ? array_merge(array_filter([hc_get_2fa_reminder_notification($myUid, $myDoc ?? [])]), hc_get_pending_lab_xray_notifications())
+    ? array_merge(
+        array_filter([hc_get_2fa_reminder_notification($myUid, $myDoc ?? [])]),
+        array_filter([hc_get_phone_reminder_notification($myUid, $myDoc ?? [])]),
+        hc_get_pending_lab_notifications()
+    )
     : [];
 $notifications = array_map(function ($n) use ($ntfReadIds, $ntfArchivedIds) {
     $n['unread'] = !in_array($n['id'], $ntfReadIds, true);

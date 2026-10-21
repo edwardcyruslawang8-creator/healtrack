@@ -48,7 +48,7 @@ require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_recor
 
 header('Content-Type: application/json');
 
-if (($_SESSION['role'] ?? null) !== 'medical_technician') {
+if (!in_array($_SESSION['role'] ?? null, ['medical_technician', 'radio_technologist'], true)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Not authorized.']);
     exit;
