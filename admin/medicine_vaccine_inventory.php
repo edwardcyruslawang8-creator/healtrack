@@ -91,7 +91,7 @@ $adminNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/medicine_vaccine_inventory.css') ?>">
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 </head>
-<body class="adm-body">
+<body class="adm-body mvi-accent-maroon">
 
 <!-- Mobile sidebar trigger -->
 <button class="adm-mobile-menu-btn" id="admSidebarToggle" aria-label="Open menu">

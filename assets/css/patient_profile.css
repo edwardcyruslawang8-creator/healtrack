@@ -6,10 +6,8 @@
    assets/css/subadmin_dashboard.css (topbar select buttons + nav
    badge). Everything here is specific to this page — the breadcrumb,
    profile header card, and overview cards — and is "ppf-" prefixed
-   (Patient PrOFile). This page's accent color is blue (matching the
-   reference design) rather than the app's usual maroon, used only
-   for this page's card links (Patient ID, "View All", "View Full
-   History", etc.).
+   (Patient PrOFile). Card links ("View All", "View Full
+   History", etc.) use the app's standard maroon (--adm-red-bright).
    ============================================================= */
 
 .ppf-title-sep{ color: var(--adm-text-soft); font-weight: 400; margin: 0 2px; }
@@ -56,8 +54,8 @@
 .ppf-ov-header.with-action{ justify-content: space-between; }
 .ppf-ov-header.with-action > div{ display: flex; align-items: center; gap: 10px; }
 
-.ppf-view-all{ font-size: 12px; font-weight: 600; color: #1A73E8; }
-.ppf-view-all:hover{ color: #135BB5; text-decoration: underline; }
+.ppf-view-all{ font-size: 12px; font-weight: 600; color: var(--adm-red-bright); }
+.ppf-view-all:hover, .ppf-view-all:focus-visible{ color: var(--adm-red-bright-hover); text-decoration: underline; }
 
 .ppf-card-link{
   display: inline-flex;
@@ -65,11 +63,11 @@
   gap: 6px;
   font-size: 12.5px;
   font-weight: 600;
-  color: #1A73E8;
+  color: var(--adm-red-bright);
   margin-top: auto;
   padding-top: 14px;
 }
-.ppf-card-link:hover{ color: #135BB5; text-decoration: underline; }
+.ppf-card-link:hover, .ppf-card-link:focus-visible{ color: var(--adm-red-bright-hover); text-decoration: underline; }
 
 /* Summary card */
 .ppf-summary-list{ display: flex; flex-direction: column; gap: 12px; flex: 1; }
