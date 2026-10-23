@@ -703,7 +703,7 @@ $adminNavItems = [
      cross-page tab swap (and assets/js/ajax-report-nav.js, if this
      page ever gains a same-page filter) can swap it the same way. -->
 <script id="reportDataScript">
-    const forecastTrendData = <?= json_encode($forecastTrend) ?>;
+    var forecastTrendData = <?= json_encode($forecastTrend) ?>;
     window.PREDICTIVE_TAB_DATA = <?= json_encode([
         't1ForecastTrend' => $pt1ForecastTrend,
         't1DiseaseTrend' => $pt1DiseaseTrend,
@@ -724,9 +724,13 @@ $adminNavItems = [
      this script loaded dynamically after such a swap (that event
      already happened once, on whichever report page the user actually
      landed on first via a real navigation). -->
-<script>
+<script data-ajax-rerun>
     window.initReportPageCharts = function () {
         if (typeof Chart === 'undefined') return;
+        // Already rendered into this <main>'s canvases (DOMContentLoaded
+        // can fire more than once after AJAX tab swaps) — nothing to do.
+        const renderedCanvas = document.getElementById('forecastTrendChart');
+        if (renderedCanvas && Chart.getChart(renderedCanvas)) return;
 
         const rootStyle = getComputedStyle(document.documentElement);
         const gridColor = rootStyle.getPropertyValue('--adm-border').trim() || '#ECEDF3';
@@ -775,7 +779,13 @@ $adminNavItems = [
         }
     };
 
-    document.addEventListener('DOMContentLoaded', window.initReportPageCharts);
+    // Registered once — this script re-runs on every AJAX visit to this tab.
+    if (!window.__predictiveInitBound) {
+        window.__predictiveInitBound = true;
+        document.addEventListener('DOMContentLoaded', function () {
+            if (document.getElementById('forecastTrendChart')) window.initReportPageCharts();
+        });
+    }
 </script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>

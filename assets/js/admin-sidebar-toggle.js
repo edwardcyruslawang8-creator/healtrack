@@ -20,6 +20,12 @@
    this logic.
    ============================================================= */
 document.addEventListener('DOMContentLoaded', function () {
+    // Bind once: assets/js/ajax-tab-nav.js re-dispatches DOMContentLoaded
+    // after every tab swap, and these elements live outside the swapped
+    // <main> — a second binding would make the menu toggle open+close.
+    if (window.__admSidebarToggleBound) return;
+    window.__admSidebarToggleBound = true;
+
     const sidebar = document.getElementById('admSidebar');
     const toggleBtn = document.getElementById('admSidebarToggle');
     const backdrop = document.getElementById('admSidebarBackdrop');
@@ -42,7 +48,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /* ---------- Sidebar navigation fade-out (content area only) ---------- */
-    const mainEl = document.querySelector('.adm-main');
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     // :not(.adm-nav-toggle) — the sidebar dropdown's own toggle anchor
@@ -55,6 +60,8 @@ document.addEventListener('DOMContentLoaded', function () {
             // A modifier/middle-click means "open in a new tab" — never
             // intercept that, or the new tab would open on the OLD page's
             // href before the delayed navigation below even runs.
+            // Looked up per click: an AJAX tab swap replaces <main>.
+            const mainEl = document.querySelector('.adm-main');
             if (!mainEl || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
             if (link.target === '_blank' || !link.href) return;
 

@@ -13,8 +13,10 @@
  */
 
 use Google\Auth\Credentials\ServiceAccountCredentials;
+use Google\Auth\HttpHandler\HttpHandlerFactory;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\TransferException;
 
 final class FirestoreRestClient
 {
@@ -59,6 +61,15 @@ final class FirestoreRestClient
     private array $listCache = [];
 
     /**
+     * Request-scoped cache for listDocumentsWhere(), keyed by collection
+     * then by field/value — so writes can drop a whole collection's
+     * entries the same way they drop $listCache's.
+     *
+     * @var array<string, array<string, array<int, array{id: string, fields: array<string, mixed>}>>>
+     */
+    private array $whereCache = [];
+
+    /**
      * How long a persisted listDocuments() result stays valid across
      * DIFFERENT requests (see cacheDir()'s comment) before it's treated
      * as stale and re-fetched. $listCache above only helps within one
@@ -72,10 +83,31 @@ final class FirestoreRestClient
      */
     private const CACHE_TTL_SECONDS = 60;
 
+    /** Per-call ceilings — each call's real timeout is the smaller of these and what's left of the page's time budget (see remainingSeconds()). */
+    private const REQUEST_TIMEOUT_SECONDS = 45;
+    private const CONNECT_TIMEOUT_SECONDS = 10;
+
+    /**
+     * Headroom kept below PHP's max_execution_time for the page itself to
+     * finish rendering after its last Firestore call. Without a shared
+     * budget, a slow network let one page load stack several 45s calls
+     * (e.g. subadmin/patient_management.php paging through
+     * "medical_records") past the 120s limit, which killed the page with
+     * a blank "Maximum execution time exceeded" fatal error instead of
+     * rendering it with whatever data did arrive.
+     */
+    private const BUDGET_HEADROOM_SECONDS = 15;
+
+    /** Seconds before real expiry that a cached access token is treated as expired. */
+    private const TOKEN_EXPIRY_MARGIN_SECONDS = 300;
+
+    private readonly float $startedAt;
+
     public function __construct(string $projectId, string $credentialsPath)
     {
         $this->projectId = $projectId;
         $this->credentialsPath = $credentialsPath;
+        $this->startedAt = (float) ($_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true));
         $this->http = new Client([
             'base_uri' => "https://firestore.googleapis.com/v1/projects/{$projectId}/databases/(default)/documents/",
             // A real 300-doc page of "patients"/"medical_records" has been
@@ -85,9 +117,53 @@ final class FirestoreRestClient
             // returning an empty result to the page. 45s gives real,
             // slow-but-completing requests room to finish instead of
             // failing fast on a connection that isn't actually dead.
-            'timeout' => 45,
-            'connect_timeout' => 10,
+            'timeout' => self::REQUEST_TIMEOUT_SECONDS,
+            'connect_timeout' => self::CONNECT_TIMEOUT_SECONDS,
         ]);
+    }
+
+    /** Seconds left before this page load should stop waiting on Firestore; null when PHP has no execution time limit (CLI scripts). */
+    private function remainingSeconds(): ?float
+    {
+        $limit = (int) ini_get('max_execution_time');
+        if ($limit <= 0) {
+            return null;
+        }
+
+        return $limit - self::BUDGET_HEADROOM_SECONDS - (microtime(true) - $this->startedAt);
+    }
+
+    /**
+     * Guzzle options for one call: auth header plus timeouts clamped to
+     * the remaining page budget. Throws a TransferException (a
+     * GuzzleException, so every caller's existing catch block handles
+     * it like any other failed request) once the budget is spent.
+     *
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    private function requestOptions(array $options = []): array
+    {
+        $timeout = $this->clampedTimeout(self::REQUEST_TIMEOUT_SECONDS);
+
+        return $options + [
+            'headers' => $this->authHeaders(),
+            'timeout' => $timeout,
+            'connect_timeout' => min(self::CONNECT_TIMEOUT_SECONDS, $timeout),
+        ];
+    }
+
+    private function clampedTimeout(float $ceiling): float
+    {
+        $remaining = $this->remainingSeconds();
+        if ($remaining === null) {
+            return $ceiling;
+        }
+        if ($remaining < 1) {
+            throw new TransferException('Skipped: page time budget for Firestore requests is used up');
+        }
+
+        return min($ceiling, $remaining);
     }
 
     /**
@@ -157,10 +233,9 @@ final class FirestoreRestClient
         $this->lastRequestFailed = false;
 
         try {
-            $response = $this->http->post($collection, [
-                'headers' => $this->authHeaders(),
+            $response = $this->http->post($collection, $this->requestOptions([
                 'json' => ['fields' => $this->encodeFields($fields)],
-            ]);
+            ]));
         } catch (GuzzleException $e) {
             $this->lastRequestFailed = true;
             error_log('[Firestore] addDocument(' . $collection . ') failed: ' . $e->getMessage());
@@ -170,6 +245,7 @@ final class FirestoreRestClient
         $data = json_decode((string) $response->getBody(), true);
 
         unset($this->listCache[$collection]); // in-request cache
+        unset($this->whereCache[$collection]);
         $this->cacheInvalidate($collection);  // persisted cross-request cache
 
         return isset($data['name']) ? basename($data['name']) : null;
@@ -211,7 +287,7 @@ final class FirestoreRestClient
             }
 
             try {
-                $response = $this->http->get($collection, ['headers' => $this->authHeaders(), 'query' => $query]);
+                $response = $this->http->get($collection, $this->requestOptions(['query' => $query]));
                 $data = json_decode((string) $response->getBody(), true);
             } catch (GuzzleException $e) {
                 $this->lastRequestFailed = true;
@@ -232,6 +308,35 @@ final class FirestoreRestClient
         $this->cacheWrite($collection, $documents);
 
         return $this->listCache[$collection] = $documents;
+    }
+
+    /**
+     * Every doc in $collection whose $fieldPath equals $value — a
+     * server-side WHERE instead of listDocuments() + array_filter() in
+     * PHP, so a per-patient read (e.g. one patient's medical_records)
+     * transfers just that patient's docs, not the whole collection.
+     * Single-field equality with no orderBy needs no composite index
+     * (Firestore indexes every field automatically); callers sort in PHP.
+     *
+     * @return array<int, array{id: string, fields: array<string, mixed>}>
+     */
+    public function listDocumentsWhere(string $collection, string $fieldPath, mixed $value): array
+    {
+        $key = $fieldPath . "\0" . json_encode($value);
+        if (isset($this->whereCache[$collection][$key])) {
+            $this->lastRequestFailed = false;
+            return $this->whereCache[$collection][$key];
+        }
+
+        $documents = $this->queryDocuments([
+            'from' => [['collectionId' => $collection]],
+            'where' => $this->fieldEqualsFilter($fieldPath, $value),
+        ]);
+        if (!$this->lastRequestFailed) {
+            $this->whereCache[$collection][$key] = $documents;
+        }
+
+        return $documents;
     }
 
     /**
@@ -260,10 +365,9 @@ final class FirestoreRestClient
             // ".../documents:runQuery" (no slash before the colon) —
             // relative to the base_uri, that means stepping up one
             // level first.
-            $response = $this->http->post('../documents:runQuery', [
-                'headers' => $this->authHeaders(),
+            $response = $this->http->post('../documents:runQuery', $this->requestOptions([
                 'json' => ['structuredQuery' => $structuredQuery],
-            ]);
+            ]));
         } catch (GuzzleException $e) {
             $this->lastRequestFailed = true;
             error_log('[Firestore] queryDocuments() failed: ' . $e->getMessage());
@@ -310,8 +414,7 @@ final class FirestoreRestClient
         }
 
         try {
-            $response = $this->http->post('../documents:runAggregationQuery', [
-                'headers' => $this->authHeaders(),
+            $response = $this->http->post('../documents:runAggregationQuery', $this->requestOptions([
                 'json' => [
                     'structuredAggregationQuery' => [
                         'structuredQuery' => $structuredQuery,
@@ -321,7 +424,7 @@ final class FirestoreRestClient
                         'aggregations' => [['alias' => 'count', 'count' => new \stdClass()]],
                     ],
                 ],
-            ]);
+            ]));
         } catch (GuzzleException $e) {
             $this->lastRequestFailed = true;
             error_log('[Firestore] countDocuments(' . $collection . ') failed: ' . $e->getMessage());
@@ -369,15 +472,14 @@ final class FirestoreRestClient
         }
 
         try {
-            $response = $this->http->post('../documents:runAggregationQuery', [
-                'headers' => $this->authHeaders(),
+            $response = $this->http->post('../documents:runAggregationQuery', $this->requestOptions([
                 'json' => [
                     'structuredAggregationQuery' => [
                         'structuredQuery' => $structuredQuery,
                         'aggregations' => [['alias' => 'avgValue', 'avg' => ['field' => ['fieldPath' => $fieldPath]]]],
                     ],
                 ],
-            ]);
+            ]));
         } catch (GuzzleException $e) {
             $this->lastRequestFailed = true;
             error_log('[Firestore] averageField(' . $collection . '.' . $fieldPath . ') failed: ' . $e->getMessage());
@@ -433,7 +535,7 @@ final class FirestoreRestClient
         $this->lastRequestFailed = false;
 
         try {
-            $response = $this->http->get("{$collection}/{$docId}", ['headers' => $this->authHeaders()]);
+            $response = $this->http->get("{$collection}/{$docId}", $this->requestOptions());
         } catch (GuzzleException $e) {
             if ($e->getCode() !== 404) {
                 $this->lastRequestFailed = true;
@@ -452,7 +554,7 @@ final class FirestoreRestClient
         $this->lastRequestFailed = false;
 
         try {
-            $this->http->delete("{$collection}/{$docId}", ['headers' => $this->authHeaders()]);
+            $this->http->delete("{$collection}/{$docId}", $this->requestOptions());
         } catch (GuzzleException $e) {
             $this->lastRequestFailed = true;
             error_log('[Firestore] deleteDocument(' . $collection . '/' . $docId . ') failed: ' . $e->getMessage());
@@ -460,6 +562,7 @@ final class FirestoreRestClient
         }
 
         unset($this->listCache[$collection]); // in-request cache
+        unset($this->whereCache[$collection]);
         $this->cacheInvalidate($collection);  // persisted cross-request cache
 
         return true;
@@ -475,10 +578,9 @@ final class FirestoreRestClient
         $this->lastRequestFailed = false;
 
         try {
-            $this->http->patch("{$collection}/{$docId}", [
-                'headers' => $this->authHeaders(),
+            $this->http->patch("{$collection}/{$docId}", $this->requestOptions([
                 'json' => ['fields' => $this->encodeFields($fields)],
-            ]);
+            ]));
         } catch (GuzzleException $e) {
             $this->lastRequestFailed = true;
             error_log('[Firestore] setDocument(' . $collection . '/' . $docId . ') failed: ' . $e->getMessage());
@@ -486,6 +588,7 @@ final class FirestoreRestClient
         }
 
         unset($this->listCache[$collection]); // in-request cache
+        unset($this->whereCache[$collection]);
         $this->cacheInvalidate($collection);  // persisted cross-request cache
 
         return true;
@@ -503,8 +606,34 @@ final class FirestoreRestClient
             return $this->accessToken;
         }
 
+        // Reused across page loads until shortly before it expires (~1h),
+        // instead of a fresh oauth2.googleapis.com round trip on every
+        // single page — one less network call that can stall a page.
+        $cachePath = $this->cacheDir() . '/access_token.json';
+        $cached = json_decode((string) @file_get_contents($cachePath), true);
+        if (is_array($cached) && isset($cached['access_token'], $cached['expires_at'])
+            && $cached['expires_at'] - self::TOKEN_EXPIRY_MARGIN_SECONDS > time()) {
+            return $this->accessToken = $cached['access_token'];
+        }
+
+        // google/auth's default HTTP handler has no timeout at all — a
+        // stalled token request used to hang until PHP's own limit.
+        $timeout = $this->clampedTimeout(self::CONNECT_TIMEOUT_SECONDS * 2);
+        $httpHandler = HttpHandlerFactory::build(new Client([
+            'timeout' => $timeout,
+            'connect_timeout' => min(self::CONNECT_TIMEOUT_SECONDS, $timeout),
+        ]));
+
         $credentials = new ServiceAccountCredentials(self::SCOPE, $this->credentialsPath);
-        $token = $credentials->fetchAuthToken();
+        $token = $credentials->fetchAuthToken($httpHandler);
+
+        if (!is_dir($this->cacheDir())) {
+            @mkdir($this->cacheDir(), 0777, true);
+        }
+        @file_put_contents($cachePath, json_encode([
+            'access_token' => $token['access_token'],
+            'expires_at' => time() + (int) ($token['expires_in'] ?? 3600),
+        ]), LOCK_EX);
 
         return $this->accessToken = $token['access_token'];
     }

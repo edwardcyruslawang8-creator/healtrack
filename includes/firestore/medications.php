@@ -22,10 +22,7 @@ if (!function_exists('hc_get_medications_for_patient')) {
     {
         global $firestore;
 
-        $docs = array_values(array_filter(
-            $firestore->listDocuments('medications'),
-            fn ($doc) => ($doc['fields']['patientId'] ?? '') === $patientId
-        ));
+        $docs = array_values($firestore->listDocumentsWhere('medications', 'patientId', $patientId));
         usort($docs, fn ($a, $b) => strcmp($b['fields']['startDate'] ?? '', $a['fields']['startDate'] ?? ''));
 
         return array_map(function ($doc) {
@@ -59,10 +56,7 @@ if (!function_exists('hc_get_medication_history_for_patient')) {
     {
         global $firestore;
 
-        $docs = array_values(array_filter(
-            $firestore->listDocuments('medication_history'),
-            fn ($doc) => ($doc['fields']['patientId'] ?? '') === $patientId
-        ));
+        $docs = array_values($firestore->listDocumentsWhere('medication_history', 'patientId', $patientId));
         usort($docs, fn ($a, $b) => strcmp($b['fields']['date'] ?? '', $a['fields']['date'] ?? ''));
 
         return array_map(fn ($doc) => [

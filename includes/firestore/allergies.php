@@ -21,10 +21,7 @@ if (!function_exists('hc_get_allergies_for_patient')) {
     {
         global $firestore;
 
-        $docs = array_values(array_filter(
-            $firestore->listDocuments('allergies'),
-            fn ($doc) => ($doc['fields']['patientId'] ?? '') === $patientId
-        ));
+        $docs = array_values($firestore->listDocumentsWhere('allergies', 'patientId', $patientId));
         usort($docs, fn ($a, $b) => strcmp($b['fields']['addedOn'] ?? '', $a['fields']['addedOn'] ?? ''));
 
         return array_map(function ($doc) {

@@ -39,10 +39,7 @@ if (!function_exists('hc_get_medical_records_for_patient')) {
     {
         global $firestore;
 
-        $rows = array_values(array_filter(
-            $firestore->listDocuments('medical_records'),
-            fn ($doc) => ($doc['fields']['patientId'] ?? '') === $patientId
-        ));
+        $rows = array_values($firestore->listDocumentsWhere('medical_records', 'patientId', $patientId));
         usort($rows, fn ($a, $b) => strcmp($b['fields']['date'] ?? '', $a['fields']['date'] ?? '') ?: strcmp($b['fields']['time'] ?? '', $a['fields']['time'] ?? ''));
 
         return array_map(fn ($doc) => [
@@ -115,10 +112,7 @@ if (!function_exists('hc_get_medical_conditions_for_patient')) {
     {
         global $firestore;
 
-        $rows = array_values(array_filter(
-            $firestore->listDocuments('medical_conditions'),
-            fn ($doc) => ($doc['fields']['patientId'] ?? '') === $patientId
-        ));
+        $rows = array_values($firestore->listDocumentsWhere('medical_conditions', 'patientId', $patientId));
         usort($rows, fn ($a, $b) => strcmp($b['fields']['diagnosedOn'] ?? '', $a['fields']['diagnosedOn'] ?? ''));
 
         return array_map(fn ($doc) => [
@@ -161,10 +155,7 @@ if (!function_exists('hc_get_surgical_history_for_patient')) {
     {
         global $firestore;
 
-        $rows = array_values(array_filter(
-            $firestore->listDocuments('surgical_history'),
-            fn ($doc) => ($doc['fields']['patientId'] ?? '') === $patientId
-        ));
+        $rows = array_values($firestore->listDocumentsWhere('surgical_history', 'patientId', $patientId));
         usort($rows, fn ($a, $b) => strcmp(
             $b['fields']['datePerformed'] ?? $b['fields']['dateRecorded'] ?? '',
             $a['fields']['datePerformed'] ?? $a['fields']['dateRecorded'] ?? ''

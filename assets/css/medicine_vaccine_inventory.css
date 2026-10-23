@@ -309,3 +309,13 @@
   .mvi-filter-select{ min-width: 0; width: 100%; }
   .mvi-btn-add{ justify-content: center; }
 }
+
+/* -- Maroon accent (opt-in) --
+   Pages that put "mvi-accent-maroon" on <body> (admin/, subadmin/,
+   pharmacist/medicine_vaccine_inventory.php)
+   use the app's standard maroon for the active tab and Search/Add buttons
+   instead of this file's default blue. */
+.mvi-accent-maroon .mvi-tabs .nav-link.active{ color: var(--adm-red-bright); border-bottom-color: var(--adm-red-bright); }
+.mvi-accent-maroon .mvi-btn-add{ background: var(--adm-red-bright); }
+.mvi-accent-maroon .mvi-btn-add:hover,
+.mvi-accent-maroon .mvi-btn-add:focus-visible{ background: var(--adm-red-bright-hover); color: #fff; }

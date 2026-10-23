@@ -143,10 +143,7 @@ if (!function_exists('hc_get_xray_result_docs_for_patient')) {
     {
         global $firestore;
 
-        $docs = array_values(array_filter(
-            $firestore->listDocuments('xray_results'),
-            fn ($doc) => ($doc['fields']['patientId'] ?? '') === $patientId
-        ));
+        $docs = array_values($firestore->listDocumentsWhere('xray_results', 'patientId', $patientId));
         usort($docs, fn ($a, $b) => strcmp($b['fields']['completedDate'] ?? '', $a['fields']['completedDate'] ?? ''));
 
         return $docs;

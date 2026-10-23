@@ -52,36 +52,78 @@
     var baselineStylesheetHrefs = new Set();
     document.querySelectorAll('link[rel="stylesheet"][href]').forEach(function (l) { baselineStylesheetHrefs.add(l.href); });
 
+    // Inline <style> blocks in <head> belong to one page (e.g. the
+    // Analytics & Reports pages' grid/filter-bar rules) — swapped along
+    // with <main>, unlike shared <link> stylesheets which only accumulate.
+    var pageStyleAttr = 'data-ajax-page-style';
+    document.querySelectorAll('head style').forEach(function (s) { s.setAttribute(pageStyleAttr, ''); });
+
+    /** Adds the target page's missing stylesheets; resolves once they've loaded (or failed), so <main> is never shown unstyled. */
     function addMissingStylesheets(doc) {
+        var pending = [];
         doc.querySelectorAll('link[rel="stylesheet"][href]').forEach(function (l) {
             if (baselineStylesheetHrefs.has(l.href)) return;
             if (document.querySelector('link[rel="stylesheet"][href="' + l.getAttribute('href') + '"]')) return;
             var fresh = document.createElement('link');
             fresh.rel = 'stylesheet';
             fresh.href = l.getAttribute('href');
+            pending.push(new Promise(function (resolve) {
+                fresh.onload = resolve;
+                fresh.onerror = resolve;
+            }));
             document.head.appendChild(fresh);
             baselineStylesheetHrefs.add(l.href);
         });
+        return Promise.all(pending);
     }
 
-    function rerunPageScripts(doc) {
-        var toRun = Array.prototype.slice.call(doc.querySelectorAll('script[src]'))
-            .filter(function (s) { return s.src && !baselineScriptSrcs.has(s.src); });
-        if (!toRun.length) return;
+    function swapPageStyles(doc) {
+        document.querySelectorAll('head style[' + pageStyleAttr + ']').forEach(function (s) { s.remove(); });
+        doc.querySelectorAll('head style').forEach(function (s) {
+            var fresh = document.createElement('style');
+            fresh.setAttribute(pageStyleAttr, '');
+            fresh.textContent = s.textContent;
+            document.head.appendChild(fresh);
+        });
+    }
 
-        var remaining = toRun.length;
-        var fireWhenReady = function () {
-            remaining--;
-            if (remaining <= 0) {
-                document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true, cancelable: true }));
-            }
-        };
-        toRun.forEach(function (oldScript) {
-            var fresh = document.createElement('script');
-            fresh.src = oldScript.getAttribute('src');
-            fresh.onload = fireWhenReady;
-            fresh.onerror = fireWhenReady;
-            document.body.appendChild(fresh);
+    /**
+     * Runs, in document order, the target page's scripts that need to
+     * run again: every <script src> outside this page's baseline, plus
+     * inline scripts that carry page data/init — id="reportDataScript"
+     * (each Analytics & Reports page's chart data) or data-ajax-rerun.
+     * Sequential, since a page's chart script reads the data script
+     * above it. Then fires a synthetic DOMContentLoaded — always, even
+     * when nothing was injected (returning to the page this visit
+     * started on, whose scripts are all baseline), since that's what
+     * every page script's init listens for.
+     */
+    function rerunPageScripts(doc) {
+        var toRun = Array.prototype.slice.call(doc.querySelectorAll('script')).filter(function (s) {
+            if (s.closest(mainSelector)) return false;
+            if (s.hasAttribute('src')) return !baselineScriptSrcs.has(s.src);
+            return s.id === 'reportDataScript' || s.hasAttribute('data-ajax-rerun');
+        });
+
+        return toRun.reduce(function (chain, oldScript) {
+            return chain.then(function () {
+                return new Promise(function (resolve) {
+                    var fresh = document.createElement('script');
+                    if (oldScript.hasAttribute('src')) {
+                        fresh.src = oldScript.getAttribute('src');
+                        fresh.onload = resolve;
+                        fresh.onerror = resolve;
+                    } else {
+                        fresh.textContent = oldScript.textContent;
+                        if (oldScript.id) fresh.id = oldScript.id;
+                    }
+                    var existing = fresh.id ? document.getElementById(fresh.id) : null;
+                    if (existing) existing.replaceWith(fresh); else document.body.appendChild(fresh);
+                    if (!fresh.src) resolve(); // inline scripts run synchronously on insert
+                });
+            });
+        }, Promise.resolve()).then(function () {
+            document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true, cancelable: true }));
         });
     }
 
@@ -99,18 +141,24 @@
             .then(function (html) {
                 var doc = new DOMParser().parseFromString(html, 'text/html');
                 var newMain = doc.querySelector(mainSelector);
-                if (!newMain) { window.location.href = url; return; }
+                if (!newMain) throw new Error('Unexpected response shape');
 
-                addMissingStylesheets(doc);
+                return addMissingStylesheets(doc).then(function () { return doc; });
+            })
+            .then(function (doc) {
+                swapPageStyles(doc);
                 if (doc.title) document.title = doc.title;
 
-                document.querySelector(mainSelector).replaceWith(newMain);
+                document.querySelector(mainSelector).replaceWith(doc.querySelector(mainSelector));
                 if (pushState) {
                     window.history.pushState({ ajaxTab: true }, '', url);
                 }
                 window.scrollTo(0, 0);
 
-                rerunPageScripts(doc);
+                // Outside the fallback chain below: the swap already
+                // happened, so a page-script error must not trigger a
+                // second, full navigation.
+                rerunPageScripts(doc).catch(function (err) { console.error(err); });
             })
             .catch(function () {
                 // Real navigation is still a correct fallback — every

@@ -109,10 +109,7 @@ if (!function_exists('hc_get_vaccination_records_for_patient')) {
     {
         global $firestore;
 
-        $rows = array_values(array_filter(
-            $firestore->listDocuments('vaccination_records'),
-            fn ($doc) => ($doc['fields']['patientId'] ?? '') === $patientId
-        ));
+        $rows = array_values($firestore->listDocumentsWhere('vaccination_records', 'patientId', $patientId));
         usort($rows, fn ($a, $b) => strcmp($b['fields']['dateAdministered'] ?? '', $a['fields']['dateAdministered'] ?? ''));
 
         return array_map(function ($doc) {

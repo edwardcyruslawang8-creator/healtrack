@@ -108,7 +108,7 @@ if (!function_exists('mvi_page_url')) {
 <!-- Add Medicine/Vaccine modal styles -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/add_medicine_modal.css') ?>">
 </head>
-<body class="adm-body">
+<body class="adm-body mvi-accent-maroon">
 
 <!-- Mobile sidebar trigger -->
 <button class="adm-mobile-menu-btn" id="admSidebarToggle" aria-label="Open menu">
