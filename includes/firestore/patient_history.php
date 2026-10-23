@@ -34,10 +34,7 @@ if (!function_exists('hc_get_record_history_for_patient')) {
     {
         global $firestore;
 
-        $docs = array_values(array_filter(
-            $firestore->listDocuments('patient_record_history'),
-            fn ($doc) => ($doc['fields']['patientId'] ?? '') === $patientId
-        ));
+        $docs = array_values($firestore->listDocumentsWhere('patient_record_history', 'patientId', $patientId));
         usort($docs, fn ($a, $b) => strcmp($b['fields']['date'] ?? '', $a['fields']['date'] ?? '') ?: strcmp($b['fields']['time'] ?? '', $a['fields']['time'] ?? ''));
 
         return array_map(fn ($doc) => [
@@ -61,10 +58,7 @@ if (!function_exists('hc_get_activity_log_for_patient')) {
     {
         global $firestore;
 
-        $docs = array_values(array_filter(
-            $firestore->listDocuments('patient_activity_log'),
-            fn ($doc) => ($doc['fields']['patientId'] ?? '') === $patientId
-        ));
+        $docs = array_values($firestore->listDocumentsWhere('patient_activity_log', 'patientId', $patientId));
         usort($docs, fn ($a, $b) => strcmp($b['fields']['date'] ?? '', $a['fields']['date'] ?? '') ?: strcmp($b['fields']['time'] ?? '', $a['fields']['time'] ?? ''));
 
         return array_map(fn ($doc) => [

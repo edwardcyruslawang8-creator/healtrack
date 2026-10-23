@@ -31,10 +31,7 @@ if (!function_exists('hc_get_family_history_for_patient')) {
     {
         global $firestore;
 
-        $rows = array_values(array_filter(
-            $firestore->listDocuments('family_history'),
-            fn ($doc) => ($doc['fields']['patientId'] ?? '') === $patientId
-        ));
+        $rows = array_values($firestore->listDocumentsWhere('family_history', 'patientId', $patientId));
 
         return array_map(fn ($doc) => [
             'id' => $doc['id'],
