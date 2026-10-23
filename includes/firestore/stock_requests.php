@@ -42,6 +42,55 @@ if (!function_exists('hc_stock_request_status_meta')) {
     }
 }
 
+if (!function_exists('hc_get_pending_stock_request_notifications')) {
+    /**
+     * One real notification row per stock_requests doc still "pending"
+     * at the signed-in sub-admin's own facility — same real-source
+     * pattern/shape as includes/firestore/accounts.php's
+     * hc_get_pending_account_notifications() (facility-scoped, 'id' is
+     * crc32() of the doc id, for the same reason: $_SESSION['ntfReadIds']/
+     * ['ntfDismissedIds'] stay a plain int array). A pharmacist
+     * creating a new stock request previously had no real notification
+     * anywhere telling a sub-admin it needed a decision — this is that
+     * real signal, not a fabricated placeholder.
+     *
+     * @return array<int, array{id: int, title: string, description: string, type: string, date: string, time: string, icon: string, iconBg: string, iconColor: string}>
+     */
+    function hc_get_pending_stock_request_notifications(): array
+    {
+        global $firestore;
+
+        $uid = $_SESSION['uid'] ?? '';
+        if ($uid === '') {
+            return [];
+        }
+        $myDoc = $firestore->getDocument('users', $uid);
+        $facility = $myDoc['facility'] ?? '';
+        if ($facility === '') {
+            return [];
+        }
+
+        $pending = array_values(array_filter(hc_get_all_stock_requests(), fn ($r) => $r['status'] === 'pending' && $r['facility'] === $facility));
+
+        return array_map(function ($r) {
+            $timestamp = $r['requestedAtRaw'] !== '' ? strtotime($r['requestedAtRaw']) : false;
+            $typeMeta = hc_stock_request_type_meta()[$r['type']] ?? ['label' => 'Item'];
+
+            return [
+                'id' => crc32('pending-stock-request:' . $r['docId']),
+                'title' => 'New Stock Request',
+                'description' => $r['pharmacist'] . ' requested ' . $r['itemsCount'] . ' ' . strtolower($typeMeta['label']) . ' item(s).',
+                'type' => 'Stock Request',
+                'date' => $timestamp ? date('M j, Y', $timestamp) : '—',
+                'time' => $timestamp ? date('g:i A', $timestamp) : '',
+                'icon' => 'bi-box-seam-fill',
+                'iconBg' => '#E8F0FE',
+                'iconColor' => '#1A73E8',
+            ];
+        }, $pending);
+    }
+}
+
 if (!function_exists('hc_get_all_stock_requests')) {
     /**
      * Every stock_requests/{autoId} doc, newest first. "Request ID"

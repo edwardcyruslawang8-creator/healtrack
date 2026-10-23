@@ -60,16 +60,33 @@ document.addEventListener('DOMContentLoaded', function () {
        one running count instead of re-deriving it from the DOM. */
     let unreadCount = parseInt(tableBody.dataset.initialUnread || '0', 10) || 0;
 
+    /* "All Notifications" used to mirror unreadCount above, which made
+       its badge look identical to "Unread"'s — correct in value, but a
+       confusing thing for either tab to show, since "All" should mean
+       the real total (read + unread), not just the unread subset. It
+       tracks its own running count instead, seeded the same
+       real/non-DOM way as unreadCount (tableBody's data-initial-all,
+       server-rendered from the same real notification sources minus
+       whatever's archived). Marking something read never changes this
+       count — it's still there, just no longer unread. Archiving one
+       takes it out of the "All" tab's own view, so that (and only that)
+       is what adjusts allCount, in the archive/unarchive handler below. */
+    let allCount = parseInt(tableBody.dataset.initialAll || '0', 10) || 0;
+
     function syncUnreadBadges() {
         // These badges only appear when there's actually something to
         // show — a "0" badge next to "All Notifications"/"Unread" reads
         // as if there's one unread item, not zero, so it's hidden
         // instead once the count hits 0.
-        [unreadTabBadge, allTabBadge, bellBadge, sidebarBadge].forEach(function (el) {
+        [unreadTabBadge, bellBadge, sidebarBadge].forEach(function (el) {
             if (!el) return;
             el.textContent = unreadCount;
             el.style.display = unreadCount > 0 ? '' : 'none';
         });
+        if (allTabBadge) {
+            allTabBadge.textContent = allCount;
+            allTabBadge.style.display = allCount > 0 ? '' : 'none';
+        }
     }
 
     function updateArchivedTabBadge() {
@@ -198,9 +215,15 @@ document.addEventListener('DOMContentLoaded', function () {
         var archiving = btn.classList.contains('ntf-archive-btn');
         setRowArchived(row, archiving);
         updateArchivedTabBadge();
-        // Archiving takes a row out of every tab except "Archived";
-        // unarchiving puts it back everywhere else — either way the
-        // currently active tab's view needs re-applying right now.
+        // Archiving takes a row out of the "All" tab's own view (same
+        // as "Unread"/the sidebar/bell if it was still unread);
+        // unarchiving puts it back in both. Either way the currently
+        // active tab's view needs re-applying right now.
+        allCount = Math.max(0, allCount + (archiving ? -1 : 1));
+        if (row.dataset.unread === '1') {
+            unreadCount = Math.max(0, unreadCount + (archiving ? -1 : 1));
+        }
+        syncUnreadBadges();
         applyFilters();
         persistArchived(row.dataset.id, archiving);
     });

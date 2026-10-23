@@ -29,9 +29,12 @@
  * @media print CSS in assets/css/add_medicine_modal.css). Delete
  * Request is real too (api/delete-stock-request.php, with a confirm()
  * step). Every row's data lives in data-request-* attributes on the
- * <tr> itself. The date range button, Edit Request, and pagination
- * beyond page 1 are still not wired up. The "+ New Stock Request"
- * button was removed (decorative, no write endpoint behind it).
+ * <tr> itself. No "Edit Request" here — a sub-admin decides on a
+ * request (approve/reject/release/delete), only the requesting
+ * pharmacist edits its own contents (pharmacist/stock_requests.php's
+ * own copy of this same dropdown keeps that option). The "+ New Stock
+ * Request" button was removed (decorative, no write endpoint behind
+ * it).
  * =====================================================================
  */
 session_start();
@@ -370,11 +373,6 @@ $adminNavItems = [
                                     <li><a class="dropdown-item" href="#" data-request-release data-request-id="<?= htmlspecialchars($req['docId']) ?>"><i class="bi bi-box-arrow-up me-2"></i>Release Items</a></li>
                                     <?php else: ?>
                                     <li><span class="dropdown-item disabled"><i class="bi bi-box-arrow-up me-2"></i>Release Items</span></li>
-                                    <?php endif; ?>
-                                    <?php if ($req['status'] === 'pending'): ?>
-                                    <li><a class="dropdown-item srq-edit-request" href="#"><i class="bi bi-pencil me-2"></i>Edit Request</a></li>
-                                    <?php else: ?>
-                                    <li><span class="dropdown-item disabled" title="Only a pending request can be edited"><i class="bi bi-pencil me-2"></i>Edit Request</span></li>
                                     <?php endif; ?>
                                     <li><a class="dropdown-item srq-print-request" href="#"><i class="bi bi-printer me-2"></i>Print Request</a></li>
                                     <li><hr class="dropdown-divider"></li>

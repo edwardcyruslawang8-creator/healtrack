@@ -379,7 +379,7 @@ if (!function_exists('mvi_page_url')) {
                             <td class="mvi-updated-cell"><?= htmlspecialchars($med['lastUpdated']) ?></td>
                             <td>
                                 <div class="adm-action-btns">
-                                    <button type="button" class="mvi-manage-btn" data-bs-toggle="modal" data-bs-target="#mviManageModal" aria-label="Manage this medicine"><i class="bi bi-gear-fill"></i> Manage Medicine</button>
+                                    <button type="button" class="mvi-manage-btn" data-bs-toggle="modal" data-bs-target="#mviManageModal" aria-label="Manage this medicine">Manage Medicine</button>
                                 </div>
                             </td>
                         </tr>
@@ -501,7 +501,7 @@ if (!function_exists('mvi_page_url')) {
                             <td class="mvi-updated-cell"><?= htmlspecialchars($vac['lastUpdated']) ?></td>
                             <td>
                                 <div class="adm-action-btns">
-                                    <button type="button" class="mvi-manage-btn" data-bs-toggle="modal" data-bs-target="#mviManageModal" aria-label="Manage this vaccine"><i class="bi bi-gear-fill"></i> Manage Vaccine</button>
+                                    <button type="button" class="mvi-manage-btn" data-bs-toggle="modal" data-bs-target="#mviManageModal" aria-label="Manage this vaccine">Manage Vaccine</button>
                                 </div>
                             </td>
                         </tr>

@@ -98,9 +98,10 @@ $notifications = array_map(function ($n) use ($ntfReadIds, $ntfArchivedIds) {
 // ---------------------------------------------------------------------
 $notificationsUnreadCount = hc_pharmacist_unread_notification_count();
 $notificationsArchivedCount = count(array_filter($notifications, fn ($n) => $n['archived']));
+$notificationsAllCount = count($notifications) - $notificationsArchivedCount;
 
 $notificationTabs = [
-    ['key' => 'all',            'label' => 'All Notifications', 'badge' => $notificationsUnreadCount, 'active' => true],
+    ['key' => 'all',            'label' => 'All Notifications', 'badge' => $notificationsAllCount, 'active' => true],
     ['key' => 'unread',         'label' => 'Unread',            'badge' => $notificationsUnreadCount],
     ['key' => 'archived',       'label' => 'Archived',          'badge' => $notificationsArchivedCount],
 ];

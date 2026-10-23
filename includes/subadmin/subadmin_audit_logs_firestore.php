@@ -121,10 +121,14 @@ $auditRoleActorRoles = [
 
 // User/Module filter dropdown options — every real name/module that
 // appears ANYWHERE in the CURRENT role scope (not just the current
-// page). Scoped to $auditRoleFilter so the "All Users" dropdown never
-// offers a name that can't actually match anything once combined with
-// the active role section — e.g. while on Audit Logs > Doctor, this
-// only ever lists real Doctor names at this facility. A System
+// page). BOTH are scoped to $auditRoleFilter now, so neither the "All
+// Users" nor the "All Modules" dropdown ever offers a value that can't
+// actually match anything once combined with the active role section
+// — e.g. while on Audit Logs > Pharmacist, "All Modules" only ever
+// lists modules a pharmacist's own real activity actually touches
+// (Medicine & Vaccine Inventory, Prescription Queue, Stock Requests,
+// ...), not every module system-wide (Patient Management, Laboratory
+// & X-ray, User Management, ... that role never writes to). A System
 // Administrator's own name is left out unconditionally either way —
 // see includes/admin/audit_logs_firestore.php's own copy of this
 // comment for why. Belt-and-suspenders here since a System
@@ -139,8 +143,8 @@ foreach ($allAuditLogs as $log) {
         : $log['actorRole'] !== 'System Administrator';
     if ($matchesRoleScope) {
         $seenUsers[$log['actorName']] = true;
+        $seenModules[$log['module']] = true;
     }
-    $seenModules[$log['module']] = true;
 }
 ksort($seenUsers, SORT_STRING | SORT_FLAG_CASE);
 ksort($seenModules, SORT_STRING | SORT_FLAG_CASE);

@@ -10,15 +10,19 @@
  * there's no general-purpose notifications collection anywhere in this
  * app yet (every real notification across every role is computed live
  * from its own real data source instead, same as the rest of this
- * app's notification pages). Three sources here ARE real: new-account
+ * app's notification pages). Four sources here ARE real: new-account
  * requests awaiting approval (includes/firestore/accounts.php's
  * hc_get_pending_account_notifications() — a sub-admin is notified the
- * moment someone registers via register.php), the medicine/vaccine
- * expiry alerts (includes/firestore/medicines.php's
- * hc_get_medicine_expiry_notifications(), replacing what used to be a
- * single fake "Expired Medicine Alert" seed row), and the 2FA reminder
- * below. $adminProfile is real too — read from the signed-in sub-
- * admin's own Firestore users/{uid} document.
+ * moment someone registers via register.php), new stock requests
+ * awaiting a decision (includes/firestore/stock_requests.php's
+ * hc_get_pending_stock_request_notifications() — a sub-admin is
+ * notified the moment a pharmacist submits one via
+ * api/create-stock-request.php), the medicine/vaccine expiry alerts
+ * (includes/firestore/medicines.php's hc_get_medicine_expiry_notifications(),
+ * replacing what used to be a single fake "Expired Medicine Alert"
+ * seed row), and the 2FA reminder below. $adminProfile is real too —
+ * read from the signed-in sub-admin's own Firestore users/{uid}
+ * document.
  *
  * Pagination is real over whatever this ends up being (placeholder rows
  * + however many real expiry alerts exist right now) — it used to be
@@ -31,6 +35,7 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/medicines.php'; // hc_get_medicine_expiry_notifications()
 require_once __DIR__ . '/../firestore/accounts.php'; // hc_get_pending_account_notifications()
+require_once __DIR__ . '/../firestore/stock_requests.php'; // hc_get_pending_stock_request_notifications()
 require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav()
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
 require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
@@ -100,7 +105,21 @@ foreach ($pendingAccountNotifications as &$pendingAccountNotification) {
 }
 unset($pendingAccountNotification);
 
-$notifications = array_merge($pendingAccountNotifications, $expiryNotifications, $notifications);
+// Real pending stock requests awaiting this sub-admin's decision
+// (includes/firestore/stock_requests.php's
+// hc_get_pending_stock_request_notifications(), api/create-stock-request.php)
+// — same facility-scoped isolation and 'system' gating as the pending
+// new-account requests above (doesn't fit a more specific preference
+// category any more cleanly than those do).
+$pendingStockRequestNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'system')
+    ? hc_get_pending_stock_request_notifications()
+    : [];
+foreach ($pendingStockRequestNotifications as &$pendingStockRequestNotification) {
+    $pendingStockRequestNotification['unread'] = true;
+}
+unset($pendingStockRequestNotification);
+
+$notifications = array_merge($pendingAccountNotifications, $pendingStockRequestNotifications, $expiryNotifications, $notifications);
 
 // The real 2FA reminder (see config/constants.php's
 // subadmin_unread_notification_count(), which already counts this toward
@@ -142,18 +161,25 @@ unset($n);
 // ---------------------------------------------------------------------
 // Notification tabs — all filter the table client-side now (see
 // assets/js/notifications.js): "All Notifications"/"Unread" by
-// $n['unread'], "Archived" by $n['archived']. The "all"/"unread" badges
-// use the same session-backed count as every page's sidebar/topbar
-// badges (config/constants.php) rather than a local recount, so they
-// agree with each other on first paint; the Archived badge is a real
-// count of $notifications (built just above, before pagination below)
-// so it reflects the real total, not just this page's first page.
+// $n['unread'], "Archived" by $n['archived']. The "unread" badge uses
+// the same session-backed count as every page's sidebar/topbar badges
+// (config/constants.php) rather than a local recount, so they agree
+// with each other on first paint. "All Notifications" used to show
+// that same unread count too, which looked like a bug (e.g. both
+// showing "5") even though the number was correct — it was just the
+// wrong number for that tab. It now shows a genuine total: every real
+// notification this role has, MINUS the archived ones, since an
+// archived row is hidden from the "All" tab's own view (same reasoning
+// the Archived badge below already uses, counted the opposite way).
+// Both are real counts of $notifications (built just above, before
+// pagination below), not just this page's first page.
 // ---------------------------------------------------------------------
 $notificationsUnreadCount = subadmin_unread_notification_count();
 $notificationsArchivedCount = count(array_filter($notifications, fn ($n) => $n['archived']));
+$notificationsAllCount = count($notifications) - $notificationsArchivedCount;
 
 $notificationTabs = [
-    ['key' => 'all',            'label' => 'All Notifications', 'badge' => $notificationsUnreadCount, 'active' => true],
+    ['key' => 'all',            'label' => 'All Notifications', 'badge' => $notificationsAllCount, 'active' => true],
     ['key' => 'unread',         'label' => 'Unread',            'badge' => $notificationsUnreadCount],
     ['key' => 'archived',       'label' => 'Archived',          'badge' => $notificationsArchivedCount],
 ];

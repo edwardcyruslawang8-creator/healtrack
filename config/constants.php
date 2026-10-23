@@ -180,6 +180,7 @@ function subadmin_all_notification_ids(): array
 {
     require_once __DIR__ . '/../includes/firestore/medicines.php'; // hc_get_medicine_expiry_notifications()
     require_once __DIR__ . '/../includes/firestore/accounts.php'; // hc_get_pending_account_notifications()
+    require_once __DIR__ . '/../includes/firestore/stock_requests.php'; // hc_get_pending_stock_request_notifications()
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_my_2fa_reminder_notification()
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
@@ -187,20 +188,22 @@ function subadmin_all_notification_ids(): array
         return [];
     }
 
-    // The real 2FA reminder, real medicine/vaccine expiry alerts, and
-    // real pending-account requests are merged in alongside the rest of
-    // this role's own notification list, which is still fixed seed data
+    // The real 2FA reminder, real medicine/vaccine expiry alerts, real
+    // pending-account requests, and real pending stock requests are
+    // merged in alongside the rest of this role's own notification
+    // list, which is still fixed seed data
     // (subadmin_seed_unread_notification_ids() above) — a separate,
-    // pre-existing gap outside this change's scope. These three sources
-    // are real regardless. Pending-account requests have no more
-    // specific preference category of their own (same situation as
-    // doctor's patient-access-request notifications — see
-    // notification_preferences.php's header comment), so they're
+    // pre-existing gap outside this change's scope. These sources are
+    // real regardless. Pending-account/stock-request notifications
+    // have no more specific preference category of their own (same
+    // situation as doctor's patient-access-request notifications —
+    // see notification_preferences.php's header comment), so they're
     // covered by the 'system' gate above already, not a second check.
     return array_merge(
         subadmin_seed_unread_notification_ids(),
         hc_notification_preference_enabled('inventory') ? array_column(hc_get_medicine_expiry_notifications(), 'id') : [],
         array_column(hc_get_pending_account_notifications(), 'id'),
+        array_column(hc_get_pending_stock_request_notifications(), 'id'),
         array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id')
     );
 }

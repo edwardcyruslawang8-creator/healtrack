@@ -262,7 +262,7 @@ $staffNavItems = [
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody id="ntfTableBody" data-initial-unread="<?= (int) $notificationsUnreadCount ?>">
+                <tbody id="ntfTableBody" data-initial-unread="<?= (int) $notificationsUnreadCount ?>" data-initial-all="<?= (int) $notificationsAllCount ?>">
                     <?php if (empty($notifications)): ?>
                     <tr>
                         <td colspan="4" class="adm-table-empty">No notifications yet.</td>
