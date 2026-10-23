@@ -291,7 +291,7 @@ if (!function_exists('arc_page_url')) {
                             <td><?= htmlspecialchars($med['category']) ?></td>
                             <td><?= htmlspecialchars($med['unit']) ?></td>
                             <td><?= number_format($med['currentStock']) ?></td>
-                            <td class="<?= $med['expiryStatus'] === 'expired' ? 'mvi-expiry-warning' : '' ?>">
+                            <td class="mvi-expiry-cell <?= $med['expiryStatus'] === 'expired' ? 'mvi-expiry-warning' : '' ?>">
                                 <?= htmlspecialchars($med['expiryDate']) ?>
                                 <?php if ($expiryBadge): ?>
                                 <span class="mvi-badge mvi-expiry-badge" style="background:<?= htmlspecialchars($expiryBadge['bg']) ?>; color:<?= htmlspecialchars($expiryBadge['color']) ?>;"><?= htmlspecialchars($expiryBadge['label']) ?></span>
@@ -384,7 +384,7 @@ if (!function_exists('arc_page_url')) {
                             <td><?= htmlspecialchars($vac['category']) ?></td>
                             <td><?= htmlspecialchars($vac['unit']) ?></td>
                             <td><?= number_format($vac['currentStock']) ?></td>
-                            <td class="<?= $vac['expiryStatus'] === 'expired' ? 'mvi-expiry-warning' : '' ?>">
+                            <td class="mvi-expiry-cell <?= $vac['expiryStatus'] === 'expired' ? 'mvi-expiry-warning' : '' ?>">
                                 <?= htmlspecialchars($vac['expiryDate']) ?>
                                 <?php if ($expiryBadge): ?>
                                 <span class="mvi-badge mvi-expiry-badge" style="background:<?= htmlspecialchars($expiryBadge['bg']) ?>; color:<?= htmlspecialchars($expiryBadge['color']) ?>;"><?= htmlspecialchars($expiryBadge['label']) ?></span>

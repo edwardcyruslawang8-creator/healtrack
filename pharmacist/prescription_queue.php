@@ -276,7 +276,6 @@ function hc_rxq_query(array $overrides = []): string
                     <tr>
                         <td>
                             <div class="rxq-strong"><?= htmlspecialchars($r['patientName']) ?></div>
-                            <div class="rxq-patient-meta"><?= htmlspecialchars($r['patientId']) ?></div>
                         </td>
                         <td>
                             <span class="rxq-badge" style="background:<?= $r['type'] === 'vaccine' ? '#E8F0FE' : '#EFE7FB' ?>; color:<?= $r['type'] === 'vaccine' ? '#1A73E8' : '#7C3AED' ?>;"><?= htmlspecialchars($r['typeLabel']) ?></span>
@@ -298,7 +297,6 @@ function hc_rxq_query(array $overrides = []): string
                             <div class="adm-action-btns">
                                 <button type="button" class="rxq-btn-view"
                                     data-patient-name="<?= htmlspecialchars($r['patientName']) ?>"
-                                    data-patient-id="<?= htmlspecialchars($r['patientId']) ?>"
                                     data-type-label="<?= htmlspecialchars($r['typeLabel']) ?>"
                                     data-item-name="<?= htmlspecialchars($r['itemName']) ?>"
                                     data-dosage="<?= htmlspecialchars($r['dosage']) ?>"
@@ -368,10 +366,7 @@ function hc_rxq_query(array $overrides = []): string
             </div>
             <div class="modal-body">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
-                    <div>
-                        <div style="font-size:16px; font-weight:700;" id="rxqDetailPatientName"></div>
-                        <div class="rxq-patient-meta" id="rxqDetailPatientId"></div>
-                    </div>
+                    <div style="font-size:16px; font-weight:700;" id="rxqDetailPatientName"></div>
                     <span class="rxq-badge" id="rxqDetailStatusBadge"></span>
                 </div>
 

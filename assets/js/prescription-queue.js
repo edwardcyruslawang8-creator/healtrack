@@ -120,7 +120,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const d = btn.dataset;
 
             document.getElementById('rxqDetailPatientName').textContent = d.patientName;
-            document.getElementById('rxqDetailPatientId').textContent = d.patientId;
             document.getElementById('rxqDetailType').textContent = d.typeLabel;
             document.getElementById('rxqDetailItemName').textContent = d.itemName;
             document.getElementById('rxqDetailDosage').textContent = d.dosage;

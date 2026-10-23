@@ -93,7 +93,14 @@ $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
 $newId = $firestore->addDocument('stock_requests', [
     'pharmacistName' => $_SESSION['name'] ?? 'Pharmacist',
     'pharmacistUid' => $myUid,
-    'facility' => $myDoc['facility'] ?? '',
+    // Same default every other page already falls back to when
+    // displaying this pharmacist's own facility (e.g.
+    // includes/pharmacist/profile_settings_pharmacist_firestore.php) —
+    // this was the one place still writing a blank string instead,
+    // which showed as a real but misleading "—" on this request's own
+    // Facility field forever after, even though every other page
+    // quietly treats a blank facility as this clinic's own default.
+    'facility' => $myDoc['facility'] ?? 'North Super Health Center',
     'status' => 'pending',
     'type' => $type,
     'items' => $items,

@@ -149,6 +149,13 @@
 }
 .mvi-strong{ font-weight: 600; color: var(--adm-text); }
 .mvi-zero-stock{ color: #D93025; font-weight: 700; }
+/* -- The Expiry Date column was wrapping its own date text onto two
+      lines ("JUL 23," / "2026") whenever the table's other columns
+      (especially a wide Actions button like "Manage Medicine") left it
+      too little room — nowrap plus a real minimum width keeps the date
+      itself on one line; the "Expired"/"Expiring Soon" badge under it
+      still gets its own line either way since it's a block element. -- */
+.mvi-expiry-cell{ white-space: nowrap; min-width: 110px; }
 .mvi-expiry-warning{ color: #D93025; font-weight: 700; }
 .mvi-updated-cell{ white-space: nowrap; color: var(--adm-text-muted); font-size: 12.5px; }
 

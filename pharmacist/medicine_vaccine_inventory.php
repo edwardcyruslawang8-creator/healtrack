@@ -185,15 +185,6 @@ if (!function_exists('mvi_page_url')) {
 
         <div class="adm-topbar-right">
             <div class="adm-topbar-actions">
-                <!-- api/archive-medicine.php's own header comment: an
-                     archived item just stops appearing in the lists
-                     above — this is the real, working link to the one
-                     place it can still be seen again
-                     (pharmacist/archived_items.php). -->
-                <a href="archived_items.php" class="phm-topbar-select-btn" style="text-decoration:none;">
-                    <i class="bi bi-archive"></i> Archived Items
-                </a>
-
                 <!-- Static, same as subadmin/dashboard.php's date badge — not a
                      real filter (nothing on this page re-fetches by date), so
                      it's shown as a plain label rather than a dropdown that
@@ -269,6 +260,18 @@ if (!function_exists('mvi_page_url')) {
                 <span class="mvi-summary-sub">Items out of stock</span>
             </div>
         </div>
+    </div>
+
+    <!-- api/archive-medicine.php's own header comment: an archived item
+         just stops appearing in the lists below — this is the real,
+         working link to the one place it can still be seen again
+         (pharmacist/archived_items.php). Sits right above the
+         Add Medicine/Add Vaccine toolbar rather than in the topbar, so
+         it reads as part of this page's own actions. -->
+    <div class="d-flex justify-content-end mb-2">
+        <a href="archived_items.php" class="phm-topbar-select-btn" style="text-decoration:none;">
+            <i class="bi bi-archive"></i> Archived Items
+        </a>
     </div>
 
     <!-- ============ MEDICINES / VACCINES TABS ============ -->
@@ -366,7 +369,7 @@ if (!function_exists('mvi_page_url')) {
                             <td class="<?= $med['currentStock'] === 0 ? 'mvi-zero-stock' : '' ?>"><?= number_format($med['currentStock']) ?></td>
                             <td><?= number_format($med['minLevel']) ?></td>
                             <td><?= number_format($med['reorderLevel']) ?></td>
-                            <td class="<?= $med['expiryStatus'] === 'expired' ? 'mvi-expiry-warning' : '' ?>">
+                            <td class="mvi-expiry-cell <?= $med['expiryStatus'] === 'expired' ? 'mvi-expiry-warning' : '' ?>">
                                 <?= htmlspecialchars($med['expiryDate']) ?>
                                 <?php if ($expiryBadge): ?>
                                 <span class="mvi-badge mvi-expiry-badge" style="background:<?= htmlspecialchars($expiryBadge['bg']) ?>; color:<?= htmlspecialchars($expiryBadge['color']) ?>;"><?= htmlspecialchars($expiryBadge['label']) ?></span>
@@ -488,7 +491,7 @@ if (!function_exists('mvi_page_url')) {
                             <td class="<?= $vac['currentStock'] === 0 ? 'mvi-zero-stock' : '' ?>"><?= number_format($vac['currentStock']) ?></td>
                             <td><?= number_format($vac['minLevel']) ?></td>
                             <td><?= number_format($vac['reorderLevel']) ?></td>
-                            <td class="<?= $vac['expiryStatus'] === 'expired' ? 'mvi-expiry-warning' : '' ?>">
+                            <td class="mvi-expiry-cell <?= $vac['expiryStatus'] === 'expired' ? 'mvi-expiry-warning' : '' ?>">
                                 <?= htmlspecialchars($vac['expiryDate']) ?>
                                 <?php if ($expiryBadge): ?>
                                 <span class="mvi-badge mvi-expiry-badge" style="background:<?= htmlspecialchars($expiryBadge['bg']) ?>; color:<?= htmlspecialchars($expiryBadge['color']) ?>;"><?= htmlspecialchars($expiryBadge['label']) ?></span>
