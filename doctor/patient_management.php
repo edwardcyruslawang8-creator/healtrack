@@ -225,7 +225,7 @@ $doctorNavItems = [
             </div>
             <div>
                 <div class="pmg-stat-label"><?= htmlspecialchars($stat['label']) ?></div>
-                <div class="pmg-stat-value"><?= number_format((int) $stat['value']) ?></div>
+                <div class="pmg-stat-value"><?= $stat['value'] === null ? '—' : number_format((int) $stat['value']) ?></div>
                 <?php if (isset($stat['sub'])): ?>
                 <div class="pmg-stat-sub"><i class="bi bi-arrow-up-short"></i> <?= htmlspecialchars($stat['sub']) ?></div>
                 <?php elseif (isset($stat['staticSub'])): ?>

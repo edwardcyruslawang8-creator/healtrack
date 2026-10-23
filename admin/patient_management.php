@@ -235,7 +235,7 @@ $adminNavItems = [
             </div>
             <div>
                 <div class="pmg-stat-label"><?= htmlspecialchars($stat['label']) ?></div>
-                <div class="pmg-stat-value"><?= number_format((int) $stat['value']) ?></div>
+                <div class="pmg-stat-value"><?= $stat['value'] === null ? '—' : number_format((int) $stat['value']) ?></div>
                 <?php if (isset($stat['staticSub'])): ?>
                 <div class="pmg-stat-sub muted"><?= htmlspecialchars($stat['staticSub']) ?></div>
                 <?php endif; ?>

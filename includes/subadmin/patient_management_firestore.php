@@ -15,23 +15,14 @@
  * gender/age filters, and pagination all operate on that already-scoped
  * list, so nothing below this file can leak another facility's patient.
  *
- * This used to split into two real Firestore access paths (a cheap
- * paginated query + cheap aggregation counts when no search/filter was
- * active, vs. a full scan when one was) to avoid reading the whole
- * "patients" collection on every page load. Adding the facility filter
- * broke that split for real: Firestore requires a composite index for
- * "WHERE facility == X ORDER BY dateRegistered" (confirmed live — a
- * 400 FAILED_PRECONDITION asking for one to be created), and this app's
- * service account has no permission to deploy one itself (confirmed
- * live too — a 403 on the index-creation API). Rather than ship a page
- * that 400s until someone manually creates that index in the Firebase
- * console, this reads the collection once (same full scan the
- * search/filter path already did) and does everything — stat cards,
- * search, gender/age filters, AND pagination — in PHP over that one
- * facility-scoped list. $patientsUsingRealQuery is kept only to choose
- * which of the two pagination UIs renders (Previous/Next-only vs.
- * numbered) — both now paginate the same in-memory list, just windowed
- * differently for the template.
+ * Two Firestore access paths ($patientsUsingRealQuery): with no
+ * search/filter active, server-side counts plus one indexed page query
+ * ("WHERE facility == X ORDER BY dateRegistered DESC" — composite index
+ * patients (facility ASC, dateRegistered DESC), created manually in the
+ * Firebase console since this app's service account can't deploy
+ * indexes; Average Age also needs patients (facility ASC, age ASC)).
+ * With a search/filter active, just this facility's patients are read
+ * (single-field filter, no index) and searched/filtered in PHP.
  *
  * $patientsLoadFailed still distinguishes "genuinely no data" from "the
  * read itself failed" (quota, network) the same way it did before —

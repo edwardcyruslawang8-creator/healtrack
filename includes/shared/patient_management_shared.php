@@ -44,23 +44,57 @@ if (!function_exists('hc_compute_patient_management_for_facility')) {
         $patientsPerPage = 8;
         $patientsLoadFailed = false;
 
-        // -------------------------------------------------------------
-        // Real patient list, scoped to the given facility — same full
-        // scan + PHP filter includes/subadmin/patient_management_firestore.php's
-        // own header comment explains (Firestore composite-index
-        // limitation), just parameterized on $facility instead of
-        // always the signed-in sub-admin's own.
-        // -------------------------------------------------------------
-        $allPatients = hc_get_all_patients_summary();
-        if ($firestore->lastRequestFailed) {
-            $patientsLoadFailed = true;
-        }
-        $allPatients = array_values(array_filter($allPatients, fn ($p) => $p['facility'] === $facility));
-
         $thisMonthPrefix = date('Y-m');
-        $totalPatientsCount = count($allPatients);
-        $newThisMonthCount = count(array_filter($allPatients, fn ($p) => str_starts_with($p['dateRegisteredRaw'], $thisMonthPrefix)));
-        $averageAge = $totalPatientsCount > 0 ? (int) round(array_sum(array_column($allPatients, 'age')) / $totalPatientsCount) : 0;
+        $facilityFilter = $firestore->fieldEqualsFilter('facility', $facility);
+        // "WHERE facility == X ORDER BY dateRegistered DESC" — served by
+        // the composite index patients (facility ASC, dateRegistered DESC),
+        // created manually in the Firebase console (this app's service
+        // account can't deploy indexes itself).
+        $newestFirstQuery = static fn (array $extraFilters = []) => [
+            'from' => [['collectionId' => 'patients']],
+            'where' => $extraFilters === []
+                ? $facilityFilter
+                : ['compositeFilter' => ['op' => 'AND', 'filters' => array_merge([$facilityFilter], $extraFilters)]],
+            'orderBy' => [['field' => ['fieldPath' => 'dateRegistered'], 'direction' => 'DESCENDING']],
+        ];
+
+        if ($patientsUsingRealQuery) {
+            // ---------------------------------------------------------
+            // Browsing view — server-side counts plus one page of rows,
+            // instead of reading every patient.
+            // ---------------------------------------------------------
+            $allPatients = null;
+            $totalPatientsCount = $firestore->countDocuments('patients', [$facilityFilter]);
+            $patientsLoadFailed = $patientsLoadFailed || $firestore->lastRequestFailed;
+            $totalPatientsCount ??= 0;
+
+            // Ranged on the same indexed field + order, so it needs no
+            // second index; only this month's (few) docs are read.
+            $newThisMonthCount = count($firestore->queryDocuments($newestFirstQuery([
+                $firestore->fieldFilter('dateRegistered', 'GREATER_THAN_OR_EQUAL', $thisMonthPrefix),
+            ])));
+            $patientsLoadFailed = $patientsLoadFailed || $firestore->lastRequestFailed;
+
+            // Needs its own composite index, patients (facility ASC, age
+            // ASC); without it this fails (logged) and the card shows "—"
+            // rather than a misleading 0, without failing the rest of the page.
+            $averageAgeRaw = $firestore->averageField('patients', 'age', [$facilityFilter]);
+            $averageAge = $averageAgeRaw === null ? null : (int) round($averageAgeRaw);
+        } else {
+            // ---------------------------------------------------------
+            // Search/filter active — fuzzy name/contact/address search
+            // can't run server-side, so read just this facility's
+            // patients (single-field filter, no index needed) and filter
+            // in PHP below.
+            // ---------------------------------------------------------
+            $allPatients = array_map('hc_map_patient_summary_doc', $firestore->listDocumentsWhere('patients', 'facility', $facility));
+            $patientsLoadFailed = $firestore->lastRequestFailed;
+            usort($allPatients, fn ($a, $b) => strcmp($b['dateRegisteredRaw'], $a['dateRegisteredRaw']));
+
+            $totalPatientsCount = count($allPatients);
+            $newThisMonthCount = count(array_filter($allPatients, fn ($p) => str_starts_with($p['dateRegisteredRaw'], $thisMonthPrefix)));
+            $averageAge = $totalPatientsCount > 0 ? (int) round(array_sum(array_column($allPatients, 'age')) / $totalPatientsCount) : 0;
+        }
 
         $statCards = [
             ['icon' => 'bi-people-fill',          'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'label' => 'Total Patients',                   'value' => $totalPatientsCount, 'staticSub' => 'All registered patients'],
@@ -84,15 +118,22 @@ if (!function_exists('hc_compute_patient_management_for_facility')) {
 
         if ($patientsUsingRealQuery) {
             // -------------------------------------------------------------
-            // Browsing view (no search/filter active) — Previous/Next only,
-            // simple page-number math over the already facility-scoped
-            // $allPatients.
+            // Browsing view (no search/filter active) — Previous/Next only;
+            // just this page's rows, via offset/limit on the indexed query.
             // -------------------------------------------------------------
             $patientsCurrentPage = max(1, (int) ($_GET['page'] ?? 1));
             $patientsTotalPages = max(1, (int) ceil($totalPatientsCount / $patientsPerPage));
             $patientsCurrentPage = min($patientsCurrentPage, $patientsTotalPages);
 
-            $result['patients'] = array_slice($allPatients, ($patientsCurrentPage - 1) * $patientsPerPage, $patientsPerPage);
+            $pageQuery = $newestFirstQuery() + ['limit' => $patientsPerPage];
+            if ($patientsCurrentPage > 1) {
+                $pageQuery['offset'] = ($patientsCurrentPage - 1) * $patientsPerPage;
+            }
+            $result['patients'] = array_map('hc_map_patient_summary_doc', $firestore->queryDocuments($pageQuery));
+            if ($firestore->lastRequestFailed) {
+                $result['patientsLoadFailed'] = true;
+            }
+            $result['patientsTotal'] = $totalPatientsCount;
             $result['patientsCurrentPage'] = $patientsCurrentPage;
             $result['patientsTotalPages'] = $patientsTotalPages;
             $result['patientsHasPrev'] = $patientsCurrentPage > 1;
@@ -127,31 +168,34 @@ if (!function_exists('hc_compute_patient_management_for_facility')) {
             $result['patientsTotal'] = $patientsTotal;
             $result['patientsCurrentPage'] = $patientsCurrentPage;
             $result['patientsTotalPages'] = $patientsTotalPages;
-
-            // Centered pagination window (1 … current-1, current,
-            // current+1 … last).
-            $patientsPaginationWindow = [];
-            if ($patientsTotalPages <= 7) {
-                for ($p = 1; $p <= $patientsTotalPages; $p++) {
-                    $patientsPaginationWindow[] = $p;
-                }
-            } else {
-                $patientsPaginationWindow[] = 1;
-                $windowStart = max(2, $patientsCurrentPage - 1);
-                $windowEnd = min($patientsTotalPages - 1, $patientsCurrentPage + 1);
-                if ($windowStart > 2) {
-                    $patientsPaginationWindow[] = '...';
-                }
-                for ($p = $windowStart; $p <= $windowEnd; $p++) {
-                    $patientsPaginationWindow[] = $p;
-                }
-                if ($windowEnd < $patientsTotalPages - 1) {
-                    $patientsPaginationWindow[] = '...';
-                }
-                $patientsPaginationWindow[] = $patientsTotalPages;
-            }
-            $result['patientsPaginationWindow'] = $patientsPaginationWindow;
         }
+
+        // Centered pagination window (1 … current-1, current, current+1 …
+        // last) — built for both views: the sub-admin/admin templates use
+        // it only while filtering, the doctor/medical-staff ones always.
+        $patientsCurrentPage = $result['patientsCurrentPage'];
+        $patientsTotalPages = $result['patientsTotalPages'];
+        $patientsPaginationWindow = [];
+        if ($patientsTotalPages <= 7) {
+            for ($p = 1; $p <= $patientsTotalPages; $p++) {
+                $patientsPaginationWindow[] = $p;
+            }
+        } else {
+            $patientsPaginationWindow[] = 1;
+            $windowStart = max(2, $patientsCurrentPage - 1);
+            $windowEnd = min($patientsTotalPages - 1, $patientsCurrentPage + 1);
+            if ($windowStart > 2) {
+                $patientsPaginationWindow[] = '...';
+            }
+            for ($p = $windowStart; $p <= $windowEnd; $p++) {
+                $patientsPaginationWindow[] = $p;
+            }
+            if ($windowEnd < $patientsTotalPages - 1) {
+                $patientsPaginationWindow[] = '...';
+            }
+            $patientsPaginationWindow[] = $patientsTotalPages;
+        }
+        $result['patientsPaginationWindow'] = $patientsPaginationWindow;
 
         return $result;
     }
