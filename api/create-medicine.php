@@ -28,6 +28,7 @@ session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/firestore/medicines.php';
+require_once __DIR__ . '/../includes/firestore/medicine_batches.php'; // hc_create_medicine_batch()
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 
 header('Content-Type: application/json');
@@ -110,6 +111,14 @@ if ($newId === null) {
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Could not save this item. Please try again.']);
     exit;
+}
+
+// This item's real first batch — see includes/firestore/medicine_batches.php's
+// header comment for why stock is tracked per-batch, not as one shared
+// number, the moment a second delivery with a different expiry date
+// shows up later (a stock request release, Adjust Stock, ...).
+if ($currentStock > 0) {
+    hc_create_medicine_batch($newId, $currentStock, date('Y-m-d', strtotime($expiryDate)), 'initial', null, $_SESSION['name'] ?? 'System');
 }
 
 write_audit_log('created', 'Medicine & Vaccine Inventory', 'Added new ' . $type . ' "' . $name . '" (' . $currentStock . ' ' . $unit . ' in stock).');

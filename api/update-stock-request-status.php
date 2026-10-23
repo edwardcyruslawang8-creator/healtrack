@@ -24,24 +24,28 @@
  * Releasing ALSO adds real stock: each item on the request that
  * carries a real "itemId" (resolved at request-creation time by
  * api/create-stock-request.php's hc_find_inventory_item_by_name())
- * gets that item's requested qty added onto its real medicines/{id}
- * doc's currentStock, with "status" recomputed via
- * hc_inventory_status_for_stock() — same pattern
- * api/adjust-medicine-stock.php already uses for its own +/- stock
- * changes. An item with no itemId (a brand-new item that didn't exist
- * in inventory yet when the request was made — see
- * includes/pharmacist/new_stock_request_modal.php's header comment)
- * or whose matched item has since been deleted is skipped rather than
- * failing the whole release; $skippedItems below tracks which ones so
- * the audit log entry stays honest about what did/didn't actually
- * update inventory.
+ * becomes its own real NEW batch (includes/firestore/medicine_batches.php's
+ * hc_create_medicine_batch()) on its matched medicines/{id} doc, using
+ * the real expiry date the subadmin entered for THIS delivery in the
+ * Release Items modal ($body['batches'], one {itemId, expiryDate} pair
+ * per matched item) — not blindly added onto a single shared
+ * currentStock number, which could never honestly represent this
+ * delivery arriving with a different real expiry than whatever's
+ * already on the shelf for the same medicine. An item with no itemId
+ * (a brand-new item that didn't exist in inventory yet when the
+ * request was made — see includes/pharmacist/new_stock_request_modal.php's
+ * header comment), whose matched item has since been deleted, or with
+ * no expiry date submitted for it is skipped rather than failing the
+ * whole release; $skippedItems below tracks which ones so the audit
+ * log entry stays honest about what did/didn't actually update
+ * inventory.
  * =====================================================================
  */
 
 session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
-require_once __DIR__ . '/../includes/firestore/medicines.php'; // hc_inventory_status_for_stock()
+require_once __DIR__ . '/../includes/firestore/medicine_batches.php'; // hc_create_medicine_batch()
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 
 header('Content-Type: application/json');
@@ -125,33 +129,38 @@ if (!$saved) {
 
 $requester = $existing['pharmacistName'] ?? 'Unknown';
 
-// Release — add each matched item's requested qty onto real inventory.
-// See this file's own header comment for why an item with no itemId
-// (or a since-deleted one) is skipped rather than failing the release.
+// Release — each matched item becomes its own real NEW batch, dated
+// with whatever real expiry the subadmin entered for THIS delivery in
+// the Release Items modal. See this file's own header comment for why
+// an item with no itemId, a since-deleted match, or no submitted
+// expiry date is skipped rather than failing the release.
 $updatedItems = [];
 $skippedItems = [];
 if ($newStatus === 'released') {
+    $expiryByItemId = [];
+    foreach ((is_array($body['batches'] ?? null) ? $body['batches'] : []) as $b) {
+        $bItemId = trim((string) ($b['itemId'] ?? ''));
+        $bExpiry = trim((string) ($b['expiryDate'] ?? ''));
+        if ($bItemId !== '' && $bExpiry !== '' && strtotime($bExpiry) !== false) {
+            $expiryByItemId[$bItemId] = date('Y-m-d', strtotime($bExpiry));
+        }
+    }
+
     foreach ((is_array($existing['items'] ?? null) ? $existing['items'] : []) as $item) {
         $itemName = (string) ($item['name'] ?? 'Unknown item');
         $itemId = $item['itemId'] ?? null;
         $qty = (int) ($item['qty'] ?? 0);
+        $expiryDate = $itemId !== null ? ($expiryByItemId[$itemId] ?? null) : null;
 
         $inventoryDoc = $itemId !== null && $itemId !== '' ? $firestore->getDocument('medicines', $itemId) : null;
-        if ($inventoryDoc === null || $qty <= 0) {
+        if ($inventoryDoc === null || $qty <= 0 || $expiryDate === null) {
             $skippedItems[] = $itemName;
             continue;
         }
 
-        $newStock = (int) ($inventoryDoc['currentStock'] ?? 0) + $qty;
-        $minLevel = (int) ($inventoryDoc['minLevel'] ?? 0);
+        hc_create_medicine_batch($itemId, $qty, $expiryDate, 'stock_request', $docId, $_SESSION['name'] ?? 'System');
 
-        $firestore->setDocument('medicines', $itemId, array_merge($inventoryDoc, [
-            'currentStock' => $newStock,
-            'status' => hc_inventory_status_for_stock($newStock, $minLevel),
-            'lastUpdated' => date('c'),
-        ]));
-
-        $updatedItems[] = $itemName . ' (+' . $qty . ')';
+        $updatedItems[] = $itemName . ' (+' . $qty . ', expires ' . $expiryDate . ')';
     }
 }
 

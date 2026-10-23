@@ -90,25 +90,17 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    document.querySelectorAll('[data-request-approve], [data-request-reject], [data-request-release]').forEach(function (btn) {
+    document.querySelectorAll('[data-request-approve], [data-request-reject]').forEach(function (btn) {
         btn.addEventListener('click', async function (e) {
             e.preventDefault();
             if (btn.classList.contains('disabled')) return;
 
             var docId = btn.getAttribute('data-request-id');
-            var status = btn.hasAttribute('data-request-approve') ? 'approved'
-                : btn.hasAttribute('data-request-reject') ? 'rejected'
-                : 'released';
-            var verb = status === 'approved' ? 'approve' : status === 'rejected' ? 'reject' : 'release items for';
+            var status = btn.hasAttribute('data-request-approve') ? 'approved' : 'rejected';
+            var verb = status === 'approved' ? 'approve' : 'reject';
 
             if (!docId) return;
-            // Releasing also adds real stock for any item that matched a
-            // real inventory item when the request was made — see
-            // api/update-stock-request-status.php's own header comment.
-            var confirmMessage = status === 'released'
-                ? 'Release items for this stock request? The requested quantities will be added to inventory for any matching items.'
-                : 'Are you sure you want to ' + verb + ' this stock request?';
-            var confirmed = await HCDialog.confirm(confirmMessage);
+            var confirmed = await HCDialog.confirm('Are you sure you want to ' + verb + ' this stock request?');
             if (!confirmed) return;
 
             fetch('../api/update-stock-request-status.php', {
@@ -119,16 +111,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(function (res) {
                     return res.json().then(function (data) { return { ok: res.ok, data: data }; });
                 })
-                .then(async function (result) {
+                .then(function (result) {
                     if (!result.ok || !result.data.success) {
                         throw new Error(result.data.error || 'Something went wrong. Please try again.');
-                    }
-                    var skipped = result.data.skippedItems || [];
-                    if (status === 'released' && skipped.length > 0) {
-                        await HCDialog.alert(
-                            'Released. These item(s) had no matching inventory entry, so stock was NOT auto-added for them — add manually if needed: ' + skipped.join(', ') + '.',
-                            { title: 'Partially Matched' }
-                        );
                     }
                     window.location.reload();
                 })
@@ -137,6 +122,132 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
         });
     });
+
+    // -------------------------------------------------------------
+    // Release Items — opens #releaseRequestModal (one real expiry date
+    // input per item that has a real itemId) instead of a plain
+    // confirm(). Releasing creates a real NEW batch per item
+    // (includes/firestore/medicine_batches.php) rather than blindly
+    // adding onto a single shared currentStock number — see that
+    // modal's own header comment in
+    // includes/subadmin/stock_request_view_modal.php.
+    // -------------------------------------------------------------
+    const releaseModalEl = document.getElementById('releaseRequestModal');
+    if (releaseModalEl && typeof bootstrap !== 'undefined') {
+        const releaseModal = new bootstrap.Modal(releaseModalEl);
+        const releaseForm = document.getElementById('releaseRequestForm');
+        const rrErrorBox = document.getElementById('releaseRequestError');
+        const rrDocIdInput = document.getElementById('rrDocId');
+        const rrItemsBody = document.getElementById('rrItemsBody');
+        const rrSubmitBtn = document.getElementById('rrSubmitBtn');
+        const rrSubmitBtnDefaultHtml = rrSubmitBtn.innerHTML;
+        const todayIso = new Date().toISOString().slice(0, 10);
+
+        document.querySelectorAll('[data-request-release]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (btn.classList.contains('disabled')) return;
+
+                const docId = btn.getAttribute('data-request-id');
+                if (!docId) return;
+                const row = btn.closest('tr');
+                const items = row ? readRequestFields(row).items : [];
+
+                releaseForm.reset();
+                releaseForm.classList.remove('was-validated');
+                rrErrorBox.classList.add('d-none');
+                rrDocIdInput.value = docId;
+                rrSubmitBtn.disabled = false;
+                rrSubmitBtn.innerHTML = rrSubmitBtnDefaultHtml;
+
+                rrItemsBody.innerHTML = '';
+                if (items.length === 0) {
+                    rrItemsBody.innerHTML = '<tr><td colspan="3" class="text-muted">No items listed.</td></tr>';
+                }
+                items.forEach(function (item) {
+                    const tr = document.createElement('tr');
+
+                    const nameTd = document.createElement('td');
+                    nameTd.textContent = item.name || '(unnamed)';
+                    tr.appendChild(nameTd);
+
+                    const qtyTd = document.createElement('td');
+                    qtyTd.className = 'text-end';
+                    qtyTd.textContent = item.qty != null ? item.qty : '—';
+                    tr.appendChild(qtyTd);
+
+                    const expiryTd = document.createElement('td');
+                    if (item.itemId) {
+                        const input = document.createElement('input');
+                        input.type = 'date';
+                        input.className = 'form-control form-control-sm am-form-control';
+                        input.min = todayIso;
+                        input.required = true;
+                        input.dataset.itemId = item.itemId;
+                        expiryTd.appendChild(input);
+                    } else {
+                        const note = document.createElement('span');
+                        note.className = 'text-muted small';
+                        note.textContent = 'Not in inventory — no batch created';
+                        expiryTd.appendChild(note);
+                    }
+                    tr.appendChild(expiryTd);
+
+                    rrItemsBody.appendChild(tr);
+                });
+
+                releaseModal.show();
+            });
+        });
+
+        releaseForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const expiryInputs = Array.from(rrItemsBody.querySelectorAll('input[type="date"]'));
+            const batches = [];
+            for (const input of expiryInputs) {
+                if (!input.value) {
+                    rrErrorBox.textContent = 'Please enter an expiry date for every item.';
+                    rrErrorBox.classList.remove('d-none');
+                    return;
+                }
+                batches.push({ itemId: input.dataset.itemId, expiryDate: input.value });
+            }
+
+            rrErrorBox.classList.add('d-none');
+            rrSubmitBtn.disabled = true;
+            rrSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Releasing…';
+
+            fetch('../api/update-stock-request-status.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ docId: rrDocIdInput.value, status: 'released', batches: batches }),
+            })
+                .then(function (res) {
+                    return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+                })
+                .then(async function (result) {
+                    if (!result.ok || !result.data.success) {
+                        throw new Error(result.data.error || 'Something went wrong. Please try again.');
+                    }
+                    var skipped = result.data.skippedItems || [];
+                    if (skipped.length > 0) {
+                        await HCDialog.alert(
+                            'Released. These item(s) had no matching inventory entry, so stock was NOT auto-added for them — add manually if needed: ' + skipped.join(', ') + '.',
+                            { title: 'Partially Matched' }
+                        );
+                    }
+                    window.location.reload();
+                })
+                .catch(function (err) {
+                    rrErrorBox.textContent = err.message;
+                    rrErrorBox.classList.remove('d-none');
+                    rrSubmitBtn.disabled = false;
+                    rrSubmitBtn.innerHTML = rrSubmitBtnDefaultHtml;
+                });
+        });
+    }
 
     // -------------------------------------------------------------
     // View Request — pure client-side, no request.

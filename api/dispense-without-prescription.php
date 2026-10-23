@@ -28,7 +28,8 @@
 session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
-require_once __DIR__ . '/../includes/firestore/medicines.php'; // hc_inventory_status_for_stock()
+require_once __DIR__ . '/../includes/firestore/medicines.php'; // hc_inventory_status_for_stock(), hc_inventory_expiry_status()
+require_once __DIR__ . '/../includes/firestore/medicine_batches.php'; // hc_decrement_medicine_stock_fefo()
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
 
@@ -100,8 +101,7 @@ if ($patientDoc === null) {
 }
 
 $oldStock = (int) ($medicineDoc['currentStock'] ?? 0);
-$newStock = $oldStock - $quantity;
-if ($newStock < 0) {
+if ($quantity > $oldStock) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Only ' . $oldStock . ' ' . ($medicineDoc['unit'] ?? 'unit') . '(s) in stock — cannot dispense ' . $quantity . '.']);
     exit;
@@ -156,14 +156,9 @@ if ($orderId === null) {
     exit;
 }
 
-// The actual inventory decrement — same status-recompute pattern as
-// api/adjust-medicine-stock.php / api/dispense-pharmacy-order.php.
-$status = hc_inventory_status_for_stock($newStock, (int) ($medicineDoc['minLevel'] ?? 0));
-$firestore->setDocument('medicines', $itemId, array_merge($medicineDoc, [
-    'currentStock' => $newStock,
-    'status' => $status,
-    'lastUpdated' => date('c'),
-]));
+// The actual inventory decrement — draws down the item's real batches
+// soonest-expiry first (FEFO), same as api/dispense-pharmacy-order.php.
+hc_decrement_medicine_stock_fefo($itemId, $quantity);
 
 // Medicine rows (not vaccines — no vaccination_records write path
 // exists anywhere in this app yet, see includes/firestore/vaccination_records.php's

@@ -20,13 +20,21 @@
  * need a dedicated collection with a real itemId, which doesn't exist
  * yet.
  *
- * Query params: ?name=<item name>. GET, no body.
+ * Also returns this item's real, currently-held batches
+ * (includes/firestore/medicine_batches.php's hc_get_batches_for_medicine(),
+ * soonest-expiry first) when a real ?id= is given — the Stock History
+ * modal shows these above the activity log so "what's actually on the
+ * shelf and when does each part expire" is answered directly instead
+ * of needing to piece it together from the log entries below it.
+ *
+ * Query params: ?name=<item name>&id=<item id, optional>. GET, no body.
  * =====================================================================
  */
 
 session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
+require_once __DIR__ . '/../includes/firestore/medicine_batches.php'; // hc_get_batches_for_medicine()
 
 header('Content-Type: application/json');
 
@@ -43,12 +51,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 $name = trim((string) ($_GET['name'] ?? ''));
+$id = trim((string) ($_GET['id'] ?? ''));
 
 if ($name === '') {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Missing item name.']);
     exit;
 }
+
+$batches = $id !== '' ? hc_get_batches_for_medicine($id) : [];
 
 $needle = '"' . $name . '"';
 $history = [];
@@ -72,4 +83,4 @@ foreach ($firestore->listDocuments('audit_logs') as $doc) {
 
 usort($history, fn ($a, $b) => strcmp($b['timestamp'], $a['timestamp']));
 
-echo json_encode(['success' => true, 'history' => $history]);
+echo json_encode(['success' => true, 'history' => $history, 'batches' => $batches]);

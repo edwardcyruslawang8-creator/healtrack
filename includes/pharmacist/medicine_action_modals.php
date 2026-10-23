@@ -138,6 +138,19 @@
             </div>
             <div class="am-form-help">Positive to add stock received, negative to remove stock dispensed/damaged.</div>
           </div>
+          <!-- Only shown/required for a POSITIVE amount — stock being
+               added becomes its own real batch
+               (includes/firestore/medicine_batches.php), with its own
+               real expiry date, rather than silently inheriting
+               whatever expiry this item already happened to show
+               (which may well belong to a different, older batch). A
+               negative amount just draws down existing batches
+               (soonest-expiring first), so it needs no expiry input at
+               all. -->
+          <div class="mb-0 mt-3 d-none" id="asExpiryWrap">
+            <label class="am-form-label" for="asExpiryDate">Expiry Date for this stock<span class="text-danger">*</span></label>
+            <input type="date" class="form-control am-form-control" id="asExpiryDate" min="<?= date('Y-m-d') ?>">
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="am-btn-cancel" data-bs-dismiss="modal">Cancel</button>
@@ -152,12 +165,21 @@
      STOCK HISTORY MODAL (read-only)
      -------------------------------------------------------------
      Triggered by each row's three-dot menu ("View Stock History").
-     Real data — api/get-medicine-stock-history.php, which reuses the
-     "audit_logs" collection every mutating api/*-medicine.php endpoint
-     already writes to (see that API's own header comment for how it's
-     matched to one item). Fetched on click, not server-rendered with
-     the rest of the page, since it's a per-row detail nobody needs
-     until they actually open it.
+     Shows two real things, fetched together on click (not
+     server-rendered with the rest of the page, since it's a per-row
+     detail nobody needs until they actually open it):
+       - Current Batches — this item's real, currently-held batches
+         (includes/firestore/medicine_batches.php's
+         hc_get_batches_for_medicine(), soonest-expiry first), each
+         with its own real quantity/expiry/source, answering "what's
+         actually on the shelf and when does each part expire" rather
+         than one shared number that can't represent more than one
+         expiry date.
+       - Activity Log — the existing audit-log-based history
+         (api/get-medicine-stock-history.php, which reuses the
+         "audit_logs" collection every mutating api/*-medicine.php
+         endpoint already writes to — see that API's own header
+         comment for how it's matched to one item).
      ============================================================= -->
 <div class="modal fade am-modal" id="stockHistoryModal" tabindex="-1" aria-labelledby="stockHistoryModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -167,6 +189,14 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
+        <h6 class="am-form-label mb-2">Current Batches</h6>
+        <div id="shBatchesEmpty" class="am-form-help d-none">No stock currently on hand.</div>
+        <table class="table table-sm am-detail-items-table d-none" id="shBatchesTable">
+          <thead><tr><th>Quantity</th><th>Expiry Date</th><th>Source</th></tr></thead>
+          <tbody id="shBatchesBody"></tbody>
+        </table>
+
+        <h6 class="am-form-label mb-2 mt-3">Activity Log</h6>
         <div id="shLoading" class="am-form-help">Loading…</div>
         <div id="shEmpty" class="am-form-help d-none">No recorded history for this item yet.</div>
         <ul class="am-history-list d-none" id="shList"></ul>
