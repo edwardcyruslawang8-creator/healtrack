@@ -54,7 +54,16 @@
             </div>
           </div>
 
-          <div class="row">
+          <!-- Only shown when ADDING a new item — an existing item's
+               stock/expiry are a real rollup over its own batches now
+               (includes/firestore/medicine_batches.php), not a single
+               free-form pair any edit could honestly overwrite once
+               more than one batch with a different expiry exists.
+               Real stock changes for an EXISTING item go through
+               Adjust Stock (its own batch-aware modal) or a stock
+               request release instead — see assets/js/medicine_vaccine_inventory_pharmacist.js's
+               openModalForEdit(). -->
+          <div class="row" id="amStockExpiryRow">
             <div class="col-md-6 mb-3">
               <label class="am-form-label" for="amExpiryDate">Expiry Date<span class="text-danger">*</span></label>
               <input type="date" class="form-control am-form-control" id="amExpiryDate" min="<?= date('Y-m-d') ?>" required>
@@ -64,6 +73,8 @@
               <input type="number" class="form-control am-form-control" id="amCurrentStock" min="0" step="1" placeholder="0" required>
             </div>
           </div>
+          <!-- Edit-mode-only read-only summary, replacing the row above. -->
+          <div class="am-form-help d-none" id="amStockExpiryReadonlyNote"></div>
 
           <div class="row">
             <div class="col-md-6 mb-3">

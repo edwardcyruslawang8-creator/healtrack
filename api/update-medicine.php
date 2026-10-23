@@ -28,9 +28,15 @@
  * silently drop createdBy/icon/color/type, none of which this form
  * edits.
  *
- * "status" is recomputed server-side from currentStock vs minLevel
- * (hc_inventory_status_for_stock()), same as create — never trusted
- * from the client.
+ * Current Stock and Expiry Date are NOT editable here any more — both
+ * are now a maintained rollup over this item's own real
+ * medicine_batches docs (includes/firestore/medicine_batches.php),
+ * recomputed from the soonest-expiring batch that still has stock, so
+ * a single free-form edit here could no longer honestly represent
+ * either once more than one batch with a different expiry exists. Real
+ * stock changes go through Adjust Stock (api/adjust-medicine-stock.php,
+ * itself now batch-aware) or a stock request release
+ * (api/update-stock-request-status.php) instead.
  *
  * The stored "form" field is set equal to $unit rather than collected
  * as its own form input — see
@@ -67,30 +73,23 @@ $name = trim((string) ($body['name'] ?? ''));
 $category = trim((string) ($body['category'] ?? ''));
 $unit = trim((string) ($body['unit'] ?? ''));
 $desc = trim((string) ($body['desc'] ?? ''));
-$currentStock = $body['currentStock'] ?? null;
 $minLevel = $body['minLevel'] ?? null;
 $reorderLevel = $body['reorderLevel'] ?? null;
-$expiryDate = trim((string) ($body['expiryDate'] ?? ''));
 
 if ($id === '') {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Missing item id.']);
     exit;
 }
-if ($name === '' || $category === '' || $unit === '' || $expiryDate === ''
-    || !is_numeric($currentStock) || !is_numeric($minLevel) || !is_numeric($reorderLevel)) {
+if ($name === '' || $category === '' || $unit === ''
+    || !is_numeric($minLevel) || !is_numeric($reorderLevel)) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Please fill out every required field.']);
     exit;
 }
-if ((float) $currentStock < 0 || (float) $minLevel < 0 || (float) $reorderLevel < 0) {
+if ((float) $minLevel < 0 || (float) $reorderLevel < 0) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Stock levels cannot be negative.']);
-    exit;
-}
-if (strtotime($expiryDate) === false) {
-    http_response_code(422);
-    echo json_encode(['success' => false, 'error' => 'Please enter a valid expiry date.']);
     exit;
 }
 
@@ -101,9 +100,13 @@ if ($existing === null) {
     exit;
 }
 
-$currentStock = (int) $currentStock;
 $minLevel = (int) $minLevel;
 $reorderLevel = (int) $reorderLevel;
+// currentStock is untouched here (real rollup over this item's own
+// batches) — only "status" needs recomputing, since a changed
+// minLevel alone can flip Low Stock/In Stock against the SAME real
+// stock number.
+$currentStock = (int) ($existing['currentStock'] ?? 0);
 $status = hc_inventory_status_for_stock($currentStock, $minLevel);
 
 $updated = array_merge($existing, [
@@ -112,10 +115,8 @@ $updated = array_merge($existing, [
     'unit' => $unit,
     'form' => $unit, // see this file's header comment
     'desc' => $desc !== '' ? $desc : null,
-    'currentStock' => $currentStock,
     'minLevel' => $minLevel,
     'reorderLevel' => $reorderLevel,
-    'expiryDate' => date('Y-m-d', strtotime($expiryDate)),
     'status' => $status,
     'lastUpdated' => date('c'),
 ]);

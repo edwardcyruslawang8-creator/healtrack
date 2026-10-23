@@ -12,23 +12,26 @@
  * so double-clicking or two pharmacists racing the same order can't
  * double-count it.
  *
- * Optionally also decrements a real medicines/{id} doc's currentStock —
- * $inventoryItemId/$quantity, chosen by the pharmacist in the Dispense
- * modal (pre-filled from a fuzzy name match, but editable — a
- * prescribed item's free-text name isn't guaranteed to match a real
- * tracked inventory record, so "don't adjust stock" is a genuine,
- * allowed choice, not an error). Every check here is re-done
- * server-side against the real doc — same "never trust the client's
- * own math" principle api/adjust-medicine-stock.php's own +/- stock
- * modal already follows, which this mirrors (status recomputed via
- * hc_inventory_status_for_stock(), negative stock rejected outright).
+ * Optionally also decrements real medicines/{id} stock — $inventoryItemId/
+ * $quantity, chosen by the pharmacist in the Dispense modal (pre-filled
+ * from a fuzzy name match, but editable — a prescribed item's free-text
+ * name isn't guaranteed to match a real tracked inventory record, so
+ * "don't adjust stock" is a genuine, allowed choice, not an error).
+ * Every check here is re-done server-side against the real doc. The
+ * actual decrement draws down the item's real batches soonest-expiry
+ * first (hc_decrement_medicine_stock_fefo(), FEFO —
+ * includes/firestore/medicine_batches.php) rather than one shared
+ * currentStock number, same "never trust the client's own math"
+ * principle api/adjust-medicine-stock.php's own +/- stock modal
+ * follows too.
  * =====================================================================
  */
 
 session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
-require_once __DIR__ . '/../includes/firestore/medicines.php'; // hc_inventory_status_for_stock()
+require_once __DIR__ . '/../includes/firestore/medicines.php'; // hc_inventory_status_for_stock(), hc_inventory_expiry_status()
+require_once __DIR__ . '/../includes/firestore/medicine_batches.php'; // hc_decrement_medicine_stock_fefo()
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
 
@@ -102,8 +105,7 @@ if ($inventoryItemId !== '') {
     }
 
     $oldStock = (int) ($medicineDoc['currentStock'] ?? 0);
-    $newStock = $oldStock - $quantity;
-    if ($newStock < 0) {
+    if ($quantity > $oldStock) {
         http_response_code(422);
         echo json_encode(['success' => false, 'error' => 'Only ' . $oldStock . ' ' . ($medicineDoc['unit'] ?? 'unit') . '(s) in stock — cannot dispense ' . $quantity . '.']);
         exit;
@@ -132,15 +134,12 @@ if (!$saved) {
 // The actual inventory decrement — only after the pharmacy_orders write
 // above succeeded, so a failed inventory save never leaves an order
 // marked "dispensed" against stock that was never actually deducted
-// silently disagreeing with what's on screen.
+// silently disagreeing with what's on screen. Draws down the
+// soonest-expiring real batch(es) first (FEFO) rather than a single
+// shared number — see includes/firestore/medicine_batches.php's
+// header comment.
 if ($medicineDoc !== null) {
-    $newStock = (int) ($medicineDoc['currentStock'] ?? 0) - $dispensedQuantity;
-    $status = hc_inventory_status_for_stock($newStock, (int) ($medicineDoc['minLevel'] ?? 0));
-    $firestore->setDocument('medicines', $inventoryItemId, array_merge($medicineDoc, [
-        'currentStock' => $newStock,
-        'status' => $status,
-        'lastUpdated' => date('c'),
-    ]));
+    hc_decrement_medicine_stock_fefo($inventoryItemId, $dispensedQuantity);
 }
 
 $auditMessage = 'Dispensed ' . ($existing['itemName'] ?? 'item') . ' for ' . ($existing['patientName'] ?? '');

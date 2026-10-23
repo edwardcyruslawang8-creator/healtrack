@@ -50,6 +50,53 @@
   </div>
 </div>
 
+<!-- =============================================================
+     RELEASE ITEMS MODAL
+     -------------------------------------------------------------
+     Triggered by a row's "Release Items" three-dot menu item in place
+     of the old plain confirm() — releasing now creates a real NEW
+     batch per item (includes/firestore/medicine_batches.php) instead
+     of blindly adding onto a single shared currentStock number, so a
+     delivery with a different real expiry date than whatever's
+     already on the shelf for the same medicine is tracked honestly
+     rather than silently overwriting/ignoring it. Built client-side
+     from the SAME row data-request-items JSON the View Request modal
+     already reads (assets/js/stock_requests.js's readRequestFields())
+     — one expiry date input per item that has a real itemId (a
+     matched inventory record); an item with none (see
+     api/update-stock-request-status.php's own header comment on why
+     that's skipped rather than failing the release) shows a plain
+     note instead of an input, since there's no real medicines/{id}
+     doc to create a batch against. POSTs {docId, status: 'released',
+     batches: [{itemId, expiryDate}, ...]} to
+     api/update-stock-request-status.php.
+     ============================================================= -->
+<div class="modal fade am-modal" id="releaseRequestModal" tabindex="-1" aria-labelledby="releaseRequestModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="releaseRequestForm" novalidate>
+        <input type="hidden" id="rrDocId" value="">
+        <div class="modal-header">
+          <h5 class="modal-title" id="releaseRequestModalLabel">Release Items</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="releaseRequestError" class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
+          <p class="am-form-help mb-3">Enter the real expiry date printed on THIS delivery for each item — it becomes its own tracked batch, kept separate from any stock already on hand with a different expiry.</p>
+          <table class="table table-sm am-detail-items-table">
+            <thead><tr><th>Item</th><th class="text-end">Qty</th><th>Expiry Date</th></tr></thead>
+            <tbody id="rrItemsBody"></tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="am-btn-cancel" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="am-btn-submit" id="rrSubmitBtn"><i class="bi bi-box-arrow-up"></i> <span id="rrSubmitLabel">Release Items</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <div id="srqPrintArea">
   <h2>Stock Request</h2>
   <table class="srq-print-table">

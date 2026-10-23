@@ -63,6 +63,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const nameLabel = document.getElementById('amNameLabel');
         const nameInput = document.getElementById('amName');
         const expiryInput = document.getElementById('amExpiryDate');
+        const stockInput = document.getElementById('amCurrentStock');
+        const stockExpiryRow = document.getElementById('amStockExpiryRow');
+        const stockExpiryReadonlyNote = document.getElementById('amStockExpiryReadonlyNote');
         const todayIso = expiryInput.min; // set server-side to today (see add_medicine_modal.php)
 
         var openModalAs = function (type) {
@@ -72,6 +75,12 @@ document.addEventListener('DOMContentLoaded', function () {
             typeInput.value = type;
             idInput.value = '';
             expiryInput.min = todayIso;
+            // Adding a brand-new item: it has no batches yet, so this IS
+            // its real first batch — collected here same as always.
+            stockExpiryRow.classList.remove('d-none');
+            expiryInput.required = true;
+            stockInput.required = true;
+            stockExpiryReadonlyNote.classList.add('d-none');
 
             if (type === 'vaccine') {
                 modalTitle.textContent = 'Add Vaccine';
@@ -106,14 +115,17 @@ document.addEventListener('DOMContentLoaded', function () {
             nameInput.value = d.medName;
             document.getElementById('amCategory').value = d.medCategory;
             document.getElementById('amUnit').value = d.medUnit;
-            // Already-expired items (real inventory can age past its expiry
-            // date) must stay editable for their OTHER fields without the
-            // date picker rejecting their own unchanged value — so the min
-            // here relaxes to the item's existing expiry when that's
-            // earlier than today, instead of always requiring today+.
-            expiryInput.min = d.medExpiry < todayIso ? d.medExpiry : todayIso;
-            expiryInput.value = d.medExpiry;
-            document.getElementById('amCurrentStock').value = d.medStock;
+            // Current Stock/Expiry Date are a real rollup over this
+            // item's own batches now (includes/firestore/medicine_batches.php)
+            // — not editable here (see add_medicine_modal.php's own
+            // comment on #amStockExpiryRow). Shown read-only instead so
+            // it's still clear what's currently on hand while editing
+            // everything else.
+            stockExpiryRow.classList.add('d-none');
+            expiryInput.required = false;
+            stockInput.required = false;
+            stockExpiryReadonlyNote.textContent = 'Current Stock: ' + d.medStock + ' ' + d.medUnit + ' — Expiry: ' + (d.medExpiryDisplay || d.medExpiry) + '. Managed via Adjust Stock or stock requests, not editable here.';
+            stockExpiryReadonlyNote.classList.remove('d-none');
             document.getElementById('amMinLevel').value = d.medMinLevel;
             document.getElementById('amReorderLevel').value = d.medReorderLevel;
             document.getElementById('amDesc').value = d.medDesc || '';
@@ -244,6 +256,19 @@ document.addEventListener('DOMContentLoaded', function () {
         const asSubmitBtnDefaultHtml = asSubmitBtn.innerHTML;
         const asIdInput = document.getElementById('asFormId');
         const asDeltaInput = document.getElementById('asDelta');
+        const asExpiryWrap = document.getElementById('asExpiryWrap');
+        const asExpiryInput = document.getElementById('asExpiryDate');
+
+        // Stock being ADDED becomes its own real batch — needs its own
+        // real expiry date (includes/firestore/medicine_batches.php).
+        // Stock being REMOVED just draws down existing batches
+        // (soonest-expiring first), no expiry input needed.
+        function syncExpiryVisibility() {
+            const delta = parseInt(asDeltaInput.value, 10) || 0;
+            const adding = delta > 0;
+            asExpiryWrap.classList.toggle('d-none', !adding);
+            asExpiryInput.required = adding;
+        }
 
         // Delegated — see the Edit button's own comment above for why.
         document.addEventListener('click', function (e) {
@@ -262,14 +287,18 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('asUnit').textContent = d.medUnit;
             asSubmitBtn.disabled = false;
             asSubmitBtn.innerHTML = asSubmitBtnDefaultHtml;
+            syncExpiryVisibility();
             adjustModal.show();
         });
 
+        asDeltaInput.addEventListener('input', syncExpiryVisibility);
         document.getElementById('asMinusBtn').addEventListener('click', function () {
             asDeltaInput.value = (parseInt(asDeltaInput.value, 10) || 0) - 1;
+            syncExpiryVisibility();
         });
         document.getElementById('asPlusBtn').addEventListener('click', function () {
             asDeltaInput.value = (parseInt(asDeltaInput.value, 10) || 0) + 1;
+            syncExpiryVisibility();
         });
 
         adjustForm.addEventListener('submit', function (e) {
@@ -282,6 +311,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 asErrorBox.classList.remove('d-none');
                 return;
             }
+            if (delta > 0 && !asExpiryInput.value) {
+                asErrorBox.textContent = 'Please enter the expiry date for the stock being added.';
+                asErrorBox.classList.remove('d-none');
+                return;
+            }
 
             asErrorBox.classList.add('d-none');
             asSubmitBtn.disabled = true;
@@ -290,7 +324,7 @@ document.addEventListener('DOMContentLoaded', function () {
             fetch('../api/adjust-medicine-stock.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: asIdInput.value, delta: delta }),
+                body: JSON.stringify({ id: asIdInput.value, delta: delta, expiryDate: delta > 0 ? asExpiryInput.value : '' }),
             })
                 .then(function (res) {
                     return res.json().then(function (data) { return { ok: res.ok, data: data }; });
@@ -510,6 +544,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const shLoading = document.getElementById('shLoading');
         const shEmpty = document.getElementById('shEmpty');
         const shList = document.getElementById('shList');
+        const shBatchesEmpty = document.getElementById('shBatchesEmpty');
+        const shBatchesTable = document.getElementById('shBatchesTable');
+        const shBatchesBody = document.getElementById('shBatchesBody');
 
         function openStockHistoryModal(d) {
             document.getElementById('shItemName').textContent = d.medName;
@@ -517,13 +554,37 @@ document.addEventListener('DOMContentLoaded', function () {
             shEmpty.classList.add('d-none');
             shList.classList.add('d-none');
             shList.innerHTML = '';
+            shBatchesEmpty.classList.add('d-none');
+            shBatchesTable.classList.add('d-none');
+            shBatchesBody.innerHTML = '';
             stockHistoryModal.show();
 
-            fetch('../api/get-medicine-stock-history.php?name=' + encodeURIComponent(d.medName))
+            fetch('../api/get-medicine-stock-history.php?name=' + encodeURIComponent(d.medName) + '&id=' + encodeURIComponent(d.medId))
                 .then(function (res) { return res.json(); })
                 .then(function (data) {
                     shLoading.classList.add('d-none');
                     if (!data.success) throw new Error(data.error || 'Could not load stock history.');
+
+                    const batches = data.batches || [];
+                    if (batches.length === 0) {
+                        shBatchesEmpty.classList.remove('d-none');
+                    } else {
+                        batches.forEach(function (batch) {
+                            const tr = document.createElement('tr');
+                            const qtyTd = document.createElement('td');
+                            qtyTd.textContent = batch.quantity + ' ' + d.medUnit;
+                            const expiryTd = document.createElement('td');
+                            expiryTd.textContent = batch.expiryDate;
+                            const sourceTd = document.createElement('td');
+                            sourceTd.textContent = batch.sourceLabel;
+                            tr.appendChild(qtyTd);
+                            tr.appendChild(expiryTd);
+                            tr.appendChild(sourceTd);
+                            shBatchesBody.appendChild(tr);
+                        });
+                        shBatchesTable.classList.remove('d-none');
+                    }
+
                     if (!data.history.length) {
                         shEmpty.textContent = 'No recorded history for this item yet.';
                         shEmpty.classList.remove('d-none');
