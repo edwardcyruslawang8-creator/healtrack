@@ -16,11 +16,18 @@
    instances are destroyed first, since the swap leaves their old
    <canvas> elements orphaned.
    ============================================================= */
-let __consultationReportsCharts = [];
+var __consultationReportsCharts = []; // var, not let: ajax-tab-nav.js re-injects this file on each tab visit
 
 function initReportPageCharts() {
     __consultationReportsCharts.forEach(function (c) { c.destroy(); });
     __consultationReportsCharts = [];
+
+    // This page's charts only: assets/js/ajax-tab-nav.js re-fires
+    // DOMContentLoaded after every tab swap, and every report page's
+    // init stays registered — without this, e.g. the Overview's would
+    // draw into Consultation Reports' same-id consultationsByTypeChart
+    // and make this page's own init fail with "Canvas is already in use".
+    if (!document.getElementById('consultationsTrendChart')) return;
 
     const data = window.CONSULTATION_REPORTS_DATA;
     if (!data || typeof Chart === 'undefined') return;
