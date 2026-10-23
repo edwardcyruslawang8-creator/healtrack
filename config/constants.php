@@ -167,7 +167,16 @@ function subadmin_seed_unread_notification_ids(): array
  * api/session-login.php reloads the same field from Firestore into
  * $_SESSION['ntfReadIds'] on every login instead of starting fresh.
  */
-function subadmin_unread_notification_count(): int
+/**
+ * The full, real universe of subadmin notification ids right now —
+ * factored out of subadmin_unread_notification_count() below so
+ * api/mark-notifications-read.php's "Mark all as read" can mark every
+ * one of them read, not just whichever page of
+ * subadmin/notifications.php's pagination happened to be on screen
+ * when it was clicked (notifications.js's getRows() only ever sees the
+ * current page's rows in the DOM).
+ */
+function subadmin_all_notification_ids(): array
 {
     require_once __DIR__ . '/../includes/firestore/medicines.php'; // hc_get_medicine_expiry_notifications()
     require_once __DIR__ . '/../includes/firestore/accounts.php'; // hc_get_pending_account_notifications()
@@ -175,11 +184,9 @@ function subadmin_unread_notification_count(): int
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
     if (!hc_notification_preference_enabled('system')) {
-        return 0;
+        return [];
     }
 
-    $readIds = $_SESSION['ntfReadIds'] ?? [];
-    $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
     // The real 2FA reminder, real medicine/vaccine expiry alerts, and
     // real pending-account requests are merged in alongside the rest of
     // this role's own notification list, which is still fixed seed data
@@ -190,12 +197,19 @@ function subadmin_unread_notification_count(): int
     // doctor's patient-access-request notifications — see
     // notification_preferences.php's header comment), so they're
     // covered by the 'system' gate above already, not a second check.
-    $allIds = array_merge(
+    return array_merge(
         subadmin_seed_unread_notification_ids(),
         hc_notification_preference_enabled('inventory') ? array_column(hc_get_medicine_expiry_notifications(), 'id') : [],
         array_column(hc_get_pending_account_notifications(), 'id'),
         array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id')
     );
+}
+
+function subadmin_unread_notification_count(): int
+{
+    $allIds = subadmin_all_notification_ids();
+    $readIds = $_SESSION['ntfReadIds'] ?? [];
+    $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
 
     return count(array_diff($allIds, $readIds, $dismissedIds));
 }
@@ -217,7 +231,14 @@ function subadmin_unread_notification_count(): int
  * caller already has, since this is called from early in the page (nav
  * item arrays) across every pharmacist/*.php page.
  */
-function hc_pharmacist_unread_notification_count(): int
+/**
+ * The full, real universe of pharmacist notification ids right now —
+ * same reasoning as subadmin_all_notification_ids() above: factored
+ * out so "Mark all as read" can mark every one of them, not just
+ * whichever page of pharmacist/notifications.php's pagination was on
+ * screen.
+ */
+function hc_pharmacist_all_notification_ids(): array
 {
     require_once __DIR__ . '/../includes/firestore/medicines.php';
     require_once __DIR__ . '/../includes/firestore/pharmacy_orders.php';
@@ -226,18 +247,23 @@ function hc_pharmacist_unread_notification_count(): int
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
     if (!hc_notification_preference_enabled('system')) {
-        return 0;
+        return [];
     }
 
-    $readIds = $_SESSION['ntfReadIds'] ?? [];
-    $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
-    $allIds = array_merge(
+    return array_merge(
         hc_notification_preference_enabled('inventory') ? array_column(hc_get_low_stock_notifications(), 'id') : [],
         hc_notification_preference_enabled('inventory') ? array_column(hc_get_medicine_expiry_notifications(), 'id') : [],
         hc_notification_preference_enabled('inventory') ? array_column(hc_get_pending_pharmacy_order_notifications(), 'id') : [],
         array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
         array_column(array_filter([hc_my_phone_reminder_notification()]), 'id')
     );
+}
+
+function hc_pharmacist_unread_notification_count(): int
+{
+    $allIds = hc_pharmacist_all_notification_ids();
+    $readIds = $_SESSION['ntfReadIds'] ?? [];
+    $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
 
     return count(array_diff($allIds, $readIds, $dismissedIds));
 }
@@ -251,7 +277,19 @@ function hc_pharmacist_unread_notification_count(): int
  * hc_get_followup_notifications(), scoped by the signed-in doctor's own
  * name) rather than inventory.
  */
-function hc_doctor_unread_notification_count(): int
+/**
+ * The full, real universe of this doctor's own notification ids right
+ * now — factored out so "Mark all as read" (api/mark-notifications-read.php)
+ * can mark every one of them, not just whichever 8-row page of
+ * doctor/notifications.php's pagination happened to be on screen when
+ * it was clicked. This was the actual bug behind "I marked
+ * notifications as read but the number still shows on other pages" —
+ * notifications.js's "Mark all" only ever gathered ids from rows
+ * physically present in the DOM (one pagination page's worth), so a
+ * doctor with more unread notifications than fit on one page could
+ * never actually clear the badge by clicking it.
+ */
+function hc_doctor_all_notification_ids(): array
 {
     require_once __DIR__ . '/../includes/firestore/consultations.php';
     require_once __DIR__ . '/../includes/firestore/lab_results.php'; // hc_get_doctor_result_ready_notifications()
@@ -260,17 +298,22 @@ function hc_doctor_unread_notification_count(): int
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
     if (!hc_notification_preference_enabled('system')) {
-        return 0;
+        return [];
     }
 
-    $readIds = $_SESSION['ntfReadIds'] ?? [];
-    $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
-    $allIds = array_merge(
+    return array_merge(
         hc_notification_preference_enabled('consultation') ? array_column(hc_get_followup_notifications($_SESSION['name'] ?? null), 'id') : [],
         array_column(hc_get_doctor_result_ready_notifications($_SESSION['name'] ?? ''), 'id'),
         array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
         array_column(array_filter([hc_my_phone_reminder_notification()]), 'id')
     );
+}
+
+function hc_doctor_unread_notification_count(): int
+{
+    $allIds = hc_doctor_all_notification_ids();
+    $readIds = $_SESSION['ntfReadIds'] ?? [];
+    $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
 
     return count(array_diff($allIds, $readIds, $dismissedIds));
 }
@@ -299,7 +342,12 @@ function hc_doctor_display_name(?string $name): string
  * (unscoped) since healthcare_staff isn't personally assigned a
  * caseload the way a doctor is.
  */
-function hc_medstaff_unread_notification_count(): int
+/**
+ * The full, real universe of healthcare-staff notification ids right
+ * now — same "Mark all as read" pagination fix as
+ * hc_doctor_all_notification_ids() above.
+ */
+function hc_medstaff_all_notification_ids(): array
 {
     require_once __DIR__ . '/../includes/firestore/consultations.php';
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_my_2fa_reminder_notification()
@@ -307,16 +355,21 @@ function hc_medstaff_unread_notification_count(): int
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
     if (!hc_notification_preference_enabled('system')) {
-        return 0;
+        return [];
     }
 
-    $readIds = $_SESSION['ntfReadIds'] ?? [];
-    $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
-    $allIds = array_merge(
+    return array_merge(
         hc_notification_preference_enabled('consultation') ? array_column(hc_get_followup_notifications(), 'id') : [],
         array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
         array_column(array_filter([hc_my_phone_reminder_notification()]), 'id')
     );
+}
+
+function hc_medstaff_unread_notification_count(): int
+{
+    $allIds = hc_medstaff_all_notification_ids();
+    $readIds = $_SESSION['ntfReadIds'] ?? [];
+    $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
 
     return count(array_diff($allIds, $readIds, $dismissedIds));
 }
@@ -332,7 +385,12 @@ function hc_medstaff_unread_notification_count(): int
  * subadmin_unread_notification_count() (a coincidental fit against a
  * fixed 1-5 seed list, not this role's own real data).
  */
-function hc_medtech_unread_notification_count(): int
+/**
+ * The full, real universe of medical technologist notification ids
+ * right now — same "Mark all as read" pagination fix as
+ * hc_doctor_all_notification_ids() above.
+ */
+function hc_medtech_all_notification_ids(): array
 {
     require_once __DIR__ . '/../includes/firestore/lab_results.php';
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_my_2fa_reminder_notification()
@@ -340,16 +398,21 @@ function hc_medtech_unread_notification_count(): int
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
     if (!hc_notification_preference_enabled('system')) {
-        return 0;
+        return [];
     }
 
-    $readIds = $_SESSION['ntfReadIds'] ?? [];
-    $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
-    $allIds = array_merge(
+    return array_merge(
         array_column(hc_get_pending_lab_notifications(), 'id'),
         array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
         array_column(array_filter([hc_my_phone_reminder_notification()]), 'id')
     );
+}
+
+function hc_medtech_unread_notification_count(): int
+{
+    $allIds = hc_medtech_all_notification_ids();
+    $readIds = $_SESSION['ntfReadIds'] ?? [];
+    $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
 
     return count(array_diff($allIds, $readIds, $dismissedIds));
 }
@@ -362,7 +425,12 @@ function hc_medtech_unread_notification_count(): int
  * 'type' field, filtered to 'X-ray') — this role has no reason to see
  * pending LABORATORY referrals, which stay medical_technician's own.
  */
-function hc_radiotech_unread_notification_count(): int
+/**
+ * The full, real universe of radiologic technologist notification ids
+ * right now — same "Mark all as read" pagination fix as
+ * hc_doctor_all_notification_ids() above.
+ */
+function hc_radiotech_all_notification_ids(): array
 {
     require_once __DIR__ . '/../includes/firestore/lab_results.php';
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_my_2fa_reminder_notification()
@@ -370,17 +438,23 @@ function hc_radiotech_unread_notification_count(): int
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
     if (!hc_notification_preference_enabled('system')) {
-        return 0;
+        return [];
     }
 
-    $readIds = $_SESSION['ntfReadIds'] ?? [];
-    $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
     $xrayNotifications = array_values(array_filter(hc_get_pending_lab_xray_notifications(), fn ($n) => $n['type'] === 'X-ray'));
-    $allIds = array_merge(
+
+    return array_merge(
         array_column($xrayNotifications, 'id'),
         array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
         array_column(array_filter([hc_my_phone_reminder_notification()]), 'id')
     );
+}
+
+function hc_radiotech_unread_notification_count(): int
+{
+    $allIds = hc_radiotech_all_notification_ids();
+    $readIds = $_SESSION['ntfReadIds'] ?? [];
+    $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
 
     return count(array_diff($allIds, $readIds, $dismissedIds));
 }

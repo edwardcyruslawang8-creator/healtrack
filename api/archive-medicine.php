@@ -9,13 +9,15 @@
  * subadmin/medicine_vaccine_inventory.php. Sets a real "archived"
  * boolean on the medicines/{id} doc — a soft removal (discontinued/no
  * longer carried), not api/delete-medicine.php's permanent one. Every
- * read path over the "medicines" collection excludes archived === true
- * from its default list (firebase/firestore.php's getAllMedicines()/
+ * default read path over the "medicines" collection excludes
+ * archived === true (firebase/firestore.php's getAllMedicines()/
  * getAllVaccines() — so patients never see it either —
  * includes/firestore/medicines.php's hc_get_inventory_items(), and
- * includes/shared/medicine_vaccine_inventory_shared.php), so an
- * archived item just stops appearing anywhere rather than being
- * destroyed.
+ * includes/shared/medicine_vaccine_inventory_shared.php). The one real
+ * exception is pharmacist/archived_items.php
+ * (hc_get_archived_inventory_items(), the mirror-image query), which
+ * lists exactly what's been archived and offers a real Unarchive
+ * action (api/unarchive-medicine.php) back to this same flag.
  * =====================================================================
  */
 

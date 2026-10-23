@@ -47,9 +47,19 @@ $statusMeta = [
 
 // Real current medicine/vaccine inventory — the Dispense modal's item
 // dropdown always builds from this live list (assets/js/prescription-queue.js
-// via window.PRESCRIPTION_QUEUE_DATA below), never a stale snapshot.
-$medicineInventoryOptions = array_map(fn ($m) => ['id' => $m['id'], 'name' => $m['name'], 'unit' => $m['unit'], 'currentStock' => $m['currentStock']], hc_get_inventory_items('medicine'));
-$vaccineInventoryOptions = array_map(fn ($v) => ['id' => $v['id'], 'name' => $v['name'], 'unit' => $v['unit'], 'currentStock' => $v['currentStock']], hc_get_inventory_items('vaccine'));
+// via window.PRESCRIPTION_QUEUE_DATA below), never a stale snapshot. An
+// expired item is excluded entirely — it can never be dispensed
+// (api/dispense-pharmacy-order.php re-checks this server-side too), so
+// it shouldn't even be offered as a choice, and the fuzzy-suggested
+// match (data-suggested-item-id) simply won't pre-select one that's
+// not in this list, falling back to "Not in inventory" instead.
+$notExpired = fn ($i) => $i['expiryStatus'] !== 'expired';
+// array_values() re-indexes after array_filter — without it, a
+// filtered-out middle item leaves a gap in the keys and json_encode()
+// below would serialize this as a JS object instead of an array,
+// breaking window.PRESCRIPTION_QUEUE_DATA.medicines.forEach().
+$medicineInventoryOptions = array_map(fn ($m) => ['id' => $m['id'], 'name' => $m['name'], 'unit' => $m['unit'], 'currentStock' => $m['currentStock']], array_values(array_filter(hc_get_inventory_items('medicine'), $notExpired)));
+$vaccineInventoryOptions = array_map(fn ($v) => ['id' => $v['id'], 'name' => $v['name'], 'unit' => $v['unit'], 'currentStock' => $v['currentStock']], array_values(array_filter(hc_get_inventory_items('vaccine'), $notExpired)));
 
 $allOrders = [];
 foreach (hc_get_all_pharmacy_order_docs() as $doc) {

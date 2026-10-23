@@ -19,6 +19,7 @@ require_once __DIR__ . '/../includes/firestore/consultations.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 require_once __DIR__ . '/../includes/shared/vitals_validation.php'; // hc_validate_vitals()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
+require_once __DIR__ . '/../includes/shared/mailer.php'; // hc_send_email(), hc_account_email_shell() — assigned-doctor email below
 
 header('Content-Type: application/json');
 
@@ -138,5 +139,30 @@ if ($newId === null) {
 write_audit_log('created', 'Consultations', 'Scheduled a consultation for ' . $patientName . ' (' . $consultationCode . ').');
 hc_record_patient_history($patientId, 'medical_record', 'added', 'Consultation ' . $consultationCode . ' scheduled (' . $consultationType . ').');
 hc_record_patient_activity($patientId, 'Consultation ' . $consultationCode . ' scheduled.');
+
+// Email the specific doctor just assigned — so they're notified even
+// while signed out/away from the computer. $assignedPersonnel is a
+// real name picked from hc_get_physician_options()'s dropdown
+// (medical-staff/consultations.php), resolved back to a real
+// users/{uid} doc here by role+name match to get a real email address.
+foreach ($firestore->listDocuments('users') as $userDoc) {
+    $uf = $userDoc['fields'];
+    if (($uf['role'] ?? '') !== 'doctor' || ($uf['name'] ?? '') !== $assignedPersonnel) {
+        continue;
+    }
+    $doctorEmail = trim((string) ($uf['email'] ?? ''));
+    if ($doctorEmail !== '') {
+        $whenLabel = strtotime($dateTime) !== false ? date('F j, Y g:i A', strtotime($dateTime)) : $dateTime;
+        hc_send_email($doctorEmail, $assignedPersonnel, 'New consultation assigned — ' . $patientName, hc_account_email_shell(
+            'You have a new consultation scheduled',
+            '<p style="margin:0 0 12px; font-size:14px; line-height:1.6;">Hi ' . htmlspecialchars($assignedPersonnel) . ', ' . htmlspecialchars($_SESSION['name'] ?? 'a healthcare staff member') . ' just scheduled a new consultation for you.</p>'
+            . '<p style="margin:0 0 12px; font-size:14px; line-height:1.6;"><strong>Patient:</strong> ' . htmlspecialchars($patientName) . '<br>'
+            . '<strong>Date &amp; time:</strong> ' . htmlspecialchars($whenLabel) . '<br>'
+            . '<strong>Chief complaint:</strong> ' . htmlspecialchars($chiefComplaint) . '</p>'
+            . '<p style="margin:0; font-size:14px; line-height:1.6;">Sign in to HEALTrack to view the full details.</p>'
+        ));
+    }
+    break;
+}
 
 echo json_encode(['success' => true, 'consultation' => ['id' => $newId, 'consultationCode' => $consultationCode]]);

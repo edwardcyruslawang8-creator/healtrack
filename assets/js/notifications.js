@@ -47,29 +47,29 @@ document.addEventListener('DOMContentLoaded', function () {
         return Array.from(tableBody.querySelectorAll('.ntf-row'));
     }
 
-    /* ---------- Unread counter, synced across tab badge / sidebar / bell ---------- */
-    function updateUnreadCount() {
-        const unreadCount = getRows().filter(function (row) { return row.dataset.unread === '1'; }).length;
+    /* ---------- Unread counter, synced across tab badge / sidebar / bell ----------
+       Starts from the REAL total across every notification this role has
+       (tableBody's data-initial-unread, server-rendered from the exact
+       same hc_*_unread_notification_count() every other page's own
+       badge already uses) — NOT recomputed from this page's own ~8 DOM
+       rows. Recomputing from the DOM was the actual bug: this list
+       paginates, so a role with more unread notifications than fit on
+       one page would see a small, page-local number here while every
+       other page correctly showed the real total. From here on,
+       markRowRead()/the "Mark all as read" handler below adjust this
+       one running count instead of re-deriving it from the DOM. */
+    let unreadCount = parseInt(tableBody.dataset.initialUnread || '0', 10) || 0;
 
-        // The tab badges (same as the sidebar/bell badges below) only
-        // appear when there's actually something to show — a "0" badge
-        // next to "All Notifications"/"Unread" reads as if there's one
-        // unread item, not zero, so it's hidden instead once the count
-        // hits 0.
-        [unreadTabBadge, bellBadge, sidebarBadge].forEach(function (el) {
+    function syncUnreadBadges() {
+        // These badges only appear when there's actually something to
+        // show — a "0" badge next to "All Notifications"/"Unread" reads
+        // as if there's one unread item, not zero, so it's hidden
+        // instead once the count hits 0.
+        [unreadTabBadge, allTabBadge, bellBadge, sidebarBadge].forEach(function (el) {
             if (!el) return;
             el.textContent = unreadCount;
             el.style.display = unreadCount > 0 ? '' : 'none';
         });
-    }
-
-    function updateAllTabBadge() {
-        // "All Notifications" badge mirrors the unread count too, same as the reference.
-        const count = getRows().filter(function (row) { return row.dataset.unread === '1'; }).length;
-        if (allTabBadge) {
-            allTabBadge.textContent = count;
-            allTabBadge.style.display = count > 0 ? '' : 'none';
-        }
     }
 
     function updateArchivedTabBadge() {
@@ -82,6 +82,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /* ---------- Mark a row read (removes its unread flag + flips its Unread/Read badge) ---------- */
     function markRowRead(row) {
+        if (row.dataset.unread === '1') {
+            unreadCount = Math.max(0, unreadCount - 1);
+        }
         row.dataset.unread = '0';
         row.classList.remove('ntf-row-unread');
         var badge = row.querySelector('.ntf-read-badge');
@@ -106,20 +109,23 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Sends the actual ids currently in the table rather than {all: true}
-    // (which the server used to re-derive from a hardcoded seed list —
-    // correct for subadmin's fixed 1-5 ids, but wrong for a role like
-    // pharmacist whose real notification ids are generated live from
-    // current inventory, not a fixed set). Sending explicit ids works
-    // correctly for either kind of notification source without the
-    // server needing to know which role/source is calling it.
+    // Sends {all: true} rather than gathering ids from the table — the
+    // table only ever holds ONE pagination page's worth of rows
+    // (doctor/notifications.php and friends paginate at 8 per page), so
+    // gathering ids from the DOM here used to mark only the current
+    // page's notifications read, leaving everything on other pages
+    // still unread — which is exactly why the sidebar/bell badge kept
+    // showing a nonzero count on other pages even right after clicking
+    // "Mark all as read". The server now computes the role's real,
+    // COMPLETE id universe itself (api/mark-notifications-read.php),
+    // the same live sources every page's own badge count already reads
+    // from, so this works correctly no matter how many pages of
+    // notifications exist.
     function persistAllRead() {
-        const ids = getRows().map(function (row) { return row.dataset.id; });
-        if (!ids.length) return;
         fetch('../api/mark-notifications-read.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ids: ids }),
+            body: JSON.stringify({ all: true }),
         }).catch(function () {});
     }
 
@@ -130,8 +136,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     markAllReadLink.addEventListener('click', function () {
         getRows().forEach(markRowRead);
-        updateUnreadCount();
-        updateAllTabBadge();
+        // markRowRead() above only accounted for THIS page's rows, but
+        // the real action (persistAllRead() below) marks EVERY
+        // notification read, everywhere — force the running total to
+        // the true post-action value (0) rather than whatever partial
+        // decrement this page's own rows produced.
+        unreadCount = 0;
+        syncUnreadBadges();
         // If "Unread" is the active tab, marking everything read empties it —
         // re-apply filters so the (now correctly empty) table reflects that
         // instead of still showing rows that no longer belong there.
@@ -225,8 +236,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (wasUnread) {
             markRowRead(row);
-            updateUnreadCount();
-            updateAllTabBadge();
+            syncUnreadBadges();
             if (activeTab === 'unread') applyFilters();
             persistReadIds([row.dataset.id]);
         }
@@ -285,5 +295,5 @@ document.addEventListener('DOMContentLoaded', function () {
     searchInput.addEventListener('input', applyFilters);
     typeFilter.addEventListener('change', applyFilters);
 
-    updateUnreadCount();
+    syncUnreadBadges();
 });

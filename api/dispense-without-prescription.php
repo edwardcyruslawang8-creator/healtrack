@@ -81,6 +81,16 @@ if (($medicineDoc['type'] ?? 'medicine') !== $itemType) {
     echo json_encode(['success' => false, 'error' => 'This item is not a ' . $itemType . '.']);
     exit;
 }
+// An expired medicine/vaccine can never be dispensed — re-checked here
+// server-side (never trusted from the modal's own item list already
+// having excluded it), same hc_inventory_expiry_status() every other
+// real expiry check in this app already uses (the Inventory table's
+// own "Expired" badge, hc_get_medicine_expiry_notifications()).
+if (hc_inventory_expiry_status($medicineDoc['expiryDate'] ?? '') === 'expired') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => ($medicineDoc['name'] ?? 'This item') . ' has expired and can no longer be dispensed.']);
+    exit;
+}
 
 $patientDoc = $firestore->getDocument('patients', $patientId);
 if ($patientDoc === null) {

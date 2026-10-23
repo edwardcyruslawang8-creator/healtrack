@@ -3,26 +3,35 @@
  * =====================================================================
  * Pharmacist Dashboard — Data
  * ---------------------------------------------------------------------
- * Static stand-ins for pharmacist/dashboard.php, following the same
- * per-page "-data.php" convention as admin/, subadmin/, and
- * medical-staff/. Modeled directly on
+ * Follows the same per-page "-data.php" convention as admin/, subadmin/,
+ * and medical-staff/. Modeled directly on
  * includes/medical_staff_dashboard_firestore.php's shape (same stat-card /
  * trend-chart / doughnut / schedule-table / notification-list
  * structure), with every section reframed around pharmacy operations
  * — dispensing, medicine stock, and stock requests — instead of
  * consultations and patients.
  *
- * FRONT-END ONLY for the pharmacy numbers — there's no
- * medicines/dispensing/stock_requests collection scoped to a single
- * pharmacist anywhere in this app yet (subadmin/medicine_vaccine_inventory.php
- * and subadmin/stock_requests.php are facility-wide Sub-Admin views,
- * not a per-pharmacist model). $staffProfile IS real though — read
- * from the signed-in pharmacist's own Firestore users/{uid} document,
- * same as includes/medical_staff_dashboard_firestore.php.
+ * Dispensing Trend and Medicines by Category are CONNECTED to real
+ * data (real dispensed pharmacy_orders docs, resolved to their real
+ * medicines/{id} category) — see their own section comments below —
+ * with the same preset/Last Year/Custom Date range dropdown every
+ * other role's dashboard already has
+ * (includes/shared/dashboard_range_dropdown.php). Every other section
+ * below is still a static stand-in: there's no per-pharmacist stock-
+ * request/notification collection in this app yet
+ * (subadmin/medicine_vaccine_inventory.php and
+ * subadmin/stock_requests.php are facility-wide Sub-Admin views, not a
+ * per-pharmacist model). $staffProfile IS real though — read from the
+ * signed-in pharmacist's own Firestore users/{uid} document, same as
+ * includes/medical_staff_dashboard_firestore.php.
  * =====================================================================
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
+require_once __DIR__ . '/../firestore/pharmacy_orders.php'; // hc_get_all_pharmacy_order_docs()
+require_once __DIR__ . '/../firestore/medicines.php'; // hc_get_inventory_items()
+require_once __DIR__ . '/../shared/query_helpers.php'; // hc_resolve_dashboard_range(), hc_dashboard_trend_series(), hc_matches_date_range_key()
+require_once __DIR__ . '/../shared/inventory_match.php'; // hc_item_names_match()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -50,21 +59,103 @@ $statCards = [
 ];
 
 // ---------------------------------------------------------------------
-// Dispensing Trend — line chart (default range: This Week)
+// CONNECTED — real dispensed pharmacy_orders docs (status='dispensed',
+// written by api/dispense-pharmacy-order.php's "Dispense" action AND
+// api/dispense-without-prescription.php's walk-in dispense, the only
+// two write paths that ever set this status), each resolved to its
+// real inventory category via dispensedInventoryId (blank when the
+// dispensed item wasn't linked to a tracked inventory record — a
+// genuine, allowed choice at dispense time, same as
+// hc_get_inventory_items()'s own "Uncategorized" fallback for an item
+// with no real category set). Feeds both charts below with the same
+// preset/Custom Date range dropdown every other role's dashboard
+// already has (includes/shared/dashboard_range_dropdown.php).
 // ---------------------------------------------------------------------
-$dispensingTrendRange = 'This Week';
-$dispensingTrend = [
-    'labels' => ['May 14', 'May 15', 'May 16', 'May 17', 'May 18', 'May 19', 'May 20'],
-    'values' => [28, 35, 22, 40, 31, 26, 42],
-];
+$allInventoryItems = array_merge(hc_get_inventory_items('medicine'), hc_get_inventory_items('vaccine'));
+$categoryByInventoryId = [];
+foreach ($allInventoryItems as $item) {
+    $categoryByInventoryId[$item['id']] = $item['category'];
+}
+
+// Most dispensed orders never actually got linked to a tracked
+// inventory record at dispense time (dispensedInventoryId blank is a
+// genuine, allowed "don't adjust stock" choice on both dispense flows
+// — see api/dispense-pharmacy-order.php/api/dispense-without-prescription.php's
+// own comments) — trusting dispensedInventoryId alone left almost
+// every real dispense bucketed as "Uncategorized", which produced a
+// mostly-empty, not-very-useful chart. When it's blank, this falls
+// back to the SAME approximate name match
+// (includes/shared/inventory_match.php's hc_item_names_match(), "does
+// either string's generic first word appear in the other") the
+// dispense flow's own suggested-item pre-fill already uses — e.g. a
+// doctor's free-text "Paracetamol" order still resolves to whatever
+// real "Paracetamol ___ Tablet" inventory item exists right now, same
+// approximate standard this app already applies elsewhere rather than
+// a stricter one invented just for this chart.
+$allDispensedOrders = [];
+foreach (hc_get_all_pharmacy_order_docs() as $doc) {
+    $f = $doc['fields'];
+    if (($f['status'] ?? '') !== 'dispensed') {
+        continue;
+    }
+    $inventoryId = $f['dispensedInventoryId'] ?? '';
+    $category = $inventoryId !== '' ? ($categoryByInventoryId[$inventoryId] ?? null) : null;
+    if ($category === null) {
+        $itemName = (string) ($f['itemName'] ?? '');
+        $category = 'Uncategorized';
+        if ($itemName !== '') {
+            foreach ($allInventoryItems as $invItem) {
+                if (hc_item_names_match($invItem['name'], $itemName)) {
+                    $category = $invItem['category'];
+                    break;
+                }
+            }
+        }
+    }
+    $allDispensedOrders[] = [
+        'dispensedDateRaw' => $f['dispensedDate'] ?? '',
+        'category' => $category,
+    ];
+}
 
 // ---------------------------------------------------------------------
-// Medicines by Category — bar chart (default range: This Month)
+// Dispensing Trend — line chart. Real count of dispensed prescriptions
+// per day/month, bucketed over the selected range (same shared helper
+// every other role's own trend chart uses).
 // ---------------------------------------------------------------------
-$medicinesByCategoryRange = 'This Month';
+$dispensingTrendRangeState = hc_resolve_dashboard_range('trendRange', ['this_week' => 'This Week', 'this_month' => 'This Month', 'this_year' => 'This Year'], 'this_week');
+$dispensingTrendRangeKey = $dispensingTrendRangeState['key'];
+$dispensingTrendRange = $dispensingTrendRangeState['label'];
+
+$dispensingTrend = hc_dashboard_trend_series(
+    $allDispensedOrders,
+    fn ($o) => $o['dispensedDateRaw'],
+    $dispensingTrendRangeKey,
+    $dispensingTrendRangeState['customFrom'],
+    $dispensingTrendRangeState['customTo']
+);
+
+// ---------------------------------------------------------------------
+// Medicines by Category — bar chart. Real count of dispensed items per
+// real inventory category, over the selected range — same "group real
+// rows within a date range" shape as
+// includes/medical_technician/medical_technician_dashboard_firestore.php's
+// Tests by Type.
+// ---------------------------------------------------------------------
+$medicinesByCategoryRangeState = hc_resolve_dashboard_range('categoryRange', ['this_week' => 'This Week', 'this_month' => 'This Month', 'this_year' => 'This Year'], 'this_month');
+$medicinesByCategoryRangeKey = $medicinesByCategoryRangeState['key'];
+$medicinesByCategoryRange = $medicinesByCategoryRangeState['label'];
+
+$categoryRangeOrders = array_filter($allDispensedOrders, fn ($o) => hc_matches_date_range_key($o['dispensedDateRaw'], $medicinesByCategoryRangeKey, $medicinesByCategoryRangeState['customFrom'], $medicinesByCategoryRangeState['customTo']));
+
+$categoryCounts = [];
+foreach ($categoryRangeOrders as $o) {
+    $categoryCounts[$o['category']] = ($categoryCounts[$o['category']] ?? 0) + 1;
+}
+arsort($categoryCounts);
 $medicinesByCategory = [
-    'labels' => ['Antibiotics', 'Analgesics', 'Antihistamines', 'Vitamins', 'Antihypertensives', 'Others'],
-    'values' => [72, 95, 48, 60, 54, 57],
+    'labels' => array_keys($categoryCounts),
+    'values' => array_values($categoryCounts),
 ];
 
 // ---------------------------------------------------------------------

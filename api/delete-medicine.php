@@ -4,11 +4,15 @@
  * Delete Medicine / Vaccine (api/delete-medicine.php)
  * ---------------------------------------------------------------------
  * Called by assets/js/medicine_vaccine_inventory_pharmacist.js when a
- * pharmacist or sub-admin confirms "Delete" from a row's three-dot
- * menu on pharmacist/medicine_vaccine_inventory.php or
+ * sub-admin confirms "Delete" from a row's three-dot menu on
  * subadmin/medicine_vaccine_inventory.php. Deletes a real
  * medicines/{id} doc from Firestore — same delete pattern as
  * api/reject-account.php.
+ *
+ * Subadmin-only — a pharmacist can archive an item
+ * (api/archive-medicine.php, reversible) but never permanently delete
+ * one; pharmacist/archived_items.php's own row actions reflect this
+ * (Unarchive only, no Delete).
  * =====================================================================
  */
 
@@ -19,7 +23,7 @@ require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audi
 
 header('Content-Type: application/json');
 
-if (!in_array($_SESSION['role'] ?? null, ['pharmacist', 'subadmin'], true)) {
+if (($_SESSION['role'] ?? null) !== 'subadmin') {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Not authorized.']);
     exit;

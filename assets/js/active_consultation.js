@@ -230,7 +230,6 @@ document.addEventListener('DOMContentLoaded', function () {
             ['frequency', 'acv-med-frequency', 'Frequency'],
             ['duration', 'acv-med-duration', 'Duration'],
             ['route', 'acv-med-route', 'Route'],
-            ['instructions', 'acv-med-instructions', 'Instructions'],
         ].forEach(function (field) {
             const td = document.createElement('td');
             const input = document.createElement('input');
@@ -241,6 +240,23 @@ document.addEventListener('DOMContentLoaded', function () {
             td.appendChild(input);
             row.appendChild(td);
         });
+
+        // Instructions gets its own auto-growing <textarea> instead of a
+        // single-line <input> — free-text notes like "take it every 4
+        // hours with food" otherwise scroll out of view inside a fixed-
+        // width box while typing instead of staying visible.
+        const instructionsTd = document.createElement('td');
+        const instructionsInput = document.createElement('textarea');
+        instructionsInput.className = 'acv-med-instructions';
+        instructionsInput.placeholder = 'Instructions';
+        instructionsInput.rows = 1;
+        instructionsInput.value = data.instructions || '';
+        instructionsInput.addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+        instructionsTd.appendChild(instructionsInput);
+        row.appendChild(instructionsTd);
 
         const actionTd = document.createElement('td');
         const removeBtn = document.createElement('button');
@@ -260,6 +276,15 @@ document.addEventListener('DOMContentLoaded', function () {
         row.appendChild(actionTd);
 
         medRowsBody.appendChild(row);
+        // scrollHeight only reflects real layout once the element is
+        // actually in the DOM — grow it to fit a pre-filled value now
+        // (e.g. re-opening a consultation that already has a long
+        // instructions note) rather than only ever growing on the
+        // NEXT keystroke.
+        if (instructionsInput.value) {
+            instructionsInput.style.height = 'auto';
+            instructionsInput.style.height = instructionsInput.scrollHeight + 'px';
+        }
     }
 
     tabBtns.forEach(function (btn) {
@@ -409,6 +434,24 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     function hideMedVaccinePanel() {
         medVaccinePanel.classList.add('d-none');
+    }
+
+    // -----------------------------------------------------------
+    // "Also needs a follow-up visit" checkbox -> reveals a date input,
+    // same show/hide idiom as the panels above. Posted as "nextFollowUp"
+    // (api/complete-consultation.php) — see this field's own comment on
+    // doctor/active_consultation.php for why it reuses medical staff's
+    // existing field instead of a new one.
+    // -----------------------------------------------------------
+    const needsFollowUpCheckbox = document.getElementById('acvNeedsFollowUp');
+    const followUpDatePanel = document.getElementById('acvFollowUpDatePanel');
+    const followUpDateInput = document.getElementById('acvFollowUpDate');
+    const followUpDateError = document.getElementById('acvFollowUpDateError');
+    if (needsFollowUpCheckbox) {
+        needsFollowUpCheckbox.addEventListener('change', function () {
+            followUpDatePanel.classList.toggle('d-none', !this.checked);
+            followUpDateError.classList.add('d-none');
+        });
     }
 
     // -----------------------------------------------------------
@@ -612,6 +655,14 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        const followUpDate = needsFollowUp ? followUpDateInput.value : '';
+        if (needsFollowUp && !followUpDate) {
+            followUpDateError.classList.remove('d-none');
+            followUpDatePanel.classList.remove('d-none');
+            return;
+        }
+        followUpDateError.classList.add('d-none');
+
         const confirmMessages = {
             laboratory: 'Send this patient to the Laboratory? This saves the consultation and notifies the medical technologist — it does NOT end the consultation.',
             xray: 'Send this patient for X-ray? This saves the consultation and notifies the radiologic technologist — it does NOT end the consultation.',
@@ -635,6 +686,7 @@ document.addEventListener('DOMContentLoaded', function () {
             medications: medications,
             nextRouting: nextRouting,
             needsFollowUp: needsFollowUp,
+            nextFollowUp: followUpDate,
             labTests: checkedLabTests(),
             xrayExams: checkedXrayExams(),
             assignedToUid: nextRouting === 'laboratory' ? selectedLabStaffUid() : (nextRouting === 'xray' ? selectedXrayStaffUid() : ''),

@@ -23,10 +23,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const gridColor = rootStyle.getPropertyValue('--adm-border').trim() || '#ECEDF3';
     const tickColor = rootStyle.getPropertyValue('--adm-text-muted').trim() || '#6B7280';
 
+    // Exposes the 2 range-filterable charts (Dispensing Trend, Medicines
+    // by Category) so assets/js/dashboard-range-filters.js can live-
+    // update them in place (chart.data = ...; chart.update()) instead of
+    // a full page reload when their dropdown filter changes.
+    window.HC_DASHBOARD_CHARTS = window.HC_DASHBOARD_CHARTS || {};
+
     /* ---------- Dispensing Trend (line) ---------- */
     const trendCanvas = document.getElementById('dispensingTrendChart');
     if (trendCanvas) {
-        new Chart(trendCanvas, {
+        window.HC_DASHBOARD_CHARTS.dispensingTrend = new Chart(trendCanvas, {
             type: 'line',
             data: {
                 labels: data.dispensingTrend.labels,
@@ -61,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
     /* ---------- Medicines by Category (bar) ---------- */
     const categoryCanvas = document.getElementById('medicinesByCategoryChart');
     if (categoryCanvas) {
-        new Chart(categoryCanvas, {
+        window.HC_DASHBOARD_CHARTS.medicinesByCategory = new Chart(categoryCanvas, {
             type: 'bar',
             data: {
                 labels: data.medicinesByCategory.labels,

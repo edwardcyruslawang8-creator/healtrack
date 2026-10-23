@@ -1,10 +1,85 @@
 <!-- =============================================================
+     MANAGE MEDICINE / MANAGE VACCINE MODAL (pharmacist only)
+     -------------------------------------------------------------
+     Triggered by each row's own "Manage Medicine"/"Manage Vaccine"
+     button on pharmacist/medicine_vaccine_inventory.php — a
+     pharmacist's ONE real entry point for an existing item, deliberately
+     more limited than subadmin's pencil+dropdown below: every field is
+     shown (same data-med-* attributes the old View Details modal read,
+     no network request) but NONE are editable here — a pharmacist
+     can't change name/category/unit/expiry date/current stock/minimum
+     level/reorder level (api/update-medicine.php and
+     api/adjust-medicine-stock.php both refuse the pharmacist role
+     server-side now, not just a hidden button) and can't permanently
+     delete an item (api/delete-medicine.php, also subadmin-only).
+     What's left: Dispense (No Prescription) as the one real mutating
+     action from here (hands off to #dispenseNoRxModal below, same
+     endpoint subadmin's dropdown uses), and View Stock History/Archive
+     as two icon buttons in this modal's own header, upper-right, next
+     to Close — secondary/occasional actions, not what a pharmacist
+     usually opens this for. Each hands off to its own
+     modal/confirmation with the row's data carried along (inline
+     <script> in pharmacist/medicine_vaccine_inventory.php), same
+     hand-off pattern subadmin/user_management.php's "Manage User"
+     modal already established. Not used on
+     subadmin/medicine_vaccine_inventory.php, which keeps the fuller
+     pencil+dropdown layout below.
+     ============================================================= -->
+<div class="modal fade am-modal" id="mviManageModal" tabindex="-1" aria-labelledby="mviManageModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="mviManageModalLabel">Manage Medicine</h5>
+        <div class="mvi-manage-header-actions">
+          <button type="button" class="mvi-manage-header-btn" id="mmHistoryTrigger"><i class="bi bi-clock-history"></i> History</button>
+          <button type="button" class="mvi-manage-header-btn" id="mmArchiveTrigger"><i class="bi bi-archive"></i> Archive</button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="mvi-manage-header">
+          <span class="mvi-manage-thumb" id="mmThumb"><i class="bi bi-capsule" id="mmThumbIcon"></i></span>
+          <div class="mvi-manage-identity">
+            <h5 class="mvi-manage-name" id="mmName"></h5>
+            <div class="mvi-manage-badges">
+              <span class="mvi-badge" id="mmStatusBadge"></span>
+              <span class="mvi-badge mvi-expiry-badge d-none" id="mmExpiryBadge"></span>
+            </div>
+          </div>
+        </div>
+
+        <dl class="am-detail-list">
+          <div class="am-detail-row"><dt>Category</dt><dd id="mmCategory"></dd></div>
+          <div class="am-detail-row"><dt>Unit</dt><dd id="mmUnit"></dd></div>
+          <div class="am-detail-row"><dt>Current Stock</dt><dd id="mmStock"></dd></div>
+          <div class="am-detail-row"><dt>Minimum Level</dt><dd id="mmMinLevel"></dd></div>
+          <div class="am-detail-row"><dt>Reorder Level</dt><dd id="mmReorderLevel"></dd></div>
+          <div class="am-detail-row"><dt>Expiry Date</dt><dd id="mmExpiry"></dd></div>
+          <div class="am-detail-row" id="mmDescRow"><dt>Description</dt><dd id="mmDesc"></dd></div>
+        </dl>
+
+        <!-- Only shown once the row's own data-med-expiry-status is
+             "expired" — an expired item can never be dispensed
+             (api/dispense-without-prescription.php re-checks this
+             server-side too), so the Dispense button below is disabled
+             rather than left clickable just to fail after. -->
+        <p class="mvi-manage-expired-note d-none" id="mmExpiredNote"><i class="bi bi-exclamation-circle"></i> This item has expired and can no longer be dispensed.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="am-btn-cancel" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="mvi-manage-dispense-btn" id="mmDispenseTrigger"><i class="bi bi-capsule"></i> Dispense (No Prescription)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =============================================================
      VIEW DETAILS + ADJUST STOCK MODALS (shared, read-only + quick stock change)
      -------------------------------------------------------------
      Companions to add_medicine_modal.php's Add/Edit form, triggered by
      each row's three-dot menu ("View Details"/"Adjust Stock") on
-     pharmacist/medicine_vaccine_inventory.php and
-     subadmin/medicine_vaccine_inventory.php.
+     subadmin/medicine_vaccine_inventory.php (pharmacist's own
+     equivalent read-only view lives inside #mviManageModal above now).
        - View Details: populated purely from the clicked row's
          data-med-* attributes (assets/js/medicine_vaccine_inventory_pharmacist.js)
          — no network request, since the page already rendered every
@@ -12,7 +87,8 @@
        - Adjust Stock: a focused +/- amount, POSTs to
          api/adjust-medicine-stock.php (NOT the full Edit form/
          api/update-medicine.php) since changing just the stock count
-         is the routine day-to-day action.
+         is the routine day-to-day action. Subadmin-only now — see
+         that endpoint's own header comment.
      ============================================================= -->
 <div class="modal fade am-modal" id="viewMedicineModal" tabindex="-1" aria-labelledby="viewMedicineModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">

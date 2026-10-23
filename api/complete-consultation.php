@@ -80,6 +80,7 @@ require_once __DIR__ . '/../includes/firestore/accounts.php'; // hc_get_active_s
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 require_once __DIR__ . '/../includes/shared/vitals_validation.php'; // hc_validate_vitals()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
+require_once __DIR__ . '/../includes/shared/mailer.php'; // hc_send_email(), hc_account_email_shell() — order-assignment emails below
 
 header('Content-Type: application/json');
 
@@ -149,6 +150,35 @@ if ($prescriptionHtml !== '') {
 // Vaccination) — since needing a follow-up scheduled doesn't rule out
 // also being routed somewhere today.
 $needsFollowUp = (bool) ($body['needsFollowUp'] ?? false);
+
+// The actual follow-up DATE, required once the box above is checked —
+// posted as a plain "YYYY-MM-DD" (doctor/active_consultation.php's
+// <input type="date">). Stored into the SAME "nextFollowUp" field
+// medical staff's own "Set Consultation" modal writes
+// (api/create-consultation.php/api/update-consultation.php), just
+// time-stamped at 9:00 AM so it sorts/reads the same way that
+// datetime-local field already does — this is what makes this date
+// show up for free in the existing Upcoming Follow-ups dashboard cards
+// and hc_get_followup_notifications() (doctor/healthcare-staff in-app
+// reminders), with no separate pipeline. When the box is unchecked, any
+// nextFollowUp set by medical staff's own modal is left untouched
+// (not this doctor's to clear).
+$nextFollowUp = null;
+if ($needsFollowUp) {
+    $rawFollowUpDate = trim((string) ($body['nextFollowUp'] ?? ''));
+    if ($rawFollowUpDate === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $rawFollowUpDate)) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => 'Please select a follow-up date.']);
+        exit;
+    }
+    $followUpTs = strtotime($rawFollowUpDate);
+    if ($followUpTs === false || $followUpTs < strtotime(date('Y-m-d'))) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => 'The follow-up date cannot be in the past.']);
+        exit;
+    }
+    $nextFollowUp = $rawFollowUpDate . 'T09:00';
+}
 
 $validRouting = ['laboratory', 'xray', 'pharmacy', 'vaccination'];
 $nextRouting = trim((string) ($body['nextRouting'] ?? ''));
@@ -269,6 +299,13 @@ $updated['vitals'] = $vitals;
 $updated['medications'] = $medications;
 $updated['nextRouting'] = $nextRouting !== '' ? $nextRouting : null;
 $updated['needsFollowUp'] = $needsFollowUp;
+if ($nextFollowUp !== null && $nextFollowUp !== ($existing['nextFollowUp'] ?? '')) {
+    $updated['nextFollowUp'] = $nextFollowUp;
+    // A genuinely CHANGED follow-up date means any reminders already
+    // sent for the old date no longer apply — see
+    // includes/shared/followup_reminder.php's hc_followup_reminder_tier_due().
+    $updated['followUpRemindersSent'] = [];
+}
 $updated['labTests'] = $labTests;
 $updated['xrayExams'] = $xrayExams;
 $updated['doctorNotes'] = $doctorNotes !== '' ? $doctorNotes : null;
@@ -402,10 +439,12 @@ if ($nextRouting === 'laboratory' && count($labTests) > 0) {
         }
     }
 
+    $newlyOrderedLabCount = 0;
     foreach ($labTests as $testName) {
         if (in_array($testName, $alreadyOrderedTestNames, true)) {
             continue;
         }
+        $newlyOrderedLabCount++;
         $firestore->addDocument('lab_results', [
             'patientId' => $existing['patientId'] ?? '',
             'testName' => $testName,
@@ -441,6 +480,28 @@ if ($nextRouting === 'laboratory' && count($labTests) > 0) {
             'assignedToName' => $nextRouting === 'laboratory' ? $assignedToName : null,
         ]);
     }
+
+    // Email the specific medical technologist the doctor assigned this
+    // to — so they're notified even while signed out/away from the
+    // computer, same reasoning as every other reminder email in this
+    // app. Only sent when at least one order was genuinely NEW this
+    // request (not on a re-save where every test was already ordered
+    // before) — otherwise re-saving the same consultation with
+    // Laboratory still selected would re-email the same person every
+    // time.
+    if ($newlyOrderedLabCount > 0 && $assignedToUid !== '' && $assignedToName !== null) {
+        $assignedUserDoc = $firestore->getDocument('users', $assignedToUid);
+        $assignedEmail = trim((string) ($assignedUserDoc['email'] ?? ''));
+        if ($assignedEmail !== '') {
+            hc_send_email($assignedEmail, $assignedToName, 'New laboratory order — ' . ($existing['patientName'] ?? 'a patient'), hc_account_email_shell(
+                'You have a new laboratory order',
+                '<p style="margin:0 0 12px; font-size:14px; line-height:1.6;">Hi ' . htmlspecialchars($assignedToName) . ', ' . htmlspecialchars($_SESSION['name'] ?? 'a doctor') . ' just sent you a new laboratory order.</p>'
+                . '<p style="margin:0 0 12px; font-size:14px; line-height:1.6;"><strong>Patient:</strong> ' . htmlspecialchars($existing['patientName'] ?? '') . '<br>'
+                . '<strong>Test(s):</strong> ' . htmlspecialchars(implode(', ', $labTests)) . '</p>'
+                . '<p style="margin:0; font-size:14px; line-height:1.6;">Sign in to HEALTrack to view and process this order.</p>'
+            ));
+        }
+    }
 }
 
 // "X-ray" routing -> one real pending xray_results doc PER selected
@@ -461,10 +522,12 @@ if ($nextRouting === 'xray' && count($xrayExams) > 0) {
         }
     }
 
+    $newlyOrderedXrayCount = 0;
     foreach ($xrayExams as $examName) {
         if (in_array($examName, $alreadyOrderedExamNames, true)) {
             continue;
         }
+        $newlyOrderedXrayCount++;
         $firestore->addDocument('xray_results', [
             'patientId' => $existing['patientId'] ?? '',
             'examName' => $examName,
@@ -484,6 +547,22 @@ if ($nextRouting === 'xray' && count($xrayExams) > 0) {
             'assignedToUid' => $nextRouting === 'xray' && $assignedToUid !== '' ? $assignedToUid : null,
             'assignedToName' => $nextRouting === 'xray' ? $assignedToName : null,
         ]);
+    }
+
+    // Email the specific radiologic technologist the doctor assigned
+    // this to — same reasoning/guard as the Laboratory block above.
+    if ($newlyOrderedXrayCount > 0 && $assignedToUid !== '' && $assignedToName !== null) {
+        $assignedUserDoc = $firestore->getDocument('users', $assignedToUid);
+        $assignedEmail = trim((string) ($assignedUserDoc['email'] ?? ''));
+        if ($assignedEmail !== '') {
+            hc_send_email($assignedEmail, $assignedToName, 'New X-ray order — ' . ($existing['patientName'] ?? 'a patient'), hc_account_email_shell(
+                'You have a new X-ray order',
+                '<p style="margin:0 0 12px; font-size:14px; line-height:1.6;">Hi ' . htmlspecialchars($assignedToName) . ', ' . htmlspecialchars($_SESSION['name'] ?? 'a doctor') . ' just sent you a new X-ray order.</p>'
+                . '<p style="margin:0 0 12px; font-size:14px; line-height:1.6;"><strong>Patient:</strong> ' . htmlspecialchars($existing['patientName'] ?? '') . '<br>'
+                . '<strong>Exam(s):</strong> ' . htmlspecialchars(implode(', ', $xrayExams)) . '</p>'
+                . '<p style="margin:0; font-size:14px; line-height:1.6;">Sign in to HEALTrack to view and process this order.</p>'
+            ));
+        }
     }
 }
 

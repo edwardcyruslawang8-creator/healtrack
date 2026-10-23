@@ -4,12 +4,14 @@
  * HEALTrack — Health Information System
  * Laboratory Result Details (doctor/laboratory_result_details.php)
  * ---------------------------------------------------------------------
- * Reached via the "View Full Result" link on
- * doctor/active_consultation.php's "Lab Results" card. Same drill-down
- * detail view as medical_technician's/medical-staff's/subadmin's own
- * laboratory_result_details.php (reuses assets/css/laboratory_result_details.css
- * directly, visually identical) — lab-only here, no X-ray section,
- * since a doctor only ever reaches this via a real lab_results doc id.
+ * Reached two ways — see includes/doctor/laboratory_result_details_doctor_firestore.php's
+ * header comment: doctor/active_consultation.php's "Lab Results" card,
+ * or doctor/patient_laboratory_xray.php's (Patient Profile's
+ * "Laboratory & X-ray" tab) View buttons, lab OR x-ray. Same
+ * drill-down detail view as medical_technician's/medical-staff's/
+ * subadmin's own laboratory_result_details.php (reuses
+ * assets/css/laboratory_result_details.css directly, visually
+ * identical).
  *
  * CONNECTED to real Firestore data — see
  * includes/doctor/laboratory_result_details_doctor_firestore.php's
@@ -32,12 +34,16 @@ require_once __DIR__ . '/../includes/doctor/laboratory_result_details_doctor_fir
 // $backConsultationId, $paperFormUrl
 
 // Sidebar nav — same Doctor nav list as every other doctor/*.php page.
-// Consultations stays "active" since this page is only ever reached
-// from a consultation.
+// Which item reads "active" matches $backHref below: Consultations when
+// reached from an active consultation, Patient Management when reached
+// from the Patient Profile's "Laboratory & X-ray" tab instead (that
+// page itself highlights Patient Management, not Consultations — this
+// stays consistent with it rather than always defaulting to
+// Consultations regardless of where the doctor actually came from).
 $doctorNavItems = [
     ['icon' => 'bi-grid-fill',           'label' => 'Dashboard',          'href' => 'dashboard.php'],
-    ['icon' => 'bi-person-lines-fill',   'label' => 'Patient Management', 'href' => 'patient_management.php'],
-    ['icon' => 'bi-calendar2-heart-fill','label' => 'Consultations',      'href' => 'consultations.php', 'active' => true],
+    ['icon' => 'bi-person-lines-fill',   'label' => 'Patient Management', 'href' => 'patient_management.php', 'active' => $backConsultationId === ''],
+    ['icon' => 'bi-calendar2-heart-fill','label' => 'Consultations',      'href' => 'consultations.php', 'active' => $backConsultationId !== ''],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',
@@ -52,7 +58,15 @@ $doctorNavItems = [
     ['icon' => 'bi-gear-fill',           'label' => 'Profile / Settings', 'href' => 'profile_settings.php'],
 ];
 
-$backHref = $backConsultationId !== '' ? 'active_consultation.php?id=' . urlencode($backConsultationId) : 'consultations.php';
+// Returns to the exact workspace this was opened from: the active
+// consultation when reached via that page's "Lab Results" card, or
+// back to the patient's own "Laboratory & X-ray" profile tab when
+// reached from there instead — NOT a generic consultations.php, which
+// would otherwise strand a doctor who opened this straight from a
+// patient's profile rather than mid-consultation.
+$backHref = $backConsultationId !== ''
+    ? 'active_consultation.php?id=' . urlencode($backConsultationId)
+    : 'patient_laboratory_xray.php?id=' . urlencode($patient['id']);
 ?>
 <!DOCTYPE html>
 <html lang="en">

@@ -20,17 +20,21 @@
  * (api/session-login.php reads it back into a fresh session on every
  * login).
  *
- * Body: {"ids": [1, 2, ...]} to mark specific ids read — this is what
- * every caller actually sends now, including "Mark all as read" (the
- * client gathers every currently-visible row's real id rather than
- * relying on this endpoint to guess a fixed seed list, since
- * pharmacist's real notification ids are generated live from current
- * inventory, not a static set like subadmin's). {"all": true} still
- * works as a fallback (marks subadmin_seed_unread_notification_ids()
- * read) for backward compatibility, but nothing calls it anymore.
- * Mark-only either way — there's no way to mark something unread again
- * from here, matching the page's own UI (no "mark as unread" action
- * exists).
+ * Body: {"ids": [1, 2, ...]} to mark specific ids read (opening a
+ * single notification's details modal). {"all": true} — "Mark all as
+ * read" — marks the COMPLETE real id universe for the signed-in role
+ * read, computed server-side (hc_doctor_all_notification_ids() and its
+ * five siblings in config/constants.php, one per role), NOT just
+ * whichever ids the client happens to have in the DOM. This used to
+ * send the client's currently-rendered row ids instead, which was
+ * wrong the moment a role's notifications list grew past one
+ * pagination page (assets/js/notifications.js's getRows() only ever
+ * sees the current page) — "Mark all as read" would silently leave
+ * every notification beyond page 1 still unread, so the sidebar/bell
+ * badge kept showing a nonzero count on every other page even though
+ * the user had just clicked "mark all as read". Mark-only either way
+ * — there's no way to mark something unread again from here, matching
+ * the page's own UI (no "mark as unread" action exists).
  * =====================================================================
  */
 
@@ -56,14 +60,42 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $body = json_decode(file_get_contents('php://input'), true) ?? [];
 $readIds = $_SESSION['ntfReadIds'] ?? [];
 
+// Which ids actually need marking read this request — the role's
+// COMPLETE real id universe for {"all": true}, or just the specific
+// ids given otherwise. Same role dispatch as the $unreadCount switch
+// below (and must stay in sync with it — each role's own
+// *_all_notification_ids() in config/constants.php is the single
+// source of truth both read from).
 if (!empty($body['all'])) {
-    $readIds = subadmin_seed_unread_notification_ids();
+    switch ($_SESSION['role'] ?? null) {
+        case 'pharmacist':
+            $idsToMark = hc_pharmacist_all_notification_ids();
+            break;
+        case 'doctor':
+            $idsToMark = hc_doctor_all_notification_ids();
+            break;
+        case 'healthcare_staff':
+            $idsToMark = hc_medstaff_all_notification_ids();
+            break;
+        case 'medical_technician':
+            $idsToMark = hc_medtech_all_notification_ids();
+            break;
+        case 'radio_technologist':
+            $idsToMark = hc_radiotech_all_notification_ids();
+            break;
+        default:
+            $idsToMark = subadmin_all_notification_ids();
+    }
 } elseif (!empty($body['ids']) && is_array($body['ids'])) {
-    foreach ($body['ids'] as $id) {
-        $id = (int) $id;
-        if (!in_array($id, $readIds, true)) {
-            $readIds[] = $id;
-        }
+    $idsToMark = array_map('intval', $body['ids']);
+} else {
+    $idsToMark = [];
+}
+
+foreach ($idsToMark as $id) {
+    $id = (int) $id;
+    if (!in_array($id, $readIds, true)) {
+        $readIds[] = $id;
     }
 }
 

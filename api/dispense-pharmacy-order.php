@@ -89,6 +89,17 @@ if ($inventoryItemId !== '') {
         echo json_encode(['success' => false, 'error' => 'This inventory item no longer exists.']);
         exit;
     }
+    // An expired medicine/vaccine can never be dispensed — re-checked
+    // here server-side, same hc_inventory_expiry_status() every other
+    // real expiry check in this app already uses. A blank/not-linked
+    // $inventoryItemId (dispensing with no stock adjustment) skips this
+    // entirely — there's no real inventory record to check an expiry
+    // against in that case, same as it already has no stock to check.
+    if (hc_inventory_expiry_status($medicineDoc['expiryDate'] ?? '') === 'expired') {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => ($medicineDoc['name'] ?? 'This item') . ' has expired and can no longer be dispensed.']);
+        exit;
+    }
 
     $oldStock = (int) ($medicineDoc['currentStock'] ?? 0);
     $newStock = $oldStock - $quantity;

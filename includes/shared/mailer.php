@@ -43,6 +43,12 @@ if (!function_exists('hc_send_email')) {
 
         $mail = new PHPMailer(true);
         try {
+            // Without this, PHPMailer defaults to ISO-8859-1 — any
+            // non-ASCII character in the subject or body (em dashes,
+            // curly quotes, accented names) comes through as mojibake
+            // ("â€"" for "—") in a real inbox even though the PHP
+            // source itself is UTF-8.
+            $mail->CharSet = PHPMailer::CHARSET_UTF8;
             $mail->isSMTP();
             $mail->Host = HC_MAIL_SMTP_HOST;
             $mail->Port = HC_MAIL_SMTP_PORT;

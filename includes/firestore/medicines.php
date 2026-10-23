@@ -93,14 +93,17 @@ if (!function_exists('hc_medicine_expiry_badge_meta')) {
     }
 }
 
-if (!function_exists('hc_get_inventory_items')) {
+if (!function_exists('hc_query_inventory_items')) {
     /**
-     * Every medicines/{id} doc matching $type ("medicine" or "vaccine"),
-     * newest-name-first (alphabetical) with human-formatted date strings.
+     * @internal Shared by hc_get_inventory_items()/hc_get_archived_inventory_items()
+     * below — every medicines/{id} doc matching $type ("medicine" or
+     * "vaccine") AND whose real "archived" flag matches $archived,
+     * newest-name-first (alphabetical) with human-formatted date
+     * strings.
      *
      * @return array<int, array{id: string, name: string, category: string, unit: string, form: string, desc: string, currentStock: int, minLevel: int, reorderLevel: int, expiryDate: string, expiryDateRaw: string, expiryStatus: string, status: string, lastUpdatedRaw: string, lastUpdated: string, icon: string, colorMeta: array}>
      */
-    function hc_get_inventory_items(string $type): array
+    function hc_query_inventory_items(string $type, bool $archived): array
     {
         global $firestore;
 
@@ -111,11 +114,7 @@ if (!function_exists('hc_get_inventory_items')) {
             if (($f['type'] ?? 'medicine') !== $type) {
                 continue;
             }
-            // Archived (api/archive-medicine.php) — excluded from the
-            // default inventory list, same as every other read path over
-            // this collection (firebase/firestore.php's getAllMedicines()/
-            // getAllVaccines(), includes/shared/medicine_vaccine_inventory_shared.php).
-            if ($f['archived'] ?? false) {
+            if (($f['archived'] ?? false) !== $archived) {
                 continue;
             }
 
@@ -154,6 +153,32 @@ if (!function_exists('hc_get_inventory_items')) {
         });
 
         return $items;
+    }
+}
+
+if (!function_exists('hc_get_inventory_items')) {
+    /** Every NON-archived medicines/{id} doc matching $type — see hc_query_inventory_items(). */
+    function hc_get_inventory_items(string $type): array
+    {
+        return hc_query_inventory_items($type, false);
+    }
+}
+
+if (!function_exists('hc_get_archived_inventory_items')) {
+    /**
+     * Every ARCHIVED medicines/{id} doc matching $type — the mirror
+     * image of hc_get_inventory_items(), which excludes archived items
+     * from every other read path over this collection
+     * (api/archive-medicine.php's own header comment: "an archived
+     * item just stops appearing anywhere rather than being destroyed").
+     * This is the one place that's no longer quite true —
+     * pharmacist/archived_items.php uses this to actually show them
+     * again, with a real Unarchive action
+     * (api/unarchive-medicine.php) to bring one back.
+     */
+    function hc_get_archived_inventory_items(string $type): array
+    {
+        return hc_query_inventory_items($type, true);
     }
 }
 

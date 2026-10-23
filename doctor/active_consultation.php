@@ -660,6 +660,25 @@ $doctorNavItems = [
                         </span>
                         <input type="checkbox" id="acvNeedsFollowUp" <?= $consultation['needsFollowUp'] ? 'checked' : '' ?>>
                     </label>
+                    <!-- Shown only while the checkbox above is checked
+                         (assets/js/active_consultation.js). The chosen
+                         date is posted as "nextFollowUp"
+                         (api/complete-consultation.php) — the SAME
+                         field medical staff's own "Set Consultation"
+                         modal (medical-staff/consultations.php's
+                         #cnsFormFollowUp) already writes, so this one
+                         date feeds the existing Upcoming Follow-ups
+                         dashboard cards and hc_get_followup_notifications()
+                         (doctor/healthcare-staff in-app reminders) for
+                         free — no separate pipeline needed. A real
+                         value is required here once the box is checked
+                         (enforced both here and server-side), since a
+                         follow-up with no date can't be reminded about. -->
+                    <div class="acv-followup-date-panel <?= $consultation['needsFollowUp'] ? '' : 'd-none' ?>" id="acvFollowUpDatePanel">
+                        <label class="acv-field-label" for="acvFollowUpDate">Follow-up Date</label>
+                        <input type="date" class="form-control form-control-sm acv-followup-date-input" id="acvFollowUpDate" min="<?= date('Y-m-d') ?>" value="<?= htmlspecialchars($consultation['nextFollowUp'] !== '' ? substr($consultation['nextFollowUp'], 0, 10) : '') ?>">
+                        <div class="acv-followup-date-error text-danger small d-none" id="acvFollowUpDateError">Please select a follow-up date.</div>
+                    </div>
                 </div>
             </div>
 

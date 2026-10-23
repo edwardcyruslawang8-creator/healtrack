@@ -48,7 +48,11 @@ $statusMeta = [
 $requestedRecordId = $_GET['recordId'] ?? '';
 // The consultation this result was linked from, if any — carried
 // through purely so "Back" can return to the exact workspace the
-// doctor came from instead of a generic page.
+// doctor came from instead of a generic page. Blank (not carried)
+// means this was opened from patient_laboratory_xray.php's own View
+// buttons instead (the Patient Profile's "Laboratory & X-ray" tab),
+// which never sends &consultationId= — doctor/laboratory_result_details.php
+// uses this to decide which of those two pages "Back" returns to.
 $backConsultationId = $_GET['consultationId'] ?? '';
 
 // &type=lab|xray, sent by the new doctor/patient_laboratory_xray.php

@@ -251,12 +251,18 @@ if (!function_exists('hc_get_followup_notifications')) {
 
         return array_map(function ($c) use ($now) {
             $due = strtotime($c['nextFollowUp']);
-            $isOverdue = $due < $now;
+            $isToday = date('Y-m-d', $due) === date('Y-m-d', $now);
+            $isOverdue = !$isToday && $due < $now;
+
+            $title = $isToday ? 'Follow-up today' : ($isOverdue ? 'Follow-up overdue' : 'Follow-up due soon');
+            $description = $isToday
+                ? $c['patientName'] . ' has a follow-up check-up today, ' . date('M j, Y', $due) . '.'
+                : $c['patientName'] . ' — follow-up ' . ($isOverdue ? 'was due' : 'due') . ' ' . date('M j, Y', $due) . '.';
 
             return [
                 'id' => crc32($c['id'] . '-followup'),
-                'title' => $isOverdue ? 'Follow-up overdue' : 'Follow-up due soon',
-                'description' => $c['patientName'] . ' — follow-up ' . ($isOverdue ? 'was due' : 'due') . ' ' . date('M j, Y', $due) . '.',
+                'title' => $title,
+                'description' => $description,
                 'type' => 'Consultation',
                 'date' => date('M j, Y', $due),
                 'time' => date('g:i A', $due),

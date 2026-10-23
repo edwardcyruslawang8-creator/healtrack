@@ -4,13 +4,22 @@
  * Update Medicine / Vaccine (api/update-medicine.php)
  * ---------------------------------------------------------------------
  * Called by assets/js/medicine_vaccine_inventory_pharmacist.js when a
- * pharmacist OR sub-admin submits the "Add Medicine"/"Add Vaccine"
- * modal (includes/pharmacist/add_medicine_modal.php, reused as-is by
+ * sub-admin submits the "Add Medicine"/"Add Vaccine" modal
+ * (includes/pharmacist/add_medicine_modal.php, reused as-is by
  * subadmin/medicine_vaccine_inventory.php) in EDIT mode — the same
  * shared form api/create-medicine.php's modal uses, just pre-filled
  * and posting here instead when an existing item's Edit button opened
  * it. Writes to the same real "medicines" Firestore collection
  * includes/firestore/medicines.php reads.
+ *
+ * Subadmin-only — a pharmacist can still see every field (their own
+ * "Manage Medicine"/"Manage Vaccine" modal, includes/pharmacist/medicine_action_modals.php)
+ * but can't edit name/category/unit/expiry date/current stock/minimum
+ * level/reorder level; only a sub-admin can change this master
+ * inventory data. api/create-medicine.php (adding a genuinely NEW
+ * item) stays pharmacist-allowed — this restriction is specifically
+ * about editing an EXISTING item's own data, not about who can
+ * register new stock lines.
  *
  * Reads the existing doc first and merges the edited fields into it
  * (same reasoning as api/update-subadmin.php's header comment) rather
@@ -39,7 +48,7 @@ require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audi
 
 header('Content-Type: application/json');
 
-if (!in_array($_SESSION['role'] ?? null, ['pharmacist', 'subadmin'], true)) {
+if (($_SESSION['role'] ?? null) !== 'subadmin') {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Not authorized.']);
     exit;

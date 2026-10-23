@@ -12,6 +12,10 @@
  * server-side from the new stock vs minLevel
  * (hc_inventory_status_for_stock()), same as create/update — never
  * trusted from the client.
+ *
+ * Subadmin-only — a pharmacist changes real stock only through a real
+ * tracked action (Dispense, api/dispense-without-prescription.php /
+ * api/dispense-pharmacy-order.php), never this free-form +/- override.
  * =====================================================================
  */
 
@@ -23,7 +27,7 @@ require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audi
 
 header('Content-Type: application/json');
 
-if (!in_array($_SESSION['role'] ?? null, ['pharmacist', 'subadmin'], true)) {
+if (($_SESSION['role'] ?? null) !== 'subadmin') {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Not authorized.']);
     exit;

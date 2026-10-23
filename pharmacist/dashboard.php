@@ -42,7 +42,7 @@ if (($_SESSION['role'] ?? null) !== 'pharmacist') {
 
 require_once __DIR__ . '/../includes/pharmacist/pharmacist_dashboard_firestore.php';
 // $staffProfile, $dashboardDateLabel, $facilityOptions, $statCards,
-// $dispensingTrendRange, $dispensingTrend, $medicinesByCategoryRange,
+// $dispensingTrendRangeState, $dispensingTrend, $medicinesByCategoryRangeState,
 // $medicinesByCategory, $stockStatusTotal, $stockStatus, $expiringSoon,
 // $stockRequestStatusTotal, $stockRequestStatus, $todaysStockRequests,
 // $stockRequestMeta, $priorityMeta, $recentNotifications,
@@ -238,19 +238,10 @@ $staffNavItems = [
     <!-- ============ DISPENSING TREND + MEDICINES BY CATEGORY + STOCK STATUS ============ -->
     <div class="phm-row-3">
 
-        <div class="adm-card phm-chart-card">
+        <div class="adm-card phm-chart-card" data-dashboard-card="dispensingTrend" data-range-param="trendRange">
             <div class="phm-card-header">
                 <h2>Dispensing Trend</h2>
-                <div class="dropdown">
-                    <button class="phm-range-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <?= htmlspecialchars($dispensingTrendRange) ?>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="#">This Week</a></li>
-                        <li><a class="dropdown-item" href="#">This Month</a></li>
-                        <li><a class="dropdown-item" href="#">This Year</a></li>
-                    </ul>
-                </div>
+                <?php $range = $dispensingTrendRangeState; $drBtnClass = 'phm-range-btn'; require __DIR__ . '/../includes/shared/dashboard_range_dropdown.php'; ?>
             </div>
             <div class="phm-canvas-box">
                 <canvas id="dispensingTrendChart"></canvas>
@@ -260,19 +251,10 @@ $staffNavItems = [
             </div>
         </div>
 
-        <div class="adm-card phm-chart-card">
+        <div class="adm-card phm-chart-card" data-dashboard-card="medicinesByCategory" data-range-param="categoryRange">
             <div class="phm-card-header">
                 <h2>Medicines by Category</h2>
-                <div class="dropdown">
-                    <button class="phm-range-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <?= htmlspecialchars($medicinesByCategoryRange) ?>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="#">This Week</a></li>
-                        <li><a class="dropdown-item" href="#">This Month</a></li>
-                        <li><a class="dropdown-item" href="#">This Year</a></li>
-                    </ul>
-                </div>
+                <?php $range = $medicinesByCategoryRangeState; $drBtnClass = 'phm-range-btn'; require __DIR__ . '/../includes/shared/dashboard_range_dropdown.php'; ?>
             </div>
             <div class="phm-canvas-box">
                 <canvas id="medicinesByCategoryChart"></canvas>
@@ -465,8 +447,12 @@ $staffNavItems = [
             'colors' => array_column($stockRequestStatus, 'color'),
         ],
     ]) ?>;
+    window.HC_DASHBOARD_CARD_ENDPOINT = '../api/pharmacist-dashboard-card.php';
 </script>
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
+<script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/dashboard-range-filters.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/pharmacist_dashboard.js') ?>"></script>
 </body>
 </html>

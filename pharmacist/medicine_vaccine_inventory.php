@@ -17,19 +17,25 @@
  * CONNECTED to the real "medicines" Firestore collection — see
  * includes/pharmacist/medicine_vaccine_inventory_pharmacist_firestore.php's
  * header comment. Both tabs (Medicines AND Vaccines) are real, with
- * working search/category/status filters and pagination. "+ Add
- * Medicine"/"+ Add Vaccine" AND each row's Edit (pencil) button open
- * the SAME shared modal (includes/pharmacist/add_medicine_modal.php)
- * — Add writes a real document via api/create-medicine.php, Edit
- * updates the real document via api/update-medicine.php. The
- * three-dot menu's View Details (read-only, client-side only),
- * Adjust Stock (api/adjust-medicine-stock.php), and Delete
- * (api/delete-medicine.php, with a confirm() step) are real too —
- * see includes/pharmacist/medicine_action_modals.php for the first
- * two. Every row's data lives in data-med-* attributes on the <tr>
- * itself now (assets/js/medicine_vaccine_inventory_pharmacist.js reads
- * closest('tr').dataset for all four actions). View Stock History and
- * Archive are still not wired up.
+ * working search/category/status filters and pagination.
+ *
+ * Each row's Actions column is a single "Manage Medicine"/"Manage
+ * Vaccine" button (#mviManageModal, includes/pharmacist/medicine_action_modals.php)
+ * — a pharmacist can see every real field but can't edit
+ * name/category/unit/expiry date/current stock/minimum level/reorder
+ * level (api/update-medicine.php and api/adjust-medicine-stock.php are
+ * subadmin-only now) and can't permanently delete an item
+ * (api/delete-medicine.php, also subadmin-only). What's left for a
+ * pharmacist from this modal: Dispense (No Prescription) as the main
+ * action, and View Stock History/Archive as two icon buttons in the
+ * modal's own header, upper-right, next to Close. "+ Add
+ * Medicine"/"+ Add Vaccine" still write real NEW documents via
+ * api/create-medicine.php (unaffected — registering a new item is a
+ * different operation from editing an existing one's data).
+ * subadmin/medicine_vaccine_inventory.php keeps the older, fuller
+ * pencil+dropdown layout (Edit/Adjust Stock/Delete included) — see
+ * assets/js/medicine_vaccine_inventory_pharmacist.js's own header
+ * comment for how one file drives both.
  * =====================================================================
  */
 session_start();
@@ -179,6 +185,15 @@ if (!function_exists('mvi_page_url')) {
 
         <div class="adm-topbar-right">
             <div class="adm-topbar-actions">
+                <!-- api/archive-medicine.php's own header comment: an
+                     archived item just stops appearing in the lists
+                     above — this is the real, working link to the one
+                     place it can still be seen again
+                     (pharmacist/archived_items.php). -->
+                <a href="archived_items.php" class="phm-topbar-select-btn" style="text-decoration:none;">
+                    <i class="bi bi-archive"></i> Archived Items
+                </a>
+
                 <!-- Static, same as subadmin/dashboard.php's date badge — not a
                      real filter (nothing on this page re-fetches by date), so
                      it's shown as a plain label rather than a dropdown that
@@ -323,11 +338,20 @@ if (!function_exists('mvi_page_url')) {
                             data-med-unit="<?= htmlspecialchars($med['unit']) ?>"
                             data-med-expiry="<?= htmlspecialchars($med['expiryDateRaw']) ?>"
                             data-med-expiry-display="<?= htmlspecialchars($med['expiryDate']) ?>"
+                            data-med-expiry-status="<?= htmlspecialchars($med['expiryStatus']) ?>"
+                            data-med-expiry-badge-label="<?= $expiryBadge ? htmlspecialchars($expiryBadge['label']) : '' ?>"
+                            data-med-expiry-badge-bg="<?= $expiryBadge ? htmlspecialchars($expiryBadge['bg']) : '' ?>"
+                            data-med-expiry-badge-color="<?= $expiryBadge ? htmlspecialchars($expiryBadge['color']) : '' ?>"
                             data-med-stock="<?= (int) $med['currentStock'] ?>"
                             data-med-min-level="<?= (int) $med['minLevel'] ?>"
                             data-med-reorder-level="<?= (int) $med['reorderLevel'] ?>"
                             data-med-desc="<?= htmlspecialchars($med['desc']) ?>"
                             data-med-status-label="<?= htmlspecialchars($status['label']) ?>"
+                            data-med-status-bg="<?= htmlspecialchars($status['bg']) ?>"
+                            data-med-status-color="<?= htmlspecialchars($status['color']) ?>"
+                            data-med-icon="<?= htmlspecialchars($med['icon']) ?>"
+                            data-med-thumb-bg="<?= htmlspecialchars($med['colorMeta']['bg']) ?>"
+                            data-med-thumb-color="<?= htmlspecialchars($med['colorMeta']['color']) ?>"
                         >
                             <td>
                                 <div class="mvi-name-cell">
@@ -352,21 +376,7 @@ if (!function_exists('mvi_page_url')) {
                             <td class="mvi-updated-cell"><?= htmlspecialchars($med['lastUpdated']) ?></td>
                             <td>
                                 <div class="adm-action-btns">
-                                    <button type="button" class="adm-action-btn edit" aria-label="Edit"><i class="bi bi-pencil"></i></button>
-                                    <div class="dropdown">
-                                        <button type="button" class="adm-action-btn mvi-more-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions">
-                                            <i class="bi bi-three-dots-vertical"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            <li><a class="dropdown-item mvi-view-details" href="#"><i class="bi bi-eye me-2"></i>View Details</a></li>
-                                            <li><a class="dropdown-item mvi-adjust-stock" href="#"><i class="bi bi-sliders me-2"></i>Adjust Stock</a></li>
-                                            <li><a class="dropdown-item mvi-dispense-no-rx" href="#"><i class="bi bi-capsule me-2"></i>Dispense (No Prescription)</a></li>
-                                            <li><a class="dropdown-item mvi-stock-history" href="#"><i class="bi bi-clock-history me-2"></i>View Stock History</a></li>
-                                            <li><a class="dropdown-item mvi-archive" href="#"><i class="bi bi-archive me-2"></i>Archive</a></li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li><a class="dropdown-item text-danger mvi-delete" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
-                                        </ul>
-                                    </div>
+                                    <button type="button" class="mvi-manage-btn" data-bs-toggle="modal" data-bs-target="#mviManageModal" aria-label="Manage this medicine"><i class="bi bi-gear-fill"></i> Manage Medicine</button>
                                 </div>
                             </td>
                         </tr>
@@ -450,11 +460,20 @@ if (!function_exists('mvi_page_url')) {
                             data-med-unit="<?= htmlspecialchars($vac['unit']) ?>"
                             data-med-expiry="<?= htmlspecialchars($vac['expiryDateRaw']) ?>"
                             data-med-expiry-display="<?= htmlspecialchars($vac['expiryDate']) ?>"
+                            data-med-expiry-status="<?= htmlspecialchars($vac['expiryStatus']) ?>"
+                            data-med-expiry-badge-label="<?= $expiryBadge ? htmlspecialchars($expiryBadge['label']) : '' ?>"
+                            data-med-expiry-badge-bg="<?= $expiryBadge ? htmlspecialchars($expiryBadge['bg']) : '' ?>"
+                            data-med-expiry-badge-color="<?= $expiryBadge ? htmlspecialchars($expiryBadge['color']) : '' ?>"
                             data-med-stock="<?= (int) $vac['currentStock'] ?>"
                             data-med-min-level="<?= (int) $vac['minLevel'] ?>"
                             data-med-reorder-level="<?= (int) $vac['reorderLevel'] ?>"
                             data-med-desc="<?= htmlspecialchars($vac['desc']) ?>"
                             data-med-status-label="<?= htmlspecialchars($status['label']) ?>"
+                            data-med-status-bg="<?= htmlspecialchars($status['bg']) ?>"
+                            data-med-status-color="<?= htmlspecialchars($status['color']) ?>"
+                            data-med-icon="<?= htmlspecialchars($vac['icon']) ?>"
+                            data-med-thumb-bg="<?= htmlspecialchars($vac['colorMeta']['bg']) ?>"
+                            data-med-thumb-color="<?= htmlspecialchars($vac['colorMeta']['color']) ?>"
                         >
                             <td>
                                 <div class="mvi-name-cell">
@@ -479,21 +498,7 @@ if (!function_exists('mvi_page_url')) {
                             <td class="mvi-updated-cell"><?= htmlspecialchars($vac['lastUpdated']) ?></td>
                             <td>
                                 <div class="adm-action-btns">
-                                    <button type="button" class="adm-action-btn edit" aria-label="Edit"><i class="bi bi-pencil"></i></button>
-                                    <div class="dropdown">
-                                        <button type="button" class="adm-action-btn mvi-more-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions">
-                                            <i class="bi bi-three-dots-vertical"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            <li><a class="dropdown-item mvi-view-details" href="#"><i class="bi bi-eye me-2"></i>View Details</a></li>
-                                            <li><a class="dropdown-item mvi-adjust-stock" href="#"><i class="bi bi-sliders me-2"></i>Adjust Stock</a></li>
-                                            <li><a class="dropdown-item mvi-dispense-no-rx" href="#"><i class="bi bi-capsule me-2"></i>Dispense (No Prescription)</a></li>
-                                            <li><a class="dropdown-item mvi-stock-history" href="#"><i class="bi bi-clock-history me-2"></i>View Stock History</a></li>
-                                            <li><a class="dropdown-item mvi-archive" href="#"><i class="bi bi-archive me-2"></i>Archive</a></li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li><a class="dropdown-item text-danger mvi-delete" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
-                                        </ul>
-                                    </div>
+                                    <button type="button" class="mvi-manage-btn" data-bs-toggle="modal" data-bs-target="#mviManageModal" aria-label="Manage this vaccine"><i class="bi bi-gear-fill"></i> Manage Vaccine</button>
                                 </div>
                             </td>
                         </tr>
