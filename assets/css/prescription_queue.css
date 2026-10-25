@@ -49,26 +49,101 @@
 }
 .rxq-search input:focus{ outline: none; border-color: var(--adm-red-bright); }
 
+/* Type dropdown — overrides Bootstrap's .form-select defaults (16px
+   text, white fill, blue focus glow) so it matches .rxq-search: same
+   font, size, fill, border, radius and height (align-self: stretch
+   takes the row's height, which the search box sets). */
+.rxq-filter-select{
+  width: auto;
+  min-width: 140px;
+  align-self: stretch;
+  background-color: var(--adm-bg);
+  background-position: right 12px center;
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 0 36px 0 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--adm-text);
+  box-shadow: none;
+  cursor: pointer;
+}
+.rxq-filter-select:hover{ border-color: var(--adm-text-soft); }
+.rxq-filter-select:focus{
+  border-color: var(--adm-red-bright);
+  box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.12);
+}
+.rxq-filter-select option{
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--adm-text);
+  background-color: var(--adm-card);
+}
+.rxq-filter-select option:checked{
+  color: var(--adm-red-bright);
+  font-weight: 600;
+}
+
 .rxq-daterange{
   display: flex;
   align-items: center;
+  align-self: stretch;
   gap: 8px;
   background: var(--adm-bg);
   border: 1px solid var(--adm-border);
   border-radius: 10px;
-  padding: 7px 14px;
+  padding: 0 14px;
   font-size: 13px;
   color: var(--adm-text);
 }
-.rxq-daterange i{ color: var(--adm-text-soft); }
+.rxq-daterange:hover{ border-color: var(--adm-text-soft); }
+.rxq-daterange:focus-within{
+  border-color: var(--adm-red-bright);
+  box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.12);
+}
+.rxq-daterange i{ color: var(--adm-text-soft); font-size: 14px; line-height: 1; }
+.rxq-daterange .rxq-dot{ margin: 0; flex-shrink: 0; }
 .rxq-daterange input[type="date"]{
   border: none;
   background: none;
-  font-size: 12.5px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
   color: var(--adm-text);
-  padding: 2px 0;
+  padding: 0;
+  height: 100%;
+  min-width: 0;
+  color-scheme: light; /* native calendar popup follows the theme */
 }
 .rxq-daterange input[type="date"]:focus{ outline: none; }
+/* Chrome/Edge/Safari: keep the date segments in the app font and give
+   the focused segment the brand color instead of the default blue. */
+.rxq-daterange input[type="date"]::-webkit-datetime-edit{ padding: 0; font-family: inherit; }
+.rxq-daterange input[type="date"]::-webkit-datetime-edit-fields-wrapper{ padding: 0; }
+.rxq-daterange input[type="date"]::-webkit-datetime-edit-text{ color: var(--adm-text-soft); padding: 0 1px; }
+.rxq-daterange input[type="date"]::-webkit-datetime-edit-month-field:focus,
+.rxq-daterange input[type="date"]::-webkit-datetime-edit-day-field:focus,
+.rxq-daterange input[type="date"]::-webkit-datetime-edit-year-field:focus{
+  background: var(--adm-red-bright);
+  color: #fff;
+  border-radius: 3px;
+}
+.rxq-daterange input[type="date"]::-webkit-calendar-picker-indicator{
+  margin-left: 6px;
+  opacity: 0.55;
+  cursor: pointer;
+}
+.rxq-daterange input[type="date"]::-webkit-calendar-picker-indicator:hover{ opacity: 0.9; }
+:root[data-bs-theme="dark"] .rxq-daterange input[type="date"]{ color-scheme: dark; }
+
+@media (max-width: 575.98px){
+  .rxq-filter-select,
+  .rxq-daterange{ flex: 1 1 100%; min-height: 40px; }
+  .rxq-daterange input[type="date"]{ flex: 1 1 0; }
+}
 
 .rxq-btn-filter{
   display: inline-flex;

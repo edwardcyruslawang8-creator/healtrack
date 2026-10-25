@@ -29,7 +29,8 @@ unset($tab);
 // Consultation History filters
 // ---------------------------------------------------------------------
 $consultationTypeMeta = hc_consultation_type_meta();
-$recordTypeOptions = array_merge(['All Types'], array_column($consultationTypeMeta, 'label'));
+// Only Walk-in and Follow-up are offered, with Walk-in as the default.
+$recordTypeOptions = [$consultationTypeMeta['walk_in']['label'], $consultationTypeMeta['follow_up']['label']];
 
 // ---------------------------------------------------------------------
 // Consultation History — real, from "consultations", only this
@@ -55,14 +56,14 @@ $allRecordHistory = array_map(function ($c) {
     ];
 }, array_values(array_filter(hc_get_consultations_for_patient($patient['id']), fn ($c) => $c['status'] === 'completed')));
 
-$historyRecordTypeFilter = in_array($_GET['hisType'] ?? '', $recordTypeOptions, true) ? $_GET['hisType'] : 'All Types';
+$historyRecordTypeFilter = in_array($_GET['hisType'] ?? '', $recordTypeOptions, true) ? $_GET['hisType'] : $recordTypeOptions[0];
 // Both blank by default — every completed visit, not just one preset
 // window — and either end can be left blank for an open-ended range.
 $historyDateFrom = trim($_GET['hisFrom'] ?? '');
 $historyDateTo = trim($_GET['hisTo'] ?? '');
 
 $filteredRecordHistory = array_values(array_filter($allRecordHistory, function ($rec) use ($historyRecordTypeFilter, $historyDateFrom, $historyDateTo, $consultationTypeMeta) {
-    if ($historyRecordTypeFilter !== 'All Types' && ($consultationTypeMeta[$rec['consultationType']]['label'] ?? '') !== $historyRecordTypeFilter) {
+    if (($consultationTypeMeta[$rec['consultationType']]['label'] ?? '') !== $historyRecordTypeFilter) {
         return false;
     }
     if ($historyDateFrom !== '' && $rec['rawDate'] < $historyDateFrom) {

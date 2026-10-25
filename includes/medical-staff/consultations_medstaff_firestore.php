@@ -35,10 +35,12 @@ $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'We
 // ---------------------------------------------------------------------
 $consultationTypeMeta = hc_consultation_type_meta();
 $consultationStatusMeta = hc_consultation_status_meta();
-$consultationTypeOptions = ['All Types' => 'All Types'];
-foreach ($consultationTypeMeta as $key => $meta) {
-    $consultationTypeOptions[$key] = $meta['label'];
-}
+// Only Walk-in and Follow-up are offered (keyed by the stored
+// "consultationType" values), with Walk-in as the default.
+$consultationTypeOptions = [
+    'walk_in'   => $consultationTypeMeta['walk_in']['label'],
+    'follow_up' => $consultationTypeMeta['follow_up']['label'],
+];
 $consultationStatusOptions = ['All Status' => 'All Status'];
 foreach ($consultationStatusMeta as $key => $meta) {
     $consultationStatusOptions[$key] = $meta['label'];
@@ -69,7 +71,10 @@ $statCards = hc_consultation_stats($allConsultations);
 // filters (?type=, ?status=) + date range (?from=, ?to=) — all real.
 // ---------------------------------------------------------------------
 $searchTerm = trim($_GET['q'] ?? '');
-$typeFilter = $_GET['type'] ?? 'All Types';
+$typeFilter = $_GET['type'] ?? '';
+if (!array_key_exists($typeFilter, $consultationTypeOptions)) {
+    $typeFilter = 'walk_in';
+}
 $statusFilter = $_GET['status'] ?? 'All Status';
 $dateFrom = trim($_GET['from'] ?? '');
 $dateTo = trim($_GET['to'] ?? '');
@@ -78,7 +83,7 @@ $filteredConsultations = array_values(array_filter($allConsultations, function (
     if ($searchTerm !== '' && !hc_fuzzy_match($c['patientName'] . ' ' . $c['consultationCode'] . ' ' . $c['patientId'], $searchTerm)) {
         return false;
     }
-    if ($typeFilter !== 'All Types' && $c['consultationType'] !== $typeFilter) {
+    if ($c['consultationType'] !== $typeFilter) {
         return false;
     }
     if ($statusFilter !== 'All Status' && $c['status'] !== $statusFilter) {

@@ -233,7 +233,7 @@ function hc_rxq_query(array $overrides = []): string
                 <input type="text" name="q" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Search by patient name, ID, or item...">
             </div>
 
-            <select class="form-select" name="type" aria-label="Filter by type" style="width:auto; min-width:140px;">
+            <select class="form-select rxq-filter-select" name="type" aria-label="Filter by type">
                 <option value="all" <?= $typeFilter === 'all' ? 'selected' : '' ?>>All Types</option>
                 <option value="medication" <?= $typeFilter === 'medication' ? 'selected' : '' ?>>Medicine</option>
                 <option value="vaccine" <?= $typeFilter === 'vaccine' ? 'selected' : '' ?>>Vaccine</option>

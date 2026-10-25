@@ -59,10 +59,13 @@ $consultationTypeMeta = hc_consultation_type_meta();
 $consultationStatusMeta = hc_consultation_status_meta();
 $consultationStatusMeta['ongoing']['label'] = 'In Progress';
 
-$consultationTypeOptions = ['All Types' => 'All Consultation Types'];
-foreach ($consultationTypeMeta as $key => $meta) {
-    $consultationTypeOptions[$key] = $meta['label'];
-}
+// Only Walk-in and Follow-up are offered besides "All" (keyed by the
+// stored "consultationType" values).
+$consultationTypeOptions = [
+    'All Types' => 'All Consultation Types',
+    'walk_in'   => $consultationTypeMeta['walk_in']['label'],
+    'follow_up' => $consultationTypeMeta['follow_up']['label'],
+];
 $consultationStatusOptions = ['All Status' => 'All Status'];
 foreach ($consultationStatusMeta as $key => $meta) {
     $consultationStatusOptions[$key] = $meta['label'];
@@ -100,6 +103,9 @@ $patient = $queueStatus['patient'];
 // ---------------------------------------------------------------------
 $searchTerm = trim($_GET['q'] ?? '');
 $typeFilter = $_GET['type'] ?? 'All Types';
+if (!array_key_exists($typeFilter, $consultationTypeOptions)) {
+    $typeFilter = 'All Types';
+}
 $statusFilter = $_GET['status'] ?? 'All Status';
 $today = date('Y-m-d');
 $dateFrom = trim($_GET['from'] ?? $today);
