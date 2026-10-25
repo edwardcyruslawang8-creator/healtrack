@@ -26,6 +26,22 @@
    archived row stays in the DOM (so switching to the Archived tab
    still shows it) but is hidden from every other tab — see
    applyFilters() below.
+
+   Pagination is client-side too, over the full (unsliced) set of rows
+   the server renders — it used to be server-side (?page=N links,
+   includes/shared/pagination_helpers.php's hc_paginate()/
+   hc_render_pagination_nav()), which meant a page click reloaded the
+   whole page AND re-ran with the tab reset to "All Notifications"
+   (that tab state only ever lived in this file's own `activeTab`
+   variable, never the URL), plus whichever 8 rows happened to fall on
+   that server-sliced page might not match the tab you were actually
+   on — e.g. clicking page 2 while on "Archived" could land you back on
+   "All" showing unrelated rows, or land on an "Archived" page with
+   nothing on it because none of that page's 8 rows happened to be
+   archived. Paginating over the FILTERED row set here instead fixes
+   both: the active tab never resets (nothing reloads), and "page 2"
+   always means "page 2 of what this tab is actually showing right
+   now." See applyFilters()/renderPaginationNav() below.
    ============================================================= */
 document.addEventListener('DOMContentLoaded', function () {
     const tableBody = document.getElementById('ntfTableBody');
@@ -33,15 +49,18 @@ document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.getElementById('ntfSearchInput');
     const typeFilter = document.getElementById('ntfTypeFilter');
     const unreadTabBadge = document.querySelector('[data-ntf-tab-badge="unread"]');
-    const allTabBadge = document.querySelector('[data-ntf-tab-badge="all"]');
     const archivedTabBadge = document.querySelector('[data-ntf-tab-badge="archived"]');
     const bellBadge = document.getElementById('ntfBellBadge');
     const sidebarBadge = document.getElementById('ntfSidebarBadge');
     const detailsModalEl = document.getElementById('ntfDetailsModal');
+    const paginationNav = document.getElementById('ntfPaginationNav');
+    const showingText = document.querySelector('.adm-showing-text');
 
     if (!tableBody) return;
 
     let activeTab = 'all';
+    let currentPage = 1;
+    const perPage = 8;
 
     function getRows() {
         return Array.from(tableBody.querySelectorAll('.ntf-row'));
@@ -60,33 +79,21 @@ document.addEventListener('DOMContentLoaded', function () {
        one running count instead of re-deriving it from the DOM. */
     let unreadCount = parseInt(tableBody.dataset.initialUnread || '0', 10) || 0;
 
-    /* "All Notifications" used to mirror unreadCount above, which made
-       its badge look identical to "Unread"'s — correct in value, but a
-       confusing thing for either tab to show, since "All" should mean
-       the real total (read + unread), not just the unread subset. It
-       tracks its own running count instead, seeded the same
-       real/non-DOM way as unreadCount (tableBody's data-initial-all,
-       server-rendered from the same real notification sources minus
-       whatever's archived). Marking something read never changes this
-       count — it's still there, just no longer unread. Archiving one
-       takes it out of the "All" tab's own view, so that (and only that)
-       is what adjusts allCount, in the archive/unarchive handler below. */
-    let allCount = parseInt(tableBody.dataset.initialAll || '0', 10) || 0;
-
+    // "All Notifications" has no badge at all (see any
+    // includes/*/notifications_*_firestore.php's header comment on
+    // $notificationTabs) — it went through two designs (mirroring this
+    // unread count, then a real total count) before landing on no
+    // number at all being the clearest option.
     function syncUnreadBadges() {
         // These badges only appear when there's actually something to
-        // show — a "0" badge next to "All Notifications"/"Unread" reads
-        // as if there's one unread item, not zero, so it's hidden
-        // instead once the count hits 0.
+        // show — a "0" badge next to "Unread" reads as if there's one
+        // unread item, not zero, so it's hidden instead once the count
+        // hits 0.
         [unreadTabBadge, bellBadge, sidebarBadge].forEach(function (el) {
             if (!el) return;
             el.textContent = unreadCount;
             el.style.display = unreadCount > 0 ? '' : 'none';
         });
-        if (allTabBadge) {
-            allTabBadge.textContent = allCount;
-            allTabBadge.style.display = allCount > 0 ? '' : 'none';
-        }
     }
 
     function updateArchivedTabBadge() {
@@ -167,12 +174,65 @@ document.addEventListener('DOMContentLoaded', function () {
         persistAllRead();
     });
 
-    function updateShowingCount() {
-        const showingText = document.querySelector('.adm-showing-text');
+    /* ---------- Pagination nav — rendered here, not by the server ----------
+       Same markup/classes includes/shared/pagination_helpers.php's
+       hc_render_pagination_nav() produces (.adm-pagination/.page-btn/
+       .page-ellipsis/.active/.disabled), just as real <button>s wired
+       to currentPage instead of <a href="?page=N">s — see this file's
+       header comment for why. totalPages is always of the CURRENTLY
+       FILTERED row set (whatever tab/type/search is active right now),
+       recomputed on every applyFilters() call below. */
+    function renderPaginationNav(totalPages) {
+        if (!paginationNav) return;
+        if (totalPages <= 1) {
+            paginationNav.innerHTML = '';
+            return;
+        }
+
+        const atFirst = currentPage <= 1;
+        const atLast = currentPage >= totalPages;
+        const windowStart = Math.max(1, Math.min(currentPage, Math.max(1, totalPages - 2)));
+        const windowEnd = Math.min(totalPages, windowStart + 2);
+
+        function pageBtn(page, label, extraClass, ariaLabel, disabled) {
+            return '<button type="button" class="page-btn' + (extraClass ? ' ' + extraClass : '') + '"'
+                + ' data-ntf-page="' + page + '"'
+                + (ariaLabel ? ' aria-label="' + ariaLabel + '"' : '')
+                + (disabled ? ' disabled' : '')
+                + '>' + label + '</button>';
+        }
+
+        let html = '';
+        html += pageBtn(1, '<i class="bi bi-chevron-bar-left"></i>', atFirst ? 'disabled' : '', 'First page', atFirst);
+        html += pageBtn(Math.max(1, currentPage - 1), '<i class="bi bi-chevron-left"></i>', atFirst ? 'disabled' : '', 'Previous page', atFirst);
+        for (let p = windowStart; p <= windowEnd; p++) {
+            html += pageBtn(p, String(p), p === currentPage ? 'active' : '', null, false);
+        }
+        if (windowEnd < totalPages) {
+            html += '<span class="page-ellipsis">&hellip;</span>';
+            html += pageBtn(totalPages, String(totalPages), '', null, false);
+        }
+        html += pageBtn(Math.min(totalPages, currentPage + 1), '<i class="bi bi-chevron-right"></i>', atLast ? 'disabled' : '', 'Next page', atLast);
+        html += pageBtn(totalPages, '<i class="bi bi-chevron-bar-right"></i>', atLast ? 'disabled' : '', 'Last page', atLast);
+
+        paginationNav.innerHTML = html;
+    }
+
+    if (paginationNav) {
+        paginationNav.addEventListener('click', function (e) {
+            const btn = e.target.closest('[data-ntf-page]');
+            if (!btn || btn.disabled) return;
+            const page = parseInt(btn.dataset.ntfPage, 10);
+            if (!page || page === currentPage) return;
+            currentPage = page;
+            applyFilters();
+        });
+    }
+
+    function updateShowingText(totalFiltered, startNum, endNum) {
         if (!showingText) return;
-        const visibleCount = getRows().filter(function (row) { return !row.classList.contains('d-none'); }).length;
-        showingText.textContent = visibleCount > 0
-            ? 'Showing 1 to ' + visibleCount + ' of ' + visibleCount + ' notifications'
+        showingText.textContent = totalFiltered > 0
+            ? 'Showing ' + startNum + ' to ' + endNum + ' of ' + totalFiltered + ' notifications'
             : 'No notifications to show';
     }
 
@@ -215,11 +275,9 @@ document.addEventListener('DOMContentLoaded', function () {
         var archiving = btn.classList.contains('ntf-archive-btn');
         setRowArchived(row, archiving);
         updateArchivedTabBadge();
-        // Archiving takes a row out of the "All" tab's own view (same
-        // as "Unread"/the sidebar/bell if it was still unread);
-        // unarchiving puts it back in both. Either way the currently
-        // active tab's view needs re-applying right now.
-        allCount = Math.max(0, allCount + (archiving ? -1 : 1));
+        // Archiving takes a row out of "Unread"/the sidebar/bell's count
+        // too if it was still unread; unarchiving puts it back. Either
+        // way the currently active tab's view needs re-applying right now.
         if (row.dataset.unread === '1') {
             unreadCount = Math.max(0, unreadCount + (archiving ? -1 : 1));
         }
@@ -284,39 +342,63 @@ document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('[data-ntf-tab]').forEach(function (b) { b.classList.remove('active'); });
             btn.classList.add('active');
             activeTab = btn.getAttribute('data-ntf-tab');
+            // Switching tabs/filters changes what "page 1" even means (a
+            // different row set), so always land back on it rather than
+            // keeping whatever page number happened to be active before.
+            currentPage = 1;
             applyFilters();
         });
     });
 
+    function matchesFilters(row, query, typeValue) {
+        if (activeTab === 'archived') {
+            if (row.dataset.archived !== '1') return false;
+        } else if (row.dataset.archived === '1') {
+            // An archived row is hidden from every OTHER tab —
+            // archiving is what actually takes it out of the main view.
+            return false;
+        } else if (activeTab === 'unread') {
+            if (row.dataset.unread !== '1') return false;
+        }
+        // activeTab === 'all' shows everything else (subject to the filters below).
+
+        if (typeValue !== 'All Types' && row.dataset.type !== typeValue) return false;
+        if (query && row.dataset.title.indexOf(query) === -1 && row.dataset.desc.indexOf(query) === -1) return false;
+
+        return true;
+    }
+
+    /* Does double duty: picks which rows match the active tab/type/search
+       (same as before), AND which of those land on the current page —
+       the only rows actually shown are the ones that do both. Rows that
+       fail the filter stay hidden regardless of page; rows that pass the
+       filter but fall outside the current page's slice are hidden too, by
+       the same single d-none toggle, so there's only ever one source of
+       truth for a row's visibility. */
     function applyFilters() {
         const query = searchInput.value.trim().toLowerCase();
         const typeValue = typeFilter.value;
 
+        const filtered = getRows().filter(function (row) { return matchesFilters(row, query, typeValue); });
+        const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        const startIdx = (currentPage - 1) * perPage;
+        const pageRows = filtered.slice(startIdx, startIdx + perPage);
+        const pageRowSet = new Set(pageRows);
+
         getRows().forEach(function (row) {
-            let visible = true;
-
-            if (activeTab === 'archived') {
-                if (row.dataset.archived !== '1') visible = false;
-            } else if (row.dataset.archived === '1') {
-                // An archived row is hidden from every OTHER tab —
-                // archiving is what actually takes it out of the main view.
-                visible = false;
-            } else if (activeTab === 'unread') {
-                if (row.dataset.unread !== '1') visible = false;
-            }
-            // activeTab === 'all' shows everything else (subject to the filters below).
-
-            if (visible && typeValue !== 'All Types' && row.dataset.type !== typeValue) visible = false;
-            if (visible && query && row.dataset.title.indexOf(query) === -1 && row.dataset.desc.indexOf(query) === -1) visible = false;
-
-            row.classList.toggle('d-none', !visible);
+            row.classList.toggle('d-none', !pageRowSet.has(row));
         });
 
-        updateShowingCount();
+        updateShowingText(filtered.length, filtered.length === 0 ? 0 : startIdx + 1, startIdx + pageRows.length);
+        renderPaginationNav(totalPages);
     }
 
-    searchInput.addEventListener('input', applyFilters);
-    typeFilter.addEventListener('change', applyFilters);
+    searchInput.addEventListener('input', function () { currentPage = 1; applyFilters(); });
+    typeFilter.addEventListener('change', function () { currentPage = 1; applyFilters(); });
 
     syncUnreadBadges();
+    applyFilters();
 });

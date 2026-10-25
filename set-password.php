@@ -5,9 +5,12 @@
  * Set Your Password (set-password.php)
  * ---------------------------------------------------------------------
  * Reached only via api/session-login.php's redirect-worthy response
- * {requiresPasswordSetup: true} — a "Sign up with Google" account
- * (api/register.php) has no password in Firebase Auth at all, so once
- * a sub-admin approves it, this page forces choosing one on the very
+ * {requiresPasswordSetup: true} — api/register.php now sets a real
+ * password at registration time for every account, including "Sign up
+ * with Google" ones, so this page should rarely come up for an account
+ * created from here on. It stays as a fallback for an older "Sign up
+ * with Google" account that was approved before that changed and still
+ * has no password in Firebase Auth at all, forcing a choice on its
  * next login before any dashboard is reachable. Gated by
  * $_SESSION['pendingPasswordSetupUid'] (set by session-login.php, same
  * pattern as the 2FA pending-uid stash) — not by anything in the
@@ -17,8 +20,8 @@
  * Why this matters: without a password, "Forgot password?" silently
  * does nothing for this account (Firebase has no credential to reset),
  * and the account has no sign-in fallback if Google sign-in is ever
- * unavailable to them. This closes that gap for every account, not
- * just ones created going forward.
+ * unavailable to them. This closes that gap for any account that still
+ * has it.
  * =====================================================================
  */
 session_start();

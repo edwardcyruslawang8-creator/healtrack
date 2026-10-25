@@ -116,6 +116,12 @@ if ($currentStatus !== $allowedFrom[$newStatus]) {
 $updated = array_merge($existing, [
     'status' => $newStatus,
     'reviewedBy' => $_SESSION['name'] ?? 'System',
+    // Used by includes/firestore/stock_requests.php's
+    // hc_get_decided_stock_request_notifications_for_subadmin() to show
+    // "you decided this" only to the sub-admin who actually did —
+    // 'reviewedBy' alone is just a display name, not safe to match a
+    // signed-in account against (two sub-admins could share a name).
+    'reviewedByUid' => $myUid,
     'reviewedAt' => date('c'),
 ]);
 

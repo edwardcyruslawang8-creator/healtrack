@@ -180,7 +180,7 @@ function subadmin_all_notification_ids(): array
 {
     require_once __DIR__ . '/../includes/firestore/medicines.php'; // hc_get_medicine_expiry_notifications()
     require_once __DIR__ . '/../includes/firestore/accounts.php'; // hc_get_pending_account_notifications()
-    require_once __DIR__ . '/../includes/firestore/stock_requests.php'; // hc_get_pending_stock_request_notifications()
+    require_once __DIR__ . '/../includes/firestore/stock_requests.php'; // hc_get_pending_stock_request_notifications(), hc_get_decided_stock_request_notifications_for_subadmin()
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_my_2fa_reminder_notification()
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
@@ -204,6 +204,7 @@ function subadmin_all_notification_ids(): array
         hc_notification_preference_enabled('inventory') ? array_column(hc_get_medicine_expiry_notifications(), 'id') : [],
         array_column(hc_get_pending_account_notifications(), 'id'),
         array_column(hc_get_pending_stock_request_notifications(), 'id'),
+        array_column(hc_get_decided_stock_request_notifications_for_subadmin(), 'id'),
         array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id')
     );
 }
@@ -245,6 +246,7 @@ function hc_pharmacist_all_notification_ids(): array
 {
     require_once __DIR__ . '/../includes/firestore/medicines.php';
     require_once __DIR__ . '/../includes/firestore/pharmacy_orders.php';
+    require_once __DIR__ . '/../includes/firestore/stock_requests.php'; // hc_get_decided_stock_request_notifications_for_pharmacist()
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
     require_once __DIR__ . '/../includes/shared/phone_reminder.php'; // hc_my_phone_reminder_notification()
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
@@ -257,6 +259,7 @@ function hc_pharmacist_all_notification_ids(): array
         hc_notification_preference_enabled('inventory') ? array_column(hc_get_low_stock_notifications(), 'id') : [],
         hc_notification_preference_enabled('inventory') ? array_column(hc_get_medicine_expiry_notifications(), 'id') : [],
         hc_notification_preference_enabled('inventory') ? array_column(hc_get_pending_pharmacy_order_notifications(), 'id') : [],
+        array_column(hc_get_decided_stock_request_notifications_for_pharmacist($_SESSION['uid'] ?? ''), 'id'),
         array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
         array_column(array_filter([hc_my_phone_reminder_notification()]), 'id')
     );

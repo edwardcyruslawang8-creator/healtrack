@@ -24,6 +24,7 @@ session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
+require_once __DIR__ . '/../includes/firestore/accounts.php'; // hc_email_already_registered()
 
 header('Content-Type: application/json');
 
@@ -62,6 +63,15 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 if (!in_array($role, $allowedRoles, true)) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Please select a valid role.']);
+    exit;
+}
+// Same app-level "one email = at most one account" rule
+// api/register.php enforces — see hc_email_already_registered()'s own
+// comment (includes/firestore/accounts.php) for why Firebase Auth's
+// own per-provider email uniqueness alone isn't enough to rely on.
+if (hc_email_already_registered($email)) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'An account with this email already exists.']);
     exit;
 }
 if (strlen($password) < 6) {

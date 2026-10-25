@@ -166,16 +166,21 @@ if ($userDoc['twoFactorEnabled'] ?? false) {
     exit;
 }
 
-// PASSWORD-SETUP GATE: a "Sign up with Google" account (api/register.php)
-// has NO password in Firebase Auth at all — confirmed via a real
+// PASSWORD-SETUP GATE: api/register.php now sets a real password at
+// registration time for BOTH the manual and "Sign up with Google"
+// paths (changeUserPassword() on the Google path, adding a password
+// credential to the same Firebase Auth account the popup created), so
+// this should rarely fire for an account created from here on. It
+// stays in place as a fallback for any account created before that
+// changed — a "Sign up with Google" account from back then has NO
+// password in Firebase Auth at all (confirmed via a real
 // forgot-password test: sendPasswordResetEmail() silently does nothing
-// for such an account, since there's no password credential to reset.
-// hc_account_has_password() checks the REAL Firebase Auth provider
-// list (not just the 'authProvider' Firestore field register.php
-// sets), so this correctly catches accounts created before that field
-// existed too. Only reachable for an active, non-2FA-pending account,
-// i.e. right after a sub-admin approval on this person's very first
-// real login.
+// for such an account, since there's no password credential to
+// reset). hc_account_has_password() checks the REAL Firebase Auth
+// provider list (not just the 'authProvider' Firestore field), so this
+// still correctly catches those older accounts. Only reachable for an
+// active, non-2FA-pending account, i.e. on this person's first real
+// login after whatever still needed this gate.
 if (!hc_account_has_password($uid)) {
     $_SESSION['pendingPasswordSetupUid'] = $uid;
     $_SESSION['pendingRememberMe'] = $remember; // same stash pattern as the 2FA branch above

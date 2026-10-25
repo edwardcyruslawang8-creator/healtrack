@@ -100,7 +100,7 @@ if (!function_exists('hc_get_all_stock_requests')) {
      * the real id for anything that needs to address the doc (e.g.
      * api/update-stock-request-status.php).
      *
-     * @return array<int, array{id: string, docId: string, pharmacist: string, pharmacistUid: string, requestDate: string, requestTime: string, requestedAtRaw: string, items: array, itemsCount: int, type: string, status: string, dateNeeded: string, dateNeededRaw: string, facility: string}>
+     * @return array<int, array{id: string, docId: string, pharmacist: string, pharmacistUid: string, requestDate: string, requestTime: string, requestedAtRaw: string, items: array, itemsCount: int, type: string, status: string, dateNeeded: string, dateNeededRaw: string, facility: string, reviewedBy: string, reviewedByUid: string, reviewedAtRaw: string}>
      */
     function hc_get_all_stock_requests(): array
     {
@@ -128,7 +128,149 @@ if (!function_exists('hc_get_all_stock_requests')) {
                 'dateNeeded' => isset($fields['dateNeeded']) ? date('M j, Y', strtotime($fields['dateNeeded'])) : '—',
                 'dateNeededRaw' => $fields['dateNeeded'] ?? '',
                 'facility' => $fields['facility'] ?? '',
+                // Set by api/update-stock-request-status.php the moment a
+                // sub-admin approves/rejects/releases this request — used
+                // by hc_get_decided_stock_request_notifications_for_pharmacist()/
+                // _for_subadmin() below, not by anything that predates them.
+                'reviewedBy' => $fields['reviewedBy'] ?? '',
+                'reviewedByUid' => $fields['reviewedByUid'] ?? '',
+                'reviewedAtRaw' => $fields['reviewedAt'] ?? '',
             ];
         }, $rawRequests);
+    }
+}
+
+if (!function_exists('hc_stock_request_outcome_meta')) {
+    /** Decided status -> notification title/verb/icon meta, keyed by the real "status" field (only the 3 terminal ones — "pending" has no outcome yet). */
+    function hc_stock_request_outcome_meta(): array
+    {
+        return [
+            'approved' => ['title' => 'Stock Request Approved', 'verb' => 'approved', 'icon' => 'bi-check-circle-fill', 'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E'],
+            'rejected' => ['title' => 'Stock Request Rejected', 'verb' => 'rejected', 'icon' => 'bi-x-circle-fill',    'iconBg' => '#FCE4E4', 'iconColor' => '#D93025'],
+            'released' => ['title' => 'Stock Request Released', 'verb' => 'released', 'icon' => 'bi-box-seam-fill',   'iconBg' => '#F1E8FD', 'iconColor' => '#8B5CF6'],
+        ];
+    }
+}
+
+if (!function_exists('hc_get_decided_stock_request_notifications_for_pharmacist')) {
+    /**
+     * One real notification row per stock_requests doc THIS pharmacist
+     * submitted that a sub-admin has since decided on (approved/
+     * rejected/released) — the outcome counterpart to
+     * hc_get_pending_stock_request_notifications() above, which stops
+     * showing a request the instant it's decided (nothing left to
+     * decide), previously leaving no trace behind at all once that
+     * happened — a pharmacist had no real way to learn what happened to
+     * their own request except by checking stock_requests.php by hand.
+     *
+     * Scoped to the last 7 days via the real "reviewedAt" timestamp
+     * api/update-stock-request-status.php stamps on every decision —
+     * without a window, every request this pharmacist has EVER had
+     * decided (potentially months of history, for an account that
+     * existed before this function did) would surface as unread the
+     * first time this shipped. 7 days keeps this a genuine "here's what
+     * just happened" notice instead of a flood of old history.
+     *
+     * @return array<int, array{id: int, title: string, description: string, type: string, date: string, time: string, icon: string, iconBg: string, iconColor: string}>
+     */
+    function hc_get_decided_stock_request_notifications_for_pharmacist(string $uid): array
+    {
+        if ($uid === '') {
+            return [];
+        }
+
+        $cutoff = time() - (7 * 86400);
+        $outcomes = hc_stock_request_outcome_meta();
+
+        $decided = array_values(array_filter(hc_get_all_stock_requests(), function ($r) use ($uid, $cutoff, $outcomes) {
+            if ($r['pharmacistUid'] !== $uid || !isset($outcomes[$r['status']])) {
+                return false;
+            }
+            $reviewedTs = $r['reviewedAtRaw'] !== '' ? strtotime($r['reviewedAtRaw']) : false;
+
+            return $reviewedTs !== false && $reviewedTs >= $cutoff;
+        }));
+
+        return array_map(function ($r) use ($outcomes) {
+            $meta = $outcomes[$r['status']];
+            $typeMeta = hc_stock_request_type_meta()[$r['type']] ?? ['label' => 'Item'];
+            $reviewedTs = strtotime($r['reviewedAtRaw']);
+
+            return [
+                'id' => crc32('decided-stock-request:' . $r['docId']),
+                'title' => $meta['title'],
+                'description' => 'Your ' . strtolower($typeMeta['label']) . ' request (' . $r['itemsCount'] . ' item(s)) has been ' . $meta['verb'] . '.',
+                'type' => 'Stock Request',
+                'date' => $reviewedTs ? date('M j, Y', $reviewedTs) : '—',
+                'time' => $reviewedTs ? date('g:i A', $reviewedTs) : '',
+                'icon' => $meta['icon'],
+                'iconBg' => $meta['iconBg'],
+                'iconColor' => $meta['iconColor'],
+            ];
+        }, $decided);
+    }
+}
+
+if (!function_exists('hc_get_decided_stock_request_notifications_for_subadmin')) {
+    /**
+     * One real notification row per stock_requests doc at the
+     * signed-in sub-admin's own facility that THEY personally decided
+     * on (approved/rejected/released) — confirms what happened instead
+     * of the request just silently disappearing from
+     * hc_get_pending_stock_request_notifications() above the moment
+     * it's decided, with no trace left behind. Scoped to the last 7
+     * days (same reasoning as
+     * hc_get_decided_stock_request_notifications_for_pharmacist()'s own
+     * comment) and to "reviewedByUid" matching THIS sub-admin
+     * specifically (set by api/update-stock-request-status.php) — a
+     * facility can have more than one sub-admin, and this is meant to
+     * read as "here's what YOU just did," not a feed of every decision
+     * anyone at the facility made.
+     *
+     * @return array<int, array{id: int, title: string, description: string, type: string, date: string, time: string, icon: string, iconBg: string, iconColor: string}>
+     */
+    function hc_get_decided_stock_request_notifications_for_subadmin(): array
+    {
+        global $firestore;
+
+        $uid = $_SESSION['uid'] ?? '';
+        if ($uid === '') {
+            return [];
+        }
+        $myDoc = $firestore->getDocument('users', $uid);
+        $facility = $myDoc['facility'] ?? '';
+        if ($facility === '') {
+            return [];
+        }
+
+        $cutoff = time() - (7 * 86400);
+        $outcomes = hc_stock_request_outcome_meta();
+
+        $decided = array_values(array_filter(hc_get_all_stock_requests(), function ($r) use ($uid, $facility, $cutoff, $outcomes) {
+            if ($r['facility'] !== $facility || $r['reviewedByUid'] !== $uid || !isset($outcomes[$r['status']])) {
+                return false;
+            }
+            $reviewedTs = $r['reviewedAtRaw'] !== '' ? strtotime($r['reviewedAtRaw']) : false;
+
+            return $reviewedTs !== false && $reviewedTs >= $cutoff;
+        }));
+
+        return array_map(function ($r) use ($outcomes) {
+            $meta = $outcomes[$r['status']];
+            $typeMeta = hc_stock_request_type_meta()[$r['type']] ?? ['label' => 'Item'];
+            $reviewedTs = strtotime($r['reviewedAtRaw']);
+
+            return [
+                'id' => crc32('decided-stock-request-subadmin:' . $r['docId']),
+                'title' => $meta['title'],
+                'description' => 'You ' . $meta['verb'] . ' ' . $r['pharmacist'] . '’s ' . strtolower($typeMeta['label']) . ' request (' . $r['itemsCount'] . ' item(s)).',
+                'type' => 'Stock Request',
+                'date' => $reviewedTs ? date('M j, Y', $reviewedTs) : '—',
+                'time' => $reviewedTs ? date('g:i A', $reviewedTs) : '',
+                'icon' => $meta['icon'],
+                'iconBg' => $meta['iconBg'],
+                'iconColor' => $meta['iconColor'],
+            ];
+        }, $decided);
     }
 }

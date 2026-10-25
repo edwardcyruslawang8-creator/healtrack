@@ -36,15 +36,27 @@
  * never signed in anywhere while awaiting approval.
  *
  * "Sign up with Google" (assets/js/register.js) is an alternate
- * CREDENTIAL method, not a shortcut around any of the above — it only
- * verifies who someone is (via a real client-side Firebase Auth
- * popup), then submits the SAME api/register.php request the manual
- * form does (Phone + Role still required either way; Password fields
- * just aren't needed/shown), landing in the same "pending" state.
- * api/register.php verifies the resulting idToken itself server-side
- * (never trusts a client-supplied uid/email for that path) and skips
- * only the createUser() step, since Firebase Auth already created that
- * account the moment the Google popup succeeded.
+ * identity-verification method, not a shortcut around any of the
+ * above — it only confirms who someone is (via a real client-side
+ * Firebase Auth popup) and locks the Email field to that account. A
+ * password is still required either way, but for this path it's
+ * collected in its own dedicated "Create Your Password" modal
+ * (#googlePasswordModal below) right after the Google popup succeeds,
+ * not inline in the main form (Phone is the one field Google signups
+ * skip — Google never hands one over) — same idea as the Terms/Privacy
+ * modals below being their own focused step rather than inline fields.
+ * Confirming that modal writes into the SAME #regPassword/
+ * #regConfirmPassword inputs the manual path already validates/submits
+ * with (kept in the form, just hidden for this path), so the actual
+ * submit handler needs no Google-specific branching. The password is
+ * created right now, at registration time — NOT deferred until after a
+ * sub-admin approves the account — so a Google signup finishes with
+ * real, usable credentials instead of being stuck mid-setup until
+ * someone else acts. api/register.php verifies the Google idToken
+ * itself server-side (never trusts a client-supplied uid/email for
+ * that path) and skips only the createUser() step (the Firebase Auth
+ * account already exists from the Google popup); it adds the password
+ * to that SAME account via changeUserPassword() instead.
  * =====================================================================
  */
 session_start();
@@ -144,7 +156,13 @@ require_once __DIR__ . '/config/constants.php'; // BASE_URL
                         </div>
                     </div>
                     <div class="login-field">
-                        <label for="regLastName">Last Name</label>
+                        <!-- "(optional)" shown only after a successful "Sign up with
+                             Google" — Google's account name doesn't always split into
+                             a First/Last Name cleanly (e.g. a single-word display
+                             name), so Last Name isn't required to finish that path;
+                             it can still be filled in/edited here, or added later from
+                             Profile Settings. assets/js/register.js toggles this. -->
+                        <label for="regLastName">Last Name<span id="regLastNameOptionalNote" class="reg-optional-note d-none"> (optional)</span></label>
                         <div class="login-input-wrap">
                             <i class="bi bi-person-fill field-icon"></i>
                             <input type="text" id="regLastName" placeholder="Enter your last name" required>
@@ -174,8 +192,10 @@ require_once __DIR__ . '/config/constants.php'; // BASE_URL
                     </div>
 
                     <!-- Hidden entirely after a successful "Sign up with
-                         Google" above — Google already authenticated
-                         you, so no password is needed (assets/js/register.js). -->
+                         Google" above — that path collects the password in
+                         its own #googlePasswordModal instead (see this
+                         page's header comment), which writes its values
+                         into these same inputs behind the scenes. -->
                     <div class="login-field" id="regPasswordField">
                         <label for="regPassword">Password</label>
                         <div class="login-input-wrap">
@@ -198,7 +218,14 @@ require_once __DIR__ . '/config/constants.php'; // BASE_URL
                     </div>
                 </div>
 
-                <div class="login-field">
+                <!-- Hidden entirely after a successful "Sign up with
+                     Google" — that path picks Role inside
+                     #googlePasswordModal instead (assets/js/register.js
+                     copies its value into this same #regRole select behind
+                     the scenes), so there's no redundant second Role picker
+                     sitting in the main form underneath an already-closed
+                     modal. -->
+                <div class="login-field" id="regRoleField">
                     <label for="regRole">Role</label>
                     <div class="login-input-wrap">
                         <i class="bi bi-person-vcard-fill field-icon"></i>
@@ -226,14 +253,16 @@ require_once __DIR__ . '/config/constants.php'; // BASE_URL
                 </p>
 
                 <!-- Verifies who you are with Google, then prefills Name/Email
-                     above (Email locked, Password fields hidden — Google
-                     already authenticated you) — account creation is still
-                     the SAME server-side api/register.php request either way
-                     (see assets/js/register.js), still "pending" until a
-                     sub-admin approves it. Phone and Role are still required
-                     either way — Google doesn't provide either. Positioned
-                     directly above the Create Account button rather than
-                     at the top of the form. -->
+                     above (Email locked — it's now tied to the authenticated
+                     Google account) and opens #googlePasswordModal to collect
+                     a password — account creation is still the SAME
+                     server-side api/register.php request either way (see
+                     assets/js/register.js), still "pending" until a
+                     sub-admin approves it. Password and Role are still
+                     required either way (only Phone is relaxed) — this is
+                     where that password gets created, not after approval.
+                     Positioned directly above the Create Account button
+                     rather than at the top of the form. -->
                 <button type="button" class="btn-google-signin" id="googleSignUpBtn">
                     <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
@@ -368,6 +397,80 @@ require_once __DIR__ . '/config/constants.php'; // BASE_URL
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <button type="button" class="reg-legal-agree-btn" id="privacyAgreeBtn">I Agree</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================
+     CREATE YOUR PASSWORD (+ Role) — shown right after a successful
+     "Sign up with Google" (assets/js/register.js), since Google only
+     verifies WHO you are — it doesn't hand over a password, and never
+     provides a role either. Its own focused modal rather than inline
+     fields, same reasoning as the Terms/Privacy modals above.
+     Confirming here copies these three fields into the main form's own
+     #regPassword/#regConfirmPassword/#regRole inputs (kept in the
+     form, just hidden for this path) and closes the modal — the real
+     submit handler then runs exactly like it does for the manual path,
+     no Google-specific branching needed there.
+     ========================================================= -->
+<div class="modal fade" id="googlePasswordModal" tabindex="-1" aria-labelledby="googlePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="googlePasswordModalLabel">Create Your Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="googlePasswordModalError" class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
+                <p class="login-card-subtitle" style="margin-bottom:18px;">You're signed in with Google. Create a password now so you'll also be able to sign in with it later, and select your role to finish.</p>
+
+                <!-- Same options as the main form's own #regRole (register.js
+                     copies this value into that select behind the scenes) —
+                     Google never provides a role, so it's asked for right
+                     here instead of a separate picker left in the main form.
+                     Comes first in this modal — Password/Confirm Password
+                     below are the last step, right above the Continue
+                     button. -->
+                <div class="login-field">
+                    <label for="gpmRole">Role</label>
+                    <div class="login-input-wrap">
+                        <i class="bi bi-person-vcard-fill field-icon"></i>
+                        <select id="gpmRole" class="reg-select">
+                            <option value="" selected disabled>Select your role</option>
+                            <option value="Healthcare Staff">Healthcare Staff</option>
+                            <option value="Pharmacist">Pharmacist</option>
+                            <option value="Medical Technologist">Medical Technologist</option>
+                            <option value="Radiologic Technologist">Radiologic Technologist</option>
+                            <option value="Doctor">Doctor</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="login-field">
+                    <label for="gpmPassword">Password</label>
+                    <div class="login-input-wrap">
+                        <i class="bi bi-lock-fill field-icon"></i>
+                        <input type="password" id="gpmPassword" class="has-toggle" placeholder="Create a password" minlength="6">
+                        <button type="button" class="login-toggle-btn reg-toggle" data-target="gpmPassword" aria-label="Show or hide password">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="login-field mb-0">
+                    <label for="gpmConfirmPassword">Confirm Password</label>
+                    <div class="login-input-wrap">
+                        <i class="bi bi-lock-fill field-icon"></i>
+                        <input type="password" id="gpmConfirmPassword" class="has-toggle" placeholder="Confirm your password" minlength="6">
+                        <button type="button" class="login-toggle-btn reg-toggle" data-target="gpmConfirmPassword" aria-label="Show or hide password">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="reg-legal-agree-btn" id="googlePasswordModalSaveBtn">Continue</button>
             </div>
         </div>
     </div>

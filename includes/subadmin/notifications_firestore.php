@@ -28,7 +28,12 @@
  * + however many real expiry alerts exist right now) — it used to be
  * hardcoded to a fake 6 pages purely to match a reference design's
  * mockup, but a control implying pages of notifications that don't
- * exist is itself a dead button, so it's honest now instead.
+ * exist is itself a dead button, so it's honest now instead. It's also
+ * entirely client-side (assets/js/notifications.js) — this file hands
+ * the page every notification unsliced, since pagination needs to
+ * happen AFTER the (also client-side) tab/type/search filtering, not
+ * before it; slicing here first used to mean a given page's 8 rows
+ * didn't reliably match whatever tab was actually active.
  * =====================================================================
  */
 
@@ -36,7 +41,6 @@ require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/medicines.php'; // hc_get_medicine_expiry_notifications()
 require_once __DIR__ . '/../firestore/accounts.php'; // hc_get_pending_account_notifications()
 require_once __DIR__ . '/../firestore/stock_requests.php'; // hc_get_pending_stock_request_notifications()
-require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav()
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
 require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
 
@@ -119,7 +123,22 @@ foreach ($pendingStockRequestNotifications as &$pendingStockRequestNotification)
 }
 unset($pendingStockRequestNotification);
 
-$notifications = array_merge($pendingAccountNotifications, $pendingStockRequestNotifications, $expiryNotifications, $notifications);
+// Real confirmation of a stock request THIS sub-admin personally
+// decided (approved/rejected/released) — see that function's own
+// comment (includes/firestore/stock_requests.php) for why it's
+// time-windowed and scoped to decisions THIS sub-admin made, not
+// anyone else at the facility. Otherwise a decided request just
+// disappears from $pendingStockRequestNotifications above the moment
+// it's acted on, with no trace left behind.
+$decidedStockRequestNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'system')
+    ? hc_get_decided_stock_request_notifications_for_subadmin()
+    : [];
+foreach ($decidedStockRequestNotifications as &$decidedStockRequestNotification) {
+    $decidedStockRequestNotification['unread'] = true;
+}
+unset($decidedStockRequestNotification);
+
+$notifications = array_merge($pendingAccountNotifications, $pendingStockRequestNotifications, $decidedStockRequestNotifications, $expiryNotifications, $notifications);
 
 // The real 2FA reminder (see config/constants.php's
 // subadmin_unread_notification_count(), which already counts this toward
@@ -161,32 +180,34 @@ unset($n);
 // ---------------------------------------------------------------------
 // Notification tabs — all filter the table client-side now (see
 // assets/js/notifications.js): "All Notifications"/"Unread" by
-// $n['unread'], "Archived" by $n['archived']. The "unread" badge uses
-// the same session-backed count as every page's sidebar/topbar badges
-// (config/constants.php) rather than a local recount, so they agree
-// with each other on first paint. "All Notifications" used to show
-// that same unread count too, which looked like a bug (e.g. both
-// showing "5") even though the number was correct — it was just the
-// wrong number for that tab. It now shows a genuine total: every real
-// notification this role has, MINUS the archived ones, since an
-// archived row is hidden from the "All" tab's own view (same reasoning
-// the Archived badge below already uses, counted the opposite way).
-// Both are real counts of $notifications (built just above, before
-// pagination below), not just this page's first page.
+// $n['unread'], "Archived" by $n['archived']. "All Notifications" has
+// no badge at all — a badge there went through two designs (first
+// mirroring the unread count, which looked like a bug since "All" and
+// "Unread" showed the same number; then a real total count, which
+// looked confusing in a different way since it didn't move when
+// something was marked read) before landing on no number at all being
+// the clearest option. "Unread"/"Archived" keep real badges — the
+// "unread" one uses the same session-backed count as every page's
+// sidebar/topbar badges (config/constants.php) rather than a local
+// recount, so they agree with each other on first paint.
 // ---------------------------------------------------------------------
 $notificationsUnreadCount = subadmin_unread_notification_count();
 $notificationsArchivedCount = count(array_filter($notifications, fn ($n) => $n['archived']));
-$notificationsAllCount = count($notifications) - $notificationsArchivedCount;
 
 $notificationTabs = [
-    ['key' => 'all',            'label' => 'All Notifications', 'badge' => $notificationsAllCount, 'active' => true],
+    ['key' => 'all',            'label' => 'All Notifications', 'active' => true],
     ['key' => 'unread',         'label' => 'Unread',            'badge' => $notificationsUnreadCount],
     ['key' => 'archived',       'label' => 'Archived',          'badge' => $notificationsArchivedCount],
 ];
 
+// Pagination is client-side now (assets/js/notifications.js) — every
+// notification renders into the table below, unsliced, and the browser
+// shows/hides 8 at a time depending on which tab/filter/page is active.
+// See that file's header comment for why this moved off the server:
+// slicing here, before the tab filter even applies client-side, meant
+// a page's 8 rows didn't reliably line up with what any given tab was
+// actually showing. $notificationsTotal/$notificationsPerPage below are
+// just the initial "Showing..." text's starting point — JS recomputes
+// the real figure (tab-filtered) the instant it runs.
 $notificationsPerPage = 8;
-$notificationsPagination = hc_paginate($notifications, 'page', $notificationsPerPage);
-$notifications = $notificationsPagination['items'];
-$notificationsTotal = $notificationsPagination['total'];
-$notificationsTotalPages = $notificationsPagination['totalPages'];
-$notificationsCurrentPage = $notificationsPagination['page'];
+$notificationsTotal = count($notifications);

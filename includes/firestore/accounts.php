@@ -69,6 +69,39 @@ if (!function_exists('hc_get_pending_account_notifications')) {
     }
 }
 
+if (!function_exists('hc_email_already_registered')) {
+    /**
+     * One email = at most one account in this app, full stop — checked
+     * by EMAIL, not by Firebase Auth uid, since a Google-authenticated
+     * identity can end up with a different uid than an email/password
+     * one for the very same address (depends on this Firebase
+     * project's account-linking setting, which this app doesn't
+     * control), so relying on Firebase Auth's own per-provider
+     * uniqueness alone isn't enough to stop the same person (or
+     * someone else entirely) collecting a second account under the
+     * same email. Checked against every users/{uid} doc regardless of
+     * status — pending, active, locked, doesn't matter, since the
+     * point is "this email already belongs to an account in the
+     * system." Shared by every real account-creation endpoint
+     * (api/register.php, api/create-user.php, api/create-subadmin.php)
+     * rather than each keeping its own copy.
+     */
+    function hc_email_already_registered(string $email): bool
+    {
+        global $firestore;
+        $needle = strtolower(trim($email));
+        if ($needle === '') {
+            return false;
+        }
+        foreach ($firestore->listDocuments('users') as $doc) {
+            if (strtolower(trim((string) ($doc['fields']['email'] ?? ''))) === $needle) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 if (!function_exists('hc_get_active_staff_by_role')) {
     /**
      * Every real, currently-active users/{uid} account for one $role at

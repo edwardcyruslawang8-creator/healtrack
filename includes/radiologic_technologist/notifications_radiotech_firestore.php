@@ -22,7 +22,6 @@
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/lab_results.php'; // hc_get_pending_lab_xray_notifications()
-require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav()
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
 require_once __DIR__ . '/../shared/phone_reminder.php'; // hc_get_phone_reminder_notification()
 require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
@@ -65,21 +64,26 @@ $notifications = array_map(function ($n) use ($ntfReadIds, $ntfArchivedIds) {
 
 // ---------------------------------------------------------------------
 // Notification tabs — all filter the table client-side (see
-// assets/js/notifications.js).
+// assets/js/notifications.js). "All Notifications" has no badge at
+// all — a badge there went through two designs (mirroring the unread
+// count, then a real total count) before landing on no number at all
+// being the clearest option.
 // ---------------------------------------------------------------------
 $notificationsUnreadCount = hc_radiotech_unread_notification_count();
 $notificationsArchivedCount = count(array_filter($notifications, fn ($n) => $n['archived']));
-$notificationsAllCount = count($notifications) - $notificationsArchivedCount;
 
 $notificationTabs = [
-    ['key' => 'all',            'label' => 'All Notifications', 'badge' => $notificationsAllCount, 'active' => true],
+    ['key' => 'all',            'label' => 'All Notifications', 'active' => true],
     ['key' => 'unread',         'label' => 'Unread',            'badge' => $notificationsUnreadCount],
     ['key' => 'archived',       'label' => 'Archived',          'badge' => $notificationsArchivedCount],
 ];
 
+// Pagination is client-side now (assets/js/notifications.js) — every
+// notification renders into the table below, unsliced, and the browser
+// shows/hides 8 at a time depending on which tab/filter/page is active
+// (slicing here first used to mean a page's 8 rows didn't reliably
+// match whatever tab was actually active — see that file's header
+// comment). $notificationsTotal/$notificationsPerPage below are just
+// the initial "Showing..." text's starting point.
 $notificationsPerPage = 8;
-$notificationsPagination = hc_paginate($notifications, 'page', $notificationsPerPage);
-$notifications = $notificationsPagination['items'];
-$notificationsTotal = $notificationsPagination['total'];
-$notificationsTotalPages = $notificationsPagination['totalPages'];
-$notificationsCurrentPage = $notificationsPagination['page'];
+$notificationsTotal = count($notifications);

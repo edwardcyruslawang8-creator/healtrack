@@ -12,8 +12,14 @@
  * created/authenticated the Firebase Auth account via a real popup;
  * this endpoint verifies that token server-side instead of calling
  * createUser(), and never trusts a client-supplied uid/email for that
- * path). Either way, the result is the same matching Firestore
- * users/{uid} profile document.
+ * path). Either way, a password is required and set here too —
+ * changeUserPassword() on the Google path, adding a password
+ * credential to the SAME Firebase Auth account the popup just created,
+ * rather than leaving that account passwordless until a sub-admin
+ * approves it later (api/session-login.php's password-setup gate only
+ * exists now as a fallback for accounts created before this changed).
+ * Either way, the result is the same matching Firestore users/{uid}
+ * profile document.
  *
  * SECURITY: the requester picks a "Role" (job title) themselves, so
  * that choice alone must never grant real access. Two layers:
@@ -39,6 +45,7 @@
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 require_once __DIR__ . '/../includes/shared/mailer.php'; // hc_send_email(), hc_account_email_shell()
+require_once __DIR__ . '/../includes/firestore/accounts.php'; // hc_email_already_registered()
 
 header('Content-Type: application/json');
 
@@ -59,12 +66,14 @@ $confirmPassword = (string) ($body['confirmPassword'] ?? '');
 $jobTitle = trim((string) ($body['role'] ?? ''));
 $termsAccepted = (bool) ($body['termsAccepted'] ?? false);
 // Set only by "Sign up with Google" (assets/js/register.js) — an
-// alternate CREDENTIAL method, not a shortcut around anything below:
-// same required fields, same $jobTitleToRole enforcement, same
-// unconditional "pending" status. Just skips createUser()/password,
-// since Firebase Auth already created this account the moment the
-// Google popup succeeded — this endpoint only verifies that token
-// server-side and writes the matching Firestore profile.
+// alternate identity-verification method, not a shortcut around
+// anything below: same required fields (including password — see
+// below), same $jobTitleToRole enforcement, same unconditional
+// "pending" status. Just skips createUser(), since Firebase Auth
+// already created this account the moment the Google popup succeeded
+// — this endpoint verifies that token server-side, adds the password
+// to that same account via changeUserPassword(), and writes the
+// matching Firestore profile.
 $googleIdToken = trim((string) ($body['googleIdToken'] ?? ''));
 $isGoogleSignup = $googleIdToken !== '';
 
@@ -84,36 +93,31 @@ $jobTitleToRole = [
     'Doctor' => 'doctor',
 ];
 
-// Phone is required for the manual path, but Google never hands one
-// over — so it's optional there (added later from Profile Settings,
+// Phone is the one field Google signups skip — Google never hands one
+// over, so it's optional there (added later from Profile Settings,
 // nudged by includes/shared/phone_reminder.php's reminder notification/
-// toast), while still required when registering with a password.
-if ($firstName === '' || $lastName === '' || $email === '' || $jobTitle === '' || (!$isGoogleSignup && $phone === '')) {
+// toast), while still required on the manual path.
+if ($firstName === '' || $lastName === '' || $email === '' || $jobTitle === '' || $password === '' || (!$isGoogleSignup && $phone === '')) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Please fill out every field.']);
     exit;
 }
-if (!$isGoogleSignup) {
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        http_response_code(422);
-        echo json_encode(['success' => false, 'error' => 'Please enter a valid email address.']);
-        exit;
-    }
-    if ($password === '') {
-        http_response_code(422);
-        echo json_encode(['success' => false, 'error' => 'Please fill out every field.']);
-        exit;
-    }
-    if (strlen($password) < 6) {
-        http_response_code(422);
-        echo json_encode(['success' => false, 'error' => 'Password must be at least 6 characters.']);
-        exit;
-    }
-    if ($password !== $confirmPassword) {
-        http_response_code(422);
-        echo json_encode(['success' => false, 'error' => 'Passwords do not match.']);
-        exit;
-    }
+// Password is required either way now — see this file's header
+// comment for why the Google path isn't exempt from this any more.
+if (strlen($password) < 6) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Password must be at least 6 characters.']);
+    exit;
+}
+if ($password !== $confirmPassword) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Passwords do not match.']);
+    exit;
+}
+if (!$isGoogleSignup && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please enter a valid email address.']);
+    exit;
 }
 if (!isset($jobTitleToRole[$jobTitle])) {
     http_response_code(422);
@@ -132,31 +136,11 @@ if (!$termsAccepted) {
 $fullName = trim($firstName . ' ' . $lastName);
 $role = $jobTitleToRole[$jobTitle];
 
-// One email = at most one account/role in this app, full stop — checked
-// by EMAIL, not by Firebase Auth uid, since a Google-authenticated
-// identity can end up with a different uid than an email/password one
-// for the very same address (depends on this Firebase project's
-// account-linking setting, which this app doesn't control), so relying
-// on Firebase Auth's own per-provider uniqueness alone isn't enough to
-// stop the same person collecting a second role under the same email.
-// Checked against every users/{uid} doc regardless of status — pending,
-// active, doesn't matter, since the point is "this email already has a
-// role request in the system."
-function hc_email_already_registered(string $email): bool
-{
-    global $firestore;
-    $needle = strtolower(trim($email));
-    if ($needle === '') {
-        return false;
-    }
-    foreach ($firestore->listDocuments('users') as $doc) {
-        if (strtolower(trim((string) ($doc['fields']['email'] ?? ''))) === $needle) {
-            return true;
-        }
-    }
-    return false;
-}
-
+// hc_email_already_registered() (includes/firestore/accounts.php) is
+// the real enforcement point for "one email = at most one account" —
+// see that function's own comment for why it's checked by email, not
+// Firebase Auth uid, and why it's shared across every real
+// account-creation endpoint rather than kept as a local copy here.
 if ($isGoogleSignup) {
     try {
         $verifiedToken = $firebaseAuth->verifyIdToken($googleIdToken);
@@ -174,6 +158,21 @@ if ($isGoogleSignup) {
     if (hc_email_already_registered($email)) {
         http_response_code(422);
         echo json_encode(['success' => false, 'error' => 'An account already exists for this email. Please sign in instead.']);
+        exit;
+    }
+
+    // Adds a password credential to the SAME Firebase Auth account the
+    // Google popup just created — it does not replace or remove the
+    // Google sign-in method, so this account can sign in either way
+    // afterward. This is what makes the password exist right now, at
+    // registration time, instead of this account sitting passwordless
+    // until a sub-admin approves it and api/session-login.php's
+    // password-setup gate catches it on first login.
+    try {
+        $firebaseAuth->changeUserPassword($uid, $password);
+    } catch (\Throwable $e) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => 'Could not set your password: ' . $e->getMessage()]);
         exit;
     }
 } else {
@@ -222,8 +221,10 @@ $saved = $firestore->setDocument('users', $uid, [
     'termsAcceptedAt' => date('c'),
     // Display/audit only — api/session-login.php's actual password-setup
     // GATE checks the real Firebase Auth provider list at login time
-    // (see that file's comment), not this field, so it stays correct
-    // even for accounts created before this field existed.
+    // (see that file's comment), not this field. Both paths above now
+    // set a real password at registration time, so that gate should
+    // rarely fire for accounts created from here on — it stays in
+    // place as a fallback for accounts created before this changed.
     'authProvider' => $isGoogleSignup ? 'google' : 'password',
 ]);
 

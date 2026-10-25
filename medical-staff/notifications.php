@@ -50,7 +50,7 @@ if (($_SESSION['role'] ?? null) !== 'healthcare_staff') {
 require_once __DIR__ . '/../includes/medical-staff/notifications_medstaff_firestore.php';
 // $staffProfile, $dashboardDateLabel, $facilityOptions, $notificationTabs,
 // $notificationTypeOptions, $notifications, $notificationsTotal,
-// $notificationsPerPage, $notificationsCurrentPage, $notificationsTotalPages
+// $notificationsPerPage, $notificationsUnreadCount, $notificationsArchivedCount
 
 // Sidebar nav — same Medical Staff nav list as medical-staff/dashboard.php.
 // Notifications stays active (this IS that page).
@@ -268,7 +268,7 @@ $staffNavItems = [
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody id="ntfTableBody" data-initial-unread="<?= (int) $notificationsUnreadCount ?>" data-initial-all="<?= (int) $notificationsAllCount ?>">
+                <tbody id="ntfTableBody" data-initial-unread="<?= (int) $notificationsUnreadCount ?>">
                     <?php if (empty($notifications)): ?>
                     <tr>
                         <td colspan="4" class="adm-table-empty">No notifications yet.</td>
@@ -320,8 +320,11 @@ $staffNavItems = [
         </div>
 
         <div class="adm-table-footer">
-            <span class="adm-showing-text"><?= $notificationsTotal > 0 ? 'Showing ' . (($notificationsCurrentPage - 1) * $notificationsPerPage + 1) . ' to ' . (($notificationsCurrentPage - 1) * $notificationsPerPage + count($notifications)) . ' of ' . $notificationsTotal . ' notifications' : 'No notifications to show' ?></span>
-            <?= hc_render_pagination_nav('Notifications pages', 'page', $notificationsCurrentPage, $notificationsTotalPages) ?>
+            <span class="adm-showing-text"><?= $notificationsTotal > 0 ? 'Showing 1 to ' . min($notificationsPerPage, $notificationsTotal) . ' of ' . $notificationsTotal . ' notifications' : 'No notifications to show' ?></span>
+            <!-- Populated by assets/js/notifications.js, not server-rendered
+                 — see includes/medical-staff/notifications_medstaff_firestore.php's
+                 header comment for why pagination moved client-side. -->
+            <nav class="adm-pagination" id="ntfPaginationNav" aria-label="Notifications pages"></nav>
         </div>
     </div>
 
