@@ -180,11 +180,13 @@ if (!function_exists('hc_filter_audit_logs')) {
         $statusLabel = (string) ($filters['status'] ?? 'All Statuses');
         $dateFrom = trim((string) ($filters['from'] ?? ''));
         $dateTo = trim((string) ($filters['to'] ?? ''));
-        // 'subadmin'/'doctor'/'healthcare_staff'/'medical_technician'/
+        // 'admin'/'subadmin'/'doctor'/'healthcare_staff'/'medical_technician'/
         // 'radio_technologist'/'pharmacist' — driven by admin/audit_logs.php's
         // and subadmin/audit_logs.php's own sidebar dropdowns (Audit Logs
-        // > Sub Admin / Doctor / Medical Staff / Medical Technologist /
-        // Radiologic Technologist / Pharmacist), never a real dropdown
+        // > Admin / Sub Admin / Doctor / Medical Staff / Medical
+        // Technologist / Radiologic Technologist / Pharmacist — 'admin'
+        // only exists on admin/audit_logs.php's own dropdown, 'subadmin'
+        // only on subadmin/audit_logs.php's), never a real dropdown
         // option of its own, so no "All ..." placeholder to check for;
         // anything else (including '') means no role split.
         $roleFilter = (string) ($filters['role'] ?? '');
@@ -209,6 +211,9 @@ if (!function_exists('hc_filter_audit_logs')) {
                 return false;
             }
             if ($roleFilter === 'subadmin' && $log['actorRole'] !== 'Sub-Administrator') {
+                return false;
+            }
+            if ($roleFilter === 'admin' && $log['actorRole'] !== 'System Administrator') {
                 return false;
             }
             // 'doctor'/'healthcare_staff'/'medical_technician'/

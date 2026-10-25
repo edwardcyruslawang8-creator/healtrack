@@ -93,20 +93,27 @@ function resolveActionMeta(array $actionTypeMeta, string $type): array
 // Real audit log entries, newest first — every facility, unfiltered.
 // ---------------------------------------------------------------------
 $allAuditLogs = hc_get_all_audit_logs_annotated();
+$myUid = $_SESSION['uid'] ?? '';
 
-// Driven only by the sidebar's Audit Logs > Sub Admin / Doctor / Medical
-// Staff / Medical Technologist / Radiologic Technologist / Pharmacist
-// dropdown (see the nav array below) — not a filter-toolbar dropdown of
-// its own, so any value other than these six just means "no role
-// split". Same granular per-role breakdown as
+// Driven only by the sidebar's Audit Logs > Admin / Sub Admin / Doctor /
+// Medical Staff / Medical Technologist / Radiologic Technologist /
+// Pharmacist dropdown (see the nav array below) — not a filter-toolbar
+// dropdown of its own, so any value other than these seven just means
+// "no role split". Same granular per-role breakdown as
 // includes/subadmin/subadmin_audit_logs_firestore.php's own Audit Logs
 // dropdown, just system-wide (every facility) here instead of scoped to
 // one. Resolved up here (rather than down with the rest of the
 // filters, where it used to live) because $seenUsers below needs it
-// too.
-$auditRoleOptions = ['subadmin', 'doctor', 'healthcare_staff', 'medical_technician', 'radio_technologist', 'pharmacist'];
+// too. 'admin' (added alongside subadmin's own equivalent "Sub Admin"
+// self-scoping this same session) lets a System Administrator see
+// THEIR OWN actions specifically — restricted to actorUid === $myUid
+// below, same reasoning as subadmin's: if more than one admin account
+// ever exists, one shouldn't see another's activity just by switching
+// to this tab, any more than two sub-admins should see each other's.
+$auditRoleOptions = ['admin', 'subadmin', 'doctor', 'healthcare_staff', 'medical_technician', 'radio_technologist', 'pharmacist'];
 $auditRoleFilter = in_array($_GET['role'] ?? '', $auditRoleOptions, true) ? $_GET['role'] : '';
 $auditRoleFilterLabels = [
+    'admin' => 'Admin',
     'subadmin' => 'Sub-Admin',
     'doctor' => 'Doctor',
     'healthcare_staff' => 'Medical Staff',
@@ -120,6 +127,7 @@ $auditRoleFilterLabels = [
 // role-filter's own nav label (Healthcare Staff's real actorRole vs.
 // this page's "Medical Staff" nav wording).
 $auditRoleActorRoles = [
+    'admin' => 'System Administrator',
     'subadmin' => 'Sub-Administrator',
     'doctor' => 'Doctor',
     'healthcare_staff' => 'Healthcare Staff',
@@ -146,10 +154,21 @@ foreach ($allAuditLogs as $log) {
     $matchesRoleScope = $auditRoleFilter === ''
         ? $log['actorRole'] !== 'System Administrator'
         : $log['actorRole'] === ($auditRoleActorRoles[$auditRoleFilter] ?? null);
+    // "Admin" means THIS System Administrator's own activity
+    // specifically — see the header comment above $auditRoleOptions for
+    // why, same narrowing applied to $filteredAuditLogs below.
+    if ($matchesRoleScope && $auditRoleFilter === 'admin') {
+        $matchesRoleScope = $log['actorUid'] === $myUid;
+    }
     if ($matchesRoleScope) {
         $seenUsers[$log['actorName']] = true;
+        // Scoped to the active role section too (previously unconditional,
+        // so "All Modules" always listed every module system-wide no
+        // matter which role tab was active — same fix already applied to
+        // includes/subadmin/subadmin_audit_logs_firestore.php's own copy
+        // of this loop earlier this session).
+        $seenModules[$log['module']] = true;
     }
-    $seenModules[$log['module']] = true;
 }
 ksort($seenUsers, SORT_STRING | SORT_FLAG_CASE);
 ksort($seenModules, SORT_STRING | SORT_FLAG_CASE);
@@ -180,6 +199,17 @@ $filteredAuditLogs = hc_filter_audit_logs($allAuditLogs, [
     'to' => $auditDateTo,
     'role' => $auditRoleFilter,
 ]);
+
+// "Admin" is scoped to THIS System Administrator's own account
+// specifically — see the header comment above $auditRoleOptions for
+// why. hc_filter_audit_logs() has no notion of "the currently
+// signed-in account" to apply this itself, so it's applied here
+// instead, specific to this one page (same pattern
+// includes/subadmin/subadmin_audit_logs_firestore.php's own "Sub
+// Admin" option already uses).
+if ($auditRoleFilter === 'admin') {
+    $filteredAuditLogs = array_values(array_filter($filteredAuditLogs, fn ($log) => $log['actorUid'] === $myUid));
+}
 
 $auditRoleFilterLabel = $auditRoleFilterLabels[$auditRoleFilter] ?? '';
 
@@ -259,7 +289,14 @@ if (!function_exists('hc_audit_query')) {
             'status' => $_GET['status'] ?? 'All Statuses',
             'dateRangeFrom' => $_GET['dateRangeFrom'] ?? '',
             'dateRangeTo' => $_GET['dateRangeTo'] ?? '',
-            'role' => in_array($_GET['role'] ?? '', ['subadmin', 'user'], true) ? $_GET['role'] : '',
+            // Was ['subadmin', 'user'] — a stale whitelist missing 5 of
+            // the real 7 role-filter values (see $auditRoleOptions
+            // above, which this can't reference directly: a named
+            // function has no access to the including script's
+            // variables), so a Module/User/etc. filter click used to
+            // silently drop e.g. "?role=doctor" the moment it was
+            // combined with any other filter.
+            'role' => in_array($_GET['role'] ?? '', ['admin', 'subadmin', 'doctor', 'healthcare_staff', 'medical_technician', 'radio_technologist', 'pharmacist'], true) ? $_GET['role'] : '',
             'page' => $_GET['page'] ?? 1,
         ], $overrides);
 

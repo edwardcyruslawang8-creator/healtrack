@@ -53,6 +53,7 @@ $adminNavItems = [
         'active' => true,
         'open' => true,
         'children' => [
+            ['label' => 'Admin',                  'href' => 'audit_logs.php?role=admin',              'active' => $auditRoleFilter === 'admin'],
             ['label' => 'Sub Admin',             'href' => 'audit_logs.php?role=subadmin',           'active' => $auditRoleFilter === 'subadmin'],
             ['label' => 'Doctor',                'href' => 'audit_logs.php?role=doctor',             'active' => $auditRoleFilter === 'doctor'],
             ['label' => 'Medical Staff',          'href' => 'audit_logs.php?role=healthcare_staff',   'active' => $auditRoleFilter === 'healthcare_staff'],
