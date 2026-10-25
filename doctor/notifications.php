@@ -277,6 +277,8 @@ $doctorNavItems = [
                         data-unread="<?= $n['unread'] ? '1' : '0' ?>"
                         data-archived="<?= $n['archived'] ? '1' : '0' ?>"
                         data-type="<?= htmlspecialchars($n['type']) ?>"
+                        data-link="<?= htmlspecialchars($n['link'] ?? '') ?>"
+                        data-link-label="<?= htmlspecialchars($n['linkLabel'] ?? '') ?>"
                         data-title="<?= htmlspecialchars(strtolower($n['title'])) ?>"
                         data-desc="<?= htmlspecialchars(strtolower($n['description'])) ?>"
                         data-icon="<?= htmlspecialchars($n['icon']) ?>"
@@ -350,6 +352,7 @@ $doctorNavItems = [
                 </div>
             </div>
             <div class="modal-footer">
+                <a href="#" id="ntfDetailActionBtn" class="ntf-modal-btn-primary d-none">Go to details</a>
                 <button type="button" class="ntf-modal-btn-cancel" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

@@ -78,6 +78,7 @@ $adminNavItems = [
         'icon' => 'bi-clipboard-data-fill',
         'label' => t('nav.audit_logs'),
         'children' => [
+            ['label' => t('nav.audit_logs_subadmin'),           'href' => 'audit_logs.php?role=subadmin'],
             ['label' => t('nav.audit_logs_doctor'),             'href' => 'audit_logs.php?role=doctor'],
             ['label' => t('nav.audit_logs_medstaff'),      'href' => 'audit_logs.php?role=healthcare_staff'],
             ['label' => t('nav.audit_logs_medtech'), 'href' => 'audit_logs.php?role=medical_technician'],
@@ -304,6 +305,8 @@ $adminNavItems = [
                         data-unread="<?= $n['unread'] ? '1' : '0' ?>"
                         data-archived="<?= $n['archived'] ? '1' : '0' ?>"
                         data-type="<?= htmlspecialchars($n['type']) ?>"
+                        data-link="<?= htmlspecialchars($n['link'] ?? '') ?>"
+                        data-link-label="<?= htmlspecialchars($n['linkLabel'] ?? '') ?>"
                         data-title="<?= htmlspecialchars(strtolower($n['title'])) ?>"
                         data-desc="<?= htmlspecialchars(strtolower($n['description'])) ?>"
                         data-icon="<?= htmlspecialchars($n['icon']) ?>"
@@ -377,6 +380,7 @@ $adminNavItems = [
                 </div>
             </div>
             <div class="modal-footer">
+                <a href="#" id="ntfDetailActionBtn" class="ntf-modal-btn-primary d-none">Go to details</a>
                 <button type="button" class="ntf-modal-btn-cancel" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

@@ -174,8 +174,7 @@
 .ntf-detail-field{ display: flex; flex-direction: column; gap: 4px; }
 .ntf-detail-label{ font-size: 12px; color: var(--adm-text-muted); font-weight: 500; }
 .ntf-detail-value{ font-size: 13.5px; color: var(--adm-text); font-weight: 600; }
-.ntf-details-modal .modal-footer{ border-top: none; padding: 0 28px 24px; }
-.ntf-details-modal .ntf-modal-btn-cancel{ flex: none; width: 100%; }
+.ntf-details-modal .modal-footer{ border-top: none; padding: 0 28px 24px; gap: 10px; }
 
 .ntf-modal-btn-cancel{
   flex: 1;
@@ -188,6 +187,29 @@
   color: var(--adm-text);
 }
 .ntf-modal-btn-cancel:hover{ background: var(--adm-hover-bg); }
+
+/* -- "Go to [X]" — the notification details modal's own primary
+      action, shown only when assets/js/notifications.js resolves a
+      real link for that row's notification type (see each role's own
+      notifications_*_firestore.php for the type -> link map). Solid
+      brand red, same weight as the Close button next to it splits
+      evenly with (both flex:1) when both are visible; Close alone
+      still fills the row the same way it always did when this one
+      stays hidden (.d-none). -- */
+.ntf-modal-btn-primary{
+  flex: 1;
+  background: var(--adm-red-bright);
+  border: 1px solid var(--adm-red-bright);
+  border-radius: 10px;
+  padding: 11px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+}
+.ntf-modal-btn-primary:hover{ background: var(--adm-red-bright-hover); border-color: var(--adm-red-bright-hover); color: #fff; }
 
 /* -- Actions column — text buttons rather than .adm-action-btn's
       fixed 30x30px icon square, which "View Details"/"Archive" wouldn't

@@ -232,6 +232,27 @@ body.adm-body{
 }
 .adm-nav-link i{ font-size: 17px; width: 18px; text-align: center; }
 .adm-nav-link:hover{ background: rgba(255,255,255,0.10); color: #fff; }
+
+/* -- Sidebar "Notifications" nav item's own unread badge (admin/*.php)
+   — same look as every other role's own differently-prefixed sidebar
+   badge (subadmin's .sad-nav-badge, pharmacist's .phm-nav-badge, etc.,
+   each in their own role-specific stylesheet); admin has no stylesheet
+   of its own besides this shared one, so its badge class lives here
+   instead. -- */
+.adm-nav-badge{
+  margin-left: auto;
+  background: #fff;
+  color: var(--adm-red-bright);
+  font-size: 10.5px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
 .adm-nav-link.active{
   /* White pill + maroon text, matching the patient sidebar's
      .sidebar-nav .nav-link.active (assets/css/base.css) exactly,

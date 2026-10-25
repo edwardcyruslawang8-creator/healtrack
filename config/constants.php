@@ -99,6 +99,12 @@ ob_start(function ($buffer) {
     } catch (\Throwable $e) {
         error_log('[Phone reminder toast] Skipped after a late-stage failure: ' . $e->getMessage());
     }
+    try {
+        require_once __DIR__ . '/../includes/shared/notification_poll.php';
+        $script .= hc_render_notification_poll_script();
+    } catch (\Throwable $e) {
+        error_log('[Notification poll] Skipped after a late-stage failure: ' . $e->getMessage());
+    }
 
     return str_replace('</body>', $script . '</body>', $buffer);
 });
@@ -118,29 +124,43 @@ function asset_url(string $path): string
 }
 
 /**
- * Unread notification count for every admin/*.php page's sidebar nav
- * badge + topbar bell badge — a System Administrator account has no
- * notification system of its own at all before this (admin/*.php had
- * no bell/badge anywhere), built specifically to carry the real 2FA
- * reminder (includes/shared/two_fa_reminder.php) — the one real source
- * this role has right now. Same $_SESSION['ntfReadIds']/
- * ['ntfDismissedIds'] mechanism every other role's own count function
- * already uses, so it's a real, extensible notification system (more
- * real sources can be merged in here later) rather than a one-off hack
- * scoped only to this one reminder.
+ * The full, real universe of admin notification ids right now — same
+ * reasoning as subadmin_all_notification_ids() and its 5 siblings
+ * below: factored out so api/mark-notifications-read.php's "Mark all
+ * as read" can mark every one of them, not just whatever happens to be
+ * in the DOM. A System Administrator account had no notification
+ * system of its own at all before this (no admin/notifications.php, no
+ * bell/badge anywhere on any admin/*.php page) — built as a real,
+ * extensible one from the start (more real sources can be merged in
+ * here later, same as subadmin's stock-request notifications were
+ * added this session) rather than a one-off hack scoped only to the
+ * one real source it carries right now: the 2FA setup reminder
+ * (includes/shared/two_fa_reminder.php) — admin's own account is no
+ * different from any other role's in that respect.
  */
-function hc_admin_unread_notification_count(): int
+function hc_admin_all_notification_ids(): array
 {
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_my_2fa_reminder_notification()
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
     if (!hc_notification_preference_enabled('system')) {
-        return 0;
+        return [];
     }
 
+    return array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id');
+}
+
+/**
+ * Unread notification count for every admin/*.php page's sidebar nav
+ * badge + topbar bell badge — same $_SESSION['ntfReadIds']/
+ * ['ntfDismissedIds'] mechanism every other role's own count function
+ * already uses.
+ */
+function hc_admin_unread_notification_count(): int
+{
+    $allIds = hc_admin_all_notification_ids();
     $readIds = $_SESSION['ntfReadIds'] ?? [];
     $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
-    $allIds = array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id');
 
     return count(array_diff($allIds, $readIds, $dismissedIds));
 }
@@ -463,4 +483,34 @@ function hc_radiotech_unread_notification_count(): int
     $dismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
 
     return count(array_diff($allIds, $readIds, $dismissedIds));
+}
+
+/**
+ * One shared dispatch point over the 7 role-specific unread-count
+ * functions above — same role-keyed switch api/mark-notifications-read.php
+ * already has its own copy of, factored out here so a second real
+ * caller (api/get-unread-count.php, includes/shared/notification_poll.php)
+ * doesn't need a third copy of the same mapping. Returns 0 for any
+ * other role with no real notification system (e.g. "patient").
+ */
+function hc_unread_notification_count_for_role(?string $role): int
+{
+    switch ($role) {
+        case 'pharmacist':
+            return hc_pharmacist_unread_notification_count();
+        case 'doctor':
+            return hc_doctor_unread_notification_count();
+        case 'healthcare_staff':
+            return hc_medstaff_unread_notification_count();
+        case 'medical_technician':
+            return hc_medtech_unread_notification_count();
+        case 'radio_technologist':
+            return hc_radiotech_unread_notification_count();
+        case 'subadmin':
+            return subadmin_unread_notification_count();
+        case 'admin':
+            return hc_admin_unread_notification_count();
+        default:
+            return 0;
+    }
 }

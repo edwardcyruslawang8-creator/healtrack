@@ -87,9 +87,24 @@ $rawNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'sy
     // notification already covered by 'system' above.
     hc_get_decided_stock_request_notifications_for_pharmacist($myUid)
 ) : [];
-$notifications = array_map(function ($n) use ($ntfReadIds, $ntfArchivedIds) {
+// Which real page a notification's "Go to details" button (the
+// Notification Details modal's own primary action, assets/js/notifications.js)
+// should open — keyed by the same real 'type' string each source
+// above already sets, not by notification id. A type with no entry
+// here just gets no button at all, not a wrong link.
+$notificationTypeLinks = [
+    'Inventory' => ['url' => 'medicine_vaccine_inventory.php', 'label' => 'Go to Inventory'],
+    'Medicine' => ['url' => 'prescription_queue.php', 'label' => 'Go to Prescription Queue'],
+    'Vaccine' => ['url' => 'prescription_queue.php', 'label' => 'Go to Prescription Queue'],
+    'Stock Request' => ['url' => 'stock_requests.php', 'label' => 'Go to Stock Requests'],
+    'Reminder' => ['url' => 'profile_settings.php', 'label' => 'Go to Security Settings'],
+];
+
+$notifications = array_map(function ($n) use ($ntfReadIds, $ntfArchivedIds, $notificationTypeLinks) {
     $n['unread'] = !in_array($n['id'], $ntfReadIds, true);
     $n['archived'] = in_array($n['id'], $ntfArchivedIds, true);
+    $n['link'] = $notificationTypeLinks[$n['type']]['url'] ?? null;
+    $n['linkLabel'] = $notificationTypeLinks[$n['type']]['label'] ?? null;
 
     return $n;
 }, $rawNotifications);

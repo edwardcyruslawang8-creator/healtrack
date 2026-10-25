@@ -95,15 +95,23 @@ $allAuditLogs = array_values(array_filter(
     fn ($log) => $log['facility'] === $adminProfile['facility']
 ));
 
-// Driven only by the sidebar's Audit Logs > Doctor/Medical Staff/
-// Medical Technologist/Pharmacist dropdown (see the nav array in
+// Driven only by the sidebar's Audit Logs > Sub Admin/Doctor/Medical
+// Staff/Medical Technologist/Pharmacist dropdown (see the nav array in
 // subadmin/audit_logs.php) — not a filter-toolbar dropdown of its own,
-// so any value other than these four just means "no role split".
+// so any value other than these six just means "no role split".
 // Resolved up here (rather than down with the rest of the filters)
-// because $seenUsers below needs it too.
-$auditRoleOptions = ['doctor', 'healthcare_staff', 'medical_technician', 'radio_technologist', 'pharmacist'];
+// because $seenUsers below needs it too. 'subadmin' lets a sub-admin
+// see their OWN facility's activity specifically (previously only
+// visible mixed into the unfiltered "no role split" view alongside
+// every staff role, same gap admin/audit_logs.php's own "Sub Admin"
+// option already closed for a System Administrator looking in from
+// outside) — hc_filter_audit_logs() (includes/shared/audit_log_writer.php)
+// already supported this role value, it just had no way to reach this
+// page's own $auditRoleOptions whitelist before now.
+$auditRoleOptions = ['subadmin', 'doctor', 'healthcare_staff', 'medical_technician', 'radio_technologist', 'pharmacist'];
 $auditRoleFilter = in_array($_GET['role'] ?? '', $auditRoleOptions, true) ? $_GET['role'] : '';
 $auditRoleFilterLabels = [
+    'subadmin' => 'Sub Admin',
     'doctor' => 'Doctor',
     'healthcare_staff' => 'Medical Staff',
     'medical_technician' => 'Medical Technologist',
@@ -112,6 +120,7 @@ $auditRoleFilterLabels = [
 ];
 $auditRoleFilterLabel = $auditRoleFilterLabels[$auditRoleFilter] ?? '';
 $auditRoleActorRoles = [
+    'subadmin' => 'Sub-Administrator',
     'doctor' => 'Doctor',
     'healthcare_staff' => 'Healthcare Staff',
     'medical_technician' => 'Medical Technologist',
@@ -141,6 +150,12 @@ foreach ($allAuditLogs as $log) {
     $matchesRoleScope = isset($auditRoleActorRoles[$auditRoleFilter])
         ? $log['actorRole'] === $auditRoleActorRoles[$auditRoleFilter]
         : $log['actorRole'] !== 'System Administrator';
+    // "Sub Admin" means THIS sub-admin's own activity specifically —
+    // see the header comment above $filteredAuditLogs below for why,
+    // same narrowing applied there.
+    if ($matchesRoleScope && $auditRoleFilter === 'subadmin') {
+        $matchesRoleScope = $log['actorUid'] === $myUid;
+    }
     if ($matchesRoleScope) {
         $seenUsers[$log['actorName']] = true;
         $seenModules[$log['module']] = true;
@@ -174,6 +189,20 @@ $filteredAuditLogs = hc_filter_audit_logs($allAuditLogs, [
     'to' => $auditDateTo,
     'role' => $auditRoleFilter,
 ]);
+
+// "Sub Admin" is scoped to THIS sub-admin's own account specifically,
+// not shared facility-wide visibility into every sub-admin's activity
+// the way the other 5 role options are — two sub-admins at the same
+// facility shouldn't be able to see each other's actions just by
+// switching to this tab. hc_filter_audit_logs() (shared with admin's
+// own "Sub Admin" option, where seeing every sub-admin's activity
+// combined IS the correct/intended behavior for a System Administrator
+// looking in from outside) has no notion of "the currently signed-in
+// account" to apply this narrower rule itself, so it's applied here
+// instead, specific to this one page.
+if ($auditRoleFilter === 'subadmin') {
+    $filteredAuditLogs = array_values(array_filter($filteredAuditLogs, fn ($log) => $log['actorUid'] === $myUid));
+}
 
 // ---------------------------------------------------------------------
 // Real pagination over the filtered result.
@@ -246,7 +275,7 @@ if (!function_exists('hc_audit_query')) {
             'status' => $_GET['status'] ?? 'All Statuses',
             'dateRangeFrom' => $_GET['dateRangeFrom'] ?? '',
             'dateRangeTo' => $_GET['dateRangeTo'] ?? '',
-            'role' => in_array($_GET['role'] ?? '', ['doctor', 'healthcare_staff', 'medical_technician', 'radio_technologist', 'pharmacist'], true) ? $_GET['role'] : '',
+            'role' => in_array($_GET['role'] ?? '', ['subadmin', 'doctor', 'healthcare_staff', 'medical_technician', 'radio_technologist', 'pharmacist'], true) ? $_GET['role'] : '',
             'page' => $_GET['page'] ?? 1,
         ], $overrides);
 

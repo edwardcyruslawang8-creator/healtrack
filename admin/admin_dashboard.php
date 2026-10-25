@@ -39,6 +39,7 @@ $adminNavItems = [
     ['icon' => 'bi-building',            'label' => t('nav.facility_management'), 'href' => 'facility_management.php'],    ['icon' => 'bi-people-fill',         'label' => t('nav.subadmin_management'), 'href' => 'subadmin_management.php'],
     ['icon' => 'bi-geo-alt-fill',        'label' => t('nav.gis_mapping'),         'href' => 'gis_mapping.php'],
     ['icon' => 'bi-shield-lock-fill',    'label' => t('nav.account_monitoring'),  'href' => 'account_monitoring.php'],
+    ['icon' => 'bi-bell-fill',           'label' => t('nav.notifications'),       'href' => 'notifications.php', 'badge' => hc_admin_unread_notification_count()],
     ['icon' => 'bi-megaphone-fill',      'label' => 'Announcements',              'href' => 'announcements.php'],
     [
         'icon' => 'bi-clipboard-data-fill',
@@ -135,6 +136,9 @@ $adminNavItems = [
             <a href="<?= htmlspecialchars($item['href']) ?>" class="adm-nav-link <?= !empty($item['active']) ? 'active' : '' ?>">
                 <i class="bi <?= htmlspecialchars($item['icon']) ?>"></i>
                 <span><?= htmlspecialchars($item['label']) ?></span>
+                <?php if (!empty($item['badge'])): ?>
+                <span class="adm-nav-badge" id="ntfSidebarBadge"><?= (int) $item['badge'] ?></span>
+                <?php endif; ?>
             </a>
         </li>
         <?php endif; ?>
@@ -169,6 +173,11 @@ $adminNavItems = [
                     <span class="adm-dt-sep">|</span>
                     <span><i class="bi bi-clock"></i><span class="adm-dt-time"><?= date('g:i A') ?></span></span>
                 </div>
+
+                <a href="notifications.php" class="adm-bell-btn" aria-label="Notifications">
+                    <i class="bi bi-bell-fill"></i>
+                    <?php if (hc_admin_unread_notification_count() > 0): ?><span class="adm-badge-count"><?= hc_admin_unread_notification_count() ?></span><?php endif; ?>
+                </a>
 
                 <div class="dropdown">
                     <button class="adm-profile-dropdown dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">

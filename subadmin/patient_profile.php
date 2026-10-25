@@ -77,6 +77,7 @@ $adminNavItems = [
         'icon' => 'bi-clipboard-data-fill',
         'label' => t('nav.audit_logs'),
         'children' => [
+            ['label' => t('nav.audit_logs_subadmin'),           'href' => 'audit_logs.php?role=subadmin'],
             ['label' => t('nav.audit_logs_doctor'),             'href' => 'audit_logs.php?role=doctor'],
             ['label' => t('nav.audit_logs_medstaff'),      'href' => 'audit_logs.php?role=healthcare_staff'],
             ['label' => t('nav.audit_logs_medtech'), 'href' => 'audit_logs.php?role=medical_technician'],

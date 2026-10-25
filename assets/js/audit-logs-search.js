@@ -9,9 +9,20 @@
    $seenUsers) — that contain what's typed so far. Clicking one jumps
    straight to that person's own filtered log the same way picking
    them from the User filter dropdown would (?user=<name>), replacing
-   the free-text search rather than combining with it.
+   the free-text search rather than combining with it — through the
+   same smooth, no-reload swap every other filter/pagination control on
+   this page already uses (assets/js/ajax-report-nav.js's
+   window.hcAjaxNavigateTo), not a real navigation.
+
+   Exposed as window.initAuditLogsSearch() (re-)binds the input/
+   suggestion box fresh each call, since ajax-report-nav.js's own
+   <main> swap discards the OLD #auditSearchInput/#auditSearchSuggest
+   elements (and whatever listeners were bound to them) every time a
+   filter/pagination/role-switch click swaps in a new one — a real page
+   load calls this once itself below; every swap after that calls it
+   again.
    ============================================================= */
-document.addEventListener('DOMContentLoaded', function () {
+function initAuditLogsSearch() {
     const input = document.getElementById('auditSearchInput');
     const box = document.getElementById('auditSearchSuggest');
     const users = Array.isArray(window.AUDIT_USER_LIST) ? window.AUDIT_USER_LIST : [];
@@ -27,7 +38,12 @@ document.addEventListener('DOMContentLoaded', function () {
         url.searchParams.set('user', name);
         url.searchParams.delete('q');
         url.searchParams.set('page', '1');
-        window.location.href = url.toString();
+        const target = url.pathname.split('/').pop() + '?' + url.searchParams.toString();
+        if (typeof window.hcAjaxNavigateTo === 'function') {
+            window.hcAjaxNavigateTo(target, true);
+        } else {
+            window.location.href = target;
+        }
     }
 
     function render(matches) {
@@ -59,4 +75,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     input.addEventListener('blur', function () { setTimeout(hide, 120); });
     input.addEventListener('keydown', function (e) { if (e.key === 'Escape') hide(); });
-});
+}
+
+window.initAuditLogsSearch = initAuditLogsSearch;
+document.addEventListener('DOMContentLoaded', initAuditLogsSearch);

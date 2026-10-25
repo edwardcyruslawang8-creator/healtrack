@@ -65,6 +65,7 @@ $adminNavItems = [
         'active' => true,
         'open' => true,
         'children' => [
+            ['label' => t('nav.audit_logs_subadmin'),           'href' => 'audit_logs.php?role=subadmin',           'active' => $auditRoleFilter === 'subadmin'],
             ['label' => t('nav.audit_logs_doctor'),             'href' => 'audit_logs.php?role=doctor',             'active' => $auditRoleFilter === 'doctor'],
             ['label' => t('nav.audit_logs_medstaff'),      'href' => 'audit_logs.php?role=healthcare_staff',   'active' => $auditRoleFilter === 'healthcare_staff'],
             ['label' => t('nav.audit_logs_medtech'), 'href' => 'audit_logs.php?role=medical_technician', 'active' => $auditRoleFilter === 'medical_technician'],
@@ -250,7 +251,7 @@ $adminNavItems = [
              facility) the User filter dropdown below uses. -->
         <div class="aud-search-suggest" id="auditSearchSuggest" hidden></div>
     </form>
-    <script>window.AUDIT_USER_LIST = <?= json_encode(array_keys($seenUsers)) ?>;</script>
+    <script id="auditUserListScript">window.AUDIT_USER_LIST = <?= json_encode(array_keys($seenUsers)) ?>;</script>
 
     <!-- ============ FILTER TOOLBAR ============ -->
     <div class="aud-filter-toolbar">
@@ -364,5 +365,9 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
+<!-- Smooth, no-reload swap for filter/pagination/role-switch clicks
+     (assets/js/ajax-report-nav.js) — same mechanism the Analytics &
+     Reports pages already use. -->
+<script src="<?= asset_url('/assets/js/ajax-report-nav.js') ?>"></script>
 </body>
 </html>

@@ -219,3 +219,10 @@
   .aud-filter-btn,
   .aud-clear-filters-btn{ flex: 1 1 calc(50% - 8px); justify-content: center; }
 }
+
+/* -- Smooth, no-reload swap loading state (assets/js/ajax-report-nav.js)
+      — same rule assets/css/analytics_reports.css already defines for
+      its own report pages; audit_logs.php doesn't load that stylesheet,
+      so it needs its own copy to actually dim/disable <main> while a
+      filter/pagination/role-switch click is in flight. -- */
+main.adm-main.adm-main-loading{ opacity: .55; pointer-events: none; transition: opacity .15s ease; }

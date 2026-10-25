@@ -167,6 +167,20 @@ if ($twoFaNotification !== null) {
 // — tagged here rather than excluded, so the Archived tab below has
 // something to show; every other tab hides an archived row client-side
 // instead (see assets/js/notifications.js).
+// Which real page a notification's "Go to details" button (the
+// Notification Details modal's own primary action, assets/js/notifications.js)
+// should open — keyed by the same real 'type' string each source
+// above already sets, not by notification id (several ids can share a
+// type and the same real destination). A type with no entry here (the
+// fake placeholder rows' 'Patient'/'System'/'Stock' types) just gets
+// no button at all, not a wrong link.
+$notificationTypeLinks = [
+    'User' => ['url' => 'user_management.php', 'label' => 'Go to User Management'],
+    'Stock Request' => ['url' => 'stock_requests.php', 'label' => 'Go to Stock Requests'],
+    'Inventory' => ['url' => 'medicine_vaccine_inventory.php', 'label' => 'Go to Inventory'],
+    'Reminder' => ['url' => 'profile_settings.php', 'label' => 'Go to Security Settings'],
+];
+
 $ntfReadIds = $_SESSION['ntfReadIds'] ?? [];
 $ntfArchivedIds = $_SESSION['ntfDismissedIds'] ?? [];
 foreach ($notifications as &$n) {
@@ -174,6 +188,8 @@ foreach ($notifications as &$n) {
         $n['unread'] = false;
     }
     $n['archived'] = in_array($n['id'], $ntfArchivedIds, true);
+    $n['link'] = $notificationTypeLinks[$n['type']]['url'] ?? null;
+    $n['linkLabel'] = $notificationTypeLinks[$n['type']]['label'] ?? null;
 }
 unset($n);
 

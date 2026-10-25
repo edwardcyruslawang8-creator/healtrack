@@ -315,6 +315,23 @@ document.addEventListener('DOMContentLoaded', function () {
             iconWrap.innerHTML = '<i class="bi ' + (row.dataset.icon || 'bi-bell-fill') + '"></i>';
         }
 
+        // The modal's own primary action — only shown when this
+        // notification's real 'type' maps to a real page (see this
+        // role's own notifications_*_firestore.php's $notificationTypeLinks),
+        // so the modal is an actual next step instead of just restating
+        // the same Title/Description/Type/Date already visible in the
+        // row behind it.
+        const actionBtn = document.getElementById('ntfDetailActionBtn');
+        if (actionBtn) {
+            if (row.dataset.link) {
+                actionBtn.href = row.dataset.link;
+                actionBtn.textContent = row.dataset.linkLabel || 'Go to details';
+                actionBtn.classList.remove('d-none');
+            } else {
+                actionBtn.classList.add('d-none');
+            }
+        }
+
         if (wasUnread) {
             markRowRead(row);
             syncUnreadBadges();
