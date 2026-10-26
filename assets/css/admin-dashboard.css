@@ -261,6 +261,17 @@ body.adm-body{
   color: var(--adm-red-light);
   box-shadow: 0 3px 8px rgba(0,0,0,0.15);
 }
+/* A white nav badge would vanish into the white active pill, so on the
+   active row every role's badge flips to maroon circle + white count. */
+.adm-nav-link.active .adm-nav-badge,
+.adm-nav-link.active .sad-nav-badge,
+.adm-nav-link.active .phm-nav-badge,
+.adm-nav-link.active .doc-nav-badge,
+.adm-nav-link.active .mst-nav-badge,
+.adm-nav-link.active .mt-nav-badge{
+  background: var(--adm-red-light);
+  color: #fff;
+}
 
 /* -- Sidebar nav dropdown (e.g. Audit Logs > Sub Admin / User) --
    .adm-nav-toggle reuses .adm-nav-link's own look (row layout, hover,

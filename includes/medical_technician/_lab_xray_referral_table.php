@@ -83,7 +83,7 @@
                     ?>
                     <td>
                         <div class="adm-action-btns">
-                            <a href="<?= htmlspecialchars($consultHref) ?>" class="lxr-consult-btn">Consult</a>
+                            <a href="<?= htmlspecialchars($consultHref) ?>" class="lxr-consult-btn lxr-btn-maroon">Consult</a>
                         </div>
                     </td>
                 </tr>
