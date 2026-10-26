@@ -59,3 +59,11 @@ $isEditable = $currentDoc !== null && ($currentDoc['fields']['status'] ?? '') ==
 $routedToDoctorName = ($currentDoc !== null && ($currentDoc['fields']['status'] ?? '') === 'completed')
     ? ($currentDoc['fields']['routedToDoctorName'] ?? null)
     : null;
+
+// Real uploaded reference template for this test (medical_technician/
+// lab_test_catalog.php's Upload Template action), or null when none has
+// been uploaded yet — drives the optional "View Template" link above
+// this form. Reference only: this form's own fields never change based
+// on it. See includes/firestore/lab_results.php's
+// hc_get_lab_test_template() header comment.
+$labTemplate = $currentDoc !== null ? hc_get_lab_test_template($currentDoc['fields']['testName'] ?? '') : null;

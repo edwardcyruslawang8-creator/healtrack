@@ -14,6 +14,14 @@
  * every other test in hc_lab_test_catalog() (CBC, Fasting
  * Blood Sugar, Viral Load, etc.).
  *
+ * If a medical technologist has uploaded a reference template for this
+ * test (medical_technician/lab_test_catalog.php's Upload Template
+ * action — e.g. the real paper form, once it's actually arrived at the
+ * facility), a "View Template" link shows next to the test name. It's
+ * reference only — opens the real uploaded document in a new tab — this
+ * form's own fields stay the same flexible Specimen/Result/Unit/Range
+ * set either way, never driven by the uploaded file's contents.
+ *
  * Saving posts to api/complete-lab-result.php, which writes onto the
  * exact lab_results doc (&recordId=) and marks it "completed" — same
  * shape laboratory_result_details.php already renders (resultGroups,
@@ -33,12 +41,13 @@ if (($_SESSION['role'] ?? null) !== 'medical_technician') {
 }
 
 require_once __DIR__ . '/../includes/medical_technician/lab_result_form_firestore.php';
-// $staffProfile, $dashboardDateLabel, $patientId, $recordId, $patient, $currentDoc, $isEditable, $routedToDoctorName
+// $staffProfile, $dashboardDateLabel, $patientId, $recordId, $patient, $currentDoc, $isEditable, $routedToDoctorName, $labTemplate
 
 $staffNavItems = [
     ['icon' => 'bi-grid-fill',                 'label' => 'Dashboard',                       'href' => 'dashboard.php'],
     ['icon' => 'bi-clipboard2-pulse-fill',      'label' => 'Laboratory',              'href' => 'laboratory_xray.php'],
     ['icon' => 'bi-inboxes-fill',              'label' => 'Laboratory Management', 'href' => 'lab_xray_consultation.php', 'active' => true, 'badge' => hc_get_pending_lab_count()],
+    ['icon' => 'bi-journal-medical',           'label' => 'Lab Test Catalog',                'href' => 'lab_test_catalog.php'],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',
@@ -179,7 +188,12 @@ $savedRemarks = $docFields['remarks'] ?? '';
     </div>
 
     <div class="adm-card" style="padding:24px;">
-        <h2 style="font-size:16px; font-weight:700; margin-bottom:16px;"><?= htmlspecialchars($testName) ?></h2>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+            <h2 style="font-size:16px; font-weight:700; margin:0;"><?= htmlspecialchars($testName) ?></h2>
+            <?php if ($labTemplate !== null): ?>
+            <a href="<?= BASE_URL ?>/api/view-lab-test-template.php?id=<?= urlencode($labTemplate['id']) ?>" target="_blank" rel="noopener" class="mt-topbar-select-btn" style="padding:6px 14px; font-size:12.5px;"><i class="bi bi-file-earmark-text"></i> View Template</a>
+            <?php endif; ?>
+        </div>
 
         <form id="labResultForm">
             <input type="hidden" name="patientId" value="<?= htmlspecialchars($patientId) ?>">

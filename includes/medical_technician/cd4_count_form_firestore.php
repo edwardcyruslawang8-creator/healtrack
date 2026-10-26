@@ -58,6 +58,13 @@ $routedToDoctorName = ($currentDoc !== null && ($currentDoc['fields']['status'] 
     ? ($currentDoc['fields']['routedToDoctorName'] ?? null)
     : null;
 
+// Real uploaded reference template, if any (medical_technician/
+// lab_test_catalog.php's Upload Template action) — see
+// includes/firestore/lab_results.php's hc_get_lab_test_template()
+// header comment. Reference only; this page's own fixed fields never
+// change based on it.
+$labTemplate = hc_get_lab_test_template('CD4');
+
 /** The real saved numeric result (from resultGroups.group1_rows[0]), or '' if none/still pending. */
 function hc_cd4_saved_result(?array $doc): string
 {

@@ -1,0 +1,12 @@
+# Uploaded lab test reference template files live here on local disk
+# (Firebase Cloud Storage isn't enabled for this project — see
+# includes/shared/lab_test_template_storage.php's header comment). This
+# folder must never be served directly; every real view goes through
+# api/view-lab-test-template.php, which re-checks the signed-in user's
+# role before ever streaming a file.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Deny from all
+</IfModule>

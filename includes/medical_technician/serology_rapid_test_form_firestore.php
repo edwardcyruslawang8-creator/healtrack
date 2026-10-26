@@ -38,11 +38,17 @@ $dashboardDateLabel = date('F j, Y');
 $patientId = trim($_GET['patientId'] ?? '');
 $patient = hc_get_patient_profile($patientId);
 
+// Real uploaded reference template per test, if any (medical_technician/
+// lab_test_catalog.php's Upload Template action), keyed the same as
+// hc_serology_rapid_test_catalog() — see includes/firestore/lab_results.php's
+// hc_get_lab_test_template() header comment. Reference only; this
+// page's own fixed fields never change based on it.
 $serologyRows = [];
 if ($patient !== null) {
     $docsByTest = hc_get_serology_rapid_docs_for_patient($patientId);
     foreach (hc_serology_rapid_test_catalog() as $testName => $displayLabel) {
         $doc = $docsByTest[$testName] ?? null;
+        $labTemplate = hc_get_lab_test_template($testName);
         if ($doc === null) {
             $serologyRows[] = [
                 'testName' => $testName,
@@ -50,6 +56,7 @@ if ($patient !== null) {
                 'state' => 'not_requested',
                 'docId' => null,
                 'result' => null,
+                'labTemplate' => $labTemplate,
             ];
             continue;
         }
@@ -60,6 +67,7 @@ if ($patient !== null) {
             'state' => ($f['status'] ?? '') === 'completed' ? 'completed' : 'pending',
             'docId' => $doc['id'],
             'result' => ($f['status'] ?? '') === 'completed' ? ($f['resultBadgeLabel'] ?? '') : null,
+            'labTemplate' => $labTemplate,
         ];
     }
 }

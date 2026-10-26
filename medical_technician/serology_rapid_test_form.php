@@ -36,6 +36,7 @@ $staffNavItems = [
     ['icon' => 'bi-grid-fill',                 'label' => 'Dashboard',                       'href' => 'dashboard.php'],
     ['icon' => 'bi-clipboard2-pulse-fill',      'label' => 'Laboratory',              'href' => 'laboratory_xray.php'],
     ['icon' => 'bi-inboxes-fill',              'label' => 'Laboratory Management', 'href' => 'lab_xray_consultation.php', 'active' => true, 'badge' => hc_get_pending_lab_count()],
+    ['icon' => 'bi-journal-medical',           'label' => 'Lab Test Catalog',                'href' => 'lab_test_catalog.php'],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',
@@ -181,7 +182,12 @@ $staffNavItems = [
                 <tbody>
                     <?php foreach ($serologyRows as $row): ?>
                     <tr>
-                        <td><?= htmlspecialchars($row['displayLabel']) ?></td>
+                        <td>
+                            <?= htmlspecialchars($row['displayLabel']) ?>
+                            <?php if ($row['labTemplate'] !== null): ?>
+                            <a href="<?= BASE_URL ?>/api/view-lab-test-template.php?id=<?= urlencode($row['labTemplate']['id']) ?>" target="_blank" rel="noopener" title="View reference template" style="margin-left:6px;"><i class="bi bi-file-earmark-text"></i></a>
+                            <?php endif; ?>
+                        </td>
                         <td>
                             <?php if ($row['state'] === 'not_requested'): ?>
                             <span class="lxr-badge" style="background:#EEF0F3; color:#6B7280;">Not Requested</span>

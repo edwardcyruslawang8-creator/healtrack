@@ -34,6 +34,7 @@ $staffNavItems = [
     ['icon' => 'bi-grid-fill',                 'label' => 'Dashboard',                       'href' => 'dashboard.php'],
     ['icon' => 'bi-clipboard2-pulse-fill',      'label' => 'Laboratory',              'href' => 'laboratory_xray.php'],
     ['icon' => 'bi-inboxes-fill',              'label' => 'Laboratory Management', 'href' => 'lab_xray_consultation.php', 'active' => true, 'badge' => hc_get_pending_lab_count()],
+    ['icon' => 'bi-journal-medical',           'label' => 'Lab Test Catalog',                'href' => 'lab_test_catalog.php'],
     [
         'icon' => 'bi-bar-chart-fill',
         'label' => 'Analytics & Reports',
@@ -146,6 +147,9 @@ $currentBadge = $currentDoc['fields']['resultBadgeLabel'] ?? '';
             <p class="adm-page-subtitle">Fill in the CD4 Count result, then print the official form.</p>
         </div>
         <div class="adm-topbar-right">
+            <?php if ($labTemplate !== null): ?>
+            <a href="<?= BASE_URL ?>/api/view-lab-test-template.php?id=<?= urlencode($labTemplate['id']) ?>" target="_blank" rel="noopener" class="mt-topbar-select-btn"><i class="bi bi-file-earmark-text"></i> View Template</a>
+            <?php endif; ?>
             <a href="lab_xray_consultation.php" class="mt-topbar-select-btn"><i class="bi bi-arrow-left"></i> Back to Consultation</a>
         </div>
     </div>

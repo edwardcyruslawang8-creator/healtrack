@@ -12,30 +12,144 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/xray_results.php'; // hc_get_all_xray_result_docs()
 require_once __DIR__ . '/patients.php'; // hc_get_all_patients_summary()
+require_once __DIR__ . '/../shared/xray_result_storage.php'; // hc_format_file_size(), reused for lab test templates
 
-if (!function_exists('hc_lab_test_catalog')) {
+if (!function_exists('hc_seed_lab_test_catalog')) {
     /**
-     * The fixed set of orderable lab tests, grouped by category — used
-     * by doctor/active_consultation.php's "Select Laboratory Tests"
-     * panel (rendering the checkbox grid) AND by
-     * api/complete-consultation.php (validating submitted test names
-     * against this same list server-side, and looking up each test's
-     * real category rather than trusting a client-supplied one — see
-     * that file's header comment). No prior test-type list existed
-     * anywhere in this app; this is a new, hardcoded catalog, not real
-     * seed data.
-     *
-     * @return array<string, array<int, string>>
+     * @internal One-time bootstrap — writes the app's original hardcoded
+     * test list (what hc_lab_test_catalog() used to return literally)
+     * into the real "lab_test_catalog" collection, the first time that
+     * collection is found empty. Keeps every existing call site's
+     * behavior identical on first run after this became Firestore-backed
+     * — same tests, same categories — while making the list editable
+     * from here on via medical_technician/lab_test_catalog.php. The 6
+     * tests with their own dedicated, hardcoded result forms
+     * (hc_serology_rapid_test_catalog()'s 3 + Urinalysis/CD4/Gram Stain)
+     * are flagged isBuiltIn so that page can't let anyone delete them —
+     * their RESULT ENTRY forms are fixed PHP pages, not data-driven.
+     * isBuiltIn does NOT block uploading a reference template document
+     * (hc_get_lab_test_template() below) — every test, built-in or not,
+     * can have one.
      */
-    function hc_lab_test_catalog(): array
+    function hc_seed_lab_test_catalog(): void
     {
-        return [
+        global $firestore;
+
+        $defaults = [
             'Bacteriology' => ['Gram Stain', 'Wet Mount'],
             'Clinical Microscopy' => ['Urinalysis', 'Stool Exam', 'Fecal Occult Blood (FBOT)'],
             'Serology' => ['HBSAG', 'Syphilis', 'HIV', 'CD4', 'Viral Load', 'Dengue NS1', 'IGM and IGG'],
             'Hematology' => ['CBC'],
             'Clinical Chemistry' => ['Fasting Blood Sugar', 'Blood Urea Nitrogen', 'Creatinine', 'Blood Uric Acid', 'Total Cholesterol', 'Triglycerides', 'HDL/LDL', 'SGOT', 'SGPT', 'HBA1C'],
         ];
+        $builtIn = ['HBSAG' => true, 'Syphilis' => true, 'HIV' => true, 'Urinalysis' => true, 'CD4' => true, 'Gram Stain' => true];
+        $now = date('c');
+
+        foreach ($defaults as $category => $tests) {
+            foreach ($tests as $testName) {
+                $firestore->addDocument('lab_test_catalog', [
+                    'testName' => $testName,
+                    'category' => $category,
+                    'isBuiltIn' => $builtIn[$testName] ?? false,
+                    'templateFileName' => null,
+                    'templateFileExt' => null,
+                    'templateFileSize' => null,
+                    'templateUploadedAt' => null,
+                    'createdAt' => $now,
+                    'updatedAt' => $now,
+                ]);
+            }
+        }
+    }
+}
+
+if (!function_exists('hc_get_lab_test_catalog_docs')) {
+    /**
+     * @internal Raw "lab_test_catalog" docs (id/testName/category/
+     * isBuiltIn/templateFileName/templateFileExt/templateFileSize),
+     * self-seeding hc_seed_lab_test_catalog() on first use — shared by
+     * hc_lab_test_catalog() below and
+     * medical_technician/lab_test_catalog.php's management table.
+     */
+    function hc_get_lab_test_catalog_docs(): array
+    {
+        global $firestore;
+
+        $docs = $firestore->listDocuments('lab_test_catalog');
+        if (empty($docs)) {
+            hc_seed_lab_test_catalog();
+            $docs = $firestore->listDocuments('lab_test_catalog');
+        }
+
+        return $docs;
+    }
+}
+
+if (!function_exists('hc_lab_test_catalog')) {
+    /**
+     * The real, editable set of orderable lab tests, grouped by category
+     * — used by doctor/active_consultation.php's "Select Laboratory
+     * Tests" panel (rendering the checkbox grid) AND by
+     * api/complete-consultation.php (validating submitted test names
+     * against this same list server-side, and looking up each test's
+     * real category rather than trusting a client-supplied one — see
+     * that file's header comment). CONNECTED to the real
+     * "lab_test_catalog" Firestore collection (see
+     * hc_get_lab_test_catalog_docs() above) — medical technologists
+     * manage it directly on medical_technician/lab_test_catalog.php, so
+     * every caller of this function picks up their edits immediately
+     * with no code change on their end.
+     *
+     * @return array<string, array<int, string>>
+     */
+    function hc_lab_test_catalog(): array
+    {
+        $catalog = [];
+        foreach (hc_get_lab_test_catalog_docs() as $doc) {
+            $f = $doc['fields'];
+            $category = $f['category'] ?? 'Other';
+            $catalog[$category][] = $f['testName'] ?? '';
+        }
+
+        return $catalog;
+    }
+}
+
+if (!function_exists('hc_get_lab_test_template')) {
+    /**
+     * This test's real uploaded reference template document
+     * (medical_technician/lab_test_catalog.php's Upload Template
+     * action), or null when none has been uploaded yet — the
+     * overwhelmingly common case. Reference only: whichever page fills
+     * in this test's result (medical_technician/lab_result_form.php, or
+     * one of the 4 dedicated pages for a built-in test) shows a "View
+     * Template" link when this returns non-null, but its own result
+     * fields never change based on it — see
+     * api/upload-lab-test-template.php's header comment for why a
+     * built-in test can have one too.
+     *
+     * @return array{id: string, fileName: string, fileSizeLabel: string}|null
+     */
+    function hc_get_lab_test_template(string $testName): ?array
+    {
+        foreach (hc_get_lab_test_catalog_docs() as $doc) {
+            $f = $doc['fields'];
+            if (($f['testName'] ?? '') !== $testName) {
+                continue;
+            }
+            $fileName = $f['templateFileName'] ?? null;
+            if ($fileName === null || $fileName === '') {
+                return null;
+            }
+
+            return [
+                'id' => $doc['id'],
+                'fileName' => $fileName,
+                'fileSizeLabel' => hc_format_file_size((int) ($f['templateFileSize'] ?? 0)),
+            ];
+        }
+
+        return null;
     }
 }
 
