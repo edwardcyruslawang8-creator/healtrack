@@ -57,7 +57,7 @@ window.HCPredictiveCharts = (function () {
                     responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { display: false } }, // custom legend in HTML
                     scales: {
-                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor } },
+                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
                         x: { grid: { display: false }, ticks: { color: tickColor } },
                     },
                 },
@@ -123,7 +123,7 @@ window.HCPredictiveCharts = (function () {
                     responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { display: false } }, // custom legend in HTML
                     scales: {
-                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor } },
+                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
                         x: { grid: { display: false }, ticks: { color: tickColor, maxTicksLimit: 8 } },
                     },
                 },

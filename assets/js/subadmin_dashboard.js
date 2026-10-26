@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor } },
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
                     x: { grid: { display: false }, ticks: { color: tickColor, autoSkip: true, maxTicksLimit: 5 } },
                 },
             },
@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor } },
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
                     x: { grid: { display: false }, ticks: { color: tickColor } },
                 },
             },

@@ -24,6 +24,7 @@ require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/lab_results.php'; // hc_get_pending_lab_xray_notifications()
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
 require_once __DIR__ . '/../shared/phone_reminder.php'; // hc_get_phone_reminder_notification()
+require_once __DIR__ . '/../shared/email_verification_reminder.php'; // hc_my_email_verification_notification()
 require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
 
 $myUid = $_SESSION['uid'] ?? '';
@@ -52,6 +53,7 @@ $rawNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'sy
     ? array_merge(
         array_filter([hc_get_2fa_reminder_notification($myUid, $myDoc ?? [])]),
         array_filter([hc_get_phone_reminder_notification($myUid, $myDoc ?? [])]),
+        array_filter([hc_my_email_verification_notification()]),
         array_values(array_filter(hc_get_pending_lab_xray_notifications(), fn ($n) => $n['type'] === 'X-ray'))
     )
     : [];

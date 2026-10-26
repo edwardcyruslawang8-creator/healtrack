@@ -13,10 +13,12 @@
  * api/mark-notifications-read.php / api/archive-notifications.php /
  * api/unarchive-notifications.php, pagination client-side).
  *
- * Only ONE real source exists for admin right now: the 2FA setup
- * reminder (includes/shared/two_fa_reminder.php's
- * hc_get_2fa_reminder_notification() — the same one every other role
- * already carries, admin's own account is no different). No fake
+ * Two real sources exist for admin right now: the 2FA setup reminder
+ * (includes/shared/two_fa_reminder.php's hc_get_2fa_reminder_notification())
+ * and its sibling, the email verification reminder
+ * (includes/shared/email_verification_reminder.php's
+ * hc_my_email_verification_notification()) — the same two every other
+ * role already carries, admin's own account is no different. No fake
  * placeholder rows were added to pad this out — an honestly short list
  * beats fabricated data, and more real sources (e.g. something from
  * admin/account_monitoring.php's locked-account data) can be merged in
@@ -27,6 +29,7 @@
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
+require_once __DIR__ . '/../shared/email_verification_reminder.php'; // hc_my_email_verification_notification()
 require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
 
 $myUid = $_SESSION['uid'] ?? '';
@@ -48,7 +51,8 @@ $notificationTypeOptions = ['All Types', 'Reminder'];
 $twoFaNotification = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'system')
     ? hc_get_2fa_reminder_notification($myUid, $myDoc ?? [])
     : null;
-$rawNotifications = $twoFaNotification !== null ? [$twoFaNotification] : [];
+$emailVerificationNotification = hc_my_email_verification_notification();
+$rawNotifications = array_values(array_filter([$twoFaNotification, $emailVerificationNotification]));
 
 $ntfReadIds = $_SESSION['ntfReadIds'] ?? [];
 $ntfArchivedIds = $_SESSION['ntfDismissedIds'] ?? [];

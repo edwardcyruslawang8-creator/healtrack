@@ -100,6 +100,12 @@ ob_start(function ($buffer) {
         error_log('[Phone reminder toast] Skipped after a late-stage failure: ' . $e->getMessage());
     }
     try {
+        require_once __DIR__ . '/../includes/shared/email_verification_reminder.php';
+        $script .= hc_render_email_verification_toast();
+    } catch (\Throwable $e) {
+        error_log('[Email verification toast] Skipped after a late-stage failure: ' . $e->getMessage());
+    }
+    try {
         require_once __DIR__ . '/../includes/shared/notification_poll.php';
         $script .= hc_render_notification_poll_script();
     } catch (\Throwable $e) {
@@ -141,13 +147,17 @@ function asset_url(string $path): string
 function hc_admin_all_notification_ids(): array
 {
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_my_2fa_reminder_notification()
+    require_once __DIR__ . '/../includes/shared/email_verification_reminder.php'; // hc_my_email_verification_notification()
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
     if (!hc_notification_preference_enabled('system')) {
         return [];
     }
 
-    return array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id');
+    return array_merge(
+        array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
+        array_column(array_filter([hc_my_email_verification_notification()]), 'id')
+    );
 }
 
 /**
@@ -202,6 +212,7 @@ function subadmin_all_notification_ids(): array
     require_once __DIR__ . '/../includes/firestore/accounts.php'; // hc_get_pending_account_notifications()
     require_once __DIR__ . '/../includes/firestore/stock_requests.php'; // hc_get_pending_stock_request_notifications(), hc_get_decided_stock_request_notifications_for_subadmin()
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_my_2fa_reminder_notification()
+    require_once __DIR__ . '/../includes/shared/email_verification_reminder.php'; // hc_my_email_verification_notification()
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
     if (!hc_notification_preference_enabled('system')) {
@@ -225,7 +236,8 @@ function subadmin_all_notification_ids(): array
         array_column(hc_get_pending_account_notifications(), 'id'),
         array_column(hc_get_pending_stock_request_notifications(), 'id'),
         array_column(hc_get_decided_stock_request_notifications_for_subadmin(), 'id'),
-        array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id')
+        array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
+        array_column(array_filter([hc_my_email_verification_notification()]), 'id')
     );
 }
 
@@ -269,6 +281,7 @@ function hc_pharmacist_all_notification_ids(): array
     require_once __DIR__ . '/../includes/firestore/stock_requests.php'; // hc_get_decided_stock_request_notifications_for_pharmacist()
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
     require_once __DIR__ . '/../includes/shared/phone_reminder.php'; // hc_my_phone_reminder_notification()
+    require_once __DIR__ . '/../includes/shared/email_verification_reminder.php'; // hc_my_email_verification_notification()
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
     if (!hc_notification_preference_enabled('system')) {
@@ -281,7 +294,8 @@ function hc_pharmacist_all_notification_ids(): array
         hc_notification_preference_enabled('inventory') ? array_column(hc_get_pending_pharmacy_order_notifications(), 'id') : [],
         array_column(hc_get_decided_stock_request_notifications_for_pharmacist($_SESSION['uid'] ?? ''), 'id'),
         array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
-        array_column(array_filter([hc_my_phone_reminder_notification()]), 'id')
+        array_column(array_filter([hc_my_phone_reminder_notification()]), 'id'),
+        array_column(array_filter([hc_my_email_verification_notification()]), 'id')
     );
 }
 
@@ -321,6 +335,7 @@ function hc_doctor_all_notification_ids(): array
     require_once __DIR__ . '/../includes/firestore/lab_results.php'; // hc_get_doctor_result_ready_notifications()
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_my_2fa_reminder_notification()
     require_once __DIR__ . '/../includes/shared/phone_reminder.php'; // hc_my_phone_reminder_notification()
+    require_once __DIR__ . '/../includes/shared/email_verification_reminder.php'; // hc_my_email_verification_notification()
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
     if (!hc_notification_preference_enabled('system')) {
@@ -331,7 +346,8 @@ function hc_doctor_all_notification_ids(): array
         hc_notification_preference_enabled('consultation') ? array_column(hc_get_followup_notifications($_SESSION['name'] ?? null), 'id') : [],
         array_column(hc_get_doctor_result_ready_notifications($_SESSION['name'] ?? ''), 'id'),
         array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
-        array_column(array_filter([hc_my_phone_reminder_notification()]), 'id')
+        array_column(array_filter([hc_my_phone_reminder_notification()]), 'id'),
+        array_column(array_filter([hc_my_email_verification_notification()]), 'id')
     );
 }
 
@@ -378,6 +394,7 @@ function hc_medstaff_all_notification_ids(): array
     require_once __DIR__ . '/../includes/firestore/consultations.php';
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_my_2fa_reminder_notification()
     require_once __DIR__ . '/../includes/shared/phone_reminder.php'; // hc_my_phone_reminder_notification()
+    require_once __DIR__ . '/../includes/shared/email_verification_reminder.php'; // hc_my_email_verification_notification()
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
     if (!hc_notification_preference_enabled('system')) {
@@ -387,7 +404,8 @@ function hc_medstaff_all_notification_ids(): array
     return array_merge(
         hc_notification_preference_enabled('consultation') ? array_column(hc_get_followup_notifications(), 'id') : [],
         array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
-        array_column(array_filter([hc_my_phone_reminder_notification()]), 'id')
+        array_column(array_filter([hc_my_phone_reminder_notification()]), 'id'),
+        array_column(array_filter([hc_my_email_verification_notification()]), 'id')
     );
 }
 
@@ -421,6 +439,7 @@ function hc_medtech_all_notification_ids(): array
     require_once __DIR__ . '/../includes/firestore/lab_results.php';
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_my_2fa_reminder_notification()
     require_once __DIR__ . '/../includes/shared/phone_reminder.php'; // hc_my_phone_reminder_notification()
+    require_once __DIR__ . '/../includes/shared/email_verification_reminder.php'; // hc_my_email_verification_notification()
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
     if (!hc_notification_preference_enabled('system')) {
@@ -430,7 +449,8 @@ function hc_medtech_all_notification_ids(): array
     return array_merge(
         array_column(hc_get_pending_lab_notifications(), 'id'),
         array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
-        array_column(array_filter([hc_my_phone_reminder_notification()]), 'id')
+        array_column(array_filter([hc_my_phone_reminder_notification()]), 'id'),
+        array_column(array_filter([hc_my_email_verification_notification()]), 'id')
     );
 }
 
@@ -461,6 +481,7 @@ function hc_radiotech_all_notification_ids(): array
     require_once __DIR__ . '/../includes/firestore/lab_results.php';
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_my_2fa_reminder_notification()
     require_once __DIR__ . '/../includes/shared/phone_reminder.php'; // hc_my_phone_reminder_notification()
+    require_once __DIR__ . '/../includes/shared/email_verification_reminder.php'; // hc_my_email_verification_notification()
     require_once __DIR__ . '/../includes/shared/notification_preferences.php'; // hc_notification_preference_enabled()
 
     if (!hc_notification_preference_enabled('system')) {
@@ -472,7 +493,8 @@ function hc_radiotech_all_notification_ids(): array
     return array_merge(
         array_column($xrayNotifications, 'id'),
         array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
-        array_column(array_filter([hc_my_phone_reminder_notification()]), 'id')
+        array_column(array_filter([hc_my_phone_reminder_notification()]), 'id'),
+        array_column(array_filter([hc_my_email_verification_notification()]), 'id')
     );
 }
 

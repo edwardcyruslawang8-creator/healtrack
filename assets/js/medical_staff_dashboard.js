@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 interaction: { mode: 'index', intersect: false },
                 scales: {
-                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor } },
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
                     x: { grid: { display: false }, ticks: { color: tickColor } },
                 },
             },
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     tooltip: { callbacks: { title: function (items) { return items[0].label; } } },
                 },
                 scales: {
-                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor } },
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
                     x: { grid: { display: false }, ticks: { color: tickColor } },
                 },
             },

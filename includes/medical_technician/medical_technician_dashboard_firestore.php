@@ -18,17 +18,17 @@
  * not a bug. Same tradeoff already made for
  * medical_technician/laboratory_xray.php.
  *
- * Two things are still NOT modeled anywhere in Firestore and stay
- * clearly-labeled placeholders rather than being faked real:
+ * One thing is still NOT modeled anywhere in Firestore and stays a
+ * clearly-labeled placeholder rather than being faked real:
  *   - Specimen & Equipment Alerts — there's no specimen-tracking or
  *     equipment-maintenance collection in this app. Replaced with a
  *     genuinely real "Recently Ordered Tests" feed instead of keeping
  *     fabricated alert rows.
- *   - Recent Notifications — deliberately left as-is (still static
- *     placeholder content, matching medical_technician/notifications.php's
- *     own placeholder rows) — connecting this needs a real
- *     "notifications" collection, a separate, bigger decision not
- *     covered by this pass.
+ *
+ * "Recent Notifications" is now CONNECTED too — the same real source
+ * as medical_technician/notifications.php (hc_get_pending_lab_notifications()),
+ * same precedent as includes/doctor/doctor_dashboard_firestore.php's
+ * own "Recent Notifications" section.
  * =====================================================================
  */
 
@@ -182,16 +182,31 @@ $testTypeMeta = [
 ];
 
 // ---------------------------------------------------------------------
-// Recent Notifications — deliberately left as static placeholder
-// content (see header comment) — connecting this needs a real
-// "notifications" collection, a separate decision.
+// Recent Notifications — CONNECTED now, same real source as
+// medical_technician/notifications.php (hc_get_pending_lab_notifications()),
+// minus anything they've dismissed there — see
+// includes/medical_technician/notifications_medtech_firestore.php's
+// header comment. There's no real "created at" timestamp for a pending
+// result notification (it's derived live from the lab_results doc's
+// orderedDate, not a stored event), so this shows the real order
+// date/time instead of a fabricated "X minutes ago" string. Capped to
+// 5, same precedent as includes/doctor/doctor_dashboard_firestore.php's
+// own "Recent Notifications" section.
 // ---------------------------------------------------------------------
-$recentNotifications = [
-    ['icon' => 'bi-exclamation-triangle-fill', 'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'title' => 'Specimen needs pickup',   'desc' => 'Blood sample — Patient PT-000103',        'timeAgo' => '20 minutes ago'],
-    ['icon' => 'bi-droplet-fill',              'iconBg' => '#E8F0FE', 'iconColor' => '#1A73E8', 'title' => 'New lab order received',  'desc' => 'Ordered by Dr. Ana Reyes',                'timeAgo' => '50 minutes ago'],
-    ['icon' => 'bi-check-circle-fill',         'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E', 'title' => 'Result reviewed',         'desc' => 'Lipid Profile — Ana Reyes',               'timeAgo' => '3 hours ago'],
-    ['icon' => 'bi-clipboard2-pulse-fill',     'iconBg' => '#FDECDD', 'iconColor' => '#E8710A', 'title' => 'Test result flagged',     'desc' => 'CBC — Juan Dela Cruz, abnormal reading',  'timeAgo' => '4 hours ago'],
-];
+$ntfDismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
+$recentNotifications = array_map(function ($n) {
+    return [
+        'icon' => $n['icon'],
+        'iconBg' => $n['iconBg'],
+        'iconColor' => $n['iconColor'],
+        'title' => $n['title'],
+        'desc' => $n['description'],
+        'timeAgo' => $n['date'] . ' · ' . $n['time'],
+    ];
+}, array_slice(array_values(array_filter(
+    hc_get_pending_lab_notifications(),
+    fn ($n) => !in_array($n['id'], $ntfDismissedIds, true)
+)), 0, 5));
 
 // ---------------------------------------------------------------------
 // Pending Laboratory Results — real, same rows as $pendingTestsQueue

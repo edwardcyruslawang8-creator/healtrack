@@ -349,6 +349,7 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="<?= asset_url('/assets/js/chart-center-label.js') ?>"></script>
 
 <script>
     // Hands all chart numbers to assets/js/subadmin_dashboard.js without it

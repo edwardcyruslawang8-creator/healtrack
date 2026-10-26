@@ -42,6 +42,7 @@ require_once __DIR__ . '/../firestore/medicines.php'; // hc_get_medicine_expiry_
 require_once __DIR__ . '/../firestore/accounts.php'; // hc_get_pending_account_notifications()
 require_once __DIR__ . '/../firestore/stock_requests.php'; // hc_get_pending_stock_request_notifications()
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
+require_once __DIR__ . '/../shared/email_verification_reminder.php'; // hc_my_email_verification_notification()
 require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
 
 $myUid = $_SESSION['uid'] ?? '';
@@ -157,6 +158,16 @@ $twoFaNotification = hc_notification_preference_enabled_for_doc($myDoc ?? [], 's
 if ($twoFaNotification !== null) {
     $twoFaNotification['unread'] = true;
     array_unshift($notifications, $twoFaNotification);
+}
+
+// Same real-and-must-have-a-row reasoning as the 2FA reminder just
+// above — includes/shared/email_verification_reminder.php's own
+// sibling reminder for an unverified email, already counted toward
+// the badges via subadmin_unread_notification_count() too.
+$emailVerificationNotification = hc_my_email_verification_notification();
+if ($emailVerificationNotification !== null) {
+    $emailVerificationNotification['unread'] = true;
+    array_unshift($notifications, $emailVerificationNotification);
 }
 
 // Real, session-persisted read state (see api/mark-notifications-read.php

@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     legend: { display: false }, // custom legend rendered in HTML instead
                 },
                 scales: {
-                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor } },
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
                     x: { grid: { display: false }, ticks: { color: tickColor } },
                 },
             },
@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     legend: { display: false }, // custom legend rendered in HTML instead
                 },
                 scales: {
-                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor } },
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
                     x: { grid: { display: false }, ticks: { color: tickColor } },
                 },
             },

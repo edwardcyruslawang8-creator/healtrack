@@ -381,7 +381,6 @@ $staffNavItems = [
             <table class="adm-table">
                 <thead>
                     <tr>
-                        <th>Result ID</th>
                         <th>Test</th>
                         <th>Patient</th>
                         <th>Type</th>
@@ -392,12 +391,11 @@ $staffNavItems = [
                 <tbody>
                     <?php if (empty($pendingResults)): ?>
                     <tr>
-                        <td colspan="6" class="adm-table-empty">No pending results right now.</td>
+                        <td colspan="5" class="adm-table-empty">No pending results right now.</td>
                     </tr>
                     <?php endif; ?>
                     <?php foreach ($pendingResults as $r): ?>
                     <tr>
-                        <td><?= htmlspecialchars($r['id']) ?></td>
                         <td><?= htmlspecialchars($r['test']) ?></td>
                         <td><?= htmlspecialchars($r['patient']) ?></td>
                         <td><?= htmlspecialchars($r['type']) ?></td>
@@ -416,6 +414,7 @@ $staffNavItems = [
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="<?= asset_url('/assets/js/chart-center-label.js') ?>"></script>
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 

@@ -45,15 +45,26 @@ function initReportPageCharts() {
     __analyticsReportsCharts.forEach(function (c) { c.destroy(); });
     __analyticsReportsCharts = [];
 
+    const data = window.ANALYTICS_REPORTS_DATA;
+    if (!data || typeof Chart === 'undefined') return;
+
     // This page's charts only: assets/js/ajax-tab-nav.js re-fires
     // DOMContentLoaded after every tab swap, and every report page's
     // init stays registered — without this, e.g. the Overview's would
     // draw into Consultation Reports' same-id consultationsByTypeChart
-    // and make this page's own init fail with "Canvas is already in use".
-    if (!document.getElementById('consultationsOverTimeChart')) return;
-
-    const data = window.ANALYTICS_REPORTS_DATA;
-    if (!data || typeof Chart === 'undefined') return;
+    // and make this page's own init fail with "Canvas is already in
+    // use". Was hardcoded to check for 'consultationsOverTimeChart'
+    // specifically — only subadmin's and doctor's own trend chart
+    // actually uses that id; every other role's own differently-named
+    // trend canvas (medical-staff's patientsOverTimeChart,
+    // medical_technician's testsOverTimeChart, pharmacist's
+    // requestsOverTimeChart, radiologic_technologist's
+    // examsOverTimeChart) made this bail out unconditionally, so NONE
+    // of those 4 roles' charts — trend or doughnuts — ever rendered at
+    // all. Derived from this call's own data instead, so it matches
+    // whichever page/tab actually supplied window.ANALYTICS_REPORTS_DATA.
+    const anchorCanvasId = (data.trend && data.trend.canvasId) || (data.donuts && data.donuts[0] && data.donuts[0].canvasId);
+    if (anchorCanvasId && !document.getElementById(anchorCanvasId)) return;
 
     // Read the current theme's actual grid/tick colors instead of
     // hardcoding light-mode values (same pattern as subadmin_dashboard.js).
@@ -88,7 +99,7 @@ function initReportPageCharts() {
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor } },
+                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
                         x: { grid: { display: false }, ticks: { color: tickColor, autoSkip: true, maxTicksLimit: 6 } },
                     },
                 },

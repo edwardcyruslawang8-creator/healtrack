@@ -693,6 +693,7 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="<?= asset_url('/assets/js/chart-center-label.js') ?>"></script>
 
 <!-- Hands the base New-Patients forecast chart's data + the 4
      categories' chart data (window.HCPredictiveCharts.renderAll(),
