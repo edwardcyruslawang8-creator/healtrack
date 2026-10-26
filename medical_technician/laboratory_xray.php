@@ -315,7 +315,7 @@ function hc_medtech_lxr_query(array $overrides = []): string
                         <td><span class="lxr-badge" style="background:<?= htmlspecialchars($status['bg']) ?>; color:<?= htmlspecialchars($status['color']) ?>;"><?= htmlspecialchars($status['label']) ?></span></td>
                         <td>
                             <?php if ($r['hasReport']): ?>
-                            <a href="laboratory_result_details.php?id=<?= urlencode($r['patientId']) ?>&type=<?= urlencode($r['type']) ?>&recordId=<?= urlencode($r['id']) ?>" class="lxr-consult-btn">View Result</a>
+                            <a href="laboratory_result_details.php?id=<?= urlencode($r['patientId']) ?>&type=<?= urlencode($r['type']) ?>&recordId=<?= urlencode($r['id']) ?>" class="lxr-consult-btn lxr-btn-maroon">View Result</a>
                             <?php else: ?>
                             <span class="lxr-report-none">&mdash;</span>
                             <?php endif; ?>

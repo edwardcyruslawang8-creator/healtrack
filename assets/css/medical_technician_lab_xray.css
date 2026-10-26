@@ -178,6 +178,11 @@
   white-space: nowrap;
 }
 .lxr-consult-btn:hover{ background: #1558B0; color: #fff; }
+/* Maroon variant (Laboratory "View Result", Laboratory Management "Consult") — same brand maroon as .lxr-btn-filter */
+.lxr-consult-btn.lxr-btn-maroon{ background: var(--adm-red-bright); }
+.lxr-consult-btn.lxr-btn-maroon:hover,
+.lxr-consult-btn.lxr-btn-maroon:focus-visible,
+.lxr-consult-btn.lxr-btn-maroon:active{ background: var(--adm-red-bright-hover); color: #fff; }
 
 /* -- Recent X-ray Reports row -- */
 .lxr-reports-row{

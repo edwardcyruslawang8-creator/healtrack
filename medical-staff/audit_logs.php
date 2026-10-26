@@ -78,6 +78,8 @@ $staffNavItems = [
 
 <!-- Shared admin/subadmin shell (sidebar, topbar, cards, table, pagination, etc.) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/admin-dashboard.css') ?>">
+<!-- Medical Staff "mst-" styles (sidebar notification badge, shared with every other medical-staff page) -->
+<link rel="stylesheet" href="<?= asset_url('/assets/css/medical_staff_dashboard.css') ?>">
 <!-- Audit Logs page styles (search bar, filter toolbar, action/status badges) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/audit_logs.css') ?>">
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">

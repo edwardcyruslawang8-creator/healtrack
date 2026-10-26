@@ -76,6 +76,8 @@ $doctorNavItems = [
 
 <!-- Shared admin/subadmin shell (sidebar, topbar, cards, table, pagination, etc.) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/admin-dashboard.css') ?>">
+<!-- Doctor "doc-" styles (sidebar notification badge, shared with every other doctor page) -->
+<link rel="stylesheet" href="<?= asset_url('/assets/css/doctor_dashboard.css') ?>">
 <!-- Audit Logs page styles (search bar, filter toolbar, action/status badges) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/audit_logs.css') ?>">
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">

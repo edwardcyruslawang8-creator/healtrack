@@ -69,6 +69,7 @@ $staffNavItems = [
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
 <link rel="stylesheet" href="<?= asset_url('/assets/css/admin-dashboard.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/medical_technician_dashboard.css') ?>">
 <link rel="stylesheet" href="<?= asset_url('/assets/css/audit_logs.css') ?>">
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 </head>

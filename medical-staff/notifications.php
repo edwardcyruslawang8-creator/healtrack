@@ -156,7 +156,7 @@ $staffNavItems = [
                 <i class="bi <?= htmlspecialchars($item['icon']) ?>"></i>
                 <span><?= htmlspecialchars($item['label']) ?></span>
                 <?php if (!empty($item['badge'])): ?>
-                <span class="mst-nav-badge" id="ntfSidebarBadge"><?= (int) $item['badge'] ?></span>
+                <span class="mst-nav-badge"<?= $item['href'] === 'notifications.php' ? ' id="ntfSidebarBadge"' : '' ?>><?= (int) $item['badge'] ?></span>
                 <?php endif; ?>
             </a>
         </li>
