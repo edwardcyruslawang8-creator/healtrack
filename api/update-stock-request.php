@@ -100,6 +100,20 @@ if ($role === 'pharmacist' && ($existing['pharmacistUid'] ?? '') !== ($_SESSION[
     echo json_encode(['success' => false, 'error' => 'You can only edit your own requests.']);
     exit;
 }
+if ($role === 'subadmin') {
+    // "Manages every pharmacist's requests AT THEIR FACILITY" (see
+    // header comment) means at their own facility, never another one —
+    // resolved server-side from their own users/{uid} doc, same as
+    // api/update-stock-request-status.php's own copy of this check.
+    $myUid = $_SESSION['uid'] ?? '';
+    $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
+    $myFacility = $myDoc['facility'] ?? null;
+    if ($myFacility === null || ($existing['facility'] ?? '') !== $myFacility) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'error' => 'This request no longer exists.']);
+        exit;
+    }
+}
 if (($existing['status'] ?? 'pending') !== 'pending') {
     http_response_code(409);
     echo json_encode(['success' => false, 'error' => 'This request has already been ' . $existing['status'] . ' and can no longer be edited.']);

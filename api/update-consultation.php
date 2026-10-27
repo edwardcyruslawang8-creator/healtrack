@@ -64,6 +64,20 @@ if ($existing === null) {
     exit;
 }
 
+// Never trust the client-supplied id alone — it must belong to this
+// staff member's own facility, resolved server-side from their own
+// users/{uid} doc, same as every other facility-scoped write in this
+// app (see api/update-stock-request-status.php's own copy of this
+// check).
+$myUid = $_SESSION['uid'] ?? '';
+$myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
+$myFacility = $myDoc['facility'] ?? null;
+if ($myFacility === null || ($existing['facility'] ?? '') !== $myFacility) {
+    http_response_code(404);
+    echo json_encode(['success' => false, 'error' => 'Consultation not found.']);
+    exit;
+}
+
 $validTypes = array_keys(hc_consultation_type_meta());
 $validStatuses = array_keys(hc_consultation_status_meta());
 $validPriorities = array_keys(hc_consultation_priority_meta());

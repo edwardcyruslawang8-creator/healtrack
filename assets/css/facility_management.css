@@ -147,6 +147,32 @@
   justify-content: space-between;
   font-size: 13px;
 }
+
+/* "Integrated with HEALTrack" toggle — admin can flip this after
+   adding a facility, once its system is actually set up (or taken
+   back down again). Drives the View Analytics button below it. */
+.fac-integrated-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 12.5px;
+  color: var(--adm-text-muted);
+}
+.fac-switch{ padding-left: 0; }
+.fac-switch .form-check-input{
+  width: 36px;
+  height: 20px;
+  margin: 0;
+  background-color: var(--adm-border);
+  border-color: var(--adm-border);
+  cursor: pointer;
+}
+.fac-switch .form-check-input:checked{
+  background-color: var(--adm-red-bright);
+  border-color: var(--adm-red-bright);
+}
 .fac-stat-row .fac-stat-label{ color: var(--adm-text-muted); }
 .fac-stat-row .fac-stat-value{ font-weight: 700; color: var(--adm-text); }
 

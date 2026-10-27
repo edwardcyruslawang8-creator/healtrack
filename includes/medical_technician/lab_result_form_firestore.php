@@ -41,6 +41,13 @@ $dashboardDateLabel = date('F j, Y');
 $patientId = trim($_GET['patientId'] ?? '');
 $recordId = trim($_GET['recordId'] ?? '');
 $patient = hc_get_patient_profile($patientId);
+// Facility isolation — same rule as includes/doctor/patient_profile_doctor_firestore.php's
+// own copy of this check: a real patient from another facility must
+// render exactly like no order exists at all, never let a medical
+// technologist outside that facility view or fill in their result.
+if ($patient !== null && $patient['facility'] !== $staffProfile['facility']) {
+    $patient = null;
+}
 
 $currentDoc = null;
 if ($patient !== null && $recordId !== '') {

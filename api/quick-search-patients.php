@@ -22,15 +22,14 @@
  * set) plus the total match count, for the "View all results for
  * ..." footer row.
  *
- * Optional ?facility= — admin/patient_management.php is the only
- * caller that's ever multi-facility (a System Administrator can view
- * any of them via its own topbar dropdown, unlike subadmin/medical-
- * staff/doctor/pharmacist, each permanently scoped to their own one
- * real facility already), so this is the only role this actually
- * narrows: picking a quick-search result that belongs to a DIFFERENT
- * facility than the one currently selected would otherwise fill the
- * search box with a name the full-page search (which IS facility-
- * scoped) then finds zero matches for, once submitted.
+ * Facility isolation: every non-admin role is hard-scoped here to their
+ * own real facility, resolved server-side from their own users/{uid}
+ * doc — never optional, never client-supplied, so this dropdown can
+ * never suggest (or leak the id/name/contact of) a patient from another
+ * facility. Optional ?facility= only applies to admin/patient_management.php,
+ * the one caller that's ever genuinely multi-facility (a System
+ * Administrator can view any of them via its own topbar dropdown);
+ * left blank there, admin searches across every facility at once.
  *
  * 'meta' is preformatted server-side ("28 years &bull; Female &bull;
  * 0921 765 4321") — assets/js/quick-search.js just prints it as-is, so
@@ -59,7 +58,13 @@ if ($query === '') {
     exit;
 }
 
-$facility = $_SESSION['role'] === 'admin' ? trim($_GET['facility'] ?? '') : '';
+if ($_SESSION['role'] === 'admin') {
+    $facility = trim($_GET['facility'] ?? '');
+} else {
+    $myUid = $_SESSION['uid'] ?? '';
+    $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
+    $facility = $myDoc['facility'] ?? '__none__'; // no real facility on record -> matches nothing, never falls through to "all facilities"
+}
 
 $matches = array_values(array_filter(
     hc_get_all_patients_summary(),

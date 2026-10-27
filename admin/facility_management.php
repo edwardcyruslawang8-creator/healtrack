@@ -79,6 +79,7 @@ $adminNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/facility_management.css') ?>">
 <!-- Leaflet (Add Facility modal's Lipa City map picker — same library/tiles admin/gis_mapping.php uses) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -242,6 +243,13 @@ $adminNavItems = [
                 </div>
             </div>
 
+            <div class="fac-integrated-row">
+                <span class="fac-integrated-label">Integrated with HEALTrack</span>
+                <div class="form-check form-switch fac-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="facIntegrated-<?= htmlspecialchars($f['id']) ?>" data-fac-integrated-toggle data-facility-id="<?= htmlspecialchars($f['id']) ?>" <?= $f['isIntegrated'] ? 'checked' : '' ?>>
+                </div>
+            </div>
+
             <?php if ($f['isIntegrated']): ?>
             <a href="facility_analytics.php?facility_id=<?= urlencode($f['id']) ?>" class="btn-view-analytics">
                 View Analytics
@@ -283,6 +291,7 @@ $adminNavItems = [
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/add-facility.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/live-clock.js') ?>"></script>

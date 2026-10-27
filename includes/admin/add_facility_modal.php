@@ -23,7 +23,7 @@
      "View Analytics" link is clickable on facility_management.php.
      ============================================================= -->
 <div class="modal fade adm-modal" id="addFacilityModal" tabindex="-1" aria-labelledby="addFacilityModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-xl">
+  <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width:min(1000px, 92vw);">
     <div class="modal-content">
       <form id="addFacilityForm" novalidate>
         <input type="hidden" id="facilityLat" name="facilityLat">

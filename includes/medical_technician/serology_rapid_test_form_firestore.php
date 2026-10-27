@@ -37,6 +37,13 @@ $dashboardDateLabel = date('F j, Y');
 
 $patientId = trim($_GET['patientId'] ?? '');
 $patient = hc_get_patient_profile($patientId);
+// Facility isolation — same rule as includes/doctor/patient_profile_doctor_firestore.php's
+// own copy of this check: a real patient from another facility must
+// render exactly like no order exists at all, never let a medical
+// technologist outside that facility view or fill in their result.
+if ($patient !== null && $patient['facility'] !== $staffProfile['facility']) {
+    $patient = null;
+}
 
 // Real uploaded reference template per test, if any (medical_technician/
 // lab_test_catalog.php's Upload Template action), keyed the same as

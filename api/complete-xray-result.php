@@ -53,6 +53,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+$myUid = $_SESSION['uid'] ?? '';
+$myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
+
 $patientId = trim((string) ($_POST['patientId'] ?? ''));
 $recordId = trim((string) ($_POST['recordId'] ?? ''));
 $findingsRaw = trim((string) ($_POST['findings'] ?? ''));
@@ -71,6 +74,19 @@ if ($findingsRaw === '' || $impression === '') {
 
 $patient = hc_get_patient_profile($patientId);
 if ($patient === null) {
+    http_response_code(404);
+    echo json_encode(['success' => false, 'error' => 'Patient not found.']);
+    exit;
+}
+
+// Never trust the client-supplied patientId alone — it must belong to
+// this technologist's own facility, resolved server-side from their
+// own users/{uid} doc, same as every other facility-scoped write in
+// this app (see api/update-stock-request-status.php's own copy of
+// this check). A 404, not 403, so this never confirms another
+// facility's patient even exists.
+$myFacility = $myDoc['facility'] ?? null;
+if ($myFacility === null || $patient['facility'] !== $myFacility) {
     http_response_code(404);
     echo json_encode(['success' => false, 'error' => 'Patient not found.']);
     exit;

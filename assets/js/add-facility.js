@@ -17,6 +17,11 @@
    in sync deliberately (this is a convenience check for instant
    feedback; api/create-facility.php re-checks server-side and never
    trusts this alone).
+
+   Also wires facility_management.php's own per-card "Integrated with
+   HEALTrack" switch (not part of the Add Facility modal, but small
+   enough to live here alongside the rest of this file's facility
+   logic rather than its own file) -> api/update-facility-integration.php.
    ============================================================= */
 document.addEventListener('DOMContentLoaded', function () {
     const modalEl = document.getElementById('addFacilityModal');
@@ -202,5 +207,40 @@ document.addEventListener('DOMContentLoaded', function () {
                     submitBtn.innerHTML = submitBtnDefaultHtml;
                 }
             });
+    });
+
+    // ---------------------------------------------------------------
+    // facility_management.php's per-card "Integrated with HEALTrack"
+    // switch — reloads on success so the same card's View Analytics
+    // button (enabled/disabled based on this exact flag) re-renders in
+    // sync with it.
+    // ---------------------------------------------------------------
+    document.querySelectorAll('[data-fac-integrated-toggle]').forEach(function (toggle) {
+        toggle.addEventListener('change', function () {
+            const wasChecked = !toggle.checked; // the state before this change
+            toggle.disabled = true;
+
+            fetch('../api/update-facility-integration.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: toggle.dataset.facilityId, isIntegrated: toggle.checked }),
+            })
+                .then(function (res) {
+                    return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+                })
+                .then(function (result) {
+                    if (!result.ok || !result.data.success) {
+                        throw new Error(result.data.error || 'Something went wrong. Please try again.');
+                    }
+                    window.location.reload();
+                })
+                .catch(function (err) {
+                    toggle.checked = wasChecked;
+                    toggle.disabled = false;
+                    if (typeof HCDialog !== 'undefined') {
+                        HCDialog.alert(err.message);
+                    }
+                });
+        });
     });
 });

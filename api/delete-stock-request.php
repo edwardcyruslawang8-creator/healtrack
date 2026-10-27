@@ -10,9 +10,10 @@
  * delete pattern as api/delete-medicine.php.
  *
  * Ownership check: a pharmacist may only delete their OWN request
- * (pharmacistUid must match the signed-in session) — subadmin can
- * still delete any request, since reviewing everyone's is a sub-admin
- * capability. pharmacist/stock_requests.php only ever lists the
+ * (pharmacistUid must match the signed-in session) — a subadmin can
+ * still delete any request AT THEIR OWN FACILITY, since reviewing
+ * every pharmacist's there is a sub-admin capability, but never another
+ * facility's. pharmacist/stock_requests.php only ever lists the
  * signed-in pharmacist's own rows, but this endpoint doesn't trust
  * that alone.
  * =====================================================================
@@ -56,6 +57,16 @@ if (($_SESSION['role'] ?? null) === 'pharmacist' && ($existing['pharmacistUid'] 
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'You can only delete your own requests.']);
     exit;
+}
+if (($_SESSION['role'] ?? null) === 'subadmin') {
+    $myUid = $_SESSION['uid'] ?? '';
+    $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
+    $myFacility = $myDoc['facility'] ?? null;
+    if ($myFacility === null || ($existing['facility'] ?? '') !== $myFacility) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'error' => 'This request no longer exists.']);
+        exit;
+    }
 }
 
 $deleted = $firestore->deleteDocument('stock_requests', $docId);

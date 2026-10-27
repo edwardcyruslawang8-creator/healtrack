@@ -38,7 +38,18 @@ $dashboardDateLabel = date('F j, Y');
 $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'West Super Health Center'];
 
 $requestedPatientId = $_GET['id'] ?? '';
-$patient = hc_get_patient_profile($requestedPatientId) ?? hc_not_found_patient_profile($requestedPatientId);
+$patient = hc_get_patient_profile($requestedPatientId);
+// Facility isolation — same rule as includes/doctor/patient_profile_doctor_firestore.php's
+// own copy of this check (this page is reached directly by &id=, not
+// through that profile tab strip, so it needs its own copy): a real
+// patient from another facility must render exactly like an invalid
+// id, never leak that their result exists at all to a doctor outside
+// the facility that registered them.
+if ($patient !== null && $patient['facility'] !== $doctorProfile['facility']) {
+    $patient = null;
+    $requestedPatientId = '';
+}
+$patient = $patient ?? hc_not_found_patient_profile($requestedPatientId);
 
 $statusMeta = [
     'completed' => ['label' => 'Completed', 'bg' => '#E4F7EA', 'color' => '#1E8E3E'],
