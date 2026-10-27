@@ -35,17 +35,6 @@ date_default_timezone_set('Asia/Manila');
 
 define('BASE_URL', '/Healtrack');
 
-// "Remember me" — every real page requires this file right after its own
-// session_start(), so this is the one place that can silently restore a
-// full session from a long-lived remember-token cookie when the actual
-// PHP session has none of its own (see includes/shared/remember_me.php's
-// header comment for why the session cookie's own extended lifetime
-// alone doesn't already handle this). A no-op, and doesn't touch
-// Firestore at all, unless $_SESSION genuinely has no uid AND a remember
-// cookie is actually present.
-require_once __DIR__ . '/../includes/shared/remember_me.php';
-hc_restore_session_from_remember_token();
-
 // Idle-session auto-logout (30 min) — server-side, authoritative half.
 // See includes/shared/idle_timeout.php's header comment for the full
 // design; may redirect (and exit) right here if this session has been

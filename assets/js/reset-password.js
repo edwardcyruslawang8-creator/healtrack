@@ -15,8 +15,8 @@
         unexpired, and unused, and returns which email it's for.
      2. confirmPasswordReset(oobCode, newPassword) — the actual change.
    Only once step 2 already succeeded does this call
-   api/report-password-reset-completed.php (revokes "remember me"
-   tokens + writes a real audit log entry) — best-effort from this
+   api/report-password-reset-completed.php (writes a real audit log
+   entry) — best-effort from this
    page's own perspective, since the real password change already
    happened by then regardless of whether that call succeeds.
    ============================================================= */

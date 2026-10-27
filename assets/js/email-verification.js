@@ -17,8 +17,8 @@
    onAuthStateChanged() is used rather than reading .currentUser
    immediately, since the SDK restores that session asynchronously on
    page load. If it never fires with a real user (expired/never
-   established — e.g. a long-lived PHP session with "Remember me" left
-   unchecked at login), the button explains that instead of failing
+   established — e.g. the PHP session outlived Firebase's own
+   session-only sign-in), the button explains that instead of failing
    silently.
    ============================================================= */
 document.addEventListener('DOMContentLoaded', function () {

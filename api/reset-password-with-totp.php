@@ -23,17 +23,14 @@
  *
  * Real side effects once the code checks out: the password actually
  * changes (Kreait Admin SDK's changeUserPassword(), same call
- * api/complete-password-setup.php already uses), every "remember me"
- * token for this account is revoked (hc_revoke_all_remember_tokens_for_uid()
- * — same reasoning as reset-password.php's email-link flow), and a
- * real audit_logs entry is written directly (no session exists here
+ * api/complete-password-setup.php already uses), and a real audit_logs
+ * entry is written directly (no session exists here
  * either — the person isn't signed in).
  * =====================================================================
  */
 
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../config/firebase.php'; // $firestore, $firebaseAuth
-require_once __DIR__ . '/../includes/shared/remember_me.php'; // hc_revoke_all_remember_tokens_for_uid()
 
 use PragmaRX\Google2FA\Google2FA;
 
@@ -109,8 +106,6 @@ try {
     exit;
 }
 
-hc_revoke_all_remember_tokens_for_uid($authUser->uid);
-
 $actorRole = match ($userDoc['role'] ?? null) {
     'admin' => 'System Administrator',
     'subadmin' => 'Sub-Administrator',
@@ -127,7 +122,7 @@ $firestore->addDocument('audit_logs', [
     'actorRole' => $actorRole,
     'action' => 'updated',
     'module' => 'Account Security',
-    'details' => 'Password reset via authenticator code for "' . ($userDoc['name'] ?? 'Unknown') . '" — all "remember me" sessions for this account were revoked.',
+    'details' => 'Password reset via authenticator code for "' . ($userDoc['name'] ?? 'Unknown') . '".',
     'status' => 'success',
     'timestamp' => date('c'),
 ]);

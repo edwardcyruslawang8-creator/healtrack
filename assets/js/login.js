@@ -49,7 +49,6 @@ document.addEventListener('DOMContentLoaded', function () {
     /* ---------- Firebase Authentication: sign in ---------- */
     const loginForm      = document.getElementById('loginForm');
     const usernameInput  = document.getElementById('username');
-    const rememberMeBox  = document.getElementById('rememberMe');
     const errorBox       = document.getElementById('loginError');
     const signInBtn      = document.getElementById('signInBtn');
     const googleBtn      = document.getElementById('googleSignInBtn');
@@ -238,7 +237,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const email = usernameInput.value.trim();
             const password = passwordInput.value;
-            const remember = rememberMeBox ? rememberMeBox.checked : false;
 
             if (!email || !password) {
                 showError('Please enter both your email and password.');
@@ -253,18 +251,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
-                // "Remember me" → keep the session across browser restarts (LOCAL);
-                // otherwise it clears when the browser/tab closes (SESSION).
-                const persistence = remember
-                    ? firebase.auth.Auth.Persistence.LOCAL
-                    : firebase.auth.Auth.Persistence.SESSION;
-
-                firebase.auth().setPersistence(persistence)
+                // Firebase's sign-in clears when the browser/tab closes.
+                firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION)
                     .then(function () {
                         return firebase.auth().signInWithEmailAndPassword(email, password);
                     })
                     .then(function (credential) {
-                        return startServerSession(credential.user, remember).then(function (sessionResult) {
+                        return startServerSession(credential.user).then(function (sessionResult) {
                             return handleSessionResult(sessionResult, setLoading);
                         });
                     })
@@ -374,21 +367,14 @@ document.addEventListener('DOMContentLoaded', function () {
             hideError();
             setGoogleLoading(true);
 
-            // Same "Remember me" checkbox the email/password flow reads —
-            // it's on the same form, so it should mean the same thing
-            // regardless of which sign-in method is used.
-            const remember = rememberMeBox ? rememberMeBox.checked : false;
-            const persistence = remember
-                ? firebase.auth.Auth.Persistence.LOCAL
-                : firebase.auth.Auth.Persistence.SESSION;
-
+            // Same session-only persistence as the email/password flow.
             const provider = new firebase.auth.GoogleAuthProvider();
-            firebase.auth().setPersistence(persistence)
+            firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION)
                 .then(function () {
                     return firebase.auth().signInWithPopup(provider);
                 })
                 .then(function (result) {
-                    return startServerSession(result.user, remember).then(function (sessionResult) {
+                    return startServerSession(result.user).then(function (sessionResult) {
                         return handleSessionResult(sessionResult, setGoogleLoading);
                     });
                 })
@@ -419,19 +405,13 @@ document.addEventListener('DOMContentLoaded', function () {
      * {success, message, requires2fa} either way; only a real network
      * failure rejects the promise.
      */
-    function startServerSession(user, remember) {
+    function startServerSession(user) {
         return user.getIdToken()
             .then(function (idToken) {
                 return fetch(BASE_URL + '/api/session-login.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // `remember` also decides how long the actual PHP app
-                    // session cookie lasts (api/session-login.php) — the
-                    // firebase.auth().setPersistence() call above only
-                    // covers the client-side Firebase SDK's own credential
-                    // cache, not the server session every dashboard page
-                    // actually gates on, so both need this same flag.
-                    body: JSON.stringify({ idToken: idToken, remember: !!remember }),
+                    body: JSON.stringify({ idToken: idToken }),
                 });
             })
             .then(function (res) {

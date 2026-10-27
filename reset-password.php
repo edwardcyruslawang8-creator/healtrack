@@ -15,8 +15,7 @@
  * new password (both straight against Firebase Auth — no api/*.php
  * endpoint is involved in the password change itself). Only once THAT
  * already succeeded does it call api/report-password-reset-completed.php,
- * which revokes every "remember me" token for this account and writes a
- * real audit log entry — see that file's own header comment for why.
+ * which writes a real audit log entry — see that file's own header comment for why.
  *
  * Reuses login.php's exact left-panel branding and assets/css/login.css,
  * same as forgot-password.php — one shared pre-login visual shell.

@@ -16,12 +16,7 @@
  * On a correct code, this completes the session exactly the way
  * api/session-login.php would have if 2FA weren't enabled (same
  * fields, same admin/subadmin audit-log line) — see that file's
- * header comment for why each one is set. That includes the real
- * "Remember me" cookie lifetime — api/session-login.php stashed that
- * decision at $_SESSION['pendingRememberMe'] (this being a separate
- * request, with no memory of the original login request's body), read
- * back below and re-applied right before session_regenerate_id(), the
- * only point a cookie's lifetime can actually change.
+ * header comment for why each one is set.
  * =====================================================================
  */
 
@@ -30,8 +25,6 @@ session_start();
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
-require_once __DIR__ . '/../includes/shared/session_cookie_helpers.php'; // hc_apply_remember_me_cookie_lifetime()
-require_once __DIR__ . '/../includes/shared/remember_me.php'; // hc_issue_remember_token(), hc_clear_remember_token()
 
 use PragmaRX\Google2FA\Google2FA;
 
@@ -86,24 +79,6 @@ if (!$valid) {
 }
 
 unset($_SESSION['pending2faUid']);
-$remember = (bool) ($_SESSION['pendingRememberMe'] ?? false);
-unset($_SESSION['pendingRememberMe']);
-
-// hc_apply_remember_me_cookie_lifetime() can only run while no session is
-// active — session_set_cookie_params() unconditionally warns (and does
-// nothing) otherwise, regardless of an upcoming session_regenerate_id().
-// This request already called session_start() up top (to read
-// pending2faUid), so the session has to be closed and reopened around
-// this call — session_write_close() flushes/releases the current session
-// without destroying it, session_start() picks the same session back up,
-// and session_regenerate_id() right after is what actually issues the
-// new-lifetime cookie. Skipping this meant a correct 6-digit code always
-// warned (leaking raw HTML into this endpoint's JSON response, which
-// could fail res.json() parsing client-side) AND "Remember me" silently
-// never took effect for any 2FA-enabled account.
-session_write_close();
-hc_apply_remember_me_cookie_lifetime($remember);
-session_start();
 session_regenerate_id(true);
 
 $email = $userDoc['email'] ?? '';
@@ -126,14 +101,6 @@ try {
     $_SESSION['emailVerified'] = $firebaseAuth->getUser($uid)->emailVerified;
 } catch (\Throwable $e) {
     $_SESSION['emailVerified'] = false;
-}
-
-// See includes/shared/remember_me.php's header comment for why this is a
-// separate mechanism from the session cookie's own lifetime above.
-if ($remember) {
-    hc_issue_remember_token($uid);
-} else {
-    hc_clear_remember_token();
 }
 
 if (in_array($role, ['admin', 'subadmin'], true)) {

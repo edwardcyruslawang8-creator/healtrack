@@ -20,11 +20,7 @@
  *
  * Both halves funnel through api/logout.php so a timeout gets the
  * exact same cleanup a manual "Log out" click does — PHP session
- * destroyed, remember-me token cleared (critical: without clearing
- * that cookie too, the very next page load would silently reconnect
- * via includes/shared/remember_me.php's hc_restore_session_from_remember_token(),
- * defeating the entire timeout), and the Firebase client SDK signed
- * out.
+ * destroyed and the Firebase client SDK signed out.
  *
  * Wired into config/constants.php (required by every authenticated
  * page and several api/*.php endpoints), so this runs everywhere

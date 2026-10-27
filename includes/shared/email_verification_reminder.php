@@ -19,7 +19,7 @@
  * field to read. The one place this app already tracks it live is
  * $_SESSION['emailVerified'], set from a real Firebase Auth lookup at
  * every sign-in (api/session-login.php, api/verify-2fa.php,
- * api/complete-password-setup.php, includes/shared/remember_me.php) —
+ * api/complete-password-setup.php) —
  * so this reminder is scoped to the CURRENTLY SIGNED-IN account only
  * (hc_my_email_verification_notification()), not a general "check any
  * account" function the way 2FA's hc_get_2fa_reminder_notification()

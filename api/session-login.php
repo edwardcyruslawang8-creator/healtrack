@@ -29,30 +29,11 @@
  * code-entry step instead of routing anywhere. api/verify-2fa.php is
  * what actually completes the session, once a valid TOTP code comes
  * back.
- *
- * "REMEMBER ME": assets/js/login.js's checkbox already puts the
- * client-side Firebase Auth SDK into LOCAL persistence, but that only
- * keeps FIREBASE's own credential cache alive across a closed browser —
- * it does nothing for the actual PHP app session every dashboard page
- * gates on ($_SESSION['role']), which is a completely separate cookie.
- * Without this, "remember me" checked or not made no real difference:
- * the PHP session cookie always expired when the browser closed either
- * way. The `remember` flag in the request body decides this session
- * cookie's real lifetime instead — 30 days if checked, the PHP default
- * (until the browser closes) if not — set via session_set_cookie_params()
- * BEFORE session_start()/session_regenerate_id(), the only point a
- * session cookie's lifetime can actually be changed. When 2FA is also
- * required, the decision is stashed at $_SESSION['pendingRememberMe']
- * so api/verify-2fa.php (a separate request, with no memory of this
- * one's request body) can re-apply the exact same lifetime when IT
- * regenerates the session id.
  * =====================================================================
  */
 
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
-require_once __DIR__ . '/../includes/shared/session_cookie_helpers.php'; // hc_apply_remember_me_cookie_lifetime()
-require_once __DIR__ . '/../includes/shared/remember_me.php'; // hc_issue_remember_token(), hc_clear_remember_token()
 require_once __DIR__ . '/../includes/shared/login_lockout.php'; // hc_login_lockout_status(), hc_reset_login_attempts()
 require_once __DIR__ . '/../includes/shared/account_password_helpers.php'; // hc_account_has_password()
 
@@ -68,7 +49,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $body = json_decode(file_get_contents('php://input'), true);
 $idToken = $body['idToken'] ?? null;
-$remember = (bool) ($body['remember'] ?? false); // "Remember me" checkbox — see header comment
 
 if (!$idToken) {
     http_response_code(400);
@@ -138,7 +118,6 @@ if ($lockoutStatus['locked']) {
     exit;
 }
 
-hc_apply_remember_me_cookie_lifetime($remember); // must run before session_start()/session_regenerate_id() — see that function's own comment
 session_start();
 session_regenerate_id(true);
 
@@ -157,11 +136,6 @@ hc_reset_login_attempts($uid, $userDoc);
 // resubmit an arbitrary uid to skip this.
 if ($userDoc['twoFactorEnabled'] ?? false) {
     $_SESSION['pending2faUid'] = $uid;
-    // api/verify-2fa.php is a separate request with no memory of this
-    // one's request body — stashed here so it can re-apply the exact
-    // same "remember me" cookie lifetime once it regenerates the
-    // session id (see hc_apply_remember_me_cookie_lifetime()'s comment).
-    $_SESSION['pendingRememberMe'] = $remember;
     echo json_encode(['success' => true, 'requires2fa' => true]);
     exit;
 }
@@ -183,7 +157,6 @@ if ($userDoc['twoFactorEnabled'] ?? false) {
 // login after whatever still needed this gate.
 if (!hc_account_has_password($uid)) {
     $_SESSION['pendingPasswordSetupUid'] = $uid;
-    $_SESSION['pendingRememberMe'] = $remember; // same stash pattern as the 2FA branch above
     echo json_encode(['success' => true, 'requiresPasswordSetup' => true]);
     exit;
 }
@@ -225,17 +198,6 @@ $_SESSION['ntfReadIds'] = $userDoc['notificationsReadIds'] ?? [];
 // write a new value here any more, but old dismissed ids from before
 // that removal still apply, so this keeps honoring them).
 $_SESSION['ntfDismissedIds'] = $userDoc['notificationsDismissedIds'] ?? [];
-
-// See includes/shared/remember_me.php's header comment for why this is a
-// separate mechanism from the session cookie's own lifetime above.
-// Clearing on an unchecked login too, so an old remembered session for
-// this browser doesn't keep silently working after a deliberate normal
-// login without the box checked.
-if ($remember) {
-    hc_issue_remember_token($uid);
-} else {
-    hc_clear_remember_token();
-}
 
 // Only admin/subadmin sign-ins are relevant to the admin audit trail —
 // patient logins would just be noise in that log.

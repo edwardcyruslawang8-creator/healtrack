@@ -17,8 +17,7 @@
  * not replace or remove the Google sign-in method, so afterward the
  * account can sign in either way. Once complete, this finishes the
  * session exactly the way api/session-login.php / api/verify-2fa.php
- * do (same fields, same "Remember me" cookie handling, same
- * admin/subadmin audit-log line) — see those files' own comments for
+ * do (same fields, same admin/subadmin audit-log line) — see those files' own comments for
  * why each field is set.
  * =====================================================================
  */
@@ -27,8 +26,6 @@ session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
-require_once __DIR__ . '/../includes/shared/session_cookie_helpers.php'; // hc_apply_remember_me_cookie_lifetime()
-require_once __DIR__ . '/../includes/shared/remember_me.php'; // hc_issue_remember_token(), hc_clear_remember_token()
 
 header('Content-Type: application/json');
 
@@ -77,14 +74,6 @@ try {
 }
 
 unset($_SESSION['pendingPasswordSetupUid']);
-$remember = (bool) ($_SESSION['pendingRememberMe'] ?? false);
-unset($_SESSION['pendingRememberMe']);
-
-// Same session-cookie-lifetime reasoning as api/verify-2fa.php's own
-// copy of this close/reopen sequence — see that file's comment.
-session_write_close();
-hc_apply_remember_me_cookie_lifetime($remember);
-session_start();
 session_regenerate_id(true);
 
 $email = $userDoc['email'] ?? '';
@@ -103,12 +92,6 @@ try {
     $_SESSION['emailVerified'] = $firebaseAuth->getUser($uid)->emailVerified;
 } catch (\Throwable $e) {
     $_SESSION['emailVerified'] = false;
-}
-
-if ($remember) {
-    hc_issue_remember_token($uid);
-} else {
-    hc_clear_remember_token();
 }
 
 if (in_array($role, ['admin', 'subadmin'], true)) {

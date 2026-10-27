@@ -8,7 +8,7 @@
    actual "choose a new password" step now happens on THIS app's own
    reset-password.php (actionCodeSettings.handleCodeInApp: true routes
    the email link there instead of to Firebase's default hosted page),
-   so there's a real moment to revoke "remember me" tokens once a
+   so there's a real moment to record an audit log entry once a
    password genuinely gets reset — see reset-password.php's own header
    comment and api/report-password-reset-completed.php.
 

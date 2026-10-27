@@ -21,13 +21,6 @@ if (in_array($_SESSION['role'] ?? null, ['admin', 'subadmin'], true)) {
     write_audit_log('logged_out', 'User Management', 'User logged out of the system.');
 }
 
-// Invalidates any remember-token too — see
-// includes/shared/remember_me.php's header comment. Without this, a
-// stale-but-not-yet-expired remember cookie would silently log this
-// same browser back in on the very next page load.
-require_once __DIR__ . '/../includes/shared/remember_me.php';
-hc_clear_remember_token();
-
 session_unset();
 session_destroy();
 
