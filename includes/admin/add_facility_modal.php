@@ -44,12 +44,13 @@
             <label for="facilityLocation" class="form-label">Location / Address</label>
             <input type="text" class="form-control" id="facilityLocation" name="facilityLocation" placeholder="e.g. P. Torres St, Lipa City" required>
             <div class="invalid-feedback">Please enter a location.</div>
+            <div id="facilityLocationHint" class="form-text d-none"></div>
           </div>
 
           <div class="mb-3">
             <label class="form-label">Pin Location on Map <span class="text-muted fw-normal">(Lipa City only)</span></label>
             <div id="addFacilityMap" data-boundary-url="<?= asset_url('/assets/data/lipa_city_boundary.geojson') ?>" style="height:280px; border-radius:10px; border:1px solid var(--adm-border);"></div>
-            <div class="form-text">Click anywhere inside Lipa City to drop a pin. Drag it afterward to fine-tune.</div>
+            <div class="form-text">Click anywhere inside Lipa City to drop a pin (fills in the address above automatically) — drag it afterward to fine-tune.</div>
             <div id="addFacilityMapError" class="small text-danger mt-1 d-none"></div>
           </div>
 

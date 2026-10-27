@@ -1,0 +1,83 @@
+<?php
+/**
+ * =====================================================================
+ * Update Facility Status (api/update-facility-status.php)
+ * ---------------------------------------------------------------------
+ * Called by assets/js/add-facility.js when an admin flips a facility
+ * card's "Active" switch on admin/facility_management.php. Updates
+ * ONLY the real facilities/{id} doc's status field (active/inactive) —
+ * never name/location/isIntegrated/lat/lng (there's still no general
+ * Edit Facility feature, see includes/admin/add_facility_modal.php's
+ * header comment).
+ *
+ * An inactive facility is excluded from
+ * includes/firestore/facilities.php's hc_get_all_facilities_summary()
+ * — so switching this off makes that facility's pin disappear from GIS
+ * Mapping (admin + patient) and the public homepage preview, without
+ * deleting the facility itself or anything it's linked to. Independent
+ * of isIntegrated: a facility can be active-but-not-integrated (shown
+ * on the map, analytics not ready yet) or integrated-but-inactive (has
+ * analytics, temporarily hidden from the map — e.g. a facility that's
+ * closed for renovation).
+ * =====================================================================
+ */
+
+session_start();
+
+require_once __DIR__ . '/../config/firebase.php';
+require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
+
+header('Content-Type: application/json');
+
+if (($_SESSION['role'] ?? null) !== 'admin') {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Not authorized.']);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'error' => 'Method not allowed.']);
+    exit;
+}
+
+$body = json_decode(file_get_contents('php://input'), true) ?? [];
+$id = trim((string) ($body['id'] ?? ''));
+$status = trim((string) ($body['status'] ?? ''));
+
+if ($id === '') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Missing facility id.']);
+    exit;
+}
+if (!in_array($status, ['active', 'inactive'], true)) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Invalid status.']);
+    exit;
+}
+
+$existing = $firestore->getDocument('facilities', $id);
+if ($existing === null) {
+    http_response_code(404);
+    echo json_encode(['success' => false, 'error' => 'Facility not found.']);
+    exit;
+}
+
+$saved = $firestore->setDocument('facilities', $id, array_merge($existing, [
+    'status' => $status,
+]));
+
+if (!$saved) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Could not save. Please try again.']);
+    exit;
+}
+
+$facilityName = $existing['name'] ?? $id;
+write_audit_log(
+    'updated',
+    'Facility Management',
+    'Set "' . $facilityName . '" to ' . $status . ($status === 'inactive' ? ' (hidden from GIS Mapping).' : '.')
+);
+
+echo json_encode(['success' => true, 'status' => $status]);

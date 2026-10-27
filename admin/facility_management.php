@@ -213,9 +213,13 @@ $adminNavItems = [
         </button>
     </div>
 
-    <!-- ============ FACILITY CARD GRID ============ -->
-    <div class="fac-grid">
-        <?php foreach ($facilities as $f): ?>
+    <?php
+    // Both groups render the exact same card markup — just two
+    // different arrays, split above in includes/admin/facility_management_firestore.php
+    // by the real isIntegrated flag. Factored into one closure instead
+    // of writing the card HTML out twice, so the two stay identical.
+    $renderFacilityCard = function (array $f) {
+        ?>
         <div class="fac-card" data-facility-id="<?= htmlspecialchars($f['id']) ?>">
             <div class="fac-card-top">
                 <div class="fac-icon"><i class="bi <?= htmlspecialchars($f['icon']) ?>"></i></div>
@@ -244,6 +248,13 @@ $adminNavItems = [
             </div>
 
             <div class="fac-integrated-row">
+                <span class="fac-integrated-label">Active <span class="text-muted fw-normal">(shown on GIS Mapping)</span></span>
+                <div class="form-check form-switch fac-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="facActive-<?= htmlspecialchars($f['id']) ?>" data-fac-status-toggle data-facility-id="<?= htmlspecialchars($f['id']) ?>" <?= $f['status'] === 'active' ? 'checked' : '' ?>>
+                </div>
+            </div>
+
+            <div class="fac-integrated-row">
                 <span class="fac-integrated-label">Integrated with HEALTrack</span>
                 <div class="form-check form-switch fac-switch">
                     <input class="form-check-input" type="checkbox" role="switch" id="facIntegrated-<?= htmlspecialchars($f['id']) ?>" data-fac-integrated-toggle data-facility-id="<?= htmlspecialchars($f['id']) ?>" <?= $f['isIntegrated'] ? 'checked' : '' ?>>
@@ -260,27 +271,46 @@ $adminNavItems = [
             </span>
             <?php endif; ?>
         </div>
-        <?php endforeach; ?>
+        <?php
+    };
+    ?>
+
+    <!-- ============ FACILITIES WITH ANALYTICS ============ -->
+    <div class="fac-section">
+        <div class="fac-section-header">
+            <h2><i class="bi bi-graph-up-arrow"></i> Facilities with Analytics</h2>
+            <span class="fac-section-count"><?= count($integratedFacilities) ?></span>
+        </div>
+        <?php if (empty($integratedFacilities)): ?>
+        <div class="adm-card" style="padding:24px; text-align:center;">
+            <p class="adm-table-empty">No facility has HEALTrack running yet.</p>
+        </div>
+        <?php else: ?>
+        <div class="fac-grid">
+            <?php foreach ($integratedFacilities as $f) {
+                $renderFacilityCard($f);
+            } ?>
+        </div>
+        <?php endif; ?>
     </div>
 
-    <!-- ============ GRID FOOTER: COUNT + PAGINATION ============ -->
-    <div class="fac-footer adm-table-footer">
-        <span class="adm-showing-text"><?= $facilitiesTotal > 0 ? 'Showing ' . (($facilitiesCurrentPage - 1) * $facilitiesPerPage + 1) . ' to ' . min($facilitiesCurrentPage * $facilitiesPerPage, $facilitiesTotal) . ' of ' . $facilitiesTotal . ' facilities' : 'No facilities to show' ?></span>
-        <nav class="adm-pagination" aria-label="Facility list pages">
-            <?php if ($facilitiesCurrentPage > 1): ?>
-            <a href="?<?= hc_fac_query($facilitiesCurrentPage - 1) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
-            <?php else: ?>
-            <span class="page-btn disabled" aria-disabled="true"><i class="bi bi-chevron-left"></i></span>
-            <?php endif; ?>
-            <?php for ($p = 1; $p <= $facilitiesTotalPages; $p++): ?>
-            <a href="?<?= hc_fac_query($p) ?>" class="page-btn <?= $p === $facilitiesCurrentPage ? 'active' : '' ?>"><?= $p ?></a>
-            <?php endfor; ?>
-            <?php if ($facilitiesCurrentPage < $facilitiesTotalPages): ?>
-            <a href="?<?= hc_fac_query($facilitiesCurrentPage + 1) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
-            <?php else: ?>
-            <span class="page-btn disabled" aria-disabled="true"><i class="bi bi-chevron-right"></i></span>
-            <?php endif; ?>
-        </nav>
+    <!-- ============ OTHER FACILITIES (NOT YET INTEGRATED) ============ -->
+    <div class="fac-section">
+        <div class="fac-section-header">
+            <h2><i class="bi bi-geo-alt"></i> Other Facilities <span class="fac-section-subtitle">(not yet integrated with HEALTrack)</span></h2>
+            <span class="fac-section-count"><?= count($notIntegratedFacilities) ?></span>
+        </div>
+        <?php if (empty($notIntegratedFacilities)): ?>
+        <div class="adm-card" style="padding:24px; text-align:center;">
+            <p class="adm-table-empty">Every facility is integrated with HEALTrack.</p>
+        </div>
+        <?php else: ?>
+        <div class="fac-grid">
+            <?php foreach ($notIntegratedFacilities as $f) {
+                $renderFacilityCard($f);
+            } ?>
+        </div>
+        <?php endif; ?>
     </div>
 
 </main>

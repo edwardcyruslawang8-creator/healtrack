@@ -22,6 +22,16 @@ session_start();
 require_once __DIR__ . '/config/constants.php';     // BASE_URL
 require_once __DIR__ . '/includes/public/data.php'; // $dashboardStats, $medicines, $announcements, $navItems
 require_once __DIR__ . '/includes/shared/homepage_settings.php'; // hc_get_homepage_settings()
+require_once __DIR__ . '/includes/firestore/facilities.php'; // hc_get_all_facilities_summary()
+
+// Every real pinned facility (admin/facility_management.php's Add
+// Facility map picker) — shown on this page's GIS preview below
+// regardless of isIntegrated status. A patient visiting the homepage
+// should be able to see where every facility actually is, even one
+// that doesn't have the system running yet — "integrated" only governs
+// whether the ADMIN can see that facility's own analytics, it has
+// nothing to do with whether the public should know it exists.
+$facilityMarkers = hc_get_all_facilities_summary();
 
 // Mission/Vision/Community First (About section) and Contact Us/Quick
 // Links/Operating Hours (footer) below — real, subadmin-editable
@@ -148,6 +158,7 @@ require_once __DIR__ . '/includes/shared/sidebar.php';
             <div class="gis-map-area">
                 <div id="homeGisMap"></div>
             </div>
+            <script>window.GIS_FACILITIES = <?= json_encode($facilityMarkers) ?>;</script>
             <!-- Same 5-tier scheme/colors as patient/gis.php's own legend
                  (assets/data/barangays.geojson's real "intensity"/"color"
                  values) — kept in sync with that page on purpose. A slim

@@ -18,11 +18,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const BASE_URL = window.APP_BASE_URL || '';
 
-    // Same real point assets/js/gis.js's full map uses — anchored at
-    // Lipa City Hall's own real coordinates in Barangay Marauoy, right
-    // behind which the facility actually sits (confirmed firsthand — see
-    // that file's own comment on this constant for the full story).
-    const FACILITY_LATLNG = [13.9572279, 121.1646223];
+    // Every real pinned facility (admin/facility_management.php's Add
+    // Facility map picker), set inline as window.GIS_FACILITIES by this
+    // page — shown here regardless of isIntegrated status, so a
+    // visitor can see where every facility actually is even before it
+    // has the system running. Falls back to North Super Health
+    // Center's own known real coordinates only if that array is
+    // somehow empty/missing (same fallback assets/js/gis.js uses).
+    const FACILITIES = (window.GIS_FACILITIES && window.GIS_FACILITIES.length > 0)
+        ? window.GIS_FACILITIES
+        : [{ id: 'north-super-health-center', name: 'North Super Health Center', lat: 13.9572279, lng: 121.1646223 }];
+    const FACILITY_LATLNG = [FACILITIES[0].lat, FACILITIES[0].lng];
 
     const map = L.map('homeGisMap', {
         zoomControl: false,
@@ -46,18 +52,20 @@ document.addEventListener('DOMContentLoaded', function () {
         maxZoom: 18,
     }).addTo(map);
 
-    // North Super Health Center's own pin — added immediately, same as
-    // the full map, so it's visible even before/if the barangay fetch
-    // below finishes.
-    L.marker(FACILITY_LATLNG, {
-        icon: L.divIcon({
-            className: '',
-            html: '<div class="home-gis-facility-marker"><i class="bi bi-hospital-fill"></i></div>',
-            iconSize: [26, 26],
-            iconAnchor: [13, 13],
-        }),
-        zIndexOffset: 1000,
-    }).addTo(map);
+    // Every facility's own pin — added immediately, same as the full
+    // map, so they're visible even before/if the barangay fetch below
+    // finishes.
+    const facilityMarkers = FACILITIES.map(function (facility) {
+        return L.marker([facility.lat, facility.lng], {
+            icon: L.divIcon({
+                className: '',
+                html: '<div class="home-gis-facility-marker"><i class="bi bi-hospital-fill"></i></div>',
+                iconSize: [26, 26],
+                iconAnchor: [13, 13],
+            }),
+            zIndexOffset: 1000,
+        }).addTo(map);
+    });
 
     fetch(BASE_URL + '/api/gis-data.php')
         .then(function (res) { return res.json(); })
@@ -74,7 +82,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
             }).addTo(map);
 
-            map.fitBounds(geoLayer.getBounds().extend(FACILITY_LATLNG), { padding: [10, 10] });
+            const fitBounds = geoLayer.getBounds();
+            facilityMarkers.forEach(function (marker) {
+                fitBounds.extend(marker.getLatLng());
+            });
+            map.fitBounds(fitBounds, { padding: [10, 10] });
 
             // Name-only label per barangay (no icon/case-count — this card
             // is too small for the full page's house-icon markers) so

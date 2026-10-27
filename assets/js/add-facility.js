@@ -18,10 +18,19 @@
    feedback; api/create-facility.php re-checks server-side and never
    trusts this alone).
 
+   Every time the pin is placed or dragged, its real street address is
+   looked up via OpenStreetMap's free Nominatim reverse-geocoding API
+   (no key needed, same OSM data this app's map tiles/boundary already
+   come from) and filled into the Location/Address field automatically
+   — still a plain text input the admin can edit afterward, this is
+   just a real starting point instead of typing the whole address by
+   hand. A failed/slow lookup never blocks placing the pin itself.
+
    Also wires facility_management.php's own per-card "Integrated with
-   HEALTrack" switch (not part of the Add Facility modal, but small
-   enough to live here alongside the rest of this file's facility
-   logic rather than its own file) -> api/update-facility-integration.php.
+   HEALTrack" and "Active" switches (not part of the Add Facility
+   modal, but small enough to live here alongside the rest of this
+   file's facility logic rather than their own files) ->
+   api/update-facility-integration.php / api/update-facility-status.php.
    ============================================================= */
 document.addEventListener('DOMContentLoaded', function () {
     const modalEl = document.getElementById('addFacilityModal');
@@ -34,6 +43,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const latField = document.getElementById('facilityLat');
     const lngField = document.getElementById('facilityLng');
     const mapErrorEl = document.getElementById('addFacilityMapError');
+    const locationField = document.getElementById('facilityLocation');
 
     let errorBox = document.getElementById('addFacilityError');
     if (!errorBox) {
@@ -71,10 +81,47 @@ document.addEventListener('DOMContentLoaded', function () {
     let marker = null;
     let boundaryRing = null; // [[lng, lat], ...], filled in once the GeoJSON fetch below resolves
 
+    // ---------------------------------------------------------------
+    // Reverse geocoding — OpenStreetMap's free Nominatim API, no key
+    // needed. A stale/in-flight request is tracked so a fast drag
+    // doesn't let an earlier, slower lookup overwrite a later one's
+    // result once both resolve.
+    // ---------------------------------------------------------------
+    const locationHintEl = document.getElementById('facilityLocationHint');
+    let geocodeRequestId = 0;
+
+    function showLocationHint(text) {
+        if (!locationHintEl) return;
+        locationHintEl.textContent = text;
+        locationHintEl.classList.toggle('d-none', !text);
+    }
+
+    function reverseGeocode(lat, lng) {
+        const requestId = ++geocodeRequestId;
+        showLocationHint('Looking up address…');
+
+        fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + lat + '&lon=' + lng)
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (requestId !== geocodeRequestId) return; // a newer pin placement superseded this one
+                if (data && data.display_name) {
+                    locationField.value = data.display_name;
+                    showLocationHint('');
+                } else {
+                    showLocationHint('Could not look up this address automatically — please type it in.');
+                }
+            })
+            .catch(function () {
+                if (requestId !== geocodeRequestId) return;
+                showLocationHint('Could not look up this address automatically — please type it in.');
+            });
+    }
+
     function setPin(lat, lng) {
         latField.value = lat;
         lngField.value = lng;
         if (mapErrorEl) mapErrorEl.classList.add('d-none');
+        reverseGeocode(lat, lng);
 
         if (marker) {
             marker.setLatLng([lat, lng]);
@@ -90,6 +137,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 latField.value = pos.lat;
                 lngField.value = pos.lng;
+                reverseGeocode(pos.lat, pos.lng);
             });
         }
     }
@@ -142,6 +190,8 @@ document.addEventListener('DOMContentLoaded', function () {
             form.classList.remove('was-validated');
             errorBox.classList.add('d-none');
             if (mapErrorEl) mapErrorEl.classList.add('d-none');
+            showLocationHint('');
+            geocodeRequestId++; // invalidate any still-in-flight lookup from a previous open
             latField.value = '';
             lngField.value = '';
             if (marker) {
@@ -224,6 +274,43 @@ document.addEventListener('DOMContentLoaded', function () {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: toggle.dataset.facilityId, isIntegrated: toggle.checked }),
+            })
+                .then(function (res) {
+                    return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+                })
+                .then(function (result) {
+                    if (!result.ok || !result.data.success) {
+                        throw new Error(result.data.error || 'Something went wrong. Please try again.');
+                    }
+                    window.location.reload();
+                })
+                .catch(function (err) {
+                    toggle.checked = wasChecked;
+                    toggle.disabled = false;
+                    if (typeof HCDialog !== 'undefined') {
+                        HCDialog.alert(err.message);
+                    }
+                });
+        });
+    });
+
+    // ---------------------------------------------------------------
+    // facility_management.php's per-card "Active" switch -> real
+    // active/inactive status -> api/update-facility-status.php.
+    // Switching a facility to inactive removes its pin from GIS
+    // Mapping (admin + patient + the public homepage preview) — see
+    // includes/firestore/facilities.php's hc_get_all_facilities_summary()
+    // header comment.
+    // ---------------------------------------------------------------
+    document.querySelectorAll('[data-fac-status-toggle]').forEach(function (toggle) {
+        toggle.addEventListener('change', function () {
+            const wasChecked = !toggle.checked;
+            toggle.disabled = true;
+
+            fetch('../api/update-facility-status.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: toggle.dataset.facilityId, status: toggle.checked ? 'active' : 'inactive' }),
             })
                 .then(function (res) {
                     return res.json().then(function (data) { return { ok: res.ok, data: data }; });

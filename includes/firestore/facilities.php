@@ -21,14 +21,18 @@ require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 
 if (!function_exists('hc_get_all_facilities_summary')) {
     /**
-     * id/name/lat/lng/isIntegrated for every real facility doc that has
-     * a real pinned location — feeds includes/public/gis-data.php's
-     * $facilityMarkers (-> window.GIS_FACILITIES on both
-     * admin/gis_mapping.php and patient/gis.php). A facility added
-     * before this feature existed (no lat/lng on its doc yet — see
-     * admin/facility_management.php's own header comment on why there's
-     * no edit feature to backfill one) is simply skipped here rather
-     * than plotted at some default point.
+     * id/name/lat/lng/isIntegrated for every real, ACTIVE facility doc
+     * that has a real pinned location — feeds includes/public/gis-data.php's
+     * $facilityMarkers (-> window.GIS_FACILITIES on admin/gis_mapping.php,
+     * patient/gis.php, AND index.php's homepage preview). A facility
+     * added before this feature existed (no lat/lng on its doc yet —
+     * see admin/facility_management.php's own header comment on why
+     * there's no edit feature to backfill one) is simply skipped here
+     * rather than plotted at some default point. A facility the admin
+     * has switched to "inactive" (api/update-facility-status.php's own
+     * "Active" toggle on admin/facility_management.php) is skipped too
+     * — deliberately, so the admin can take a facility off the map
+     * (e.g. closed for renovation) without deleting it.
      *
      * @return array<int, array{id: string, name: string, lat: float, lng: float, isIntegrated: bool}>
      */
@@ -39,7 +43,7 @@ if (!function_exists('hc_get_all_facilities_summary')) {
         $facilities = [];
         foreach ($firestore->listDocuments('facilities') as $doc) {
             $f = $doc['fields'];
-            if (!isset($f['lat'], $f['lng'])) {
+            if (!isset($f['lat'], $f['lng']) || ($f['status'] ?? 'active') !== 'active') {
                 continue;
             }
             $facilities[] = [

@@ -2,26 +2,24 @@
    SUB-ADMINISTRATOR ROW ACTIONS JS (admin/subadmin_management.php)
    ---------------------------------------------------------------
    Every row has one "Manage Account" button (data-manage-trigger) that
-   opens #manageSubadminModal — a single shared entry point (replacing
-   the old row of bare View/Edit/Unlock/Delete icons). Shows this
-   account's real details right there (Name/Email/Facility/Role/
-   Status/Last Login — folded in from what used to be a separate View
-   modal) plus the real management actions below them: Edit Account is
-   ALWAYS offered regardless of status (previously hidden for a locked/
-   pending account, the one real gap — an admin needs to be able to
-   manage those too, not just an already-active account), Unlock
-   Account only when actually locked. Picking Edit/Unlock/Delete closes
-   this modal and opens the real Edit modal or runs the real
-   confirm+POST flow — same endpoints as before, just reached through
-   one button instead of four.
+   opens #manageSubadminModal — a single shared entry point. Shows this
+   account's real details (Name/Email/Facility/Role/Status/Last Login)
+   plus the real management actions below them: a real Active/Inactive
+   switch (POSTs to api/update-subadmin-status.php on change, reloads
+   on success), Unlock Account (only when actually locked — it resets
+   the real lockout counter too, which the status switch alone
+   wouldn't), and Delete Account. There's no "Edit Account" any more —
+   username/facility/role are permanent once a sub-administrator is
+   created (see includes/admin/subadmin_view_edit_modals.php's header
+   comment); status is the one thing an admin can still change, via the
+   switch instead of a separate edit form.
 
-   Edit POSTs to api/update-subadmin.php, Unlock (only offered on a
-   "locked" account — see includes/shared/login_lockout.php) POSTs to
-   api/unlock-subadmin.php, Delete POSTs to api/delete-subadmin.php;
-   all three reload the page on success so the table/stat cards
-   re-render from the fresh Firestore data. A sub-admin's own account
-   can only be unlocked here, by an admin — subadmin/user_management.php
-   deliberately has no Unlock action for a subadmin-role row.
+   Unlock POSTs to api/unlock-subadmin.php, Delete POSTs to
+   api/delete-subadmin.php; both reload the page on success so the
+   table/stat cards re-render from the fresh Firestore data. A sub-
+   admin's own account can only be unlocked here, by an admin —
+   subadmin/user_management.php deliberately has no Unlock action for a
+   subadmin-role row.
    ============================================================= */
 document.addEventListener('DOMContentLoaded', function () {
     if (typeof bootstrap === 'undefined') return;
@@ -36,72 +34,6 @@ document.addEventListener('DOMContentLoaded', function () {
         modalEl.addEventListener('hidden.bs.modal', function handler() {
             modalEl.removeEventListener('hidden.bs.modal', handler);
             callback();
-        });
-    }
-
-    /* ---------- Edit ---------- */
-    const editModalEl = document.getElementById('editSubadminModal');
-    const editModal = editModalEl ? new bootstrap.Modal(editModalEl) : null;
-    const editForm = document.getElementById('editSubadminForm');
-    const editError = document.getElementById('editSubadminError');
-    const editSubmitBtn = document.getElementById('editSubadminSubmitBtn');
-    const editSubmitDefaultHtml = editSubmitBtn ? editSubmitBtn.innerHTML : '';
-
-    function openEditModal(id) {
-        const s = data[id];
-        if (!s || !editModal) return;
-
-        editError.classList.add('d-none');
-        document.getElementById('editSubadminId').value = id;
-        document.getElementById('editSubadminName').value = s.name;
-        document.getElementById('editSubadminFacility').value = s.facilityId;
-        document.getElementById('editSubadminRole').value = s.role;
-        document.getElementById('editSubadminStatus').value = s.status;
-        editModal.show();
-    }
-
-    if (editForm) {
-        editForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-
-            const payload = {
-                id: document.getElementById('editSubadminId').value,
-                name: document.getElementById('editSubadminName').value.trim(),
-                facilityId: document.getElementById('editSubadminFacility').value,
-                role: document.getElementById('editSubadminRole').value,
-                status: document.getElementById('editSubadminStatus').value,
-            };
-
-            if (!payload.name) {
-                editError.textContent = 'Please enter a username.';
-                editError.classList.remove('d-none');
-                return;
-            }
-
-            editError.classList.add('d-none');
-            editSubmitBtn.disabled = true;
-            editSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving…';
-
-            fetch('../api/update-subadmin.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            })
-                .then(function (res) {
-                    return res.json().then(function (d) { return { ok: res.ok, data: d }; });
-                })
-                .then(function (result) {
-                    if (!result.ok || !result.data.success) {
-                        throw new Error(result.data.error || 'Something went wrong. Please try again.');
-                    }
-                    window.location.reload();
-                })
-                .catch(function (err) {
-                    editError.textContent = err.message;
-                    editError.classList.remove('d-none');
-                    editSubmitBtn.disabled = false;
-                    editSubmitBtn.innerHTML = editSubmitDefaultHtml;
-                });
         });
     }
 
@@ -169,6 +101,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const manageModalEl = document.getElementById('manageSubadminModal');
     const manageModal = manageModalEl ? new bootstrap.Modal(manageModalEl) : null;
     const manageUnlockRow = manageModalEl ? manageModalEl.querySelector('[data-manage-action="continue"]') : null;
+    const statusToggle = document.getElementById('manageSubadminStatusToggle');
+    const statusToggleLabel = document.getElementById('manageSubadminStatusToggleLabel');
 
     document.querySelectorAll('[data-manage-trigger]').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -184,14 +118,58 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('manageSubadminStatus').textContent = s.statusLabel;
             document.getElementById('manageSubadminLastLogin').textContent = s.lastLogin || '—';
 
-            // Edit is always offered regardless of status — Unlock only
-            // when actually locked (it resets the lockout counter too,
-            // which Edit's own Status field alone doesn't do).
+            // Unlock only when actually locked (it resets the lockout
+            // counter too, which the status switch below can't do).
             if (manageUnlockRow) manageUnlockRow.hidden = s.status !== 'locked';
+
+            // The Active/Inactive switch only ever applies to an
+            // account that's actually active or inactive — a locked or
+            // pending account goes through Unlock Account / the
+            // pending-invitation flow instead (see
+            // api/update-subadmin-status.php's own header comment).
+            if (statusToggle) {
+                const canToggle = s.status === 'active' || s.status === 'inactive';
+                statusToggle.checked = s.status === 'active';
+                statusToggle.disabled = !canToggle;
+                statusToggle.title = canToggle ? '' : 'This account is currently ' + s.statusLabel.toLowerCase() + ' — use Unlock Account instead, or wait for the invitation to be accepted.';
+                if (statusToggleLabel) statusToggleLabel.textContent = canToggle ? 'Active' : s.statusLabel;
+            }
 
             manageModal.show();
         });
     });
+
+    if (statusToggle) {
+        statusToggle.addEventListener('change', function () {
+            const id = manageModalEl.dataset.currentId;
+            const s = id ? data[id] : null;
+            if (!id || !s) return;
+
+            const wasChecked = !statusToggle.checked;
+            const newStatus = statusToggle.checked ? 'active' : 'inactive';
+            statusToggle.disabled = true;
+
+            fetch('../api/update-subadmin-status.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id, status: newStatus }),
+            })
+                .then(function (res) {
+                    return res.json().then(function (d) { return { ok: res.ok, data: d }; });
+                })
+                .then(function (result) {
+                    if (!result.ok || !result.data.success) {
+                        throw new Error(result.data.error || 'Something went wrong. Please try again.');
+                    }
+                    window.location.reload();
+                })
+                .catch(function (err) {
+                    statusToggle.checked = wasChecked;
+                    statusToggle.disabled = false;
+                    HCDialog.alert(err.message);
+                });
+        });
+    }
 
     if (manageModalEl) {
         manageModalEl.querySelectorAll('[data-manage-action]').forEach(function (actionBtn) {
@@ -202,8 +180,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 manageModal.hide();
                 afterHidden(manageModalEl, function () {
-                    if (action === 'edit') openEditModal(id);
-                    else if (action === 'continue') unlockAccount(id);
+                    if (action === 'continue') unlockAccount(id);
                     else if (action === 'delete') deleteAccount(id);
                 });
             });

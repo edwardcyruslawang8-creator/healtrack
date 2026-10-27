@@ -15,6 +15,17 @@
  * $adminProfile mirrors includes/admin_dashboard_firestore.php's version rather than
  * sharing it, since that file is scoped to admin_dashboard.php's own
  * dashboard arrays — this stays a small, self-contained duplicate.
+ *
+ * Split into $integratedFacilities / $notIntegratedFacilities (by the
+ * same real isIntegrated flag api/update-facility-integration.php
+ * writes) rather than one flat list — a patient-facing fact (which
+ * facilities actually have the system running) that's easy to lose
+ * track of once there are more than a couple of facilities, so the
+ * page groups them into their own sections instead of mixing both
+ * together. At this app's real scale (a handful of health centers, not
+ * hundreds) that also means pagination isn't worth the complexity it'd
+ * add on top of two separate groups — every facility in each group
+ * just renders.
  * =====================================================================
  */
 
@@ -100,22 +111,5 @@ foreach ($firestore->listDocuments('facilities') as $doc) {
 usort($facilities, fn ($a, $b) => strcmp($a['name'], $b['name']));
 
 $facilitiesTotal = count($facilities);
-$facilitiesPerPage = 6;
-// Was hardcoded to 1 with $facilities never actually sliced below it —
-// the Previous/page-number/Next links in admin/facility_management.php
-// were all real dead links (href="#") pointing at nothing, since there
-// was no ?page= for them to carry in the first place. Real now, same
-// as every other paginated admin list this session.
-$facilitiesCurrentPage = max(1, (int) ($_GET['page'] ?? 1));
-$facilitiesTotalPages = (int) max(1, ceil($facilitiesTotal / $facilitiesPerPage));
-$facilitiesCurrentPage = min($facilitiesCurrentPage, $facilitiesTotalPages);
-
-$facilities = array_slice($facilities, ($facilitiesCurrentPage - 1) * $facilitiesPerPage, $facilitiesPerPage);
-
-if (!function_exists('hc_fac_query')) {
-    /** Builds a ?page=N query string — this page has no search/filter of its own, just pagination. */
-    function hc_fac_query(int $page): string
-    {
-        return http_build_query(['page' => $page]);
-    }
-}
+$integratedFacilities = array_values(array_filter($facilities, fn ($f) => $f['isIntegrated']));
+$notIntegratedFacilities = array_values(array_filter($facilities, fn ($f) => !$f['isIntegrated']));
