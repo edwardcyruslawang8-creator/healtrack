@@ -17,7 +17,7 @@
  */
 
 require_once __DIR__ . '/facility_management_firestore.php'; // $adminProfile, $facilities
-require_once __DIR__ . '/../../config/firebase.php';        // $firestore
+require_once __DIR__ . '/../../config/firebase.php';        // $firestore, $firebaseAuth
 require_once __DIR__ . '/../shared/avatar_helpers.php';            // derive_initials(), derive_avatar_color()
 require_once __DIR__ . '/../shared/fuzzy_search.php';               // hc_fuzzy_match()
 
@@ -68,11 +68,37 @@ $statusOptions = array_keys($statusLegend);
 // filters here, so this lists every "users" doc and filters to
 // role === 'subadmin' in PHP — fine at this app's scale.
 // ---------------------------------------------------------------------
+$subadminDocs = array_values(array_filter(
+    $firestore->listDocuments('users'),
+    fn ($doc) => ($doc['fields']['role'] ?? null) === 'subadmin'
+));
+
+// Last Login comes from Firebase Auth (UserMetaData::$lastLoginAt), which
+// Firebase updates itself on every successful sign-in (login.js's
+// signInWithEmailAndPassword()/signInWithPopup()) — same real source
+// includes/subadmin/user_management_firestore.php already reads. One
+// batched getUsers() call instead of a getUser() per row; if that lookup
+// fails, rows fall back to "Unknown" rather than breaking the page.
+$subadminAuthUsers = [];
+$subadminAuthLookupFailed = false;
+if ($subadminDocs !== []) {
+    try {
+        $subadminAuthUsers = $firebaseAuth->getUsers(array_column($subadminDocs, 'id'));
+    } catch (\Throwable $e) {
+        $subadminAuthLookupFailed = true;
+    }
+}
+
 $subadmins = [];
-foreach ($firestore->listDocuments('users') as $doc) {
+foreach ($subadminDocs as $doc) {
     $fields = $doc['fields'];
-    if (($fields['role'] ?? null) !== 'subadmin') {
-        continue;
+
+    $lastLoginLabel = 'Never logged in';
+    $authUser = $subadminAuthUsers[$doc['id']] ?? null;
+    if ($subadminAuthLookupFailed) {
+        $lastLoginLabel = 'Unknown';
+    } elseif ($authUser !== null && $authUser->metadata->lastLoginAt !== null) {
+        $lastLoginLabel = $authUser->metadata->lastLoginAt->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('M j, Y g:i A');
     }
 
     $name = $fields['name'] ?? $fields['email'] ?? 'Unknown';
@@ -87,7 +113,7 @@ foreach ($firestore->listDocuments('users') as $doc) {
         'location' => $fields['facilityLocation'] ?? '',
         'role' => $fields['subadminRole'] ?? 'Facility Admin',
         'status' => $fields['status'] ?? 'active',
-        'lastLogin' => $fields['lastLogin'] ?? null,
+        'lastLogin' => $lastLoginLabel,
     ];
 }
 

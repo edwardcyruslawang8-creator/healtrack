@@ -314,7 +314,7 @@ $adminNavItems = [
                                 <?= htmlspecialchars($statusLegend[$s['status']]['label']) ?>
                             </span>
                         </td>
-                        <td><?= $s['lastLogin'] ? htmlspecialchars($s['lastLogin']) : '—' ?></td>
+                        <td><?= htmlspecialchars($s['lastLogin']) ?></td>
                         <td>
                             <button type="button" class="sam-manage-btn" data-manage-trigger data-id="<?= htmlspecialchars($s['id']) ?>">
                                 Manage Account

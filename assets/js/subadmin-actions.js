@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('manageSubadminFacility').textContent = s.facility;
             document.getElementById('manageSubadminRole').textContent = s.role;
             document.getElementById('manageSubadminStatus').textContent = s.statusLabel;
-            document.getElementById('manageSubadminLastLogin').textContent = s.lastLogin || '—';
+            document.getElementById('manageSubadminLastLogin').textContent = s.lastLogin || 'Never logged in';
 
             // Unlock only when actually locked (it resets the lockout
             // counter too, which the status switch below can't do).
