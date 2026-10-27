@@ -23,8 +23,8 @@
  *
  * CONNECTED to real Firestore data — see
  * includes/medical-staff/patient_laboratory_xray_medstaff_firestore.php's header comment.
- * The date range/test type/body part/status filters and search boxes
- * are still decorative. Each row's View button now links to
+ * The test type/body part/status filters are still decorative (no
+ * search boxes on this page). Each row's View button now links to
  * laboratory_result_details.php with a real &type=lab|xray&recordId=,
  * so that page shows the actual clicked record.
  * =====================================================================
@@ -305,7 +305,7 @@ $staffNavItems = [
     <div class="adm-card plx-section-card">
         <div class="plx-section-header"><i class="bi bi-eyedropper"></i> <h3>Laboratory Results</h3></div>
 
-        <div class="plx-filter-row">
+        <div class="plx-filter-row plx-filter-row--no-search">
             <div class="dropdown">
                 <button class="plx-daterange-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-calendar3"></i> <?= htmlspecialchars($labRangeLabel) ?>
@@ -327,10 +327,6 @@ $staffNavItems = [
                 <option><?= htmlspecialchars($opt) ?></option>
                 <?php endforeach; ?>
             </select>
-            <div class="plx-search">
-                <i class="bi bi-search"></i>
-                <input type="text" placeholder="Search laboratory test...">
-            </div>
         </div>
 
         <div class="adm-table-wrap">
@@ -381,7 +377,7 @@ $staffNavItems = [
     <div class="adm-card plx-section-card">
         <div class="plx-section-header"><i class="bi bi-clipboard2-pulse-fill"></i> <h3>X-ray Results</h3></div>
 
-        <div class="plx-filter-row">
+        <div class="plx-filter-row plx-filter-row--no-search">
             <div class="dropdown">
                 <button class="plx-daterange-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-calendar3"></i> <?= htmlspecialchars($xrayRangeLabel) ?>
@@ -403,10 +399,6 @@ $staffNavItems = [
                 <option><?= htmlspecialchars($opt) ?></option>
                 <?php endforeach; ?>
             </select>
-            <div class="plx-search">
-                <i class="bi bi-search"></i>
-                <input type="text" placeholder="Search x-ray exam...">
-            </div>
         </div>
 
         <div class="adm-table-wrap">

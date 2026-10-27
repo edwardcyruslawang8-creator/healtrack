@@ -84,6 +84,11 @@
 }
 .plx-search input::placeholder{ color: var(--adm-text-soft); }
 
+/* Toolbar with no search box (medical-staff page) — the selects would
+   otherwise shrink to their text width, so give them an even, slightly
+   wider footprint to keep the row balanced. */
+.plx-filter-row--no-search .plx-filter-select{ min-width: 180px; }
+
 .plx-btn-filter{
   display: flex;
   align-items: center;
