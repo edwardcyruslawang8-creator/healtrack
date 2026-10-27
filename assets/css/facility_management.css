@@ -176,6 +176,20 @@
   color: #fff;
   box-shadow: var(--adm-shadow-hover);
 }
+/* Not yet integrated with HEALTrack (admin/facility_management.php's
+   isIntegrated flag) — same spot/size as the real link, but inert, so
+   a facility with no real backing data can't be clicked into. */
+.btn-view-analytics.disabled{
+  background: #EEF0F3;
+  color: var(--adm-text-muted);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.btn-view-analytics.disabled:hover{
+  background: #EEF0F3;
+  color: var(--adm-text-muted);
+  box-shadow: none;
+}
 
 /* -- Card grid footer (reuses .adm-table-footer / .adm-pagination atoms) -- */
 .fac-footer{

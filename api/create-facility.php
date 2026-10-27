@@ -9,12 +9,22 @@
  * collection includes/facility_management_firestore.php reads for
  * admin/facility_management.php's card grid and
  * admin/admin_dashboard.php's Facility Overview table.
+ *
+ * lat/lng are required and re-validated here against the real Lipa
+ * City boundary (hc_point_in_lipa_city()) — the client-side map picker
+ * already rejects a point outside it, but that's only ever a
+ * convenience check, never trusted alone. isIntegrated is a separate,
+ * honest admin-set flag (default false) — a facility can have a real
+ * pin without the system actually being set up there yet; only an
+ * integrated facility's "View Analytics" link is clickable on
+ * admin/facility_management.php.
  * =====================================================================
  */
 
 session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
+require_once __DIR__ . '/../includes/firestore/facilities.php'; // hc_point_in_lipa_city()
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 
 header('Content-Type: application/json');
@@ -36,10 +46,26 @@ $body = json_decode(file_get_contents('php://input'), true) ?? [];
 $name = trim((string) ($body['name'] ?? ''));
 $location = trim((string) ($body['location'] ?? ''));
 $status = trim((string) ($body['status'] ?? 'active'));
+$lat = $body['lat'] ?? null;
+$lng = $body['lng'] ?? null;
+$isIntegrated = !empty($body['isIntegrated']);
 
 if ($name === '' || $location === '') {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Please fill out every field.']);
+    exit;
+}
+
+if (!is_numeric($lat) || !is_numeric($lng)) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please pin this facility\'s location on the map.']);
+    exit;
+}
+$lat = (float) $lat;
+$lng = (float) $lng;
+if (!hc_point_in_lipa_city($lat, $lng)) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please pin a location within Lipa City.']);
     exit;
 }
 
@@ -68,6 +94,9 @@ $saved = $firestore->setDocument('facilities', $slug, [
     'type' => 'Super Health Center',
     'location' => $location,
     'icon' => 'bi-building',
+    'lat' => $lat,
+    'lng' => $lng,
+    'isIntegrated' => $isIntegrated,
     'patients' => 0,
     'records' => 0,
     'staff' => 0,
@@ -91,5 +120,8 @@ echo json_encode([
         'type' => 'Super Health Center',
         'location' => $location,
         'status' => $status,
+        'lat' => $lat,
+        'lng' => $lng,
+        'isIntegrated' => $isIntegrated,
     ],
 ]);

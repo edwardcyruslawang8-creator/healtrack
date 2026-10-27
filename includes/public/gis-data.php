@@ -19,6 +19,7 @@
  */
 
 require_once __DIR__ . '/gis_data_firestore.php'; // hc_gis_disease_overview(), hc_gis_date_range_spec()
+require_once __DIR__ . '/../firestore/facilities.php'; // hc_get_all_facilities_summary()
 
 // label -> range key. Keys are exactly what the <select> posts back
 // (its own visible option text — see patient/gis.php), so this doubles
@@ -45,3 +46,8 @@ $gisOverview = hc_gis_disease_overview($gisRange);
 $gisSummary = $gisOverview['gisSummary'];
 $topDiseases = $gisOverview['topDiseases'];
 $healthTrend = $gisOverview['healthTrend'];
+
+// Real, admin-pinned facility locations (admin/facility_management.php's
+// Add Facility map picker) — see includes/firestore/facilities.php's
+// hc_get_all_facilities_summary() header comment.
+$facilityMarkers = hc_get_all_facilities_summary();

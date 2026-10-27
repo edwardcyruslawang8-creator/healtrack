@@ -77,6 +77,8 @@ $adminNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/admin-dashboard.css') ?>">
 <!-- Facility Management page styles (toolbar + card grid) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/facility_management.css') ?>">
+<!-- Leaflet (Add Facility modal's Lipa City map picker — same library/tiles admin/gis_mapping.php uses) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body class="adm-body">
 
@@ -240,9 +242,15 @@ $adminNavItems = [
                 </div>
             </div>
 
+            <?php if ($f['isIntegrated']): ?>
             <a href="facility_analytics.php?facility_id=<?= urlencode($f['id']) ?>" class="btn-view-analytics">
                 View Analytics
             </a>
+            <?php else: ?>
+            <span class="btn-view-analytics disabled" tabindex="0" title="Not available yet &mdash; this facility isn't integrated with HEALTrack.">
+                View Analytics
+            </span>
+            <?php endif; ?>
         </div>
         <?php endforeach; ?>
     </div>
@@ -273,6 +281,7 @@ $adminNavItems = [
 
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/add-facility.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>

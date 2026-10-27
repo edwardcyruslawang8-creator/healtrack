@@ -63,16 +63,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const BASE_URL = window.APP_BASE_URL || '';
 
-    // North Super Health Center's own pin — confirmed by someone who's
-    // actually been there: it's in Barangay Marauoy, right behind Lipa
-    // City Hall (not Inosloban — an earlier attempt to place this from
-    // web directories alone got the wrong barangay). Anchored at Lipa
-    // City Hall's own real coordinates (OpenStreetMap: "Lipa City Hall,
-    // Arturo Tanco Drive, Marauoy, Lipa, Batangas" — a verified townhall
-    // landmark), the closest real, precise reference point available for
-    // "right behind the municipal hall."
-    const FACILITY_LATLNG = [13.9572279, 121.1646223];
-    const FACILITY_NAME = 'North Super Health Center';
+    // Real, admin-pinned facility locations (admin/facility_management.php's
+    // Add Facility map picker — see includes/firestore/facilities.php's
+    // hc_get_all_facilities_summary()), set inline as window.GIS_FACILITIES
+    // by this page. Falls back to North Super Health Center's own known
+    // real coordinates (confirmed by someone who's actually been there:
+    // it's in Barangay Marauoy, right behind Lipa City Hall — OpenStreetMap:
+    // "Lipa City Hall, Arturo Tanco Drive, Marauoy, Lipa, Batangas") only
+    // if that array is somehow empty/missing, so the map never regresses
+    // to showing nothing.
+    const FACILITIES = (window.GIS_FACILITIES && window.GIS_FACILITIES.length > 0)
+        ? window.GIS_FACILITIES
+        : [{ id: 'north-super-health-center', name: 'North Super Health Center', lat: 13.9572279, lng: 121.1646223 }];
+    const FACILITY_LATLNG = [FACILITIES[0].lat, FACILITIES[0].lng];
 
     // ---------------------------------------------------------------
     // Map init
@@ -98,8 +101,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const barangayLayers = {}; // real barangay name -> its Leaflet layer, filled in once the GeoJSON below loads
 
     // ---------------------------------------------------------------
-    // North Super Health Center's own marker — added immediately (not
-    // waiting on the barangay GeoJSON fetch below) since it doesn't
+    // Every real pinned facility's own marker — added immediately (not
+    // waiting on the barangay GeoJSON fetch below) since none of them
     // depend on that data at all, and should always be visible even if
     // that fetch is slow or fails.
     // ---------------------------------------------------------------
@@ -109,12 +112,15 @@ document.addEventListener('DOMContentLoaded', function () {
         iconSize: [40, 40],
         iconAnchor: [20, 20],
     });
-    const facilityMarker = L.marker(FACILITY_LATLNG, { icon: facilityIcon, zIndexOffset: 1000 }).addTo(map);
-    facilityMarker.bindTooltip(
-        '<div class="bl-name">' + FACILITY_NAME + '</div>',
-        { permanent: true, direction: 'top', offset: [0, -14], className: 'facility-label-tooltip' }
-    );
-    facilityMarker.bindPopup('<strong>' + FACILITY_NAME + '</strong><br>Serving 11 covered barangays across Lipa City.');
+    const facilityMarkers = FACILITIES.map(function (facility) {
+        const marker = L.marker([facility.lat, facility.lng], { icon: facilityIcon, zIndexOffset: 1000 }).addTo(map);
+        marker.bindTooltip(
+            '<div class="bl-name">' + facility.name + '</div>',
+            { permanent: true, direction: 'top', offset: [0, -14], className: 'facility-label-tooltip' }
+        );
+        marker.bindPopup('<strong>' + facility.name + '</strong><br>Serving 11 covered barangays across Lipa City.');
+        return marker;
+    });
 
     // ---------------------------------------------------------------
     // Fuzzy barangay-name matching for the search field — handles
@@ -265,10 +271,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
             }).addTo(map);
 
-            // Extend the fit to include the facility marker too, so it's
-            // never cropped out of the initial view even if it happens
-            // to sit right at the edge of the barangay shapes.
-            initialBounds = geoLayer.getBounds().extend(facilityMarker.getLatLng());
+            // Extend the fit to include every facility marker too, so
+            // none of them are ever cropped out of the initial view even
+            // if one happens to sit right at the edge of the barangay
+            // shapes.
+            initialBounds = geoLayer.getBounds();
+            facilityMarkers.forEach(function (marker) {
+                initialBounds.extend(marker.getLatLng());
+            });
             map.fitBounds(initialBounds, { padding: [30, 30] });
 
             // Centroid marker + permanent label for each barangay

@@ -266,6 +266,7 @@ $adminNavItems = [
                 <p class="health-trend-caption">Real reported notifiable-disease cases, <?= htmlspecialchars(strtolower($selectedDateRange)) ?>.</p>
             </div>
             <script>window.GIS_HEALTH_TREND = <?= json_encode($healthTrend) ?>;</script>
+            <script>window.GIS_FACILITIES = <?= json_encode($facilityMarkers) ?>;</script>
 
             <!-- Summary -->
             <div class="info-card">

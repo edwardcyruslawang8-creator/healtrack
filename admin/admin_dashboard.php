@@ -78,6 +78,8 @@ $adminNavItems = [
 
 <!-- Admin dashboard stylesheet (self-contained, "adm-" prefixed) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/admin-dashboard.css') ?>">
+<!-- Leaflet (Add Facility modal's Lipa City map picker — same library/tiles admin/gis_mapping.php uses) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body class="adm-body">
 
@@ -391,6 +393,7 @@ $adminNavItems = [
 
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <!-- Chart.js (for the Sub-Administrator Overview doughnut chart) -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="<?= asset_url('/assets/js/chart-center-label.js') ?>"></script>
