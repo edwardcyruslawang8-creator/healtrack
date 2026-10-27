@@ -35,9 +35,11 @@ $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'We
 // ---------------------------------------------------------------------
 $consultationTypeMeta = hc_consultation_type_meta();
 $consultationStatusMeta = hc_consultation_status_meta();
-// Only Walk-in and Follow-up are offered (keyed by the stored
-// "consultationType" values), with Walk-in as the default.
+// Only Walk-in and Follow-up are offered besides "All Types" (keyed by
+// the stored "consultationType" values), with All Types as the default
+// — same keys as includes/doctor/consultations_doctor_firestore.php.
 $consultationTypeOptions = [
+    'All Types' => 'All Types',
     'walk_in'   => $consultationTypeMeta['walk_in']['label'],
     'follow_up' => $consultationTypeMeta['follow_up']['label'],
 ];
@@ -71,9 +73,9 @@ $statCards = hc_consultation_stats($allConsultations);
 // filters (?type=, ?status=) + date range (?from=, ?to=) — all real.
 // ---------------------------------------------------------------------
 $searchTerm = trim($_GET['q'] ?? '');
-$typeFilter = $_GET['type'] ?? '';
+$typeFilter = $_GET['type'] ?? 'All Types';
 if (!array_key_exists($typeFilter, $consultationTypeOptions)) {
-    $typeFilter = 'walk_in';
+    $typeFilter = 'All Types';
 }
 $statusFilter = $_GET['status'] ?? 'All Status';
 $dateFrom = trim($_GET['from'] ?? '');
@@ -83,7 +85,7 @@ $filteredConsultations = array_values(array_filter($allConsultations, function (
     if ($searchTerm !== '' && !hc_fuzzy_match($c['patientName'] . ' ' . $c['consultationCode'] . ' ' . $c['patientId'], $searchTerm)) {
         return false;
     }
-    if ($c['consultationType'] !== $typeFilter) {
+    if ($typeFilter !== 'All Types' && $c['consultationType'] !== $typeFilter) {
         return false;
     }
     if ($statusFilter !== 'All Status' && $c['status'] !== $statusFilter) {
