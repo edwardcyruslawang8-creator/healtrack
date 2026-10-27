@@ -148,13 +148,41 @@ document.addEventListener('DOMContentLoaded', function () {
         mapErrorEl.classList.remove('d-none');
     }
 
+    // ---------------------------------------------------------------
+    // Land-only view. Lipa's official boundary includes a thin strip
+    // reaching west into Taal Lake (its only vertices west of
+    // TAAL_LAKE_STRIP_MAX_LNG), so framing the whole polygon pulled the
+    // view out over the lake. Instead, the view is framed on the
+    // boundary's LAND extent, zoomed so all of it fits in the map box at
+    // once, with panning/zooming-out clamped to it — the full boundary is
+    // still drawn and still used for pin validation, nothing about it is
+    // altered.
+    // ---------------------------------------------------------------
+    const TAAL_LAKE_STRIP_MAX_LNG = 121.06;
+
+    function fitLandView() {
+        if (!map || !boundaryRing) return;
+        const landBounds = L.latLngBounds(
+            boundaryRing
+                .filter(function (p) { return p[0] > TAAL_LAKE_STRIP_MAX_LNG; })
+                .map(function (p) { return [p[1], p[0]]; })
+        );
+        const fitZoom = map.getBoundsZoom(landBounds);
+        map.setMinZoom(fitZoom);
+        map.setMaxBounds(landBounds);
+        map.options.maxBoundsViscosity = 1.0;
+        map.setView(landBounds.getCenter(), fitZoom);
+    }
+
     function initMap() {
         if (map || typeof L === 'undefined') return;
         const mapEl = document.getElementById('addFacilityMap');
         if (!mapEl) return;
 
         const LIPA_CENTER = [13.9411, 121.1622];
-        map = L.map('addFacilityMap').setView(LIPA_CENTER, 13);
+        // Fractional zoom so the land-only view below can fill the map
+        // box exactly instead of snapping out to the next whole level.
+        map = L.map('addFacilityMap', { zoomSnap: 0.25 }).setView(LIPA_CENTER, 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors',
             maxZoom: 18,
@@ -167,7 +195,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const boundaryLayer = L.geoJSON(geojson, {
                     style: { color: '#8B1E22', weight: 2, fillOpacity: 0.05 },
                 }).addTo(map);
-                map.fitBounds(boundaryLayer.getBounds(), { padding: [10, 10] });
+                fitLandView();
             })
             .catch(function () {
                 // Boundary failed to load — the server-side check in
@@ -204,7 +232,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     modalEl.addEventListener('shown.bs.modal', function () {
         initMap();
-        if (map) map.invalidateSize();
+        if (map) {
+            map.invalidateSize();
+            fitLandView(); // re-fit in case the modal's width changed since last open
+        }
     });
 
     form.addEventListener('submit', function (e) {
