@@ -538,10 +538,6 @@ $staffNavItems = [
                                     <option value="walk_in" selected><?= htmlspecialchars($consultationTypeMeta['walk_in']['label']) ?></option>
                                 </select>
                             </div>
-                            <div class="mb-0">
-                                <label class="cns-form-label" for="cnsFormDateTime">Date &amp; Time<span class="text-danger">*</span></label>
-                                <input type="datetime-local" class="form-control cns-form-control" id="cnsFormDateTime" min="<?= date('Y-m-d\TH:i') ?>" required>
-                            </div>
                         </div>
                         <div class="cns-form-col">
                             <div class="mb-3">
@@ -556,11 +552,15 @@ $staffNavItems = [
                                 <div class="cns-form-help">No doctor accounts found at your facility yet.</div>
                                 <?php endif; ?>
                             </div>
-                            <div class="mb-0">
-                                <label class="cns-form-label" for="cnsFormFollowUp">Next Follow-up <span class="text-muted fw-normal">(Optional)</span></label>
-                                <input type="datetime-local" class="form-control cns-form-control" id="cnsFormFollowUp" min="<?= date('Y-m-d\TH:i') ?>">
-                            </div>
                         </div>
+                    </div>
+
+                    <!-- No "Next Follow-up" field here — follow-up dates are set
+                         by the doctor when completing a consultation
+                         (doctor/active_consultation.php). -->
+                    <div class="mb-3">
+                        <label class="cns-form-label" for="cnsFormDateTime">Date &amp; Time<span class="text-danger">*</span></label>
+                        <input type="datetime-local" class="form-control cns-form-control" id="cnsFormDateTime" min="<?= date('Y-m-d\TH:i') ?>" required>
                     </div>
 
                     <div class="mb-0">
