@@ -220,14 +220,15 @@
   height: 30px;
   padding: 0 14px;
   border-radius: 8px;
-  background: var(--adm-red);
+  background: var(--adm-red-bright);
   color: #fff;
   font-size: 12.5px;
   font-weight: 600;
   white-space: nowrap;
   text-decoration: none;
 }
-.acv-view-result-btn:hover{ background: var(--adm-red-bright-hover); color: #fff; }
+.acv-view-result-btn:hover, .acv-view-result-btn:active{ background: var(--adm-red-bright-hover); color: #fff; }
+.acv-view-result-btn:focus-visible{ outline: none; box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.2); }
 
 /* -- "Patient Will Be Next In" -- */
 .acv-routing-list{ display: flex; flex-direction: column; gap: 10px; }
