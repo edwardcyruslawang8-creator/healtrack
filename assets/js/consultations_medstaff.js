@@ -29,8 +29,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const personnelInput = document.getElementById('cnsFormPersonnel');
     const complaintInput = document.getElementById('cnsFormComplaint');
     const prioritySelect = document.getElementById('cnsFormPriority');
-    const followUpInput = document.getElementById('cnsFormFollowUp');
-    const followUpMinIso = followUpInput.min; // set server-side to "now" (see consultations.php)
     const notesInput = document.getElementById('cnsFormNotes');
     const formIdInput = document.getElementById('cnsFormId');
 
@@ -182,7 +180,6 @@ document.addEventListener('DOMContentLoaded', function () {
         form.classList.remove('was-validated');
         formIdInput.value = '';
         dateTimeInput.min = dateTimeMinIso;
-        followUpInput.min = followUpMinIso;
         setPatientCard('', '', '', '', '');
         formError.classList.add('d-none');
         document.getElementById('consultationFormModalLabel').textContent = mode === 'edit' ? 'Edit Consultation' : 'Set Consultation';
@@ -216,20 +213,12 @@ document.addEventListener('DOMContentLoaded', function () {
             // Already-past consultations (a real record can be edited well
             // after its own dateTime — e.g. fixing a typo in the complaint)
             // must stay editable without the picker rejecting their own
-            // unchanged value — same relaxation as the follow-up field below.
+            // unchanged value.
             dateTimeInput.min = existingDateTime && existingDateTime < dateTimeMinIso ? existingDateTime : dateTimeMinIso;
             dateTimeInput.value = existingDateTime;
             personnelInput.value = row.dataset.personnel;
             complaintInput.value = row.dataset.complaint;
             prioritySelect.value = row.dataset.priority;
-            const existingFollowUp = row.dataset.followup ? row.dataset.followup.slice(0, 16) : '';
-            // Already-overdue follow-ups (a real consultation can go
-            // unattended past its scheduled follow-up) must stay editable
-            // for the record's OTHER fields without the picker rejecting
-            // its own unchanged value — so the min relaxes to the
-            // existing follow-up when that's already in the past.
-            followUpInput.min = existingFollowUp && existingFollowUp < followUpMinIso ? existingFollowUp : followUpMinIso;
-            followUpInput.value = existingFollowUp;
             notesInput.value = row.dataset.notes || '';
             vitalTempInput.value = row.dataset.vitalTemp || '';
             vitalBpSysInput.value = row.dataset.vitalBpsys || '';
@@ -301,7 +290,9 @@ document.addEventListener('DOMContentLoaded', function () {
             assignedPersonnel: personnelInput.value.trim(),
             chiefComplaint: complaintInput.value.trim(),
             priority: prioritySelect.value,
-            nextFollowUp: followUpInput.value,
+            // No nextFollowUp sent — the form has no such field, and
+            // api/update-consultation.php only touches it when the key is
+            // present, so a doctor-set follow-up date survives staff edits.
             notes: notesInput.value.trim(),
             vitals: {
                 temperature: vitalTempInput.value.trim(),
