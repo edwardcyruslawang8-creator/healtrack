@@ -326,3 +326,11 @@
 .mvi-accent-maroon .mvi-btn-add{ background: var(--adm-red-bright); }
 .mvi-accent-maroon .mvi-btn-add:hover,
 .mvi-accent-maroon .mvi-btn-add:focus-visible{ background: var(--adm-red-bright-hover); color: #fff; }
+/* Same for this module's modal submit buttons (Add/Edit Medicine,
+   Adjust Stock, Dispense — includes/pharmacist/add_medicine_modal.php,
+   medicine_action_modals.php). Scoped here so .am-btn-submit stays blue
+   on the other pages that share add_medicine_modal.css. */
+.mvi-accent-maroon .am-btn-submit{ background: var(--adm-red-bright); }
+.mvi-accent-maroon .am-btn-submit:hover,
+.mvi-accent-maroon .am-btn-submit:active{ background: var(--adm-red-bright-hover); color: #fff; }
+.mvi-accent-maroon .am-btn-submit:focus-visible{ outline: none; box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.2); }
