@@ -20,6 +20,7 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/lab_results.php';
+require_once __DIR__ . '/../shared/analytics_comparison.php'; // hc_facility_growth_pct()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -42,7 +43,10 @@ $pendingLab = array_values(array_filter($labDocs, fn ($d) => ($d['fields']['stat
 // KPI cards
 // ---------------------------------------------------------------------
 $thisMonthPrefix = date('Y-m');
+$lastMonthPrefix = date('Y-m', strtotime('first day of last month'));
 $completedThisMonth = count(array_filter($completedLab, fn ($d) => str_starts_with($d['fields']['completedDate'] ?? '', $thisMonthPrefix)));
+$completedLastMonth = count(array_filter($completedLab, fn ($d) => str_starts_with($d['fields']['completedDate'] ?? '', $lastMonthPrefix)));
+$completedGrowthPct = hc_facility_growth_pct($completedThisMonth, $completedLastMonth);
 $last7DaysPrefix = array_map(fn ($i) => date('Y-m-d', strtotime("-$i days")), range(0, 6));
 $completedThisWeek = count(array_filter($completedLab, fn ($d) => in_array($d['fields']['completedDate'] ?? '', $last7DaysPrefix, true)));
 
@@ -50,7 +54,7 @@ $kpiCards = [
     ['icon' => 'bi-clipboard2-pulse-fill', 'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E', 'label' => 'Lab Tests Completed',  'value' => count($completedLab),  'sub' => 'All-time', 'trend' => 'up'],
     ['icon' => 'bi-calendar2-week-fill', 'iconBg' => '#E8F0FE', 'iconColor' => '#1A73E8', 'label' => 'Completed This Week', 'value' => $completedThisWeek, 'sub' => 'Last 7 days', 'trend' => 'up'],
     ['icon' => 'bi-hourglass-split',       'iconBg' => '#FEF3C7', 'iconColor' => '#B45309', 'label' => 'Pending Referrals',     'value' => count($pendingLab), 'sub' => 'Laboratory', 'trend' => 'up'],
-    ['icon' => 'bi-calendar2-check-fill',  'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'label' => 'Completed This Month',  'value' => $completedThisMonth,   'sub' => date('F Y'), 'trend' => 'up'],
+    ['icon' => 'bi-calendar2-check-fill',  'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'label' => 'Completed This Month',  'value' => $completedThisMonth,   'sub' => abs($completedGrowthPct) . '% vs last month', 'trend' => $completedGrowthPct < 0 ? 'down' : 'up'],
 ];
 
 // ---------------------------------------------------------------------

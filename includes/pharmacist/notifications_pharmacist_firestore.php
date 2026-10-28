@@ -4,11 +4,13 @@
  * Notifications (Pharmacist) — Data
  * ---------------------------------------------------------------------
  * CONNECTED — every row is a real notification generated live from
- * THREE merged sources: includes/firestore/medicines.php's
+ * FOUR merged sources: includes/firestore/medicines.php's
  * hc_get_low_stock_notifications() (one entry per medicine/vaccine
  * currently at "low" or "unavailable" stock status, across both the
  * Medicines and Vaccines inventory), that same file's
- * hc_get_medicine_expiry_notifications() (one entry per medicine/
+ * hc_get_overstock_notifications() (the surplus-side sibling — one
+ * entry per item currently above its own real maximum level), that same
+ * file's hc_get_medicine_expiry_notifications() (one entry per medicine/
  * vaccine already past its real expiryDate or expiring within 30 days),
  * and includes/firestore/pharmacy_orders.php's
  * hc_get_pending_pharmacy_order_notifications() (one entry per real
@@ -81,6 +83,7 @@ $rawNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'sy
     array_filter([hc_get_phone_reminder_notification($myUid, $myDoc ?? [])]),
     array_filter([hc_my_email_verification_notification()]),
     hc_notification_preference_enabled_for_doc($myDoc ?? [], 'inventory') ? hc_get_low_stock_notifications() : [],
+    hc_notification_preference_enabled_for_doc($myDoc ?? [], 'inventory') ? hc_get_overstock_notifications() : [],
     hc_notification_preference_enabled_for_doc($myDoc ?? [], 'inventory') ? hc_get_medicine_expiry_notifications() : [],
     hc_notification_preference_enabled_for_doc($myDoc ?? [], 'inventory') ? hc_get_pending_pharmacy_order_notifications() : [],
     // Real outcome of a stock request THIS pharmacist submitted (see

@@ -39,6 +39,7 @@ if (!function_exists('hc_medicine_status_meta')) {
             'available'   => ['label' => 'In Stock',     'bg' => '#E4F7EA', 'color' => '#1E8E3E'],
             'low'         => ['label' => 'Low Stock',    'bg' => '#FDECDD', 'color' => '#E8710A'],
             'unavailable' => ['label' => 'Out of Stock', 'bg' => '#FCE4E4', 'color' => '#D93025'],
+            'overstocked' => ['label' => 'Overstocked',  'bg' => '#F1E8FD', 'color' => '#8B5CF6'],
         ];
     }
 }
@@ -101,7 +102,7 @@ if (!function_exists('hc_query_inventory_items')) {
      * newest-name-first (alphabetical) with human-formatted date
      * strings.
      *
-     * @return array<int, array{id: string, name: string, category: string, unit: string, form: string, desc: string, currentStock: int, minLevel: int, reorderLevel: int, expiryDate: string, expiryDateRaw: string, expiryStatus: string, status: string, lastUpdatedRaw: string, lastUpdated: string, icon: string, colorMeta: array}>
+     * @return array<int, array{id: string, name: string, category: string, unit: string, form: string, desc: string, currentStock: int, minLevel: int, reorderLevel: int, maxLevel: int, expiryDate: string, expiryDateRaw: string, expiryStatus: string, status: string, lastUpdatedRaw: string, lastUpdated: string, icon: string, colorMeta: array}>
      */
     function hc_query_inventory_items(string $type, bool $archived): array
     {
@@ -128,6 +129,7 @@ if (!function_exists('hc_query_inventory_items')) {
                 'currentStock' => (int) ($f['currentStock'] ?? 0),
                 'minLevel' => (int) ($f['minLevel'] ?? 0),
                 'reorderLevel' => (int) ($f['reorderLevel'] ?? 0),
+                'maxLevel' => (int) ($f['maxLevel'] ?? 0),
                 'expiryDateRaw' => $f['expiryDate'] ?? '',
                 'expiryDate' => isset($f['expiryDate']) && $f['expiryDate'] !== '' ? strtoupper(date('M d, Y', strtotime($f['expiryDate']))) : '—',
                 'expiryStatus' => hc_inventory_expiry_status($f['expiryDate'] ?? ''),
@@ -214,14 +216,25 @@ if (!function_exists('hc_find_inventory_item_by_name')) {
 }
 
 if (!function_exists('hc_inventory_status_for_stock')) {
-    /** Real status derived from stock levels — computed server-side at write time, not trusted from the client. */
-    function hc_inventory_status_for_stock(int $currentStock, int $minLevel): string
+    /**
+     * Real status derived from stock levels — computed server-side at
+     * write time, not trusted from the client. $maxLevel is optional
+     * (0 = "no ceiling set", the default for every item created before
+     * this field existed) — only flags 'overstocked' when a real
+     * ceiling was set AND stock has actually exceeded it, so an item
+     * with no ceiling is never flagged regardless of how much stock it
+     * has.
+     */
+    function hc_inventory_status_for_stock(int $currentStock, int $minLevel, int $maxLevel = 0): string
     {
         if ($currentStock <= 0) {
             return 'unavailable';
         }
         if ($currentStock <= $minLevel) {
             return 'low';
+        }
+        if ($maxLevel > 0 && $currentStock > $maxLevel) {
+            return 'overstocked';
         }
         return 'available';
     }
@@ -261,7 +274,7 @@ if (!function_exists('hc_medicine_filter_by_category')) {
 }
 
 if (!function_exists('hc_medicine_status_pills')) {
-    /** Total/In Stock/Low Stock/Out of Stock counts over $items — the same 4 numbers both inventory cards' pill row shows. */
+    /** Total/In Stock/Low Stock/Out of Stock/Overstocked counts over $items — the same 5 numbers both inventory cards' pill row shows. */
     function hc_medicine_status_pills(array $items): array
     {
         return [
@@ -269,12 +282,13 @@ if (!function_exists('hc_medicine_status_pills')) {
             'inStock' => count(array_filter($items, fn ($i) => $i['status'] === 'available')),
             'lowStock' => count(array_filter($items, fn ($i) => $i['status'] === 'low')),
             'outOfStock' => count(array_filter($items, fn ($i) => $i['status'] === 'unavailable')),
+            'overstocked' => count(array_filter($items, fn ($i) => $i['status'] === 'overstocked')),
         ];
     }
 }
 
 if (!function_exists('hc_medicine_stock_distribution')) {
-    /** $pills (hc_medicine_status_pills()'s own return shape) -> the 3-slice donut/legend data both inventory cards render. */
+    /** $pills (hc_medicine_status_pills()'s own return shape) -> the 4-slice donut/legend data both inventory cards render. */
     function hc_medicine_stock_distribution(array $pills): array
     {
         $total = $pills['total'];
@@ -283,6 +297,7 @@ if (!function_exists('hc_medicine_stock_distribution')) {
             ['label' => 'In Stock', 'pct' => $total > 0 ? round($pills['inStock'] / $total * 100, 1) : 0, 'color' => '#1E8E3E'],
             ['label' => 'Low Stock', 'pct' => $total > 0 ? round($pills['lowStock'] / $total * 100, 1) : 0, 'color' => '#E8710A'],
             ['label' => 'Out of Stock', 'pct' => $total > 0 ? round($pills['outOfStock'] / $total * 100, 1) : 0, 'color' => '#D93025'],
+            ['label' => 'Overstocked', 'pct' => $total > 0 ? round($pills['overstocked'] / $total * 100, 1) : 0, 'color' => '#8B5CF6'],
         ];
     }
 }
@@ -310,7 +325,11 @@ if (!function_exists('hc_get_low_stock_notifications')) {
     function hc_get_low_stock_notifications(): array
     {
         $items = array_merge(hc_get_inventory_items('medicine'), hc_get_inventory_items('vaccine'));
-        $items = array_values(array_filter($items, fn ($item) => $item['status'] !== 'available'));
+        // Explicit 'low'/'unavailable' allowlist rather than "!==
+        // 'available'" — now that 'overstocked' exists too, that would
+        // have wrongly swept a surplus item into a shortage alert (see
+        // hc_get_overstock_notifications()'s own sibling check below).
+        $items = array_values(array_filter($items, fn ($item) => in_array($item['status'], ['low', 'unavailable'], true)));
 
         usort($items, function ($a, $b) {
             if ($a['status'] !== $b['status']) {
@@ -333,6 +352,43 @@ if (!function_exists('hc_get_low_stock_notifications')) {
                 'icon' => $item['icon'],
                 'iconBg' => $isOut ? '#FCE4E4' : '#FDECDD',
                 'iconColor' => $isOut ? '#D93025' : '#E8710A',
+            ];
+        }, $items);
+    }
+}
+
+if (!function_exists('hc_get_overstock_notifications')) {
+    /**
+     * One real notification row per medicine/vaccine currently at
+     * status "overstocked" (hc_inventory_status_for_stock()) — the
+     * surplus-side sibling of hc_get_low_stock_notifications() above,
+     * same id scheme (crc32() of "overstock:{doc id}" rather than
+     * crc32($item['id']) alone, so a single item can independently be
+     * read/unread for its low-stock alert and its overstock alert
+     * without the two colliding on the same id).
+     *
+     * @return array<int, array{id: int, title: string, description: string, type: string, date: string, time: string, icon: string, iconBg: string, iconColor: string}>
+     */
+    function hc_get_overstock_notifications(): array
+    {
+        $items = array_merge(hc_get_inventory_items('medicine'), hc_get_inventory_items('vaccine'));
+        $items = array_values(array_filter($items, fn ($item) => $item['status'] === 'overstocked'));
+
+        usort($items, fn ($a, $b) => strcmp($b['lastUpdated'], $a['lastUpdated']));
+
+        return array_map(function ($item) {
+            $updatedAt = $item['lastUpdatedRaw'] !== '' ? strtotime($item['lastUpdatedRaw']) : false;
+
+            return [
+                'id' => crc32('overstock:' . $item['id']),
+                'title' => 'Overstock alert',
+                'description' => $item['name'] . ' — ' . number_format($item['currentStock']) . ' ' . $item['unit'] . ' on hand (maximum level: ' . number_format($item['maxLevel']) . ').',
+                'type' => 'Inventory',
+                'date' => $updatedAt !== false ? date('M j, Y', $updatedAt) : '—',
+                'time' => $updatedAt !== false ? date('g:i A', $updatedAt) : '',
+                'icon' => $item['icon'],
+                'iconBg' => '#F1E8FD',
+                'iconColor' => '#8B5CF6',
             ];
         }, $items);
     }

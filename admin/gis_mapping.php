@@ -325,9 +325,43 @@ $adminNavItems = [
                             <i class="bi bi-arrow-<?= $d['trend'] === 'up' ? 'up' : 'down' ?>"></i><?= htmlspecialchars($d['change']) ?>
                         </span>
                     </div>
+                    <?php if (!empty($d['causes'])): ?>
+                    <p class="disease-causes-note"><i class="bi bi-info-circle"></i> Likely contributing factors: <?= htmlspecialchars($d['causes']) ?></p>
+                    <?php endif; ?>
                     <?php endforeach; ?>
                 </div>
             </div>
+
+            <!-- Seasonal Patterns: true calendar-month/rainy-vs-dry view,
+                 every real year on record merged — NOT the rolling
+                 date-range window the rest of this page uses (see
+                 includes/shared/predictive_analytics_core.php's
+                 hc_gis_seasonal_overview() header comment). -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h2>Seasonal Patterns</h2>
+                </div>
+                <?php if (!$seasonalOverview['hasData']): ?>
+                <p class="text-muted small mb-0">No notifiable-disease cases on record yet to find a seasonal pattern.</p>
+                <?php else: ?>
+                <p class="health-trend-caption" style="margin-top:0;">
+                    Monthly case totals for <strong><?= htmlspecialchars($seasonalOverview['topCategory']) ?></strong>, every year on record.
+                </p>
+                <div class="health-trend-canvas-box">
+                    <canvas id="seasonalChart"></canvas>
+                </div>
+                <div class="disease-rank-list" style="margin-top:12px;">
+                    <?php foreach ($seasonalOverview['seasonCompare'] as $sc): ?>
+                    <div class="disease-rank-row">
+                        <span class="disease-name"><?= htmlspecialchars($sc['category']) ?></span>
+                        <span class="disease-cases" title="Rainy season (Jun-Nov)"><i class="bi bi-cloud-rain-fill"></i> <?= (int) $sc['rainy'] ?></span>
+                        <span class="disease-cases" title="Dry season (Dec-May)"><i class="bi bi-sun-fill"></i> <?= (int) $sc['dry'] ?></span>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+            </div>
+            <script>window.GIS_SEASONAL = <?= json_encode($seasonalOverview) ?>;</script>
 
             <!-- Hover/click hint -->
             <div class="med-notice" style="border-top:none; border-radius: 10px;">

@@ -20,6 +20,7 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/xray_results.php';
+require_once __DIR__ . '/../shared/analytics_comparison.php'; // hc_facility_growth_pct()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -42,12 +43,15 @@ $pendingXray = array_values(array_filter($xrayDocs, fn ($d) => ($d['fields']['st
 // KPI cards
 // ---------------------------------------------------------------------
 $thisMonthPrefix = date('Y-m');
+$lastMonthPrefix = date('Y-m', strtotime('first day of last month'));
 $completedThisMonth = count(array_filter($completedXray, fn ($d) => str_starts_with($d['fields']['completedDate'] ?? '', $thisMonthPrefix)));
+$completedLastMonth = count(array_filter($completedXray, fn ($d) => str_starts_with($d['fields']['completedDate'] ?? '', $lastMonthPrefix)));
+$completedGrowthPct = hc_facility_growth_pct($completedThisMonth, $completedLastMonth);
 
 $kpiCards = [
     ['icon' => 'bi-file-earmark-medical-fill', 'iconBg' => '#E8F0FE', 'iconColor' => '#1A73E8', 'label' => 'X-ray Exams Completed', 'value' => count($completedXray), 'sub' => 'All-time', 'trend' => 'up'],
     ['icon' => 'bi-hourglass-split',           'iconBg' => '#FEF3C7', 'iconColor' => '#B45309', 'label' => 'Pending Referrals',      'value' => count($pendingXray),     'sub' => 'Awaiting a result', 'trend' => 'up'],
-    ['icon' => 'bi-calendar2-check-fill',      'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'label' => 'Completed This Month',   'value' => $completedThisMonth,     'sub' => date('F Y'), 'trend' => 'up'],
+    ['icon' => 'bi-calendar2-check-fill',      'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'label' => 'Completed This Month',   'value' => $completedThisMonth,     'sub' => abs($completedGrowthPct) . '% vs last month', 'trend' => $completedGrowthPct < 0 ? 'down' : 'up'],
     ['icon' => 'bi-clipboard2-pulse-fill',     'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E', 'label' => 'Total X-ray Exams',      'value' => count($xrayDocs),        'sub' => 'All-time', 'trend' => 'up'],
 ];
 

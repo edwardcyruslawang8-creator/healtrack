@@ -3,7 +3,7 @@
  * =====================================================================
  * GIS Mapping — Data (patient/gis.php)
  * ---------------------------------------------------------------------
- * $gisSummary, $topDiseases, and $healthTrend are real, computed from
+ * $gisSummary, $topDiseases, $healthTrend, and $seasonalOverview are real, computed from
  * Firestore — see includes/public/gis_data_firestore.php's header
  * comment for exactly how (reuses hc_disease_demand_forecast()'s own
  * real notifiable-disease keyword matching). The date-range dropdown
@@ -46,6 +46,7 @@ $gisOverview = hc_gis_disease_overview($gisRange);
 $gisSummary = $gisOverview['gisSummary'];
 $topDiseases = $gisOverview['topDiseases'];
 $healthTrend = $gisOverview['healthTrend'];
+$seasonalOverview = $gisOverview['seasonalOverview'];
 
 // Real, admin-pinned facility locations (admin/facility_management.php's
 // Add Facility map picker) — see includes/firestore/facilities.php's

@@ -141,6 +141,7 @@ $inventoryTotalCount = count($allInventoryItems);
 $inStockCount = count(array_filter($allInventoryItems, fn ($m) => $m['status'] === 'available'));
 $lowStockCount = count(array_filter($allInventoryItems, fn ($m) => $m['status'] === 'low'));
 $outOfStockCount = count(array_filter($allInventoryItems, fn ($m) => $m['status'] === 'unavailable'));
+$overstockedCount = count(array_filter($allInventoryItems, fn ($m) => $m['status'] === 'overstocked'));
 $expiringSoonCount = count(array_filter($allInventoryItems, fn ($m) => $m['expiryDateRaw'] && strtotime($m['expiryDateRaw']) <= $expiringSoonThreshold));
 
 $pct = fn (int $n) => $inventoryTotalCount > 0 ? round($n / $inventoryTotalCount * 100, 1) : 0;
@@ -153,6 +154,7 @@ $inventoryStatCards = [
     ['icon' => 'bi-box-seam-fill',              'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E', 'label' => 'In Stock Items',             'value' => $inStockCount,  'sub' => $pct($inStockCount) . '% of total items'],
     ['icon' => 'bi-exclamation-triangle-fill',  'iconBg' => '#FDECDD', 'iconColor' => '#E8710A', 'label' => 'Low Stock Items',            'value' => $lowStockCount, 'sub' => $pct($lowStockCount) . '% of total items'],
     ['icon' => 'bi-box-fill',                   'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'label' => 'Out of Stock Items',         'value' => $outOfStockCount, 'sub' => $pct($outOfStockCount) . '% of total items'],
+    ['icon' => 'bi-box-seam',                   'iconBg' => '#E3F6FB', 'iconColor' => '#12A6C6', 'label' => 'Overstocked Items',          'value' => $overstockedCount, 'sub' => $pct($overstockedCount) . '% of total items'],
     ['icon' => 'bi-clock-history',               'iconBg' => '#F1E8FD', 'iconColor' => '#8B5CF6', 'label' => 'Expiring Soon (≤30 days)', 'value' => $expiringSoonCount, 'sub' => $pct($expiringSoonCount) . '% of total items'],
 ];
 
@@ -166,6 +168,7 @@ $inventoryStatusOverview = [
     ['label' => 'In Stock',                'value' => $inStockCount,     'pct' => $pct($inStockCount),     'color' => '#1E8E3E'],
     ['label' => 'Low Stock',                'value' => $lowStockCount,    'pct' => $pct($lowStockCount),    'color' => '#E8710A'],
     ['label' => 'Out of Stock',             'value' => $outOfStockCount,  'pct' => $pct($outOfStockCount),  'color' => '#D93025'],
+    ['label' => 'Overstocked',              'value' => $overstockedCount, 'pct' => $pct($overstockedCount), 'color' => '#12A6C6'],
     ['label' => 'Expiring Soon (≤30 days)', 'value' => $expiringSoonCount,'pct' => $pct($expiringSoonCount),'color' => '#8B5CF6'],
 ];
 $inventoryStatusOverviewTotal = $inventoryTotalCount ?: 1;

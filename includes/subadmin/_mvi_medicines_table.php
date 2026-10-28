@@ -51,6 +51,7 @@
                     data-med-stock="<?= (int) $med['currentStock'] ?>"
                     data-med-min-level="<?= (int) $med['minLevel'] ?>"
                     data-med-reorder-level="<?= (int) $med['reorderLevel'] ?>"
+                    data-med-max-level="<?= (int) $med['maxLevel'] ?>"
                     data-med-desc="<?= htmlspecialchars($med['desc']) ?>"
                     data-med-status-label="<?= htmlspecialchars($status['label']) ?>"
                 >

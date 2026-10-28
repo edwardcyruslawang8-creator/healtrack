@@ -16,6 +16,7 @@
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/consultations.php';
+require_once __DIR__ . '/../shared/analytics_comparison.php'; // hc_facility_growth_pct()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -40,13 +41,16 @@ $myConsultations = array_values(array_filter($allConsultations, fn ($c) => $c['a
 // KPI cards
 // ---------------------------------------------------------------------
 $thisMonthPrefix = date('Y-m');
+$lastMonthPrefix = date('Y-m', strtotime('first day of last month'));
 $completedThisMonth = count(array_filter($myConsultations, fn ($c) => $c['status'] === 'completed' && str_starts_with($c['dateTime'], $thisMonthPrefix)));
+$completedLastMonth = count(array_filter($myConsultations, fn ($c) => $c['status'] === 'completed' && str_starts_with($c['dateTime'], $lastMonthPrefix)));
+$completedGrowthPct = hc_facility_growth_pct($completedThisMonth, $completedLastMonth);
 $pendingCount = count(array_filter($myConsultations, fn ($c) => $c['status'] === 'pending'));
 $followUpsScheduled = count(array_filter($myConsultations, fn ($c) => ($c['nextFollowUp'] ?? '') !== ''));
 
 $kpiCards = [
     ['icon' => 'bi-calendar2-heart-fill', 'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'label' => 'My Total Consultations', 'value' => count($myConsultations), 'sub' => 'All-time',       'trend' => 'up'],
-    ['icon' => 'bi-check-circle-fill',    'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E', 'label' => 'Completed This Month',   'value' => $completedThisMonth,      'sub' => date('F Y'),    'trend' => 'up'],
+    ['icon' => 'bi-check-circle-fill',    'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E', 'label' => 'Completed This Month',   'value' => $completedThisMonth,      'sub' => abs($completedGrowthPct) . '% vs last month', 'trend' => $completedGrowthPct < 0 ? 'down' : 'up'],
     ['icon' => 'bi-hourglass-split',      'iconBg' => '#FEF3C7', 'iconColor' => '#B45309', 'label' => 'Pending',                'value' => $pendingCount,             'sub' => 'Awaiting',     'trend' => 'up'],
     ['icon' => 'bi-arrow-repeat',         'iconBg' => '#E8F0FE', 'iconColor' => '#1A73E8', 'label' => 'Follow-ups Scheduled',   'value' => $followUpsScheduled,       'sub' => 'Upcoming',     'trend' => 'up'],
 ];

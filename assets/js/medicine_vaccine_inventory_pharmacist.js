@@ -128,6 +128,7 @@ document.addEventListener('DOMContentLoaded', function () {
             stockExpiryReadonlyNote.classList.remove('d-none');
             document.getElementById('amMinLevel').value = d.medMinLevel;
             document.getElementById('amReorderLevel').value = d.medReorderLevel;
+            document.getElementById('amMaxLevel').value = (d.medMaxLevel && d.medMaxLevel !== '0') ? d.medMaxLevel : '';
             document.getElementById('amDesc').value = d.medDesc || '';
 
             submitBtn.disabled = false;
@@ -177,6 +178,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 currentStock: document.getElementById('amCurrentStock').value,
                 minLevel: document.getElementById('amMinLevel').value,
                 reorderLevel: document.getElementById('amReorderLevel').value,
+                maxLevel: document.getElementById('amMaxLevel').value,
                 desc: document.getElementById('amDesc').value.trim(),
             };
             if (isEdit) payload.id = idInput.value;
@@ -230,6 +232,13 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('vmStock').textContent = d.medStock;
             document.getElementById('vmMinLevel').textContent = d.medMinLevel;
             document.getElementById('vmReorderLevel').textContent = d.medReorderLevel;
+            const vmMaxLevelRow = document.getElementById('vmMaxLevelRow');
+            if (d.medMaxLevel && d.medMaxLevel !== '0') {
+                document.getElementById('vmMaxLevel').textContent = d.medMaxLevel;
+                vmMaxLevelRow.classList.remove('d-none');
+            } else {
+                vmMaxLevelRow.classList.add('d-none');
+            }
             document.getElementById('vmExpiry').textContent = d.medExpiryDisplay || d.medExpiry;
             document.getElementById('vmStatus').textContent = d.medStatusLabel || '';
             const descRow = document.getElementById('vmDescRow');
@@ -665,6 +674,13 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('mmStock').textContent = d.medStock;
             document.getElementById('mmMinLevel').textContent = d.medMinLevel;
             document.getElementById('mmReorderLevel').textContent = d.medReorderLevel;
+            const mmMaxLevelRow = document.getElementById('mmMaxLevelRow');
+            if (d.medMaxLevel && d.medMaxLevel !== '0') {
+                document.getElementById('mmMaxLevel').textContent = d.medMaxLevel;
+                mmMaxLevelRow.classList.remove('d-none');
+            } else {
+                mmMaxLevelRow.classList.add('d-none');
+            }
             document.getElementById('mmExpiry').textContent = d.medExpiryDisplay || d.medExpiry;
 
             const statusBadge = document.getElementById('mmStatusBadge');

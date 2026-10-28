@@ -19,6 +19,7 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/consultations.php';
+require_once __DIR__ . '/../shared/analytics_comparison.php'; // hc_facility_growth_pct()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -53,12 +54,15 @@ $myConsultations = array_values(array_filter($allConsultations, fn ($c) => $c['c
 // KPI cards
 // ---------------------------------------------------------------------
 $thisMonthPrefix = date('Y-m');
+$lastMonthPrefix = date('Y-m', strtotime('first day of last month'));
 $newPatientsThisMonth = count(array_filter($myPatients, fn ($p) => str_starts_with($p['dateRegistered'], $thisMonthPrefix)));
+$newPatientsLastMonth = count(array_filter($myPatients, fn ($p) => str_starts_with($p['dateRegistered'], $lastMonthPrefix)));
+$newPatientsGrowthPct = hc_facility_growth_pct($newPatientsThisMonth, $newPatientsLastMonth);
 $priorityConsultCount = count(array_filter($myConsultations, fn ($c) => $c['priority'] !== ''));
 
 $kpiCards = [
     ['icon' => 'bi-person-plus-fill',     'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'label' => 'Patients I Registered',  'value' => count($myPatients),      'sub' => 'All-time',    'trend' => 'up'],
-    ['icon' => 'bi-calendar2-check-fill', 'iconBg' => '#FDECDD', 'iconColor' => '#E8710A', 'label' => 'New This Month',         'value' => $newPatientsThisMonth,   'sub' => date('F Y'),   'trend' => 'up'],
+    ['icon' => 'bi-calendar2-check-fill', 'iconBg' => '#FDECDD', 'iconColor' => '#E8710A', 'label' => 'New This Month',         'value' => $newPatientsThisMonth,   'sub' => abs($newPatientsGrowthPct) . '% vs last month', 'trend' => $newPatientsGrowthPct < 0 ? 'down' : 'up'],
     ['icon' => 'bi-calendar2-heart-fill', 'iconBg' => '#E8F0FE', 'iconColor' => '#1A73E8', 'label' => 'Consultations I Set',    'value' => count($myConsultations), 'sub' => 'All-time',    'trend' => 'up'],
     ['icon' => 'bi-exclamation-diamond-fill', 'iconBg' => '#FEF3C7', 'iconColor' => '#B45309', 'label' => 'Priority Consultations', 'value' => $priorityConsultCount, 'sub' => 'Senior / PWD / Pregnant', 'trend' => 'up'],
 ];

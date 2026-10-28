@@ -60,6 +60,7 @@ require_once __DIR__ . '/../firestore/pharmacy_orders.php';
 require_once __DIR__ . '/../firestore/stock_requests.php';
 require_once __DIR__ . '/../shared/forecast_helpers.php'; // hc_last_n_days(), hc_forecast_linear_fit(), hc_forecast_project()
 require_once __DIR__ . '/../shared/predictive_analytics_core.php'; // hc_disease_demand_forecast()/hc_medicine_vaccine_shortage()/hc_inventory_replenishment()/hc_barangay_consultation_trends() — the 4 real predictive categories (6.3.1–6.3.4), called below with THIS facility's own scoped inputs
+require_once __DIR__ . '/../shared/analytics_comparison.php'; // hc_facility_growth_pct()
 
 // ---------------------------------------------------------------------
 // Resolve the selected facility from ?facility_id=...
@@ -110,16 +111,6 @@ $patientTrendRangeOptions = ['daily' => 'Daily', 'weekly' => 'Weekly', 'monthly'
 $patientTrendRange = $_GET['range'] ?? 'daily';
 if (!array_key_exists($patientTrendRange, $patientTrendRangeOptions)) {
     $patientTrendRange = 'daily';
-}
-
-/** Real (this-month vs last-month) percent change — 0 when there's nothing to compare against. */
-function hc_facility_growth_pct(int $thisMonthCount, int $lastMonthCount): float
-{
-    if ($lastMonthCount === 0) {
-        return $thisMonthCount > 0 ? 100.0 : 0.0;
-    }
-
-    return round((($thisMonthCount - $lastMonthCount) / $lastMonthCount) * 100, 1);
 }
 
 /** Real daily counts for the last 8 days (oldest first), from a list of raw ISO date strings. */
@@ -359,8 +350,11 @@ $medicineInventory = [
     'inStock' => count(array_filter($allMedicineItems, fn ($m) => $m['status'] === 'available')),
     'lowStock' => count(array_filter($allMedicineItems, fn ($m) => $m['status'] === 'low')),
     'outOfStock' => count(array_filter($allMedicineItems, fn ($m) => $m['status'] === 'unavailable')),
+    'overstocked' => count(array_filter($allMedicineItems, fn ($m) => $m['status'] === 'overstocked')),
 ];
-$lowMedicines = array_values(array_filter($allMedicineItems, fn ($m) => $m['status'] !== 'available'));
+// 'low'/'unavailable' only — "!== 'available'" would also sweep in
+// 'overstocked' items, which don't belong in a shortage-focused list.
+$lowMedicines = array_values(array_filter($allMedicineItems, fn ($m) => in_array($m['status'], ['low', 'unavailable'], true)));
 usort($lowMedicines, fn ($a, $b) => $a['currentStock'] <=> $b['currentStock']);
 $topLowStockMedicines = array_map(fn ($m) => ['name' => $m['name'], 'stock' => $m['currentStock']], array_slice($lowMedicines, 0, 5));
 $lowStockMedicinesMax = $topLowStockMedicines === [] ? 1 : (max(array_column($topLowStockMedicines, 'stock')) ?: 1);
@@ -368,6 +362,7 @@ $medicineStockDistribution = [
     ['label' => 'In Stock',     'pct' => $medicineInventory['total'] > 0 ? round($medicineInventory['inStock'] / $medicineInventory['total'] * 100, 1) : 0, 'color' => '#1E8E3E'],
     ['label' => 'Low Stock',    'pct' => $medicineInventory['total'] > 0 ? round($medicineInventory['lowStock'] / $medicineInventory['total'] * 100, 1) : 0, 'color' => '#E8710A'],
     ['label' => 'Out of Stock', 'pct' => $medicineInventory['total'] > 0 ? round($medicineInventory['outOfStock'] / $medicineInventory['total'] * 100, 1) : 0, 'color' => '#D93025'],
+    ['label' => 'Overstocked',  'pct' => $medicineInventory['total'] > 0 ? round($medicineInventory['overstocked'] / $medicineInventory['total'] * 100, 1) : 0, 'color' => '#8B5CF6'],
 ];
 
 // ---------------------------------------------------------------------
@@ -379,6 +374,7 @@ $vaccineInventory = [
     'inStock' => count(array_filter($allVaccineItems, fn ($v) => $v['status'] === 'available')),
     'lowStock' => count(array_filter($allVaccineItems, fn ($v) => $v['status'] === 'low')),
     'outOfStock' => count(array_filter($allVaccineItems, fn ($v) => $v['status'] === 'unavailable')),
+    'overstocked' => count(array_filter($allVaccineItems, fn ($v) => $v['status'] === 'overstocked')),
 ];
 $vaccineStock = array_map(fn ($v) => ['name' => $v['name'], 'stock' => $v['currentStock']], array_slice($allVaccineItems, 0, 5));
 $vaccineStockMax = $vaccineStock === [] ? 1 : (max(array_column($vaccineStock, 'stock')) ?: 1);
@@ -386,6 +382,7 @@ $vaccineStockDistribution = [
     ['label' => 'In Stock',     'pct' => $vaccineInventory['total'] > 0 ? round($vaccineInventory['inStock'] / $vaccineInventory['total'] * 100, 1) : 0, 'color' => '#1E8E3E'],
     ['label' => 'Low Stock',    'pct' => $vaccineInventory['total'] > 0 ? round($vaccineInventory['lowStock'] / $vaccineInventory['total'] * 100, 1) : 0, 'color' => '#E8710A'],
     ['label' => 'Out of Stock', 'pct' => $vaccineInventory['total'] > 0 ? round($vaccineInventory['outOfStock'] / $vaccineInventory['total'] * 100, 1) : 0, 'color' => '#D93025'],
+    ['label' => 'Overstocked',  'pct' => $vaccineInventory['total'] > 0 ? round($vaccineInventory['overstocked'] / $vaccineInventory['total'] * 100, 1) : 0, 'color' => '#8B5CF6'],
 ];
 
 // ---------------------------------------------------------------------
@@ -408,7 +405,7 @@ if ($medCategoryFilter !== 'All' && !in_array($medCategoryFilter, $medicineCateg
 }
 $medicineItemsCard = hc_medicine_filter_by_category($allMedicineItems, $medCategoryFilter);
 $medicineInventoryCard = hc_medicine_status_pills($medicineItemsCard);
-$lowMedicinesCard = array_values(array_filter($medicineItemsCard, fn ($m) => $m['status'] !== 'available'));
+$lowMedicinesCard = array_values(array_filter($medicineItemsCard, fn ($m) => in_array($m['status'], ['low', 'unavailable'], true)));
 usort($lowMedicinesCard, fn ($a, $b) => $a['currentStock'] <=> $b['currentStock']);
 $topLowStockMedicinesCard = array_map(fn ($m) => ['name' => $m['name'], 'stock' => $m['currentStock']], array_slice($lowMedicinesCard, 0, 5));
 $lowStockMedicinesMaxCard = $topLowStockMedicinesCard === [] ? 1 : (max(array_column($topLowStockMedicinesCard, 'stock')) ?: 1);
@@ -437,6 +434,7 @@ $inventorySummary = [
     'inStock' => $medicineInventory['inStock'] + $vaccineInventory['inStock'],
     'lowStock' => $medicineInventory['lowStock'] + $vaccineInventory['lowStock'],
     'outOfStock' => $medicineInventory['outOfStock'] + $vaccineInventory['outOfStock'],
+    'overstocked' => $medicineInventory['overstocked'] + $vaccineInventory['overstocked'],
     'expiringSoonCount' => count(array_filter(array_merge($allMedicineItems, $allVaccineItems), fn ($m) => $m['expiryDateRaw'] !== '' && $m['expiryDateRaw'] <= date('Y-m-d', strtotime('+90 days')))),
     'expiringSoonWindowDays' => 90,
 ];
@@ -795,6 +793,7 @@ $pt1ForecastTrend = $pt1['forecastTrend'];
 $pt1DiseaseTrend = $pt1['diseaseTrend'];
 $pt1RiskRows = $pt1['riskRows'];
 $pt1Recommendations = $pt1['recommendations'];
+$pt1ConsultVolumeAnomaly = $pt1['consultVolumeAnomaly'];
 
 $allPharmacyOrderDocsForShortage = hc_get_all_pharmacy_order_docs(); // system-wide — see comment above
 $allMedicationDocsForShortage = $firestore->listDocuments('medications');
@@ -883,6 +882,42 @@ usort($poPooledRiskRows, fn ($a, $b) => ($poSeverityOrder[$a['badgeClass']] ?? 3
 $predictiveOverviewTopAlerts = array_slice($poPooledRiskRows, 0, 4);
 
 // ---------------------------------------------------------------------
+// Facility Comparison (6.2.4) — same 4 real metrics as the Overview tab
+// above (Patients/Consultations/Medical Records/Immunizations), just
+// computed once per REAL facility instead of once for the single
+// ?facility_id= selection — same underlying collections/join logic
+// (consultations joined via patientId, the other 3 via their own real
+// "facility" field), read once here rather than once per facility to
+// avoid N redundant Firestore reads.
+// ---------------------------------------------------------------------
+$allPatientsForComparison = hc_get_all_patients_summary();
+$allConsultationsForComparison = hc_get_all_consultations();
+$allRecordDocsForComparison = hc_get_all_medical_record_docs();
+$allVaccineDocsForComparison = array_values(array_filter(
+    hc_get_all_vaccination_record_docs(),
+    fn ($doc) => ($doc['fields']['status'] ?? '') === 'completed'
+));
+
+$facilityComparisonRows = [];
+foreach ($facilities as $f) {
+    $fName = $f['name'];
+    $fPatientIds = array_column(array_filter($allPatientsForComparison, fn ($p) => $p['facility'] === $fName), 'id');
+    $facilityComparisonRows[] = [
+        'name' => $fName,
+        'patients' => count($fPatientIds),
+        'consultations' => count(array_filter($allConsultationsForComparison, fn ($c) => in_array($c['patientId'], $fPatientIds, true))),
+        'records' => count(array_filter($allRecordDocsForComparison, fn ($doc) => ($doc['fields']['facility'] ?? '') === $fName)),
+        'immunizations' => count(array_filter($allVaccineDocsForComparison, fn ($doc) => ($doc['fields']['facility'] ?? '') === $fName)),
+    ];
+}
+$facilityComparisonMetrics = [
+    ['key' => 'patients', 'label' => 'Patients'],
+    ['key' => 'consultations', 'label' => 'Consultations'],
+    ['key' => 'records', 'label' => 'Medical Records'],
+    ['key' => 'immunizations', 'label' => 'Immunizations'],
+];
+
+// ---------------------------------------------------------------------
 // Analytics tabs — Overview and Predictive have real content for now.
 // ---------------------------------------------------------------------
 $analyticsTabs = [
@@ -894,5 +929,6 @@ $analyticsTabs = [
     ['key' => 'staff',     'icon' => 'bi-person-badge-fill', 'label' => 'Staff'],
     ['key' => 'medicines', 'icon' => 'bi-capsule',           'label' => 'Medicines'],
     ['key' => 'vaccines',  'icon' => 'bi-droplet-half',      'label' => 'Vaccines'],
+    ['key' => 'comparison', 'icon' => 'bi-bar-chart-steps',  'label' => 'Facility Comparison'],
     ['key' => 'reports',   'icon' => 'bi-bar-chart-fill',    'label' => 'Reports'],
 ];

@@ -58,6 +58,46 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     })();
 
+    // ---------------------------------------------------------------
+    // Seasonal Patterns bar chart — true calendar-month totals (every
+    // real year on record merged), set inline as window.GIS_SEASONAL —
+    // see includes/shared/predictive_analytics_core.php's
+    // hc_gis_seasonal_overview() header comment. Independent of the
+    // Health Trend chart above (that one's a rolling window; this one
+    // never changes with the date-range dropdown).
+    // ---------------------------------------------------------------
+    (function renderSeasonalChart() {
+        const canvas = document.getElementById('seasonalChart');
+        const seasonal = window.GIS_SEASONAL;
+        if (!canvas || !seasonal || !seasonal.hasData || typeof Chart === 'undefined') return;
+
+        const rootStyle = getComputedStyle(document.documentElement);
+        const gridColor = rootStyle.getPropertyValue('--border-soft').trim() || '#ECEDF3';
+        const tickColor = rootStyle.getPropertyValue('--text-muted').trim() || '#6B7280';
+
+        new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: seasonal.monthlyLabels,
+                datasets: [{
+                    data: seasonal.topCategoryMonthly,
+                    backgroundColor: '#1A73E8',
+                    borderRadius: 4,
+                    maxBarThickness: 22,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
+                    x: { grid: { display: false }, ticks: { color: tickColor } },
+                },
+            },
+        });
+    })();
+
     const mapEl = document.getElementById('gisMap');
     if (!mapEl || typeof L === 'undefined') return; // Leaflet not loaded or not on this page
 

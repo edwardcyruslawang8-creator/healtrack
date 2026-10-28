@@ -54,6 +54,7 @@
           <div class="am-detail-row"><dt>Current Stock</dt><dd id="mmStock"></dd></div>
           <div class="am-detail-row"><dt>Minimum Level</dt><dd id="mmMinLevel"></dd></div>
           <div class="am-detail-row"><dt>Reorder Level</dt><dd id="mmReorderLevel"></dd></div>
+          <div class="am-detail-row" id="mmMaxLevelRow"><dt>Maximum Level</dt><dd id="mmMaxLevel"></dd></div>
           <div class="am-detail-row"><dt>Expiry Date</dt><dd id="mmExpiry"></dd></div>
           <div class="am-detail-row" id="mmDescRow"><dt>Description</dt><dd id="mmDesc"></dd></div>
         </dl>
@@ -105,6 +106,7 @@
           <div class="am-detail-row"><dt>Current Stock</dt><dd id="vmStock"></dd></div>
           <div class="am-detail-row"><dt>Minimum Level</dt><dd id="vmMinLevel"></dd></div>
           <div class="am-detail-row"><dt>Reorder Level</dt><dd id="vmReorderLevel"></dd></div>
+          <div class="am-detail-row" id="vmMaxLevelRow"><dt>Maximum Level</dt><dd id="vmMaxLevel"></dd></div>
           <div class="am-detail-row"><dt>Expiry Date</dt><dd id="vmExpiry"></dd></div>
           <div class="am-detail-row"><dt>Status</dt><dd id="vmStatus"></dd></div>
           <div class="am-detail-row" id="vmDescRow"><dt>Description</dt><dd id="vmDesc"></dd></div>

@@ -21,6 +21,7 @@ require_once __DIR__ . '/../firestore/stock_requests.php';
 require_once __DIR__ . '/../firestore/medicines.php';
 require_once __DIR__ . '/../firestore/pharmacy_orders.php';
 require_once __DIR__ . '/../shared/forecast_helpers.php'; // hc_facility_trend_by_range() — real Daily/Weekly/Monthly range switch for "My Stock Requests Over Time"
+require_once __DIR__ . '/../shared/analytics_comparison.php'; // hc_facility_growth_pct()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myName = $_SESSION['name'] ?? '';
@@ -58,10 +59,20 @@ foreach (array_merge(hc_get_inventory_items('medicine'), hc_get_inventory_items(
 $pendingRequestsCount = count(array_filter($myRequests, fn ($r) => $r['status'] === 'pending'));
 $lowOrOutCount = $inventoryStatusCounts['low'] + $inventoryStatusCounts['unavailable'];
 
+// Real "vs last month" on "Items I Dispensed" — the one KPI card here
+// with a natural monthly reading (real dispensedDate per item, see
+// api/dispense-pharmacy-order.php) — same hc_facility_growth_pct()
+// helper every other role's own copy of this now uses.
+$dispensedThisMonthPrefix = date('Y-m');
+$dispensedLastMonthPrefix = date('Y-m', strtotime('first day of last month'));
+$dispensedThisMonth = count(array_filter($myDispensed, fn ($f) => str_starts_with($f['dispensedDate'] ?? '', $dispensedThisMonthPrefix)));
+$dispensedLastMonth = count(array_filter($myDispensed, fn ($f) => str_starts_with($f['dispensedDate'] ?? '', $dispensedLastMonthPrefix)));
+$dispensedGrowthPct = hc_facility_growth_pct($dispensedThisMonth, $dispensedLastMonth);
+
 $kpiCards = [
     ['icon' => 'bi-box-seam-fill',   'iconBg' => '#E8F0FE', 'iconColor' => '#1A73E8', 'label' => 'My Stock Requests',  'value' => count($myRequests),        'sub' => 'All-time',  'trend' => 'up'],
     ['icon' => 'bi-hourglass-split', 'iconBg' => '#FEF3C7', 'iconColor' => '#B45309', 'label' => 'Pending Requests',   'value' => $pendingRequestsCount,     'sub' => 'Awaiting',  'trend' => 'up'],
-    ['icon' => 'bi-capsule',         'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E', 'label' => 'Items I Dispensed', 'value' => count($myDispensed),       'sub' => 'All-time',  'trend' => 'up'],
+    ['icon' => 'bi-capsule',         'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E', 'label' => 'Items I Dispensed', 'value' => count($myDispensed),       'sub' => abs($dispensedGrowthPct) . '% vs last month', 'trend' => $dispensedGrowthPct < 0 ? 'down' : 'up'],
     ['icon' => 'bi-exclamation-triangle-fill', 'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'label' => 'Low / Out of Stock', 'value' => $lowOrOutCount, 'sub' => 'Facility-wide', 'trend' => 'up'],
 ];
 

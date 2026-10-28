@@ -55,6 +55,11 @@ $desc = trim((string) ($body['desc'] ?? ''));
 $currentStock = $body['currentStock'] ?? null;
 $minLevel = $body['minLevel'] ?? null;
 $reorderLevel = $body['reorderLevel'] ?? null;
+// Optional — blank/omitted means "no ceiling set" (0), same convention
+// as every other optional numeric field here (see hc_inventory_status_for_stock()'s
+// own header comment for why 0 never flags 'overstocked').
+$maxLevel = $body['maxLevel'] ?? '';
+$maxLevel = ($maxLevel === '' || $maxLevel === null) ? 0 : $maxLevel;
 $expiryDate = trim((string) ($body['expiryDate'] ?? ''));
 
 if (!in_array($type, ['medicine', 'vaccine'], true)) {
@@ -63,12 +68,12 @@ if (!in_array($type, ['medicine', 'vaccine'], true)) {
     exit;
 }
 if ($name === '' || $category === '' || $unit === '' || $expiryDate === ''
-    || !is_numeric($currentStock) || !is_numeric($minLevel) || !is_numeric($reorderLevel)) {
+    || !is_numeric($currentStock) || !is_numeric($minLevel) || !is_numeric($reorderLevel) || !is_numeric($maxLevel)) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Please fill out every required field.']);
     exit;
 }
-if ((float) $currentStock < 0 || (float) $minLevel < 0 || (float) $reorderLevel < 0) {
+if ((float) $currentStock < 0 || (float) $minLevel < 0 || (float) $reorderLevel < 0 || (float) $maxLevel < 0) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Stock levels cannot be negative.']);
     exit;
@@ -87,7 +92,8 @@ if (strtotime($expiryDate) < strtotime(date('Y-m-d'))) {
 $currentStock = (int) $currentStock;
 $minLevel = (int) $minLevel;
 $reorderLevel = (int) $reorderLevel;
-$status = hc_inventory_status_for_stock($currentStock, $minLevel);
+$maxLevel = (int) $maxLevel;
+$status = hc_inventory_status_for_stock($currentStock, $minLevel, $maxLevel);
 
 $newId = $firestore->addDocument('medicines', [
     'type' => $type,
@@ -99,6 +105,7 @@ $newId = $firestore->addDocument('medicines', [
     'currentStock' => $currentStock,
     'minLevel' => $minLevel,
     'reorderLevel' => $reorderLevel,
+    'maxLevel' => $maxLevel,
     'expiryDate' => date('Y-m-d', strtotime($expiryDate)),
     'status' => $status,
     'icon' => $type === 'vaccine' ? 'bi-droplet-half' : 'bi-capsule',

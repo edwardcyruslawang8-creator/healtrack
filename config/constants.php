@@ -279,6 +279,7 @@ function hc_pharmacist_all_notification_ids(): array
 
     return array_merge(
         hc_notification_preference_enabled('inventory') ? array_column(hc_get_low_stock_notifications(), 'id') : [],
+        hc_notification_preference_enabled('inventory') ? array_column(hc_get_overstock_notifications(), 'id') : [],
         hc_notification_preference_enabled('inventory') ? array_column(hc_get_medicine_expiry_notifications(), 'id') : [],
         hc_notification_preference_enabled('inventory') ? array_column(hc_get_pending_pharmacy_order_notifications(), 'id') : [],
         array_column(hc_get_decided_stock_request_notifications_for_pharmacist($_SESSION['uid'] ?? ''), 'id'),

@@ -222,8 +222,8 @@ $staffNavItems = [
             <div class="arp-kpi-text">
                 <span class="arp-kpi-label"><?= htmlspecialchars($kpi['label']) ?></span>
                 <span class="arp-kpi-value"><?= number_format($kpi['value']) ?></span>
-                <span class="arp-kpi-trend up">
-                    <i class="bi bi-arrow-up-short"></i> <?= htmlspecialchars($kpi['sub']) ?>
+                <span class="arp-kpi-trend <?= $kpi['trend'] === 'down' ? 'down' : 'up' ?>">
+                    <i class="bi <?= $kpi['trend'] === 'down' ? 'bi-arrow-down-short' : 'bi-arrow-up-short' ?>"></i> <?= htmlspecialchars($kpi['sub']) ?>
                 </span>
             </div>
         </div>

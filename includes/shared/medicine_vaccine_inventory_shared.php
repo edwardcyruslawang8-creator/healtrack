@@ -54,6 +54,7 @@ if (!function_exists('hc_compute_medicine_vaccine_inventory')) {
             'available'   => ['label' => 'In Stock',     'bg' => '#E4F7EA', 'color' => '#1E8E3E'],
             'low'         => ['label' => 'Low Stock',    'bg' => '#FDECDD', 'color' => '#E8710A'],
             'unavailable' => ['label' => 'Out of Stock', 'bg' => '#FCE4E4', 'color' => '#D93025'],
+            'overstocked' => ['label' => 'Overstocked',  'bg' => '#F1E8FD', 'color' => '#8B5CF6'],
         ];
         $medicineStatusMeta['in_stock'] = $medicineStatusMeta['available'];
         $medicineStatusMeta['low_stock'] = $medicineStatusMeta['low'];
@@ -93,6 +94,7 @@ if (!function_exists('hc_compute_medicine_vaccine_inventory')) {
                 'currentStock' => (int) ($fields['currentStock'] ?? 0),
                 'minLevel' => (int) ($fields['minLevel'] ?? 0),
                 'reorderLevel' => (int) ($fields['reorderLevel'] ?? 0),
+                'maxLevel' => (int) ($fields['maxLevel'] ?? 0),
                 'expiryDate' => $fields['expiryDate'] ?? '',
                 'status' => $fields['status'] ?? 'available',
                 'lastUpdated' => $fields['lastUpdated'] ?? '',
@@ -135,7 +137,7 @@ if (!function_exists('hc_compute_medicine_vaccine_inventory')) {
 
         $result['medicineCategoryOptions'] = array_merge(['All Categories'], array_keys($seenCategories));
         $result['vaccineCategoryOptions'] = array_merge(['All Categories'], array_keys($seenVaccineCategories));
-        $result['medicineStatusOptions'] = ['All Status', 'In Stock', 'Low Stock', 'Out of Stock'];
+        $result['medicineStatusOptions'] = ['All Status', 'In Stock', 'Low Stock', 'Out of Stock', 'Overstocked'];
 
         // -------------------------------------------------------------
         // Inventory Summary — real counts over medicines AND vaccines.
@@ -146,6 +148,7 @@ if (!function_exists('hc_compute_medicine_vaccine_inventory')) {
             'inStock' => count(array_filter($allInventory, fn ($i) => $i['status'] === 'available')),
             'lowStock' => count(array_filter($allInventory, fn ($i) => $i['status'] === 'low')),
             'outOfStock' => count(array_filter($allInventory, fn ($i) => $i['status'] === 'unavailable')),
+            'overstocked' => count(array_filter($allInventory, fn ($i) => $i['status'] === 'overstocked')),
         ];
 
         // -------------------------------------------------------------
@@ -154,7 +157,7 @@ if (!function_exists('hc_compute_medicine_vaccine_inventory')) {
         $searchTerm = trim($_GET['q'] ?? '');
         $categoryFilter = $_GET['category'] ?? 'All Categories';
         $statusFilterLabel = $_GET['status'] ?? 'All Status';
-        $statusLabelToKey = ['In Stock' => 'available', 'Low Stock' => 'low', 'Out of Stock' => 'unavailable'];
+        $statusLabelToKey = ['In Stock' => 'available', 'Low Stock' => 'low', 'Out of Stock' => 'unavailable', 'Overstocked' => 'overstocked'];
         $result['searchTerm'] = $searchTerm;
         $result['categoryFilter'] = $categoryFilter;
         $result['statusFilterLabel'] = $statusFilterLabel;

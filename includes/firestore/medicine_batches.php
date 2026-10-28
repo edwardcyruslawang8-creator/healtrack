@@ -176,10 +176,11 @@ if (!function_exists('hc_recompute_medicine_rollup')) {
         }
 
         $minLevel = (int) ($medicineDoc['minLevel'] ?? 0);
+        $maxLevel = (int) ($medicineDoc['maxLevel'] ?? 0);
         $firestore->setDocument('medicines', $medicineId, array_merge($medicineDoc, [
             'currentStock' => $totalStock,
             'expiryDate' => $soonestExpiryRaw !== '' ? $soonestExpiryRaw : ($medicineDoc['expiryDate'] ?? null),
-            'status' => hc_inventory_status_for_stock($totalStock, $minLevel),
+            'status' => hc_inventory_status_for_stock($totalStock, $minLevel, $maxLevel),
             'lastUpdated' => date('c'),
         ]));
     }

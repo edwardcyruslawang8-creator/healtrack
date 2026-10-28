@@ -75,21 +75,24 @@ if (!function_exists('hc_predictive_severity_meta')) {
 // 6.3.1 — Disease & Service Demand Forecast
 // =======================================================================
 
-if (!function_exists('hc_disease_demand_forecast')) {
+if (!function_exists('hc_notifiable_disease_categories')) {
     /**
-     * @param array $medicalRecordDocs Raw medical_records docs (type=consultation only), already scoped by the caller (system-wide or one facility's own).
-     * @param array $consultations hc_get_all_consultations()-shaped rows, same scoping as $medicalRecordDocs.
-     * @param array $patientBarangayById patientId => real barangay string.
+     * Notifiable/communicable-disease keyword categories — Philippine
+     * primary-care-relevant, matched case-insensitively as a substring
+     * against a medical_records doc's diagnosis + chiefComplaint text
+     * combined. Chronic/non-communicable conditions (hypertension,
+     * diabetes, etc.) are deliberately NOT here — this is specifically
+     * about outbreak-relevant, community-spread conditions. Factored
+     * out of hc_disease_demand_forecast() below so
+     * hc_gis_seasonal_overview() (and hc_disease_contributing_factors()'
+     * own keys) share this exact same category list instead of each
+     * carrying their own copy that could drift out of sync.
+     *
+     * @return array<string, array<int, string>>
      */
-    function hc_disease_demand_forecast(array $medicalRecordDocs, array $consultations, array $patientBarangayById): array
+    function hc_notifiable_disease_categories(): array
     {
-        // Notifiable/communicable-disease keyword categories — Philippine
-        // primary-care-relevant, matched case-insensitively as a substring
-        // against each doc's diagnosis + chiefComplaint text combined.
-        // Chronic/non-communicable conditions (hypertension, diabetes, etc.)
-        // are deliberately NOT here — this is specifically about
-        // outbreak-relevant, community-spread conditions.
-        $keywordCategories = [
+        return [
             'Dengue' => ['dengue'],
             'Influenza-like Illness' => ['influenza', 'flu-like', ' flu ', 'flu,'],
             'Acute Gastroenteritis / Diarrhea' => ['gastroenteritis', 'diarrhea', 'diarrhoea'],
@@ -105,6 +108,53 @@ if (!function_exists('hc_disease_demand_forecast')) {
             'Mumps' => ['mumps'],
             'Pertussis (Whooping Cough)' => ['pertussis', 'whooping cough'],
         ];
+    }
+}
+
+if (!function_exists('hc_disease_contributing_factors')) {
+    /**
+     * Real, documented public-health "commonly associated with" factors
+     * per notifiable-disease category (hc_notifiable_disease_categories()'
+     * own keys) — standard epidemiological knowledge, not inferred or
+     * data-mined causation (this app has no environmental/behavioral
+     * risk-factor data to correlate against). Surfaced as a short
+     * "Likely contributing factors" note wherever a disease risk alert
+     * already renders (GIS Mapping's Top Diseases list, Predictive
+     * Analytics' risk alert rows) — a reference annotation, not a new
+     * computation.
+     *
+     * @return array<string, string>
+     */
+    function hc_disease_contributing_factors(): array
+    {
+        return [
+            'Dengue' => 'Stagnant water and mosquito breeding sites, especially after rainfall.',
+            'Influenza-like Illness' => 'Close indoor contact and crowding, more common during the rainy/cooler months.',
+            'Acute Gastroenteritis / Diarrhea' => 'Contaminated food or water sources, poor sanitation.',
+            'Measles' => 'Low vaccination coverage in the affected area and close person-to-person contact.',
+            'Chickenpox' => 'Close contact in schools/households; spreads easily among unvaccinated children.',
+            'Leptospirosis' => 'Floodwater exposure and contact with rodent urine-contaminated water or soil.',
+            'Typhoid Fever' => 'Contaminated drinking water or food, often linked to inadequate sanitation.',
+            'Pneumonia' => 'Air pollution, indoor smoke exposure, and crowding, often following a respiratory infection.',
+            'COVID-19' => 'Close indoor contact and crowding, consistent with known transmission patterns.',
+            'Tuberculosis' => 'Prolonged close contact with an infected person, often worsened by crowded living conditions.',
+            'Hand-Foot-Mouth Disease' => 'Close contact among young children, common in daycare/school settings.',
+            'Conjunctivitis (Sore Eyes)' => 'Direct contact or shared contaminated surfaces/objects; spreads quickly in households and schools.',
+            'Mumps' => 'Low vaccination coverage and close contact through saliva/respiratory droplets.',
+            'Pertussis (Whooping Cough)' => 'Low vaccination coverage, particularly among infants and young children.',
+        ];
+    }
+}
+
+if (!function_exists('hc_disease_demand_forecast')) {
+    /**
+     * @param array $medicalRecordDocs Raw medical_records docs (type=consultation only), already scoped by the caller (system-wide or one facility's own).
+     * @param array $consultations hc_get_all_consultations()-shaped rows, same scoping as $medicalRecordDocs.
+     * @param array $patientBarangayById patientId => real barangay string.
+     */
+    function hc_disease_demand_forecast(array $medicalRecordDocs, array $consultations, array $patientBarangayById): array
+    {
+        $keywordCategories = hc_notifiable_disease_categories();
 
         $notifiableCases = []; // [['date' => Y-m-d, 'category' => ..., 'barangay' => ...], ...]
         foreach ($medicalRecordDocs as $doc) {
@@ -169,6 +219,37 @@ if (!function_exists('hc_disease_demand_forecast')) {
         usort($riskAlerts, fn ($a, $b) => array_search($a['severity'], ['critical', 'elevated', 'watch']) <=> array_search($b['severity'], ['critical', 'elevated', 'watch']));
         $barangaysUnderWatch = count(array_unique(array_column($riskAlerts, 'barangay')));
 
+        // Real statistical anomaly flag — alongside (not instead of) the
+        // fixed-threshold severity tiers above. For every barangay+
+        // category pair already risk-flagged, computes that SAME pair's
+        // own 30-day historical daily mean + standard deviation (the 30
+        // real days BEFORE the most recent 7, plain PHP array math, no
+        // library), then flags 'anomaly' => true when the most recent
+        // 7-day daily average sits more than ~2 standard deviations above
+        // that pair's own baseline — a genuine statistical outlier check,
+        // not just "the raw count crossed a fixed number".
+        foreach ($riskAlerts as &$alert) {
+            $pairDates = array_column(array_values(array_filter(
+                $notifiableCases,
+                fn ($c) => $c['barangay'] === $alert['barangay'] && $c['category'] === $alert['category']
+            )), 'date');
+
+            $baselineDaily = [];
+            for ($i = 37; $i >= 8; $i--) {
+                $day = date('Y-m-d', strtotime("-$i days"));
+                $baselineDaily[] = count(array_filter($pairDates, fn ($d) => $d === $day));
+            }
+            $baselineMean = array_sum($baselineDaily) / count($baselineDaily);
+            $baselineVariance = array_sum(array_map(fn ($v) => ($v - $baselineMean) ** 2, $baselineDaily)) / count($baselineDaily);
+            $baselineSD = sqrt($baselineVariance);
+
+            $recentAvg = count(array_filter($pairDates, fn ($d) => $d >= $cutoff7)) / 7;
+            $alert['anomaly'] = $baselineSD > 0
+                ? $recentAvg > $baselineMean + (2 * $baselineSD)
+                : $recentAvg > $baselineMean;
+        }
+        unset($alert);
+
         // Consultation-volume forecast — the real "consultations"
         // collection (actual visits), not the diagnosis-text mining above.
         $consultDaily30 = hc_last_n_days(array_column($consultations, 'dateTime'), 30);
@@ -176,6 +257,21 @@ if (!function_exists('hc_disease_demand_forecast')) {
         $consultForecast7 = hc_forecast_project($consultFit, 30, 7);
         $consultForecastTotal = array_sum($consultForecast7);
         $consultPast7Total = array_sum(array_slice($consultDaily30['values'], -7));
+
+        // Real statistical anomaly flag on consultation VOLUME itself —
+        // same baseline-mean/standard-deviation method as the per-
+        // barangay+category check above, applied to the real daily
+        // consultation counts already computed just above (the first 23
+        // of the last 30 real days as the baseline, the most recent 7 as
+        // "recent").
+        $consultBaselineDaily = array_slice($consultDaily30['values'], 0, 23);
+        $consultBaselineMean = array_sum($consultBaselineDaily) / count($consultBaselineDaily);
+        $consultBaselineVariance = array_sum(array_map(fn ($v) => ($v - $consultBaselineMean) ** 2, $consultBaselineDaily)) / count($consultBaselineDaily);
+        $consultBaselineSD = sqrt($consultBaselineVariance);
+        $consultRecentAvg = $consultPast7Total / 7;
+        $consultVolumeAnomaly = $consultBaselineSD > 0
+            ? $consultRecentAvg > $consultBaselineMean + (2 * $consultBaselineSD)
+            : $consultRecentAvg > $consultBaselineMean;
 
         $consultDaily14 = hc_last_n_days(array_column($consultations, 'dateTime'), 14);
         $forecastTrend = [
@@ -224,12 +320,100 @@ if (!function_exists('hc_disease_demand_forecast')) {
             ];
         }
 
-        $riskRows = array_map(function ($a) {
+        $contributingFactorsMap = hc_disease_contributing_factors();
+        $riskRows = array_map(function ($a) use ($contributingFactorsMap) {
             $meta = hc_predictive_severity_meta($a['severity']);
-            return $meta + ['label' => 'Barangay ' . $a['barangay'], 'desc' => $a['category'], 'value' => $a['count14']];
+            return $meta + ['label' => 'Barangay ' . $a['barangay'], 'desc' => $a['category'], 'value' => $a['count14'], 'anomaly' => $a['anomaly'], 'causes' => $contributingFactorsMap[$a['category']] ?? ''];
         }, $riskAlerts);
 
-        return compact('notifiableCases', 'casesLast14', 'riskAlerts', 'barangaysUnderWatch', 'consultFit', 'consultForecastTotal', 'consultPast7Total', 'forecastTrend', 'diseaseTrend', 'predictionCards', 'recommendations', 'riskRows');
+        return compact('notifiableCases', 'casesLast14', 'riskAlerts', 'barangaysUnderWatch', 'consultFit', 'consultForecastTotal', 'consultPast7Total', 'forecastTrend', 'diseaseTrend', 'predictionCards', 'recommendations', 'riskRows', 'consultVolumeAnomaly');
+    }
+}
+
+if (!function_exists('hc_gis_seasonal_overview')) {
+    /**
+     * True calendar-seasonality view — NOT another rolling window like
+     * every other date-range control in this app (see
+     * includes/public/gis_data_firestore.php's hc_gis_date_range_spec()
+     * header comment). Buckets every real notifiable-disease case by its
+     * CALENDAR month (Jan-Dec, every available year merged into the same
+     * 12 buckets) and by Philippine rainy season (Jun-Nov) vs dry season
+     * (Dec-May), so a facility can see e.g. "Dengue cases consistently
+     * peak in Aug-Sep" instead of only ever seeing a trailing N-day
+     * count.
+     *
+     * @param array $notifiableCases hc_disease_demand_forecast()'s own
+     *              all-time 'notifiableCases' return value (every real
+     *              matched case, every year on record) — re-used rather
+     *              than re-matched here, so this always agrees exactly
+     *              with every other real disease count this app shows.
+     * @return array{hasData: bool, monthlyLabels: array, monthlyTotals: array, topCategory: ?string, topCategoryMonthly: array, seasonCompare: array}
+     */
+    function hc_gis_seasonal_overview(array $notifiableCases): array
+    {
+        $rainyMonths = [6, 7, 8, 9, 10, 11]; // Jun-Nov, the standard Philippine rainy-season split
+
+        $monthTotals = array_fill(1, 12, 0);
+        $categoryMonthTotals = [];
+        $categoryTotals = [];
+        $rainyCounts = [];
+        $dryCounts = [];
+
+        foreach ($notifiableCases as $c) {
+            if ($c['date'] === '') {
+                continue;
+            }
+            $ts = strtotime($c['date']);
+            if ($ts === false) {
+                continue;
+            }
+            $month = (int) date('n', $ts);
+            $category = $c['category'];
+
+            $monthTotals[$month]++;
+            $categoryMonthTotals[$category] ??= array_fill(1, 12, 0);
+            $categoryMonthTotals[$category][$month]++;
+            $categoryTotals[$category] = ($categoryTotals[$category] ?? 0) + 1;
+
+            if (in_array($month, $rainyMonths, true)) {
+                $rainyCounts[$category] = ($rainyCounts[$category] ?? 0) + 1;
+            } else {
+                $dryCounts[$category] = ($dryCounts[$category] ?? 0) + 1;
+            }
+        }
+
+        arsort($categoryTotals);
+        $topCategory = array_key_first($categoryTotals);
+
+        $monthlyLabels = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $monthlyLabels[] = date('M', mktime(0, 0, 0, $m, 1));
+        }
+        $topCategoryMonthly = $topCategory !== null ? array_values($categoryMonthTotals[$topCategory]) : array_fill(0, 12, 0);
+
+        // Rainy-vs-dry is a raw case-count comparison (not a per-day
+        // rate) — both halves of the year are an equal 6 months long, so
+        // a raw count is already an honest comparison.
+        $seasonCompare = [];
+        foreach ($categoryTotals as $category => $total) {
+            $rainy = $rainyCounts[$category] ?? 0;
+            $dry = $dryCounts[$category] ?? 0;
+            $seasonCompare[] = [
+                'category' => $category,
+                'rainy' => $rainy,
+                'dry' => $dry,
+                'moreIn' => $rainy === $dry ? 'even' : ($rainy > $dry ? 'rainy' : 'dry'),
+            ];
+        }
+
+        return [
+            'hasData' => count($notifiableCases) > 0,
+            'monthlyLabels' => $monthlyLabels,
+            'monthlyTotals' => array_values($monthTotals),
+            'topCategory' => $topCategory,
+            'topCategoryMonthly' => $topCategoryMonthly,
+            'seasonCompare' => array_slice($seasonCompare, 0, 5),
+        ];
     }
 }
 

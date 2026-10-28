@@ -44,6 +44,7 @@
                     data-med-stock="<?= (int) $vac['currentStock'] ?>"
                     data-med-min-level="<?= (int) $vac['minLevel'] ?>"
                     data-med-reorder-level="<?= (int) $vac['reorderLevel'] ?>"
+                    data-med-max-level="<?= (int) $vac['maxLevel'] ?>"
                     data-med-desc="<?= htmlspecialchars($vac['desc']) ?>"
                     data-med-status-label="<?= htmlspecialchars($status['label']) ?>"
                 >

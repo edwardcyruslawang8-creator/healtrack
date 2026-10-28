@@ -294,7 +294,7 @@
    4 pills stacked as plain full-width blocks instead of a row. */
 .an-inv-pills{
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 18px;
 }
@@ -315,6 +315,7 @@
 .an-inv-pill.good .an-inv-pill-value{ color: var(--adm-green); }
 .an-inv-pill.warn .an-inv-pill-value{ color: var(--adm-orange); }
 .an-inv-pill.bad  .an-inv-pill-value{ color: var(--adm-red); }
+.an-inv-pill.surplus .an-inv-pill-value{ color: #8B5CF6; }
 
 .an-inv-split{
   display: grid;
@@ -384,6 +385,11 @@
   gap: 10px;
   margin-bottom: 16px;
 }
+/* Inventory Summary panel's own 5-tile row (adds "Overstocked" to the
+   usual 4) — a dedicated modifier rather than changing .an-summary-tiles
+   itself, since that shared class's other callers (Patients/Records/
+   Services tab headers, etc.) genuinely always render exactly 4 tiles. */
+.an-summary-tiles-5{ grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .an-summary-tile{
   /* Same card treatment as .adm-card elsewhere in this app (white/card
      background, bordered, soft shadow) instead of a flat tinted block —
@@ -403,6 +409,7 @@
 .an-summary-tile.good .an-tile-value{ color: var(--adm-green); }
 .an-summary-tile.warn .an-tile-value{ color: var(--adm-orange); }
 .an-summary-tile.bad  .an-tile-value{ color: var(--adm-red); }
+.an-summary-tile.surplus .an-tile-value{ color: #8B5CF6; }
 
 .an-summary-highlight{
   display: flex;

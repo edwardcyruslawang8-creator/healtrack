@@ -147,4 +147,5 @@ $inventorySummary = [
     'inStock' => count(array_filter($allInventory, fn ($i) => $i['status'] === 'available')),
     'lowStock' => count(array_filter($allInventory, fn ($i) => $i['status'] === 'low')),
     'outOfStock' => count(array_filter($allInventory, fn ($i) => $i['status'] === 'unavailable')),
+    'overstocked' => count(array_filter($allInventory, fn ($i) => $i['status'] === 'overstocked')),
 ];

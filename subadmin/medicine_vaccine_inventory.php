@@ -297,6 +297,15 @@ $adminNavItems = [
                 <span class="mvi-summary-sub">Items out of stock</span>
             </div>
         </div>
+
+        <div class="adm-card mvi-summary-card">
+            <div class="mvi-summary-icon" style="background:#F1E8FD; color:#8B5CF6;"><i class="bi bi-box-seam-fill"></i></div>
+            <div class="mvi-summary-text">
+                <span class="mvi-summary-label">Overstocked</span>
+                <span class="mvi-summary-value"><?= number_format($inventorySummary['overstocked']) ?></span>
+                <span class="mvi-summary-sub">Items above maximum level</span>
+            </div>
+        </div>
     </div>
 
     <!-- ============ MEDICINES / VACCINES TABS ============ -->

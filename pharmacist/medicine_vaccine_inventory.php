@@ -260,6 +260,15 @@ if (!function_exists('mvi_page_url')) {
                 <span class="mvi-summary-sub">Items out of stock</span>
             </div>
         </div>
+
+        <div class="adm-card mvi-summary-card">
+            <div class="mvi-summary-icon" style="background:#F1E8FD; color:#8B5CF6;"><i class="bi bi-box-seam-fill"></i></div>
+            <div class="mvi-summary-text">
+                <span class="mvi-summary-label">Overstocked</span>
+                <span class="mvi-summary-value"><?= number_format($inventorySummary['overstocked']) ?></span>
+                <span class="mvi-summary-sub">Items above maximum level</span>
+            </div>
+        </div>
     </div>
 
     <!-- api/archive-medicine.php's own header comment: an archived item
@@ -348,6 +357,7 @@ if (!function_exists('mvi_page_url')) {
                             data-med-stock="<?= (int) $med['currentStock'] ?>"
                             data-med-min-level="<?= (int) $med['minLevel'] ?>"
                             data-med-reorder-level="<?= (int) $med['reorderLevel'] ?>"
+                            data-med-max-level="<?= (int) $med['maxLevel'] ?>"
                             data-med-desc="<?= htmlspecialchars($med['desc']) ?>"
                             data-med-status-label="<?= htmlspecialchars($status['label']) ?>"
                             data-med-status-bg="<?= htmlspecialchars($status['bg']) ?>"
@@ -470,6 +480,7 @@ if (!function_exists('mvi_page_url')) {
                             data-med-stock="<?= (int) $vac['currentStock'] ?>"
                             data-med-min-level="<?= (int) $vac['minLevel'] ?>"
                             data-med-reorder-level="<?= (int) $vac['reorderLevel'] ?>"
+                            data-med-max-level="<?= (int) $vac['maxLevel'] ?>"
                             data-med-desc="<?= htmlspecialchars($vac['desc']) ?>"
                             data-med-status-label="<?= htmlspecialchars($status['label']) ?>"
                             data-med-status-bg="<?= htmlspecialchars($status['bg']) ?>"

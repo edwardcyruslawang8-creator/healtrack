@@ -437,6 +437,10 @@ $adminNavItems = [
                             <span class="an-inv-pill-label">Out of Stock</span>
                             <span class="an-inv-pill-value" data-pill="outOfStock"><?= number_format($medicineInventoryCard['outOfStock']) ?></span>
                         </div>
+                        <div class="an-inv-pill surplus">
+                            <span class="an-inv-pill-label">Overstocked</span>
+                            <span class="an-inv-pill-value" data-pill="overstocked"><?= number_format($medicineInventoryCard['overstocked']) ?></span>
+                        </div>
                     </div>
 
                     <div class="an-inv-split">
@@ -506,6 +510,10 @@ $adminNavItems = [
                             <span class="an-inv-pill-label">Out of Stock</span>
                             <span class="an-inv-pill-value" data-pill="outOfStock"><?= number_format($vaccineInventoryCard['outOfStock']) ?></span>
                         </div>
+                        <div class="an-inv-pill surplus">
+                            <span class="an-inv-pill-label">Overstocked</span>
+                            <span class="an-inv-pill-value" data-pill="overstocked"><?= number_format($vaccineInventoryCard['overstocked']) ?></span>
+                        </div>
                     </div>
 
                     <div class="an-inv-split">
@@ -547,7 +555,7 @@ $adminNavItems = [
                 <div class="an-card an-summary-panel">
                     <div class="an-card-header"><h3>Inventory Summary</h3></div>
 
-                    <div class="an-summary-tiles">
+                    <div class="an-summary-tiles an-summary-tiles-5">
                         <div class="an-summary-tile">
                             <span class="an-tile-label">Total Items</span>
                             <span class="an-tile-value"><?= number_format($inventorySummary['totalItems']) ?></span>
@@ -563,6 +571,10 @@ $adminNavItems = [
                         <div class="an-summary-tile bad">
                             <span class="an-tile-label">Out of Stock</span>
                             <span class="an-tile-value"><?= number_format($inventorySummary['outOfStock']) ?></span>
+                        </div>
+                        <div class="an-summary-tile surplus">
+                            <span class="an-tile-label">Overstocked</span>
+                            <span class="an-tile-value"><?= number_format($inventorySummary['overstocked']) ?></span>
                         </div>
                     </div>
 
@@ -692,6 +704,9 @@ $adminNavItems = [
                             </div>
                             <?php endforeach; ?>
                         </div>
+                        <?php if ($pt1ConsultVolumeAnomaly): ?>
+                        <p class="pn-anomaly-note"><span class="pn-severity unusual">Unusual</span> Consultation volume over the last 7 days is a statistical outlier — more than 2 standard deviations above this facility's own 30-day baseline.</p>
+                        <?php endif; ?>
                         <div class="an-forecast-row">
                             <div class="an-card">
                                 <div class="an-card-header"><h3>Consultations — Actual vs. Forecast</h3></div>
@@ -722,8 +737,9 @@ $adminNavItems = [
                                     <div class="adm-status-row">
                                         <span class="adm-status-icon" style="background:<?= htmlspecialchars($r['iconBg']) ?>; color:<?= htmlspecialchars($r['iconColor']) ?>;"><i class="bi <?= htmlspecialchars($r['icon']) ?>"></i></span>
                                         <span class="adm-status-body">
-                                            <span class="adm-status-title"><?= htmlspecialchars($r['label']) ?> <span class="pn-severity <?= htmlspecialchars($r['badgeClass']) ?>"><?= htmlspecialchars($r['badge']) ?></span></span>
+                                            <span class="adm-status-title"><?= htmlspecialchars($r['label']) ?> <span class="pn-severity <?= htmlspecialchars($r['badgeClass']) ?>"><?= htmlspecialchars($r['badge']) ?></span><?php if (!empty($r['anomaly'])): ?><span class="pn-severity unusual" title="More than 2 standard deviations above this pair's own 30-day baseline">Unusual</span><?php endif; ?></span>
                                             <span class="adm-status-desc"><?= htmlspecialchars($r['desc']) ?></span>
+                                            <?php if (!empty($r['causes'])): ?><span class="pn-causes-note">Likely contributing factors: <?= htmlspecialchars($r['causes']) ?></span><?php endif; ?>
                                         </span>
                                         <span class="adm-status-number" style="color:<?= htmlspecialchars($r['valueColor']) ?>;"><?= htmlspecialchars((string) $r['value']) ?></span>
                                     </div>
@@ -1218,6 +1234,7 @@ $adminNavItems = [
                 <div class="an-inv-pill good"><span class="an-inv-pill-label">In Stock</span><span class="an-inv-pill-value"><?= number_format($medicineInventory['inStock']) ?></span></div>
                 <div class="an-inv-pill warn"><span class="an-inv-pill-label">Low Stock</span><span class="an-inv-pill-value"><?= number_format($medicineInventory['lowStock']) ?></span></div>
                 <div class="an-inv-pill bad"><span class="an-inv-pill-label">Out of Stock</span><span class="an-inv-pill-value"><?= number_format($medicineInventory['outOfStock']) ?></span></div>
+                <div class="an-inv-pill surplus"><span class="an-inv-pill-label">Overstocked</span><span class="an-inv-pill-value"><?= number_format($medicineInventory['overstocked']) ?></span></div>
             </div>
 
             <div class="an-charts-row" style="grid-template-columns:1fr 1.6fr;">
@@ -1268,6 +1285,7 @@ $adminNavItems = [
                 <div class="an-inv-pill good"><span class="an-inv-pill-label">In Stock</span><span class="an-inv-pill-value"><?= number_format($vaccineInventory['inStock']) ?></span></div>
                 <div class="an-inv-pill warn"><span class="an-inv-pill-label">Low Stock</span><span class="an-inv-pill-value"><?= number_format($vaccineInventory['lowStock']) ?></span></div>
                 <div class="an-inv-pill bad"><span class="an-inv-pill-label">Out of Stock</span><span class="an-inv-pill-value"><?= number_format($vaccineInventory['outOfStock']) ?></span></div>
+                <div class="an-inv-pill surplus"><span class="an-inv-pill-label">Overstocked</span><span class="an-inv-pill-value"><?= number_format($vaccineInventory['overstocked']) ?></span></div>
             </div>
 
             <div class="an-charts-row" style="grid-template-columns:1fr 1fr;">
@@ -1357,6 +1375,41 @@ $adminNavItems = [
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+        <?php elseif ($tab['key'] === 'comparison'): ?>
+
+            <div class="an-card">
+                <div class="an-card-header">
+                    <h3>Facility Comparison</h3>
+                    <span class="an-card-header-note">Every real facility, side by side</span>
+                </div>
+                <?php if ($facilityComparisonRows === []): ?>
+                <p class="adm-table-empty">No facilities on record.</p>
+                <?php else: ?>
+                <div class="adm-table-wrap">
+                    <table class="adm-table">
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <?php foreach ($facilityComparisonRows as $fcRow): ?>
+                                <th><?= htmlspecialchars($fcRow['name']) ?></th>
+                                <?php endforeach; ?>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($facilityComparisonMetrics as $metric): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($metric['label']) ?></td>
+                                <?php foreach ($facilityComparisonRows as $fcRow): ?>
+                                <td><?= number_format($fcRow[$metric['key']]) ?></td>
+                                <?php endforeach; ?>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <?php endif; ?>
             </div>
 
         <?php else: ?>

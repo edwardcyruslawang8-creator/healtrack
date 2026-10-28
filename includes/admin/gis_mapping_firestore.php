@@ -24,7 +24,7 @@
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
-require_once __DIR__ . '/../public/gis-data.php'; // $dateRangeFilterOptions, $selectedDateRange, $gisRange, $gisSummary, $topDiseases, $healthTrend
+require_once __DIR__ . '/../public/gis-data.php'; // $dateRangeFilterOptions, $selectedDateRange, $gisRange, $gisSummary, $topDiseases, $healthTrend, $seasonalOverview
 
 // Read from the PHP session api/session-login.php populated after Firebase sign-in
 // (admin/gis_mapping.php calls session_start() before requiring this file).

@@ -88,6 +88,14 @@
             </div>
           </div>
 
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="am-form-label" for="amMaxLevel">Maximum Level <span class="text-muted fw-normal">(Optional)</span></label>
+              <input type="number" class="form-control am-form-control" id="amMaxLevel" min="0" step="1" placeholder="0">
+              <div class="am-form-help">Stock above this is flagged "Overstocked". Leave blank for no ceiling.</div>
+            </div>
+          </div>
+
           <div class="mb-0">
             <label class="am-form-label" for="amDesc">Description <span class="text-muted fw-normal">(Optional)</span></label>
             <textarea class="form-control am-form-control" id="amDesc" rows="2" placeholder="Brief note about this item"></textarea>

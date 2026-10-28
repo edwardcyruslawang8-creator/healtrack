@@ -103,7 +103,7 @@ if (!function_exists('hc_gis_disease_overview')) {
      *                       volume here is thin enough that this often
      *                       renders "No Data"/empty — that's still an
      *                       honest, real view, not a bug.
-     * @return array{gisSummary: array, topDiseases: array, healthTrend: array, geojson: array}
+     * @return array{gisSummary: array, topDiseases: array, healthTrend: array, geojson: array, seasonalOverview: array}
      */
     function hc_gis_disease_overview(string $range = '1w'): array
     {
@@ -181,6 +181,7 @@ if (!function_exists('hc_gis_disease_overview')) {
         }
         arsort($byCategory);
 
+        $contributingFactors = hc_disease_contributing_factors();
         $topDiseases = [];
         foreach (array_slice($byCategory, 0, 5, true) as $name => $cases) {
             $priorCases = $byCategoryPrior[$name] ?? 0;
@@ -191,8 +192,15 @@ if (!function_exists('hc_gis_disease_overview')) {
                 'percent' => $totalCases > 0 ? round(($cases / $totalCases) * 100, 1) . '%' : '0%',
                 'trend' => $changePct >= 0 ? 'up' : 'down',
                 'change' => abs($changePct) . '%',
+                'causes' => $contributingFactors[$name] ?? '',
             ];
         }
+
+        // Seasonal Patterns — true calendar-month/rainy-vs-dry view, all
+        // real years merged, independent of $range (see
+        // hc_gis_seasonal_overview()'s own header comment for why a
+        // rolling window wouldn't make sense here).
+        $seasonalOverview = hc_gis_seasonal_overview($notifiableCases);
 
         // ---------------------------------------------------------------
         // Health Trend — real notifiable-disease case totals over the
@@ -272,6 +280,6 @@ if (!function_exists('hc_gis_disease_overview')) {
         }
         $geojson = ['type' => 'FeatureCollection', 'features' => $features];
 
-        return compact('gisSummary', 'topDiseases', 'healthTrend', 'geojson');
+        return compact('gisSummary', 'topDiseases', 'healthTrend', 'geojson', 'seasonalOverview');
     }
 }

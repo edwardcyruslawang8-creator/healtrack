@@ -35,6 +35,22 @@
 .pn-severity.critical{ background: var(--adm-red-bg); color: var(--adm-red); }
 .pn-severity.elevated{ background: var(--adm-orange-bg); color: var(--adm-orange); }
 .pn-severity.watch{ background: var(--adm-blue-bg); color: var(--adm-blue); }
+/* Statistical anomaly flag (hc_disease_demand_forecast()'s own
+   'anomaly' key) — a real >2-standard-deviation-above-baseline check,
+   shown alongside (never instead of) the fixed-threshold severity pill
+   above, since the two are independent signals that can agree or not. */
+.pn-severity.unusual{ background: #F1E8FD; color: #8B5CF6; margin-left: 6px; }
+.pn-anomaly-note{
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--adm-text-muted);
+  line-height: 1.5;
+}
+.pn-anomaly-note .pn-severity{ margin-right: 4px; margin-left: 0; }
+/* "Likely contributing factors" line under a Risk & Alert Indicator row
+   — hc_disease_contributing_factors()'s own static reference map, a
+   lookup against data already shown, not a new computation. */
+.pn-causes-note{ display: block; font-size: 11px; color: var(--adm-text-muted); margin-top: 2px; line-height: 1.4; }
 
 /* Barangay ranked list (Tab 4) — .an-inv-row plus a trend arrow after the value. */
 .pn-trend-arrow{ font-size: 13px; margin-left: 4px; }

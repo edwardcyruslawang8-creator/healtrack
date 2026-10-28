@@ -75,6 +75,10 @@ $unit = trim((string) ($body['unit'] ?? ''));
 $desc = trim((string) ($body['desc'] ?? ''));
 $minLevel = $body['minLevel'] ?? null;
 $reorderLevel = $body['reorderLevel'] ?? null;
+// Optional — blank/omitted means "no ceiling set" (0), same convention
+// as api/create-medicine.php's own copy of this.
+$maxLevel = $body['maxLevel'] ?? '';
+$maxLevel = ($maxLevel === '' || $maxLevel === null) ? 0 : $maxLevel;
 
 if ($id === '') {
     http_response_code(422);
@@ -82,12 +86,12 @@ if ($id === '') {
     exit;
 }
 if ($name === '' || $category === '' || $unit === ''
-    || !is_numeric($minLevel) || !is_numeric($reorderLevel)) {
+    || !is_numeric($minLevel) || !is_numeric($reorderLevel) || !is_numeric($maxLevel)) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Please fill out every required field.']);
     exit;
 }
-if ((float) $minLevel < 0 || (float) $reorderLevel < 0) {
+if ((float) $minLevel < 0 || (float) $reorderLevel < 0 || (float) $maxLevel < 0) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Stock levels cannot be negative.']);
     exit;
@@ -102,12 +106,13 @@ if ($existing === null) {
 
 $minLevel = (int) $minLevel;
 $reorderLevel = (int) $reorderLevel;
+$maxLevel = (int) $maxLevel;
 // currentStock is untouched here (real rollup over this item's own
 // batches) — only "status" needs recomputing, since a changed
-// minLevel alone can flip Low Stock/In Stock against the SAME real
-// stock number.
+// minLevel/maxLevel alone can flip Low/In Stock/Overstocked against
+// the SAME real stock number.
 $currentStock = (int) ($existing['currentStock'] ?? 0);
-$status = hc_inventory_status_for_stock($currentStock, $minLevel);
+$status = hc_inventory_status_for_stock($currentStock, $minLevel, $maxLevel);
 
 $updated = array_merge($existing, [
     'name' => $name,
@@ -117,6 +122,7 @@ $updated = array_merge($existing, [
     'desc' => $desc !== '' ? $desc : null,
     'minLevel' => $minLevel,
     'reorderLevel' => $reorderLevel,
+    'maxLevel' => $maxLevel,
     'status' => $status,
     'lastUpdated' => date('c'),
 ]);

@@ -365,6 +365,14 @@
 .disease-rank-row .disease-trend.up{ color: var(--red); }
 .disease-rank-row .disease-trend.down{ color: var(--green); }
 
+.disease-causes-note{
+  margin: -4px 0 10px 32px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.disease-causes-note i{ margin-right: 3px; }
+
 /* -- Map card -- */
 .map-card{
   background: var(--card-white);

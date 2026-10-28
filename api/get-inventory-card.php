@@ -65,7 +65,9 @@ $stockDistribution = hc_medicine_stock_distribution($inventory);
 // card computations already keep, preserved here rather than unified
 // into one generic list style.
 if ($type === 'medicine') {
-    $lowItems = array_values(array_filter($items, fn ($i) => $i['status'] !== 'available'));
+    // 'low'/'unavailable' only — "!== 'available'" would also sweep in
+    // 'overstocked' items, which don't belong in a shortage-focused list.
+    $lowItems = array_values(array_filter($items, fn ($i) => in_array($i['status'], ['low', 'unavailable'], true)));
     usort($lowItems, fn ($a, $b) => $a['currentStock'] <=> $b['currentStock']);
     $list = array_map(fn ($i) => ['name' => $i['name'], 'stock' => $i['currentStock']], array_slice($lowItems, 0, 5));
     $listLabel = 'Top Low Stock Medicines';

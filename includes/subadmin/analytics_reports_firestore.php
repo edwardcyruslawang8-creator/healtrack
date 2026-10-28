@@ -87,7 +87,10 @@ $analyticsTabs = [
 // ---------------------------------------------------------------------
 $analyticsPatients = array_values(array_filter(hc_get_all_patients_summary(), fn ($p) => $p['facility'] === $facilityName));
 $analyticsThisMonthPrefix = date('Y-m');
+$analyticsLastMonthPrefix = date('Y-m', strtotime('first day of last month'));
 $analyticsNewPatientsThisMonth = count(array_filter($analyticsPatients, fn ($p) => str_starts_with($p['dateRegisteredRaw'], $analyticsThisMonthPrefix)));
+$analyticsNewPatientsLastMonth = count(array_filter($analyticsPatients, fn ($p) => str_starts_with($p['dateRegisteredRaw'], $analyticsLastMonthPrefix)));
+$analyticsNewPatientsGrowthPct = hc_facility_growth_pct($analyticsNewPatientsThisMonth, $analyticsNewPatientsLastMonth);
 
 // Real stock requests at THIS facility (real "facility" field), newest first.
 $rawAnalyticsRequests = array_values(array_filter(
@@ -101,16 +104,28 @@ $analyticsDispensedOrders = array_values(array_filter(
     $firestore->listDocuments('pharmacy_orders'),
     fn ($doc) => ($doc['fields']['facility'] ?? '') === $facilityName && ($doc['fields']['status'] ?? '') === 'dispensed'
 ));
+$analyticsDispensedThisMonth = count(array_filter($analyticsDispensedOrders, fn ($doc) => str_starts_with($doc['fields']['dispensedDate'] ?? '', $analyticsThisMonthPrefix)));
+$analyticsDispensedLastMonth = count(array_filter($analyticsDispensedOrders, fn ($doc) => str_starts_with($doc['fields']['dispensedDate'] ?? '', $analyticsLastMonthPrefix)));
+$analyticsDispensedGrowthPct = hc_facility_growth_pct($analyticsDispensedThisMonth, $analyticsDispensedLastMonth);
+
+$analyticsRequestsThisMonth = count(array_filter($rawAnalyticsRequests, fn ($doc) => str_starts_with($doc['fields']['requestedAt'] ?? '', $analyticsThisMonthPrefix)));
+$analyticsRequestsLastMonth = count(array_filter($rawAnalyticsRequests, fn ($doc) => str_starts_with($doc['fields']['requestedAt'] ?? '', $analyticsLastMonthPrefix)));
+$analyticsRequestsGrowthPct = hc_facility_growth_pct($analyticsRequestsThisMonth, $analyticsRequestsLastMonth);
 
 // ---------------------------------------------------------------------
 // KPI summary cards — all 5 real now.
 // ---------------------------------------------------------------------
+// Real "vs last month" % on each card that has a natural monthly
+// comparison (hc_facility_growth_pct(), same helper admin's own
+// Facility Analytics page uses — includes/shared/analytics_comparison.php)
+// instead of the previous hardcoded 'trend' => 'up' on every card
+// regardless of what actually happened.
 $kpiCards = [
     ['icon' => 'bi-people-fill',            'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'label' => 'Total Patients',                    'value' => count($analyticsPatients), 'sub' => 'All registered patients', 'trend' => 'up'],
-    ['icon' => 'bi-person-plus-fill',       'iconBg' => '#FDECDD', 'iconColor' => '#E8710A', 'label' => 'New Patients (This Month)',         'value' => $analyticsNewPatientsThisMonth, 'sub' => date('F Y'), 'trend' => 'up'],
-    ['icon' => 'bi-clipboard2-pulse-fill',  'iconBg' => '#F1E8FD', 'iconColor' => '#8B5CF6', 'label' => 'Patients Registered (This Month)',  'value' => $analyticsNewPatientsThisMonth, 'sub' => date('F Y'), 'trend' => 'up'],
-    ['icon' => 'bi-capsule',                'iconBg' => '#E8F0FE', 'iconColor' => '#1A73E8', 'label' => 'Medicines Dispensed',               'value' => count($analyticsDispensedOrders), 'sub' => 'All time', 'trend' => 'up'],
-    ['icon' => 'bi-cart-fill',              'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'label' => 'Stock Requests',                    'value' => count($rawAnalyticsRequests), 'sub' => 'All time', 'trend' => 'up'],
+    ['icon' => 'bi-person-plus-fill',       'iconBg' => '#FDECDD', 'iconColor' => '#E8710A', 'label' => 'New Patients (This Month)',         'value' => $analyticsNewPatientsThisMonth, 'sub' => abs($analyticsNewPatientsGrowthPct) . '% vs last month', 'trend' => $analyticsNewPatientsGrowthPct < 0 ? 'down' : 'up'],
+    ['icon' => 'bi-clipboard2-pulse-fill',  'iconBg' => '#F1E8FD', 'iconColor' => '#8B5CF6', 'label' => 'Patients Registered (This Month)',  'value' => $analyticsNewPatientsThisMonth, 'sub' => abs($analyticsNewPatientsGrowthPct) . '% vs last month', 'trend' => $analyticsNewPatientsGrowthPct < 0 ? 'down' : 'up'],
+    ['icon' => 'bi-capsule',                'iconBg' => '#E8F0FE', 'iconColor' => '#1A73E8', 'label' => 'Medicines Dispensed',               'value' => count($analyticsDispensedOrders), 'sub' => abs($analyticsDispensedGrowthPct) . '% vs last month', 'trend' => $analyticsDispensedGrowthPct < 0 ? 'down' : 'up'],
+    ['icon' => 'bi-cart-fill',              'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'label' => 'Stock Requests',                    'value' => count($rawAnalyticsRequests), 'sub' => abs($analyticsRequestsGrowthPct) . '% vs last month', 'trend' => $analyticsRequestsGrowthPct < 0 ? 'down' : 'up'],
 ];
 
 // ---------------------------------------------------------------------

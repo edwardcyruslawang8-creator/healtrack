@@ -387,6 +387,9 @@ $adminNavItems = [
                     </div>
                     <?php endforeach; ?>
                 </div>
+                <?php if ($pt1ConsultVolumeAnomaly): ?>
+                <p class="pn-anomaly-note"><span class="pn-severity unusual">Unusual</span> Consultation volume over the last 7 days is a statistical outlier — more than 2 standard deviations above this facility's own 30-day baseline.</p>
+                <?php endif; ?>
                 <div class="an-forecast-row">
                     <div class="an-card">
                         <div class="an-card-header"><h3>Consultations — Actual vs. Forecast</h3></div>
@@ -417,8 +420,9 @@ $adminNavItems = [
                             <div class="adm-status-row">
                                 <span class="adm-status-icon" style="background:<?= htmlspecialchars($r['iconBg']) ?>; color:<?= htmlspecialchars($r['iconColor']) ?>;"><i class="bi <?= htmlspecialchars($r['icon']) ?>"></i></span>
                                 <span class="adm-status-body">
-                                    <span class="adm-status-title"><?= htmlspecialchars($r['label']) ?> <span class="pn-severity <?= htmlspecialchars($r['badgeClass']) ?>"><?= htmlspecialchars($r['badge']) ?></span></span>
+                                    <span class="adm-status-title"><?= htmlspecialchars($r['label']) ?> <span class="pn-severity <?= htmlspecialchars($r['badgeClass']) ?>"><?= htmlspecialchars($r['badge']) ?></span><?php if (!empty($r['anomaly'])): ?><span class="pn-severity unusual" title="More than 2 standard deviations above this pair's own 30-day baseline">Unusual</span><?php endif; ?></span>
                                     <span class="adm-status-desc"><?= htmlspecialchars($r['desc']) ?></span>
+                                    <?php if (!empty($r['causes'])): ?><span class="pn-causes-note">Likely contributing factors: <?= htmlspecialchars($r['causes']) ?></span><?php endif; ?>
                                 </span>
                                 <span class="adm-status-number" style="color:<?= htmlspecialchars($r['valueColor']) ?>;"><?= htmlspecialchars((string) $r['value']) ?></span>
                             </div>

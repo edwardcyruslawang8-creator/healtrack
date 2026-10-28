@@ -139,6 +139,15 @@ $adminNavItems = [
 .ir-compact-table th,
 .ir-compact-table td{ padding: 8px 8px; font-size: 12px; }
 .ir-compact-table .arp-badge{ padding: 3px 8px; font-size: 10px; }
+
+/* 6-up modifier for this page's own Summary Stat Cards row — see the
+   HTML comment above .arp-kpi-row-6's usage for why this doesn't touch
+   the shared 5-up .arp-kpi-row every other role's analytics_reports.php
+   also relies on. */
+.arp-kpi-row-6{ grid-template-columns: repeat(6, 1fr); }
+@media (max-width: 1199.98px){ .arp-kpi-row-6{ grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 991.98px){ .arp-kpi-row-6{ grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 575.98px){ .arp-kpi-row-6{ grid-template-columns: 1fr; } }
 </style>
 </head>
 <body class="adm-body">
@@ -309,9 +318,12 @@ $adminNavItems = [
     <!-- ============ SUMMARY STAT CARDS ============
          Reuses analytics_reports.php's Overview-tab KPI card classes
          verbatim (.adm-card.arp-kpi-card / .arp-kpi-icon / .arp-kpi-text
-         / .arp-kpi-label / .arp-kpi-value / .arp-kpi-trend) — 5 cards
-         fits .arp-kpi-row's native 5-up grid with no override needed. -->
-    <div class="arp-kpi-row">
+         / .arp-kpi-label / .arp-kpi-value / .arp-kpi-trend) — now 6 cards
+         (Overstocked added alongside the original 5), so this page gets
+         its own 6-up grid modifier (.arp-kpi-row-6, inventory_reports.css)
+         rather than changing the shared 5-up .arp-kpi-row every other
+         role's analytics_reports.php also relies on. -->
+    <div class="arp-kpi-row arp-kpi-row-6">
         <?php foreach ($inventoryStatCards as $stat): ?>
         <div class="adm-card arp-kpi-card">
             <div class="arp-kpi-icon" style="background:<?= htmlspecialchars($stat['iconBg']) ?>; color:<?= htmlspecialchars($stat['iconColor']) ?>;">
