@@ -34,6 +34,7 @@ require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/lab_results.php';
 require_once __DIR__ . '/../firestore/consultations.php'; // hc_referral_priority_resolver()
+require_once __DIR__ . '/../firestore/accounts.php'; // hc_user_name_resolver()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -79,6 +80,7 @@ foreach (hc_get_all_patients_summary() as $p) {
 // ---------------------------------------------------------------------
 $referrals = [];
 $resolvePriority = hc_referral_priority_resolver();
+$resolveUserName = hc_user_name_resolver();
 
 foreach (hc_get_all_lab_result_docs() as $doc) {
     $f = $doc['fields'];
@@ -119,8 +121,11 @@ foreach (hc_get_all_lab_result_docs() as $doc) {
         // that existed (and for one nobody was assigned, by choice or
         // because no active medical technologist was on staff at the
         // time) — still shows up in this shared queue either way, this
-        // just surfaces who it's actually meant for.
-        'assignedToName' => $f['assignedToName'] ?? null,
+        // just surfaces who it's actually meant for. Resolved by
+        // assignedToUid to the account's current name, so a
+        // Profile/Settings rename shows up here; the stored
+        // assignedToName is only a fallback.
+        'assignedToName' => $resolveUserName((string) ($f['assignedToUid'] ?? ''), $f['assignedToName'] ?? null),
     ];
 }
 
@@ -197,4 +202,4 @@ if ($referralsTotalPages <= 5) {
 // a referral being picked up/completed elsewhere — which changes
 // what's visible without changing the grand total — is caught too).
 $referralsStatsSignature = $referralsSummary['total'] . ':' . $referralsSummary['lab'];
-$referralsTableSignature = $referralsTotal . ':' . implode(',', array_column($referralRows, 'id'));
+$referralsTableSignature = $referralsTotal . ':' . implode(',', array_column($referralRows, 'id')) . ':' . md5(implode('|', array_map(fn ($r) => (string) $r['assignedToName'], $referralRows)));

@@ -102,6 +102,34 @@ if (!function_exists('hc_email_already_registered')) {
     }
 }
 
+if (!function_exists('hc_user_name_resolver')) {
+    /**
+     * Returns a callable mapping a users/{uid} id to that account's
+     * CURRENT name (the same users/{uid}.name field
+     * api/update-profile-settings.php writes) — so a referral's
+     * "Assigned To" follows a Profile/Settings rename instead of showing
+     * the copy of the name saved on the referral when it was sent. Loads
+     * every users doc once per request. Falls back to $fallback (the
+     * stored name) when the uid is empty or the account no longer exists.
+     *
+     * @return callable(string, ?string): ?string
+     */
+    function hc_user_name_resolver(): callable
+    {
+        global $firestore;
+
+        $namesByUid = [];
+        foreach ($firestore->listDocuments('users') as $doc) {
+            $name = trim((string) ($doc['fields']['name'] ?? ''));
+            if ($name !== '') {
+                $namesByUid[$doc['id']] = $name;
+            }
+        }
+
+        return fn (string $uid, ?string $fallback = null): ?string => $namesByUid[$uid] ?? $fallback;
+    }
+}
+
 if (!function_exists('hc_get_active_staff_by_role')) {
     /**
      * Every real, currently-active users/{uid} account for one $role at

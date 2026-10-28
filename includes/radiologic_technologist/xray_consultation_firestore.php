@@ -18,6 +18,7 @@ require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/xray_results.php';
 require_once __DIR__ . '/../firestore/consultations.php'; // hc_referral_priority_resolver()
+require_once __DIR__ . '/../firestore/accounts.php'; // hc_user_name_resolver()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -63,6 +64,7 @@ foreach (hc_get_all_patients_summary() as $p) {
 // ---------------------------------------------------------------------
 $referrals = [];
 $resolvePriority = hc_referral_priority_resolver();
+$resolveUserName = hc_user_name_resolver();
 
 foreach (hc_get_all_xray_result_docs() as $doc) {
     $f = $doc['fields'];
@@ -87,8 +89,10 @@ foreach (hc_get_all_xray_result_docs() as $doc) {
         // X-ray staff picker. Null for every referral sent before that
         // existed, or one nobody was assigned — still shows up in this
         // shared queue either way, this just surfaces who it's actually
-        // meant for.
-        'assignedToName' => $f['assignedToName'] ?? null,
+        // meant for. Resolved by assignedToUid to the account's current
+        // name, so a Profile/Settings rename shows up here; the stored
+        // assignedToName is only a fallback.
+        'assignedToName' => $resolveUserName((string) ($f['assignedToUid'] ?? ''), $f['assignedToName'] ?? null),
     ];
 }
 
@@ -147,4 +151,4 @@ if ($referralsTotalPages <= 5) {
 // reasoning as includes/medical_technician/lab_xray_consultation_firestore.php's
 // own copy of this comment.
 $referralsStatsSignature = (string) $referralsSummary['total'];
-$referralsTableSignature = $referralsTotal . ':' . implode(',', array_column($referralRows, 'id'));
+$referralsTableSignature = $referralsTotal . ':' . implode(',', array_column($referralRows, 'id')) . ':' . md5(implode('|', array_map(fn ($r) => (string) $r['assignedToName'], $referralRows)));
