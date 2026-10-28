@@ -20,10 +20,13 @@
   font-weight: 600;
   border: 1px solid var(--adm-border);
 }
-.acv-btn-cancel{ background: var(--adm-card); color: var(--adm-red); }
-.acv-btn-cancel:hover{ background: var(--adm-red-bg); }
-.acv-btn-save{ background: var(--adm-red); color: #fff; border-color: var(--adm-red); }
-.acv-btn-save:hover{ background: var(--adm-red-bright-hover); }
+/* Brand maroon (--adm-red-bright, same as .cns-btn-set and the sidebar),
+   not --adm-red, which is the alert/error red. */
+.acv-btn-cancel{ background: var(--adm-card); color: var(--adm-red-bright); }
+.acv-btn-cancel:hover{ background: rgba(91, 10, 10, 0.08); color: var(--adm-red-bright-hover); }
+.acv-btn-save{ background: var(--adm-red-bright); color: #fff; border-color: var(--adm-red-bright); }
+.acv-btn-save:hover{ background: var(--adm-red-bright-hover); border-color: var(--adm-red-bright-hover); color: #fff; }
+.acv-btn-cancel:focus-visible, .acv-btn-save:focus-visible{ outline: none; box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.2); }
 .acv-btn-cancel:disabled, .acv-btn-save:disabled{ opacity: .65; cursor: not-allowed; }
 
 /* -- Patient header card -- */
