@@ -22,17 +22,17 @@
  * same principle as includes/subadmin/user_management_firestore.php's
  * trimmed role list).
  *
- * PLACEHOLDER for "Priority" only — lab_results docs have no priority
- * field yet. Rather than a per-page-load random value, it's inferred
- * deterministically from the doc id (crc32 % 3) so a given record
- * always shows the same priority — a stand-in exactly like $roleMeta's
- * inferred "Department" column, not real data.
+ * "Priority" is the real priority lane (Pregnant/PWD/Senior, or None)
+ * of the consultation each test was ordered from — lab_results docs
+ * have no priority field of their own; see
+ * hc_referral_priority_resolver() in includes/firestore/consultations.php.
  * =====================================================================
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/lab_results.php';
+require_once __DIR__ . '/../firestore/consultations.php'; // hc_referral_priority_resolver()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -52,18 +52,6 @@ $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'We
 $patientsById = [];
 foreach (hc_get_all_patients_summary() as $p) {
     $patientsById[$p['id']] = $p;
-}
-
-/** Deterministic Routine/High/Emergency placeholder — see header comment. */
-function hc_medtech_inferred_priority(string $docId): array
-{
-    $options = [
-        ['label' => 'Routine',   'bg' => '#E4F7EA', 'color' => '#1E8E3E'],
-        ['label' => 'High',      'bg' => '#FCE4E4', 'color' => '#D93025'],
-        ['label' => 'Emergency', 'bg' => '#FDECDD', 'color' => '#E8710A'],
-    ];
-
-    return $options[crc32($docId) % count($options)];
 }
 
 /** Light badge background for a lab_results doc's real resultBadgeColor accent. */
@@ -90,11 +78,12 @@ $statusMeta = [
 // Build the request queue — real lab_results docs across every patient.
 // ---------------------------------------------------------------------
 $allRequests = [];
+$resolvePriority = hc_referral_priority_resolver();
 
 foreach (hc_get_all_lab_result_docs() as $doc) {
     $f = $doc['fields'];
     $patient = $patientsById[$f['patientId'] ?? ''] ?? null;
-    $priority = hc_medtech_inferred_priority($doc['id']);
+    $priority = $resolvePriority($f);
     $allRequests[] = [
         'id' => $doc['id'],
         'type' => 'lab',
@@ -148,11 +137,14 @@ $tabFilteredRequests = $activeTab === 'all'
 // in $allRequests (see header comment).
 // ---------------------------------------------------------------------
 $statusOptions = ['All Status', 'Pending', 'Completed'];
-$priorityOptions = ['All Priority', 'Routine', 'High', 'Emergency'];
+$priorityOptions = hc_referral_priority_filter_options();
 
 $searchTerm = trim($_GET['q'] ?? '');
 $statusFilter = $_GET['status'] ?? 'All Status';
 $priorityFilter = $_GET['priority'] ?? 'All Priority';
+if (!in_array($priorityFilter, $priorityOptions, true)) {
+    $priorityFilter = 'All Priority'; // e.g. an old bookmarked ?priority=Routine from the placeholder days
+}
 $dateFrom = $_GET['from'] ?? '';
 $dateTo = $_GET['to'] ?? '';
 

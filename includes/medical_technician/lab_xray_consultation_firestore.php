@@ -22,9 +22,8 @@
  * "completed", the doc naturally drops off this inbox and continues to
  * show up only in the full Laboratory & X-ray queue/history.
  *
- * Shares the same patient join, deterministic placeholder Priority
- * (see laboratory_xray_firestore.php's header comment for why it's a
- * stand-in), and pagination pattern as that page — this file just
+ * Shares the same patient join, real consultation-derived Priority
+ * (hc_referral_priority_resolver()), and pagination pattern as that page — this file just
  * pre-filters to status === 'pending' and swaps the tab strip for a
  * lighter type filter (?type=all|lab|xray) since a status filter would
  * be meaningless here (everything on this page is pending, by design).
@@ -34,6 +33,7 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/lab_results.php';
+require_once __DIR__ . '/../firestore/consultations.php'; // hc_referral_priority_resolver()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -73,23 +73,12 @@ foreach (hc_get_all_patients_summary() as $p) {
     $patientsById[$p['id']] = $p;
 }
 
-/** Same deterministic Routine/High/Emergency placeholder as laboratory_xray_firestore.php — see that file's header comment. */
-function hc_medtech_lxc_priority(string $docId): array
-{
-    $options = [
-        ['label' => 'Routine',   'bg' => '#E4F7EA', 'color' => '#1E8E3E'],
-        ['label' => 'High',      'bg' => '#FCE4E4', 'color' => '#D93025'],
-        ['label' => 'Emergency', 'bg' => '#FDECDD', 'color' => '#E8710A'],
-    ];
-
-    return $options[crc32($docId) % count($options)];
-}
-
 // ---------------------------------------------------------------------
 // Build the referral inbox — real lab_results docs still pending,
 // across every patient.
 // ---------------------------------------------------------------------
 $referrals = [];
+$resolvePriority = hc_referral_priority_resolver();
 
 foreach (hc_get_all_lab_result_docs() as $doc) {
     $f = $doc['fields'];
@@ -110,7 +99,7 @@ foreach (hc_get_all_lab_result_docs() as $doc) {
         'orderedDateRaw' => $f['orderedDate'] ?? '',
         'date' => isset($f['orderedDate']) && $f['orderedDate'] !== '' ? date('M j, Y', strtotime($f['orderedDate'])) : '—',
         'time' => $f['orderedTime'] ?? '—',
-        'priority' => hc_medtech_lxc_priority($doc['id']),
+        'priority' => $resolvePriority($f),
         // Flags rows whose test is one of the 3 real Lipa City Health
         // Office "SEROLOGY / RAPID IMMUNOCHROMATOGRAPHIC TESTS" paper
         // form's tests (hc_serology_rapid_test_catalog()) — drives the

@@ -17,6 +17,7 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/xray_results.php';
+require_once __DIR__ . '/../firestore/consultations.php'; // hc_referral_priority_resolver()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -55,23 +56,13 @@ foreach (hc_get_all_patients_summary() as $p) {
     $patientsById[$p['id']] = $p;
 }
 
-/** Same deterministic Routine/High/Emergency placeholder as includes/medical_technician/lab_xray_consultation_firestore.php — see that file's header comment. */
-function hc_radiotech_xc_priority(string $docId): array
-{
-    $options = [
-        ['label' => 'Routine',   'bg' => '#E4F7EA', 'color' => '#1E8E3E'],
-        ['label' => 'High',      'bg' => '#FCE4E4', 'color' => '#D93025'],
-        ['label' => 'Emergency', 'bg' => '#FDECDD', 'color' => '#E8710A'],
-    ];
-
-    return $options[crc32($docId) % count($options)];
-}
-
 // ---------------------------------------------------------------------
 // Build the referral inbox — real xray_results docs still pending,
-// across every patient.
+// across every patient. Priority is the real priority lane of the
+// consultation each exam was ordered from (hc_referral_priority_resolver()).
 // ---------------------------------------------------------------------
 $referrals = [];
+$resolvePriority = hc_referral_priority_resolver();
 
 foreach (hc_get_all_xray_result_docs() as $doc) {
     $f = $doc['fields'];
@@ -91,7 +82,7 @@ foreach (hc_get_all_xray_result_docs() as $doc) {
         'orderedDateRaw' => $f['orderedDate'] ?? '',
         'date' => isset($f['orderedDate']) && $f['orderedDate'] !== '' ? date('M j, Y', strtotime($f['orderedDate'])) : '—',
         'time' => $f['orderedTime'] ?? '—',
-        'priority' => hc_radiotech_xc_priority($doc['id']),
+        'priority' => $resolvePriority($f),
         // Real "who the doctor sent this to" — api/complete-consultation.php's
         // X-ray staff picker. Null for every referral sent before that
         // existed, or one nobody was assigned — still shows up in this

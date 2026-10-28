@@ -313,6 +313,45 @@ if (!function_exists('hc_consultation_priority_meta')) {
     }
 }
 
+if (!function_exists('hc_referral_priority_resolver')) {
+    /**
+     * Real "Priority" for lab_results/xray_results referral rows — the
+     * priority lane (Pregnant/PWD/Senior) medical staff set on the
+     * consultation the test was ordered from, found via the doc's
+     * sourceConsultationId (stamped by api/complete-consultation.php).
+     * A doc with no source consultation, or one whose consultation had
+     * no priority, shows a neutral "None" badge. Reads every
+     * consultation once and returns a resolver to call per doc, so a
+     * queue of N referrals costs one Firestore list, not N reads.
+     *
+     * @return callable(array $fields): array{label: string, bg: string, color: string}
+     */
+    function hc_referral_priority_resolver(): callable
+    {
+        $priorityByConsultationId = [];
+        foreach (hc_get_all_consultations() as $c) {
+            $priorityByConsultationId[$c['id']] = $c['priority'];
+        }
+        $meta = hc_consultation_priority_meta();
+        // Short label for the narrow table badge; the full
+        // "Person with Disability (PWD)" stays the form's own wording.
+        $meta['pwd']['label'] = 'PWD';
+
+        return function (array $fields) use ($priorityByConsultationId, $meta): array {
+            $key = $priorityByConsultationId[$fields['sourceConsultationId'] ?? ''] ?? '';
+            return $meta[$key] ?? ['label' => 'None', 'bg' => '#EEF0F3', 'color' => '#6B7280'];
+        };
+    }
+}
+
+if (!function_exists('hc_referral_priority_filter_options')) {
+    /** Priority filter <select> options matching hc_referral_priority_resolver()'s labels. */
+    function hc_referral_priority_filter_options(): array
+    {
+        return ['All Priority', 'Pregnant', 'PWD', 'Senior', 'None'];
+    }
+}
+
 if (!function_exists('hc_get_physician_options')) {
     /**
      * Real doctor accounts (role=doctor only — healthcare_staff are

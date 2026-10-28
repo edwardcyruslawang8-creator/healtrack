@@ -18,7 +18,7 @@
  *
  * CONNECTED to real Firestore data for everything the schema actually
  * models (patient, examination, ordered by, date/time, status);
- * "Priority" is the one placeholder column — see the data file's
+ * "Priority" comes from the source consultation — see the data file's
  * header comment for why.
  * =====================================================================
  */
