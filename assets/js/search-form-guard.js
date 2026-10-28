@@ -37,6 +37,9 @@
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('form[action]').forEach(function (form) {
         if (!form.querySelector('i.bi-search')) return;
+        // Live-search bars (e.g. assets/js/audit-logs-live-search.js) filter
+        // as you type — an empty box just means "show everything" there.
+        if (form.hasAttribute('data-live-search')) return;
 
         var textInputs = form.querySelectorAll('input[type="text"], input[type="search"]');
         if (textInputs.length !== 1) return;

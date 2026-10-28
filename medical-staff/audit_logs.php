@@ -198,7 +198,8 @@ $staffNavItems = [
     </div>
 
     <!-- ============ SEARCH BAR ============ -->
-    <form class="aud-search-bar" method="get" action="audit_logs.php">
+    <!-- Filters live as you type (assets/js/audit-logs-live-search.js). -->
+    <form class="aud-search-bar" method="get" action="audit_logs.php" data-live-search>
         <i class="bi bi-search"></i>
         <input type="text" name="q" value="<?= htmlspecialchars($auditSearchTerm) ?>" placeholder="Search by action, module, or details..." autocomplete="off">
         <input type="hidden" name="module" value="<?= htmlspecialchars($auditModuleFilter) ?>">
@@ -257,7 +258,8 @@ $staffNavItems = [
                 <tbody>
                     <?php if (empty($auditLogs)): ?>
                     <tr>
-                        <td colspan="5" class="adm-table-empty">No audit log entries yet.</td>
+                        <?php $auditFiltersActive = $auditSearchTerm !== '' || $auditModuleFilter !== 'All Modules' || $auditDateFrom !== '' || $auditDateTo !== ''; ?>
+                        <td colspan="5" class="adm-table-empty"><?= $auditFiltersActive ? 'No matching audit logs found.' : 'No audit log entries yet.' ?></td>
                     </tr>
                     <?php endif; ?>
                     <?php foreach ($auditLogs as $log): $meta = resolveActionMeta($actionTypeMeta, $log['action']); ?>
@@ -302,5 +304,6 @@ $staffNavItems = [
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/audit-logs-live-search.js') ?>"></script>
 </body>
 </html>

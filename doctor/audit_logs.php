@@ -196,7 +196,8 @@ $doctorNavItems = [
     </div>
 
     <!-- ============ SEARCH BAR ============ -->
-    <form class="aud-search-bar" method="get" action="audit_logs.php">
+    <!-- Filters live as you type (assets/js/audit-logs-live-search.js). -->
+    <form class="aud-search-bar" method="get" action="audit_logs.php" data-live-search>
         <i class="bi bi-search"></i>
         <!-- Real — fuzzy-matches action/module/details (hc_filter_audit_logs()),
              same algorithm every other real search box in this app uses. Submits
@@ -259,7 +260,8 @@ $doctorNavItems = [
                 <tbody>
                     <?php if (empty($auditLogs)): ?>
                     <tr>
-                        <td colspan="5" class="adm-table-empty">No audit log entries yet.</td>
+                        <?php $auditFiltersActive = $auditSearchTerm !== '' || $auditModuleFilter !== 'All Modules' || $auditDateFrom !== '' || $auditDateTo !== ''; ?>
+                        <td colspan="5" class="adm-table-empty"><?= $auditFiltersActive ? 'No matching audit logs found.' : 'No audit log entries yet.' ?></td>
                     </tr>
                     <?php endif; ?>
                     <?php foreach ($auditLogs as $log): $meta = resolveActionMeta($actionTypeMeta, $log['action']); ?>
@@ -304,5 +306,6 @@ $doctorNavItems = [
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/audit-logs-live-search.js') ?>"></script>
 </body>
 </html>

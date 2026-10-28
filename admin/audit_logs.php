@@ -217,7 +217,8 @@ $adminNavItems = [
     </div>
 
     <!-- ============ SEARCH BAR ============ -->
-    <form class="aud-search-bar" method="get" action="audit_logs.php">
+    <!-- Filters live as you type (assets/js/audit-logs-live-search.js). -->
+    <form class="aud-search-bar" method="get" action="audit_logs.php" data-live-search>
         <i class="bi bi-search"></i>
         <!-- Real — fuzzy-matches user/action/module/details (hc_filter_audit_logs()),
              same algorithm every other real search box in this app uses. Submits
@@ -293,7 +294,8 @@ $adminNavItems = [
                 <tbody>
                     <?php if (empty($auditLogs)): ?>
                     <tr>
-                        <td colspan="6" class="adm-table-empty">No audit log entries yet.</td>
+                        <?php $auditFiltersActive = $auditSearchTerm !== '' || $auditUserFilter !== 'All Users' || $auditModuleFilter !== 'All Modules' || $auditActionFilter !== 'All Actions' || $auditStatusFilter !== 'All Statuses' || $auditDateFrom !== '' || $auditDateTo !== ''; ?>
+                        <td colspan="6" class="adm-table-empty"><?= $auditFiltersActive ? 'No matching audit logs found.' : 'No audit log entries yet.' ?></td>
                     </tr>
                     <?php endif; ?>
                     <?php foreach ($auditLogs as $log): $meta = resolveActionMeta($actionTypeMeta, $log['action']); ?>
@@ -349,6 +351,7 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/audit-logs-live-search.js') ?>"></script>
 <!-- Smooth, no-reload swap for filter/pagination/role-switch clicks
      (assets/js/ajax-report-nav.js) — same mechanism the Analytics &
      Reports pages already use. -->

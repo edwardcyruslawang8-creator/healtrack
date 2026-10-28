@@ -192,7 +192,10 @@ if (!function_exists('hc_filter_audit_logs')) {
         $roleFilter = (string) ($filters['role'] ?? '');
 
         return array_values(array_filter($logs, function ($log) use ($q, $user, $module, $actionLabel, $statusLabel, $dateFrom, $dateTo, $roleFilter) {
-            if ($q !== '' && !hc_fuzzy_match($log['actorName'] . ' ' . $log['action'] . ' ' . $log['module'] . ' ' . $log['details'], $q)) {
+            // Action key's underscores read as spaces, so "logged in"
+            // matches the "Logged In" badge (stored as logged_in); status
+            // (Success/Failed) is searchable too.
+            if ($q !== '' && !hc_fuzzy_match($log['actorName'] . ' ' . str_replace('_', ' ', $log['action']) . ' ' . $log['module'] . ' ' . $log['details'] . ' ' . $log['status'], $q)) {
                 return false;
             }
             if ($user !== '' && $user !== 'All Users' && $log['actorName'] !== $user) {

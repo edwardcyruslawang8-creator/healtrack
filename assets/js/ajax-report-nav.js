@@ -152,6 +152,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const form = e.target;
         if (!(form instanceof HTMLFormElement) || !main.contains(form)) return;
         if ((form.method || 'get').toLowerCase() !== 'get') return;
+        // Live-search bars already update as you type
+        // (assets/js/audit-logs-live-search.js) — Enter has nothing to do.
+        if (form.hasAttribute('data-live-search')) return;
 
         e.preventDefault();
         const params = new URLSearchParams(new FormData(form));
