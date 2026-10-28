@@ -399,10 +399,7 @@ $adminNavItems = [
         <div class="lrd-card-header"><h3>X-ray Findings</h3></div>
 
         <div class="lrd-xray-findings-layout">
-            <div class="lrd-xray-image">
-                <i class="bi bi-lungs"></i>
-                <span>X-ray image preview</span>
-            </div>
+            <?php require __DIR__ . '/../includes/shared/_xray_image_preview.php'; ?>
 
             <div class="lrd-xray-details">
                 <div class="lrd-xray-details-main">

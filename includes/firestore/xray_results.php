@@ -10,6 +10,7 @@
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
+require_once __DIR__ . '/../shared/xray_result_storage.php'; // hc_xray_result_storage_dir()
 
 if (!function_exists('hc_xray_impression_is_normal')) {
     /**
@@ -158,7 +159,35 @@ if (!function_exists('hc_empty_xray_exam')) {
             'orderedDate' => '—', 'orderedTime' => '—', 'completedDate' => '—', 'completedTime' => '—',
             'orderedBy' => '—', 'facility' => '—', 'status' => 'pending',
             'attachedFile' => ['name' => '—', 'size' => '—'],
+            'id' => '', 'preview' => hc_xray_image_preview([]),
         ];
+    }
+}
+
+if (!function_exists('hc_xray_image_preview')) {
+    /**
+     * What laboratory_result_details.php's "X-ray Findings" image box can
+     * actually show for one xray_results doc — the real file
+     * api/complete-xray-result.php uploaded (storedFileName, served back
+     * through api/download-xray-result.php), never a sample image.
+     * 'kind' is 'image' (JPG/PNG), 'pdf', 'missing' (a file is recorded
+     * but isn't in storage/xray_results/ on this server) or 'none'
+     * (nothing was ever uploaded).
+     *
+     * @return array{kind: string}
+     */
+    function hc_xray_image_preview(array $fields): array
+    {
+        $storedFileName = basename((string) ($fields['storedFileName'] ?? ''));
+        if ($storedFileName === '') {
+            return ['kind' => 'none'];
+        }
+        if (!is_file(hc_xray_result_storage_dir() . '/' . $storedFileName)) {
+            return ['kind' => 'missing'];
+        }
+        $ext = strtolower(pathinfo($storedFileName, PATHINFO_EXTENSION));
+
+        return ['kind' => $ext === 'pdf' ? 'pdf' : (in_array($ext, ['jpg', 'jpeg', 'png'], true) ? 'image' : 'missing')];
     }
 }
 
@@ -205,6 +234,8 @@ if (!function_exists('hc_resolve_xray_result')) {
                 'facility' => $xf['facility'],
                 'status' => $xf['status'],
                 'attachedFile' => ['name' => $xf['attachedFileName'], 'size' => $xf['attachedFileSize']],
+                'id' => $selected['id'],
+                'preview' => hc_xray_image_preview($xf),
             ],
             'xrayFindings' => $xf['findings'] ?? [],
             'xrayImpression' => $xf['impression'],
