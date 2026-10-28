@@ -35,7 +35,22 @@ $adminProfile = [
     },
 ];
 
-$facilityOptions = ['North Super Health Center', 'East Super Health Center', 'West Super Health Center'];
+// Real facilities that actually have a sub-administrator to receive a
+// note — not the old hardcoded 3-name list (which still offered East/
+// West Super Health Center as choices even with zero real
+// sub-administrators assigned there, a note nobody could ever see).
+// Derived from the real "users" collection rather than the "facilities"
+// collection itself, since what matters here is "is there someone to
+// actually send this to", not just "does this facility exist".
+$facilitiesWithSubadmins = [];
+foreach ($firestore->listDocuments('users') as $doc) {
+    $f = $doc['fields'];
+    if (($f['role'] ?? '') === 'subadmin' && !empty($f['facility'])) {
+        $facilitiesWithSubadmins[$f['facility']] = true;
+    }
+}
+$facilityOptions = array_keys($facilitiesWithSubadmins);
+sort($facilityOptions);
 $noteFacilityOptions = array_merge(['All Facilities'], $facilityOptions);
 
 $categoryMeta = [

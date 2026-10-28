@@ -19,6 +19,12 @@
  * picker — includes/subadmin/announcements_firestore.php reads this
  * collection back and shows a note when its facility is 'All
  * Facilities' OR matches the signed-in sub-admin's own real facility.
+ *
+ * $validFacilities is derived here the same way
+ * includes/admin/announcements_firestore.php builds the picker itself
+ * (real facility names that actually have a sub-administrator, not a
+ * hardcoded 3-name list) — never trusting the client-submitted
+ * $facility alone just because it looked valid in that dropdown.
  * =====================================================================
  */
 
@@ -41,7 +47,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$validFacilities = ['All Facilities', 'North Super Health Center', 'East Super Health Center', 'West Super Health Center'];
+$facilitiesWithSubadmins = [];
+foreach ($firestore->listDocuments('users') as $doc) {
+    $f = $doc['fields'];
+    if (($f['role'] ?? '') === 'subadmin' && !empty($f['facility'])) {
+        $facilitiesWithSubadmins[$f['facility']] = true;
+    }
+}
+$validFacilities = array_merge(['All Facilities'], array_keys($facilitiesWithSubadmins));
 
 $body = json_decode(file_get_contents('php://input'), true) ?? [];
 
