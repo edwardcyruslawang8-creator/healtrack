@@ -156,6 +156,9 @@
 .acv-tabs .nav-link{ font-size: 13px; font-weight: 600; color: var(--adm-text-muted); border: none; border-bottom: 2px solid transparent; }
 .acv-tabs .nav-link.active{ color: var(--adm-blue); border-bottom-color: var(--adm-blue); background: none; }
 .acv-med-table td{ vertical-align: middle; }
+/* Quantity is a Medications-only column — hidden on the Vaccines tab. */
+.acv-med-table input.acv-med-quantity{ min-width: 64px; }
+.acv-med-table--vaccine .acv-col-qty{ display: none; }
 .acv-med-table input, .acv-med-table select{
   width: 100%;
   border: 1px solid var(--adm-border);

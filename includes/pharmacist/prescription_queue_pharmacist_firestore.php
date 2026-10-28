@@ -97,6 +97,10 @@ foreach (hc_get_all_pharmacy_order_docs() as $doc) {
         'patientName' => $f['patientName'] ?? 'Unknown Patient',
         'itemName' => $itemName,
         'dosage' => $f['dosage'] ?? '—',
+        // Prescribed quantity to dispense (api/complete-consultation.php's
+        // Medications "Quantity" column) — null for older orders and
+        // vaccines.
+        'quantity' => isset($f['quantity']) && (int) $f['quantity'] > 0 ? (int) $f['quantity'] : null,
         'frequency' => $f['frequency'] ?? '—',
         'duration' => $f['duration'] ?? '—',
         'route' => $f['route'] ?? '—',

@@ -385,6 +385,7 @@ $doctorNavItems = [
                                 <th>#</th>
                                 <th>Medicine / Vaccine</th>
                                 <th>Dosage</th>
+                                <th class="acv-col-qty">Quantity</th>
                                 <th>Frequency</th>
                                 <th>Duration</th>
                                 <th>Route</th>

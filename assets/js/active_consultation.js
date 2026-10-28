@@ -202,6 +202,7 @@ document.addEventListener('DOMContentLoaded', function () {
         medRowsBody.querySelectorAll('tr').forEach(function (row) {
             row.style.display = row.dataset.type === activeMedType ? '' : 'none';
         });
+        medRowsBody.closest('table').classList.toggle('acv-med-table--vaccine', activeMedType === 'vaccine');
         renumberVisibleRows();
         updateRemoveButtons();
     }
@@ -225,12 +226,7 @@ document.addEventListener('DOMContentLoaded', function () {
         nameTd.appendChild(nameInput);
         row.appendChild(nameTd);
 
-        [
-            ['dosage', 'acv-med-dosage', 'Dosage'],
-            ['frequency', 'acv-med-frequency', 'Frequency'],
-            ['duration', 'acv-med-duration', 'Duration'],
-            ['route', 'acv-med-route', 'Route'],
-        ].forEach(function (field) {
+        function appendTextCell(field) {
             const td = document.createElement('td');
             const input = document.createElement('input');
             input.type = 'text';
@@ -239,7 +235,30 @@ document.addEventListener('DOMContentLoaded', function () {
             input.value = data[field[0]] || '';
             td.appendChild(input);
             row.appendChild(td);
-        });
+        }
+
+        appendTextCell(['dosage', 'acv-med-dosage', 'Dosage']);
+
+        // Quantity to dispense (total tablets/capsules/bottles…) —
+        // Medications tab only; the column is hidden on the Vaccines
+        // tab (applyTabVisibility()) and never sent for vaccine rows.
+        const qtyTd = document.createElement('td');
+        qtyTd.className = 'acv-col-qty';
+        const qtyInput = document.createElement('input');
+        qtyInput.type = 'number';
+        qtyInput.min = '1';
+        qtyInput.step = '1';
+        qtyInput.className = 'acv-med-quantity';
+        qtyInput.placeholder = 'Qty';
+        qtyInput.value = data.quantity || '';
+        qtyTd.appendChild(qtyInput);
+        row.appendChild(qtyTd);
+
+        [
+            ['frequency', 'acv-med-frequency', 'Frequency'],
+            ['duration', 'acv-med-duration', 'Duration'],
+            ['route', 'acv-med-route', 'Route'],
+        ].forEach(appendTextCell);
 
         // Instructions gets its own auto-growing <textarea> instead of a
         // single-line <input> — free-text notes like "take it every 4
@@ -321,6 +340,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 type: row.dataset.type,
                 name: name,
                 dosage: row.querySelector('.acv-med-dosage').value.trim(),
+                quantity: row.dataset.type === 'medication' ? row.querySelector('.acv-med-quantity').value.trim() : '',
                 frequency: row.querySelector('.acv-med-frequency').value.trim(),
                 duration: row.querySelector('.acv-med-duration').value.trim(),
                 route: row.querySelector('.acv-med-route').value.trim(),
@@ -626,6 +646,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const nextRouting = routingInput ? routingInput.value : '';
         const needsFollowUp = document.getElementById('acvNeedsFollowUp').checked;
         const medications = collectMedications();
+
+        if (medications.some(function (m) { return m.quantity !== '' && !/^[1-9]\d*$/.test(m.quantity); })) {
+            await HCDialog.alert('Please enter a whole number of 1 or more for each medication\'s Quantity.');
+            return;
+        }
 
         if (nextRouting === 'laboratory' && checkedLabTests().length === 0) {
             await HCDialog.alert('Please select at least one laboratory test before sending this patient to the Laboratory.');

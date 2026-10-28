@@ -285,7 +285,7 @@ function hc_rxq_query(array $overrides = []): string
                         </td>
                         <td><?= htmlspecialchars($r['itemName']) ?></td>
                         <td>
-                            <div><?= htmlspecialchars($r['dosage']) ?> &bull; <?= htmlspecialchars($r['frequency']) ?></div>
+                            <div><?= htmlspecialchars($r['dosage']) ?><?php if ($r['quantity'] !== null): ?> &bull; Qty: <?= (int) $r['quantity'] ?><?php endif; ?> &bull; <?= htmlspecialchars($r['frequency']) ?></div>
                             <?php if (!empty($r['instructions'])): ?>
                             <div class="rxq-patient-meta"><?= htmlspecialchars($r['instructions']) ?></div>
                             <?php endif; ?>
@@ -300,6 +300,7 @@ function hc_rxq_query(array $overrides = []): string
                                     data-type-label="<?= htmlspecialchars($r['typeLabel']) ?>"
                                     data-item-name="<?= htmlspecialchars($r['itemName']) ?>"
                                     data-dosage="<?= htmlspecialchars($r['dosage']) ?>"
+                                    data-quantity="<?= $r['quantity'] !== null ? (int) $r['quantity'] : '' ?>"
                                     data-frequency="<?= htmlspecialchars($r['frequency']) ?>"
                                     data-duration="<?= htmlspecialchars($r['duration']) ?>"
                                     data-route="<?= htmlspecialchars($r['route']) ?>"
@@ -382,6 +383,10 @@ function hc_rxq_query(array $overrides = []): string
                     <div>
                         <div class="rxq-patient-meta">Dosage</div>
                         <div id="rxqDetailDosage"></div>
+                    </div>
+                    <div id="rxqDetailQuantityWrap">
+                        <div class="rxq-patient-meta">Quantity</div>
+                        <div id="rxqDetailQuantity"></div>
                     </div>
                     <div>
                         <div class="rxq-patient-meta">Frequency</div>

@@ -123,6 +123,10 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('rxqDetailType').textContent = d.typeLabel;
             document.getElementById('rxqDetailItemName').textContent = d.itemName;
             document.getElementById('rxqDetailDosage').textContent = d.dosage;
+            // Prescribed quantity — hidden for vaccines, "Not specified"
+            // for medicine orders made before the Quantity column existed.
+            document.getElementById('rxqDetailQuantityWrap').style.display = d.typeLabel === 'Vaccine' ? 'none' : '';
+            document.getElementById('rxqDetailQuantity').textContent = d.quantity || 'Not specified';
             document.getElementById('rxqDetailFrequency').textContent = d.frequency;
             document.getElementById('rxqDetailDuration').textContent = d.duration;
             document.getElementById('rxqDetailRoute').textContent = d.route;
@@ -163,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 dispenseBtn.innerHTML = '<i class="bi bi-check-circle"></i> Dispense';
 
                 dispenseFormWrap.style.display = '';
-                qtyInput.value = '';
+                qtyInput.value = d.quantity || '';
                 populateItemSelect(d.typeLabel, d.suggestedItemId);
             } else {
                 dispenseBtn.style.display = 'none';

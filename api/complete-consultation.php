@@ -266,10 +266,19 @@ foreach ($rawMedications as $m) {
         continue;
     }
     $type = ($m['type'] ?? '') === 'vaccine' ? 'vaccine' : 'medication';
+    // Quantity to dispense — Medications rows only, a whole number >= 1
+    // or left blank (null).
+    $quantityRaw = $type === 'medication' ? trim((string) ($m['quantity'] ?? '')) : '';
+    if ($quantityRaw !== '' && !preg_match('/^[1-9]\d*$/', $quantityRaw)) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => 'Quantity for "' . $name . '" must be a whole number of 1 or more.']);
+        exit;
+    }
     $medications[] = [
         'type' => $type,
         'name' => $name,
         'dosage' => trim((string) ($m['dosage'] ?? '')),
+        'quantity' => $quantityRaw !== '' ? (int) $quantityRaw : null,
         'frequency' => trim((string) ($m['frequency'] ?? '')),
         'duration' => trim((string) ($m['duration'] ?? '')),
         'route' => trim((string) ($m['route'] ?? '')),
@@ -332,6 +341,7 @@ foreach ($medications as $m) {
         'name' => $m['name'],
         'category' => 'General',
         'dosage' => $m['dosage'] !== '' ? $m['dosage'] : 'Not specified',
+        'quantity' => $m['quantity'],
         'frequency' => $m['frequency'] !== '' ? $m['frequency'] : 'Not specified',
         'route' => $m['route'] !== '' ? $m['route'] : 'Not specified',
         'indication' => $indication,
@@ -585,6 +595,7 @@ if ($nextRouting === 'pharmacy' && count($medications) > 0) {
             'itemName' => $m['name'],
             'itemType' => $m['type'],
             'dosage' => $m['dosage'] !== '' ? $m['dosage'] : 'Not specified',
+            'quantity' => $m['quantity'],
             'frequency' => $m['frequency'] !== '' ? $m['frequency'] : 'Not specified',
             'duration' => $m['duration'] !== '' ? $m['duration'] : 'Not specified',
             'route' => $m['route'] !== '' ? $m['route'] : 'Not specified',
