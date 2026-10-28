@@ -84,9 +84,8 @@ if (!function_exists('hc_notifiable_disease_categories')) {
      * diabetes, etc.) are deliberately NOT here — this is specifically
      * about outbreak-relevant, community-spread conditions. Factored
      * out of hc_disease_demand_forecast() below so
-     * hc_gis_seasonal_overview() (and hc_disease_contributing_factors()'
-     * own keys) share this exact same category list instead of each
-     * carrying their own copy that could drift out of sync.
+     * hc_gis_seasonal_overview() shares this exact same category list
+     * instead of carrying its own copy that could drift out of sync.
      *
      * @return array<string, array<int, string>>
      */
@@ -111,38 +110,130 @@ if (!function_exists('hc_notifiable_disease_categories')) {
     }
 }
 
-if (!function_exists('hc_disease_contributing_factors')) {
-    /**
-     * Real, documented public-health "commonly associated with" factors
-     * per notifiable-disease category (hc_notifiable_disease_categories()'
-     * own keys) — standard epidemiological knowledge, not inferred or
-     * data-mined causation (this app has no environmental/behavioral
-     * risk-factor data to correlate against). Surfaced as a short
-     * "Likely contributing factors" note wherever a disease risk alert
-     * already renders (GIS Mapping's Top Diseases list, Predictive
-     * Analytics' risk alert rows) — a reference annotation, not a new
-     * computation.
-     *
-     * @return array<string, string>
-     */
-    function hc_disease_contributing_factors(): array
+if (!function_exists('hc_disease_age_bracket')) {
+    /** Real age (patients' own stored "age" field) -> a 5-bracket group label, or '' for 0/unknown. */
+    function hc_disease_age_bracket(int $age): string
     {
-        return [
-            'Dengue' => 'Stagnant water and mosquito breeding sites, especially after rainfall.',
-            'Influenza-like Illness' => 'Close indoor contact and crowding, more common during the rainy/cooler months.',
-            'Acute Gastroenteritis / Diarrhea' => 'Contaminated food or water sources, poor sanitation.',
-            'Measles' => 'Low vaccination coverage in the affected area and close person-to-person contact.',
-            'Chickenpox' => 'Close contact in schools/households; spreads easily among unvaccinated children.',
-            'Leptospirosis' => 'Floodwater exposure and contact with rodent urine-contaminated water or soil.',
-            'Typhoid Fever' => 'Contaminated drinking water or food, often linked to inadequate sanitation.',
-            'Pneumonia' => 'Air pollution, indoor smoke exposure, and crowding, often following a respiratory infection.',
-            'COVID-19' => 'Close indoor contact and crowding, consistent with known transmission patterns.',
-            'Tuberculosis' => 'Prolonged close contact with an infected person, often worsened by crowded living conditions.',
-            'Hand-Foot-Mouth Disease' => 'Close contact among young children, common in daycare/school settings.',
-            'Conjunctivitis (Sore Eyes)' => 'Direct contact or shared contaminated surfaces/objects; spreads quickly in households and schools.',
-            'Mumps' => 'Low vaccination coverage and close contact through saliva/respiratory droplets.',
-            'Pertussis (Whooping Cough)' => 'Low vaccination coverage, particularly among infants and young children.',
-        ];
+        return match (true) {
+            $age <= 0 => '',
+            $age <= 9 => '0-9',
+            $age <= 19 => '10-19',
+            $age <= 39 => '20-39',
+            $age <= 59 => '40-59',
+            default => '60+',
+        };
+    }
+}
+
+if (!function_exists('hc_disease_causes_narrative')) {
+    /**
+     * Real, computed "possible causes" sentence for a set of already-
+     * matched notifiable-disease cases — NOT a fixed per-category
+     * lookup. Looks at the SAME real cases already shown wherever this
+     * renders (GIS Mapping's Top Diseases list, Predictive Analytics'
+     * risk alert rows), from up to 4 independent real signals, each
+     * included only when the data actually says something (a thin or
+     * one-sided dataset just produces fewer clauses, never a fabricated-
+     * sounding claim):
+     *   - Barangay concentration: which real barangay these cases
+     *     cluster in. Naturally silent for a risk-alert row, which is
+     *     already scoped to one barangay — nothing to say there.
+     *   - Seasonal skew: real rainy (Jun-Nov) vs dry (Dec-May) share,
+     *     only stated once there's enough of a historical spread to
+     *     mean anything.
+     *   - Age-group concentration: which real age bracket
+     *     (hc_disease_age_bracket()) most of these patients fall in,
+     *     via $patientAgeById — patients with no recorded age are
+     *     simply excluded rather than counted as a bracket.
+     *   - Trend: real recent-7-days vs prior-7-days change WITHIN this
+     *     exact case set.
+     *
+     * @param array $cases A subset of hc_disease_demand_forecast()'s own 'notifiableCases' (each with date/category/barangay/patientId).
+     * @param array $patientAgeById patientId => real age (int); 0/missing = unknown.
+     * @return string Empty when there isn't enough real signal to say anything.
+     */
+    function hc_disease_causes_narrative(array $cases, array $patientAgeById): string
+    {
+        if ($cases === []) {
+            return '';
+        }
+
+        $clauses = [];
+
+        // --- Barangay concentration ---
+        $barangays = array_values(array_filter(array_column($cases, 'barangay'), fn ($b) => $b !== ''));
+        $barangayCounts = array_count_values($barangays);
+        if (count($barangayCounts) > 1) {
+            arsort($barangayCounts);
+            $topBarangay = array_key_first($barangayCounts);
+            $topShare = round($barangayCounts[$topBarangay] / count($barangays) * 100);
+            if ($topShare >= 40) {
+                $clauses[] = $topShare . '% of these cases are in Barangay ' . $topBarangay;
+            }
+        }
+
+        // --- Seasonal skew ---
+        $rainyMonths = [6, 7, 8, 9, 10, 11];
+        $rainy = 0;
+        $dry = 0;
+        foreach ($cases as $c) {
+            $ts = strtotime($c['date']);
+            if ($ts === false) {
+                continue;
+            }
+            if (in_array((int) date('n', $ts), $rainyMonths, true)) {
+                $rainy++;
+            } else {
+                $dry++;
+            }
+        }
+        $seasonTotal = $rainy + $dry;
+        if ($seasonTotal >= 4) {
+            $rainyShare = round($rainy / $seasonTotal * 100);
+            if ($rainyShare >= 65) {
+                $clauses[] = $rainyShare . '% occurred during the rainy season (Jun-Nov)';
+            } elseif ($rainyShare <= 35) {
+                $clauses[] = (100 - $rainyShare) . '% occurred during the dry season (Dec-May)';
+            }
+        }
+
+        // --- Age-group concentration ---
+        $bracketCounts = [];
+        $knownAgeTotal = 0;
+        foreach ($cases as $c) {
+            $bracket = hc_disease_age_bracket((int) ($patientAgeById[$c['patientId'] ?? ''] ?? 0));
+            if ($bracket === '') {
+                continue;
+            }
+            $bracketCounts[$bracket] = ($bracketCounts[$bracket] ?? 0) + 1;
+            $knownAgeTotal++;
+        }
+        if ($knownAgeTotal >= 3) {
+            arsort($bracketCounts);
+            $topBracket = array_key_first($bracketCounts);
+            $topBracketShare = round($bracketCounts[$topBracket] / $knownAgeTotal * 100);
+            if ($topBracketShare >= 40) {
+                $clauses[] = $topBracketShare . '% of patients are age ' . $topBracket;
+            }
+        }
+
+        // --- Trend (within this exact case set) ---
+        $cutoff7 = date('Y-m-d', strtotime('-7 days'));
+        $cutoff14 = date('Y-m-d', strtotime('-14 days'));
+        $recent7 = count(array_filter($cases, fn ($c) => $c['date'] >= $cutoff7));
+        $prior7 = count(array_filter($cases, fn ($c) => $c['date'] >= $cutoff14 && $c['date'] < $cutoff7));
+        if ($prior7 > 0 && $recent7 > $prior7) {
+            $changePct = round((($recent7 - $prior7) / $prior7) * 100);
+            $clauses[] = 'cases rose ' . $changePct . '% in the last 7 days vs the 7 before';
+        } elseif ($prior7 === 0 && $recent7 > 0) {
+            $clauses[] = 'these are newly emerging cases with no prior-week activity';
+        }
+
+        if ($clauses === []) {
+            return '';
+        }
+
+        return ucfirst(implode('; ', $clauses)) . '.';
     }
 }
 
@@ -151,12 +242,13 @@ if (!function_exists('hc_disease_demand_forecast')) {
      * @param array $medicalRecordDocs Raw medical_records docs (type=consultation only), already scoped by the caller (system-wide or one facility's own).
      * @param array $consultations hc_get_all_consultations()-shaped rows, same scoping as $medicalRecordDocs.
      * @param array $patientBarangayById patientId => real barangay string.
+     * @param array $patientAgeById patientId => real age (int) — optional (default []), only needed by a caller that renders hc_disease_causes_narrative()'s age-group clause; every other caller (dashboard preview widgets that never show that narrative) can omit it with no behavior change.
      */
-    function hc_disease_demand_forecast(array $medicalRecordDocs, array $consultations, array $patientBarangayById): array
+    function hc_disease_demand_forecast(array $medicalRecordDocs, array $consultations, array $patientBarangayById, array $patientAgeById = []): array
     {
         $keywordCategories = hc_notifiable_disease_categories();
 
-        $notifiableCases = []; // [['date' => Y-m-d, 'category' => ..., 'barangay' => ...], ...]
+        $notifiableCases = []; // [['date' => Y-m-d, 'category' => ..., 'barangay' => ..., 'patientId' => ...], ...]
         foreach ($medicalRecordDocs as $doc) {
             $f = $doc['fields'];
             $text = hc_normalize_text(($f['diagnosis'] ?? '') . ' ' . ($f['chiefComplaint'] ?? ''));
@@ -170,6 +262,7 @@ if (!function_exists('hc_disease_demand_forecast')) {
                             'date' => substr((string) ($f['date'] ?? ''), 0, 10),
                             'category' => $category,
                             'barangay' => $patientBarangayById[$f['patientId'] ?? ''] ?? '',
+                            'patientId' => $f['patientId'] ?? '',
                         ];
                         break 2; // one category per case — first keyword hit wins
                     }
@@ -229,10 +322,11 @@ if (!function_exists('hc_disease_demand_forecast')) {
         // that pair's own baseline — a genuine statistical outlier check,
         // not just "the raw count crossed a fixed number".
         foreach ($riskAlerts as &$alert) {
-            $pairDates = array_column(array_values(array_filter(
+            $pairCases = array_values(array_filter(
                 $notifiableCases,
                 fn ($c) => $c['barangay'] === $alert['barangay'] && $c['category'] === $alert['category']
-            )), 'date');
+            ));
+            $pairDates = array_column($pairCases, 'date');
 
             $baselineDaily = [];
             for ($i = 37; $i >= 8; $i--) {
@@ -247,6 +341,12 @@ if (!function_exists('hc_disease_demand_forecast')) {
             $alert['anomaly'] = $baselineSD > 0
                 ? $recentAvg > $baselineMean + (2 * $baselineSD)
                 : $recentAvg > $baselineMean;
+
+            // Real, computed "possible causes" (hc_disease_causes_narrative())
+            // over this SAME barangay+category pair's own all-time cases —
+            // not a fixed per-category lookup. See that function's own
+            // header comment for exactly what it looks at.
+            $alert['causes'] = hc_disease_causes_narrative($pairCases, $patientAgeById);
         }
         unset($alert);
 
@@ -320,10 +420,9 @@ if (!function_exists('hc_disease_demand_forecast')) {
             ];
         }
 
-        $contributingFactorsMap = hc_disease_contributing_factors();
-        $riskRows = array_map(function ($a) use ($contributingFactorsMap) {
+        $riskRows = array_map(function ($a) {
             $meta = hc_predictive_severity_meta($a['severity']);
-            return $meta + ['label' => 'Barangay ' . $a['barangay'], 'desc' => $a['category'], 'value' => $a['count14'], 'anomaly' => $a['anomaly'], 'causes' => $contributingFactorsMap[$a['category']] ?? ''];
+            return $meta + ['label' => 'Barangay ' . $a['barangay'], 'desc' => $a['category'], 'value' => $a['count14'], 'anomaly' => $a['anomaly'], 'causes' => $a['causes']];
         }, $riskAlerts);
 
         return compact('notifiableCases', 'casesLast14', 'riskAlerts', 'barangaysUnderWatch', 'consultFit', 'consultForecastTotal', 'consultPast7Total', 'forecastTrend', 'diseaseTrend', 'predictionCards', 'recommendations', 'riskRows', 'consultVolumeAnomaly');

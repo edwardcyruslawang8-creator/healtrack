@@ -781,13 +781,15 @@ if ($medicineInventory['lowStock'] + $medicineInventory['outOfStock'] > 0) {
 //     to this facility even though the underlying stock numbers can't be.
 // ---------------------------------------------------------------------
 $patientBarangayById = [];
+$patientAgeById = [];
 foreach ($firestore->listDocuments('patients') as $doc) {
     $patientBarangayById[$doc['id']] = trim((string) ($doc['fields']['barangay'] ?? ''));
+    $patientAgeById[$doc['id']] = (int) ($doc['fields']['age'] ?? 0);
 }
 $facilityConsultationRecordDocs = array_values(array_filter($facilityRecordDocs, fn ($d) => ($d['fields']['type'] ?? '') === 'consultation'));
 $facilityStockRequests = array_values(array_filter(hc_get_all_stock_requests(), fn ($r) => $r['facility'] === $facilityName));
 
-$pt1 = hc_disease_demand_forecast($facilityConsultationRecordDocs, $facilityConsultations, $patientBarangayById);
+$pt1 = hc_disease_demand_forecast($facilityConsultationRecordDocs, $facilityConsultations, $patientBarangayById, $patientAgeById);
 $pt1PredictionCards = $pt1['predictionCards'];
 $pt1ForecastTrend = $pt1['forecastTrend'];
 $pt1DiseaseTrend = $pt1['diseaseTrend'];

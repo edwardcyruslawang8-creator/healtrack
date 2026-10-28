@@ -118,11 +118,13 @@ if (!function_exists('hc_gis_disease_overview')) {
         $consultations = hc_get_all_consultations();
 
         $patientBarangayById = [];
+        $patientAgeById = [];
         foreach ($firestore->listDocuments('patients') as $doc) {
             $patientBarangayById[$doc['id']] = trim((string) ($doc['fields']['barangay'] ?? ''));
+            $patientAgeById[$doc['id']] = (int) ($doc['fields']['age'] ?? 0);
         }
 
-        $forecast = hc_disease_demand_forecast($medicalRecordDocs, $consultations, $patientBarangayById);
+        $forecast = hc_disease_demand_forecast($medicalRecordDocs, $consultations, $patientBarangayById, $patientAgeById);
         $notifiableCases = $forecast['notifiableCases']; // every real matched case, all time — see that function's own header comment for the keyword list
 
         $cutoffCurrent = $spec['cutoffCurrent'];
@@ -181,18 +183,23 @@ if (!function_exists('hc_gis_disease_overview')) {
         }
         arsort($byCategory);
 
-        $contributingFactors = hc_disease_contributing_factors();
         $topDiseases = [];
         foreach (array_slice($byCategory, 0, 5, true) as $name => $cases) {
             $priorCases = $byCategoryPrior[$name] ?? 0;
             $changePct = $priorCases > 0 ? round((($cases - $priorCases) / $priorCases) * 100) : ($cases > 0 ? 100 : 0);
+            // Real, computed "possible causes" (hc_disease_causes_narrative())
+            // over this SAME category's own all-time cases — not a fixed
+            // per-category lookup. See that function's own header comment
+            // for exactly what it looks at (barangay concentration, season,
+            // age group, trend).
+            $categoryCasesAllTime = array_values(array_filter($notifiableCases, fn ($c) => $c['category'] === $name));
             $topDiseases[] = [
                 'name' => $name,
                 'cases' => $cases,
                 'percent' => $totalCases > 0 ? round(($cases / $totalCases) * 100, 1) . '%' : '0%',
                 'trend' => $changePct >= 0 ? 'up' : 'down',
                 'change' => abs($changePct) . '%',
-                'causes' => $contributingFactors[$name] ?? '',
+                'causes' => hc_disease_causes_narrative($categoryCasesAllTime, $patientAgeById),
             ];
         }
 
