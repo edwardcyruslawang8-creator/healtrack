@@ -158,6 +158,20 @@ document.addEventListener('DOMContentLoaded', function () {
     // once the GeoJSON loads and we can fit its bounds including the
     // facility marker below.
     map.setView(FACILITY_LATLNG, 14);
+
+    // The map's real pixel height now comes from CSS flex-stretch
+    // (assets/css/gis.css's .gis-layout/.map-card/.map-container — it
+    // grows to match the left column's own height instead of a flat
+    // fixed height), so Leaflet needs an explicit nudge once that
+    // layout has actually settled, or it keeps using whatever size the
+    // container had at the instant L.map() ran (a classic Leaflet-in-a-
+    // flex-container quirk — the size callback alone isn't enough here
+    // since nothing ever fires a browser resize event on page load).
+    // Re-checked on real window resizes too, since the left column's
+    // wrapped height (and therefore the map's matching height) can
+    // change at a narrower viewport.
+    window.addEventListener('load', function () { map.invalidateSize(); });
+    window.addEventListener('resize', function () { map.invalidateSize(); });
     let initialBounds = null;
     const barangayLayers = {}; // real barangay name -> its Leaflet layer, filled in once the GeoJSON below loads
 
@@ -340,6 +354,7 @@ document.addEventListener('DOMContentLoaded', function () {
             facilityMarkers.forEach(function (marker) {
                 initialBounds.extend(marker.getLatLng());
             });
+            map.invalidateSize(); // real flex-stretched height may not be final yet when L.map() first ran — see this file's own comment on map init
             map.fitBounds(initialBounds, { padding: [30, 30] });
 
             // Centroid marker + permanent label for each barangay

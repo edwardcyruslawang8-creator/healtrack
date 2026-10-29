@@ -172,10 +172,15 @@
   pointer-events: none;
 }
 
-/* -- Two-column layout: ~30% info panel / ~70% map -- */
+/* -- Two-column layout: ~30% info panel / ~70% map --
+   align-items: stretch (not the old flex-start) so the map column
+   grows to match the left column's own real height instead of sitting
+   at a shorter fixed height and leaving blank space below it once the
+   left column gains more cards (e.g. Seasonal Patterns) than the map
+   card's own fixed height accounts for. */
 .gis-layout{
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 20px;
 }
 .gis-side{
@@ -186,6 +191,8 @@
 .gis-map-col{
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* -- Generic info card shell used by the left-panel cards -- */
@@ -380,11 +387,20 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 .map-container{
   position: relative;
   width: 100%;
-  height: 560px;
+  /* Grows to fill whatever height .gis-layout's stretch gives this
+     card (see .map-card above), with a sane floor so it never
+     collapses thin on a short left column — was a flat 560px that
+     left blank space below the card once the left column grew taller. */
+  flex: 1;
+  min-height: 420px;
   background: #EDEBE3;
 }
 #gisMap{ width: 100%; height: 100%; }
@@ -576,7 +592,11 @@
 @media (max-width: 991.98px){
   .gis-layout{ flex-direction: column; }
   .gis-side{ flex: 1 1 100%; max-width: 100%; }
-  .map-container{ height: 480px; }
+  /* Stacked layout — the map no longer needs to stretch-match the left
+     column's height (they're not side by side any more), so both go
+     back to a plain fixed height instead of flex:1. */
+  .map-card{ flex: none; }
+  .map-container{ flex: none; height: 480px; min-height: 0; }
 }
 @media (max-width: 767.98px){
   .gis-toolbar{ flex-direction: column; align-items: stretch; }
