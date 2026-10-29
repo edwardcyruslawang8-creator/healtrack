@@ -193,7 +193,10 @@ $topMedicinesDispensedMax = $topMedicinesDispensed === [] ? 1 : max(array_column
 // schema (same honest exception every other inventory section in this
 // app already notes).
 // ---------------------------------------------------------------------
-$analyticsMedicineStatusCounts = ['available' => 0, 'low' => 0, 'unavailable' => 0];
+// 'overstocked' included alongside the original 3 — a fixed 3-key
+// allowlist here would silently drop any overstocked item from this
+// whole summary instead of just omitting an empty slice.
+$analyticsMedicineStatusCounts = ['available' => 0, 'low' => 0, 'unavailable' => 0, 'overstocked' => 0];
 foreach ($firestore->listDocuments('medicines') as $doc) {
     $status = $doc['fields']['status'] ?? 'available';
     if (isset($analyticsMedicineStatusCounts[$status])) {
@@ -204,6 +207,7 @@ $inventoryStatusSummary = [
     ['label' => 'In Stock',     'value' => $analyticsMedicineStatusCounts['available'],   'color' => '#1E8E3E'],
     ['label' => 'Low Stock',    'value' => $analyticsMedicineStatusCounts['low'],         'color' => '#E8710A'],
     ['label' => 'Out of Stock', 'value' => $analyticsMedicineStatusCounts['unavailable'], 'color' => '#D93025'],
+    ['label' => 'Overstocked',  'value' => $analyticsMedicineStatusCounts['overstocked'], 'color' => '#8B5CF6'],
 ];
 $inventoryStatusTotal = array_sum(array_column($inventoryStatusSummary, 'value')) ?: 1;
 
