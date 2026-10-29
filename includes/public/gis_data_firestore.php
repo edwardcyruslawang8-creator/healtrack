@@ -21,10 +21,9 @@
  * scoped to one facility — this is a public patient-facing page, not a
  * staff one.
  *
- * The map's actual polygon SHAPES are still schematic, not real
- * surveyed boundaries — see includes/shared/gis_geo.php's header
- * comment for why. Only the case counts/intensity/trend attached to
- * each shape are genuinely computed here.
+ * The map's polygon SHAPES are the official PSA/NAMRIA barangay
+ * boundaries — see includes/shared/gis_geo.php's header comment. The
+ * case counts/intensity/trend attached to each shape are computed here.
  * =====================================================================
  */
 
@@ -35,15 +34,19 @@ require_once __DIR__ . '/../shared/predictive_analytics_core.php'; // hc_disease
 require_once __DIR__ . '/../shared/gis_geo.php'; // hc_gis_barangay_shapes()
 
 if (!function_exists('hc_gis_intensity_meta')) {
-    /** Same 5-tier scale patient/gis.php's own legend documents (Very High 76-100 ... No Data 0). */
+    /**
+     * Same 5-tier scale patient/gis.php's own legend documents (Very High
+     * 76-100 ... No Cases 0) — a single-hue maroon ramp that gets darker
+     * as cases rise (choropleth), with a neutral gray for 0 cases.
+     */
     function hc_gis_intensity_meta(int $cases): array
     {
         return match (true) {
-            $cases >= 76 => ['label' => 'Very High', 'color' => '#D93025'],
-            $cases >= 51 => ['label' => 'High', 'color' => '#E8710A'],
-            $cases >= 26 => ['label' => 'Moderate', 'color' => '#E8B800'],
-            $cases >= 1 => ['label' => 'Low', 'color' => '#1E8E3E'],
-            default => ['label' => 'No Data', 'color' => '#9CA3AF'],
+            $cases >= 76 => ['label' => 'Very High', 'color' => '#6B0F0F'],
+            $cases >= 51 => ['label' => 'High', 'color' => '#A31D1D'],
+            $cases >= 26 => ['label' => 'Moderate', 'color' => '#D9534F'],
+            $cases >= 1 => ['label' => 'Low', 'color' => '#F2A7A3'],
+            default => ['label' => 'No Cases', 'color' => '#9CA3AF'],
         };
     }
 }
@@ -256,7 +259,7 @@ if (!function_exists('hc_gis_disease_overview')) {
         ];
 
         // ---------------------------------------------------------------
-        // Map GeoJSON — real counts/intensity, schematic shapes (see
+        // Map GeoJSON — real counts/intensity on official boundaries (see
         // includes/shared/gis_geo.php's header comment).
         // ---------------------------------------------------------------
         $features = [];
@@ -273,16 +276,16 @@ if (!function_exists('hc_gis_disease_overview')) {
                 'type' => 'Feature',
                 'properties' => [
                     'name' => $name,
+                    'officialName' => $shape['officialName'],
+                    'psgc' => $shape['psgc'],
+                    'district' => $shape['district'],
                     'cases' => $cases,
                     'diseases' => $diseases,
                     'intensity' => $meta['label'],
                     'color' => $meta['color'],
                     'centroid' => $shape['centroid'],
                 ],
-                'geometry' => [
-                    'type' => 'Polygon',
-                    'coordinates' => [$shape['polygon']],
-                ],
+                'geometry' => $shape['geometry'],
             ];
         }
         $geojson = ['type' => 'FeatureCollection', 'features' => $features];

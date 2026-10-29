@@ -70,14 +70,20 @@ document.addEventListener('DOMContentLoaded', function () {
     fetch(BASE_URL + '/api/gis-data.php')
         .then(function (res) { return res.json(); })
         .then(function (geojson) {
+            // Same boundary treatment as the full map (assets/js/gis.js):
+            // dark outline over a white casing, faint fill for 0 cases.
+            L.geoJSON(geojson, {
+                interactive: false,
+                style: { color: '#fff', weight: 3.5, opacity: 0.9, fill: false },
+            }).addTo(map);
             const geoLayer = L.geoJSON(geojson, {
                 style: function (feature) {
                     return {
-                        color: feature.properties.color,
+                        color: '#5C0A0A',
                         weight: 1.5,
-                        opacity: 0.9,
+                        opacity: 1,
                         fillColor: feature.properties.color,
-                        fillOpacity: 0.55,
+                        fillOpacity: feature.properties.cases > 0 ? 0.6 : 0.08,
                     };
                 },
             }).addTo(map);
