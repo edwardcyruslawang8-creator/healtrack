@@ -151,9 +151,6 @@ document.addEventListener('DOMContentLoaded', function () {
         maxZoom: 18,
     }).addTo(map);
 
-    // Zoom control, bottom-right (matches the reference's control placement)
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
-
     // Default view — this app's real coverage area (Lipa City), refined
     // once the GeoJSON loads and we can fit its bounds including the
     // facility marker below.
@@ -172,6 +169,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // change at a narrower viewport.
     window.addEventListener('load', function () { map.invalidateSize(); });
     window.addEventListener('resize', function () { map.invalidateSize(); });
+    // Also catches height changes that aren't a window resize (e.g. a
+    // left-column card's content changing after load).
+    if (window.ResizeObserver) {
+        new ResizeObserver(function () { map.invalidateSize(); }).observe(document.getElementById('gisMap'));
+    }
     let initialBounds = null;
     const barangayLayers = {}; // real barangay name -> its Leaflet layer, filled in once the GeoJSON below loads
 
@@ -184,14 +186,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const facilityIcon = L.divIcon({
         className: '',
         html: '<div class="facility-marker"><i class="bi bi-hospital-fill"></i></div>',
-        iconSize: [40, 40],
-        iconAnchor: [20, 20],
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
     });
     const facilityMarkers = FACILITIES.map(function (facility) {
         const marker = L.marker([facility.lat, facility.lng], { icon: facilityIcon, zIndexOffset: 1000 }).addTo(map);
         marker.bindTooltip(
             '<div class="bl-name">' + facility.name + '</div>',
-            { permanent: true, direction: 'top', offset: [0, -14], className: 'facility-label-tooltip' }
+            { permanent: true, direction: 'top', offset: [0, -12], className: 'facility-label-tooltip' }
         );
         marker.bindPopup('<strong>' + facility.name + '</strong><br>Serving 11 covered barangays across Lipa City.');
         return marker;
@@ -254,10 +256,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ---------------------------------------------------------------
-    // Custom "locate / reset view" control, stacked under the zoom control
+    // Map controls, top-right directly under the floating Legend button
+    // (assets/css/gis.css offsets that corner below it): the custom
+    // "locate / reset view" button first, then zoom in/out. Leaflet
+    // stacks top-corner controls in the order they're added.
     // ---------------------------------------------------------------
     const LocateControl = L.Control.extend({
-        options: { position: 'bottomright' },
+        options: { position: 'topright' },
         onAdd: function () {
             const btn = L.DomUtil.create('button', 'locate-control-btn');
             btn.innerHTML = '<i class="bi bi-crosshair"></i>';
@@ -273,6 +278,7 @@ document.addEventListener('DOMContentLoaded', function () {
         },
     });
     map.addControl(new LocateControl());
+    L.control.zoom({ position: 'topright' }).addTo(map);
 
     // ---------------------------------------------------------------
     // Barangay polygons + markers — ?range= keeps this in sync with the
@@ -294,31 +300,70 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!diseases || !diseases.length) return '';
         return diseases.map(function (d) { return d.name + ' (' + d.cases + ')'; }).join(', ');
     }
+    /** Name, district, case count and disease breakdown — shared by the hover tooltip and both popups. */
+    function hcBarangayInfoHtml(p) {
+        const breakdown = hcDiseaseBreakdown(p.diseases);
+        const district = p.district ? p.district + ' District' : '';
+        const official = p.officialName && p.officialName !== p.name ? 'Official name: ' + p.officialName : '';
+        return '<div class="bht-name">' + p.name + '</div>' +
+            '<div class="bht-breakdown">' + [district, official, p.psgc ? 'PSGC ' + p.psgc : ''].filter(Boolean).join(' &middot; ') + '</div>' +
+            '<div class="bht-cases">' + hcCasesLabel(p.cases) + ' &middot; ' + p.intensity + '</div>' +
+            (breakdown ? '<div class="bht-breakdown">' + breakdown + '</div>' : '');
+    }
+
+    // Choropleth style — the fill color is the server's real intensity
+    // tier (hc_gis_intensity_meta(), a maroon ramp that darkens as cases
+    // rise); a barangay with 0 cases keeps only a faint neutral tint so
+    // it reads as "nothing reported" while its outline stays visible.
+    // Every outline is the same dark maroon line, drawn over a white
+    // casing (boundaryCasing below), so the border between two adjacent
+    // barangays stays visible whatever shades they're filled with.
+    const BOUNDARY_COLOR = '#5C0A0A';
+    const EMPHASIS = {
+        // [extra boundary weight, extra fill opacity]
+        hover: [1, 0.12],
+        selected: [1.5, 0.18],
+        strong: [2, 0.25],
+    };
+    function hcBarangayStyle(p, emphasis) {
+        const baseFill = p.cases > 0 ? 0.6 : 0.08;
+        const [extraWeight, extraFill] = EMPHASIS[emphasis] || [0, 0];
+        return {
+            color: BOUNDARY_COLOR,
+            weight: 2 + extraWeight,
+            opacity: 1,
+            fillColor: p.color,
+            fillOpacity: Math.min(baseFill + extraFill, 0.85),
+        };
+    }
+    // The barangay whose popup is open — keeps a subtle "selected" style
+    // (slightly heavier maroon outline + fill) until that popup closes.
+    let selectedLayer = null;
+    function hcRestyle(layer) {
+        layer.setStyle(hcBarangayStyle(layer.feature.properties, layer === selectedLayer ? 'selected' : undefined));
+    }
+
     fetch(BASE_URL + '/api/gis-data.php?range=' + encodeURIComponent(gisRange))
         .then(function (res) { return res.json(); })
         .then(function (geojson) {
 
+            // White casing under every boundary line (non-interactive).
+            L.geoJSON(geojson, {
+                interactive: false,
+                style: { color: '#fff', weight: 5, opacity: 0.9, fill: false },
+            }).addTo(map);
+
             const geoLayer = L.geoJSON(geojson, {
                 style: function (feature) {
-                    return {
-                        color: feature.properties.color,
-                        weight: 2,
-                        opacity: 0.9,
-                        fillColor: feature.properties.color,
-                        fillOpacity: 0.55,
-                    };
+                    return hcBarangayStyle(feature.properties);
                 },
                 onEachFeature: function (feature, layer) {
                     const p = feature.properties;
                     barangayLayers[p.name] = layer;
 
-                    const breakdown = hcDiseaseBreakdown(p.diseases);
-
-                    layer.bindPopup(
-                        '<strong>' + p.name + '</strong><br>' +
-                        hcCasesLabel(p.cases) + ' &middot; ' + p.intensity +
-                        (breakdown ? '<br><span class="bht-breakdown">' + breakdown + '</span>' : '')
-                    );
+                    // Extra top-right padding so an auto-panned popup clears the
+                    // Legend button + control column in that corner.
+                    layer.bindPopup(hcBarangayInfoHtml(p), { autoPanPaddingTopRight: L.point(70, 20) });
 
                     // Hovering the shape itself surfaces its real case
                     // count AND which real diseases make up that count
@@ -327,21 +372,30 @@ document.addEventListener('DOMContentLoaded', function () {
                     // on mouseover/mouseout automatically; sticky:true
                     // lets it follow the cursor around the shape instead
                     // of staying pinned to one spot.
-                    layer.bindTooltip(
-                        '<div class="bht-name">' + p.name + '</div>' +
-                        '<div class="bht-cases">' + hcCasesLabel(p.cases) + ' &middot; ' + p.intensity + '</div>' +
-                        (breakdown ? '<div class="bht-breakdown">' + breakdown + '</div>' : ''),
-                        { sticky: true, direction: 'top', className: 'barangay-hover-tooltip' }
-                    );
+                    layer.bindTooltip(hcBarangayInfoHtml(p), { sticky: true, direction: 'top', className: 'barangay-hover-tooltip' });
 
                     layer.on('mouseover', function () {
-                        layer.setStyle({ fillOpacity: 0.75, weight: 3 });
+                        if (layer !== selectedLayer) layer.setStyle(hcBarangayStyle(p, 'hover'));
                     });
                     layer.on('mouseout', function () {
-                        layer.setStyle({ fillOpacity: 0.55, weight: 2 });
+                        hcRestyle(layer);
                     });
                     layer.on('click', function () {
                         layer.openPopup();
+                    });
+                    layer.on('popupopen', function () {
+                        const previous = selectedLayer;
+                        selectedLayer = layer;
+                        if (previous && previous !== layer) hcRestyle(previous);
+                        hcRestyle(layer);
+                        layer.closeTooltip(); // the popup already shows the same info — don't stack both
+                    });
+                    layer.on('popupclose', function () {
+                        if (selectedLayer === layer) selectedLayer = null;
+                        hcRestyle(layer);
+                    });
+                    layer.on('tooltipopen', function () {
+                        if (layer.isPopupOpen()) layer.closeTooltip();
                     });
                 },
             }).addTo(map);
@@ -362,11 +416,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 const p = feature.properties;
                 const [lng, lat] = p.centroid;
 
+                // White badge ringed in the barangay's intensity color
+                // (gray when it has no cases) — small enough not to cover
+                // its own label, boundary lines or neighbouring labels.
                 const icon = L.divIcon({
                     className: '',
-                    html: '<div class="barangay-marker" style="background:' + p.color + '"><i class="bi bi-house-fill"></i></div>',
-                    iconSize: [34, 34],
-                    iconAnchor: [17, 17],
+                    html: '<div class="barangay-marker' + (p.cases > 0 ? '' : ' is-empty') + '" style="--tier:' + p.color + '"><i class="bi bi-house-door-fill"></i></div>',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12],
                 });
 
                 const marker = L.marker([lat, lng], { icon: icon }).addTo(map);
@@ -380,19 +437,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     {
                         permanent: true,
                         direction: 'bottom',
-                        offset: [0, 6],
+                        offset: [0, 4],
                         className: 'barangay-label-tooltip',
                     }
                 );
+                // Same popup (and selected style) as clicking the shape itself
                 marker.on('click', function () {
-                    const breakdown = hcDiseaseBreakdown(p.diseases);
-                    L.popup()
-                        .setLatLng([lat, lng])
-                        .setContent(
-                            '<strong>' + p.name + '</strong><br>' + hcCasesLabel(p.cases) + ' &middot; ' + p.intensity +
-                            (breakdown ? '<br><span class="bht-breakdown">' + breakdown + '</span>' : '')
-                        )
-                        .openOn(map);
+                    barangayLayers[p.name].openPopup(L.latLng(lat, lng));
                 });
             });
         })
@@ -432,10 +483,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (highlightResetTimer) {
             clearTimeout(highlightResetTimer);
         }
-        layer.setStyle({ weight: 4, fillOpacity: 0.8 });
+        layer.setStyle(hcBarangayStyle(layer.feature.properties, 'strong'));
         layer.bringToFront();
         highlightResetTimer = setTimeout(function () {
-            layer.setStyle({ weight: 2, fillOpacity: 0.55 });
+            hcRestyle(layer);
         }, 3000);
     }
 

@@ -394,11 +394,12 @@ $adminNavItems = [
 
                     <button type="button" class="map-legend-btn" id="mapLegendToggle">Legend</button>
                     <div class="map-legend-panel" id="mapLegendPanel">
-                        <div class="legend-row"><span class="dot" style="background:#D93025"></span> Very High (76&ndash;100)</div>
-                        <div class="legend-row"><span class="dot" style="background:#E8710A"></span> High (51&ndash;75)</div>
-                        <div class="legend-row"><span class="dot" style="background:#E8B800"></span> Moderate (26&ndash;50)</div>
-                        <div class="legend-row"><span class="dot" style="background:#1E8E3E"></span> Low (1&ndash;25)</div>
-                        <div class="legend-row"><span class="dot" style="background:#9CA3AF"></span> No Data</div>
+                        <div class="legend-row"><span class="dot" style="background:#6B0F0F"></span> Very High (76&ndash;100)</div>
+                        <div class="legend-row"><span class="dot" style="background:#A31D1D"></span> High (51&ndash;75)</div>
+                        <div class="legend-row"><span class="dot" style="background:#D9534F"></span> Moderate (26&ndash;50)</div>
+                        <div class="legend-row"><span class="dot" style="background:#F2A7A3"></span> Low (1&ndash;25)</div>
+                        <div class="legend-row"><span class="dot dot-empty"></span> No Cases (0)</div>
+                        <div class="legend-row"><span class="legend-line"></span> Barangay boundary (North District)</div>
                     </div>
                 </div>
 
@@ -407,11 +408,17 @@ $adminNavItems = [
                     <div class="legend-group">
                         <div class="legend-group-title">Disease Intensity</div>
                         <div class="legend-group-items">
-                            <span class="legend-item"><span class="dot" style="background:#D93025"></span> Very High <span class="range">(76 - 100)</span></span>
-                            <span class="legend-item"><span class="dot" style="background:#E8710A"></span> High <span class="range">(51 - 75)</span></span>
-                            <span class="legend-item"><span class="dot" style="background:#E8B800"></span> Moderate <span class="range">(26 - 50)</span></span>
-                            <span class="legend-item"><span class="dot" style="background:#1E8E3E"></span> Low <span class="range">(1 - 25)</span></span>
-                            <span class="legend-item"><span class="dot" style="background:#9CA3AF"></span> No Data</span>
+                            <span class="legend-item"><span class="dot" style="background:#6B0F0F"></span> Very High <span class="range">(76 - 100)</span></span>
+                            <span class="legend-item"><span class="dot" style="background:#A31D1D"></span> High <span class="range">(51 - 75)</span></span>
+                            <span class="legend-item"><span class="dot" style="background:#D9534F"></span> Moderate <span class="range">(26 - 50)</span></span>
+                            <span class="legend-item"><span class="dot" style="background:#F2A7A3"></span> Low <span class="range">(1 - 25)</span></span>
+                            <span class="legend-item"><span class="dot dot-empty"></span> No Cases <span class="range">(0)</span></span>
+                        </div>
+                    </div>
+                    <div class="legend-group">
+                        <div class="legend-group-title">Map Boundaries</div>
+                        <div class="legend-group-items">
+                            <span class="legend-item"><span class="legend-line"></span> Barangay boundary <span class="range">(North District, PSA/NAMRIA)</span></span>
                         </div>
                     </div>
                 </div>

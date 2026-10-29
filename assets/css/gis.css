@@ -183,11 +183,21 @@
   align-items: stretch;
   gap: 20px;
 }
+/* Cards stack with the same 20px gap as the layout itself (was a
+   per-card margin-bottom of 16px, uneven next to the 20px column gap).
+   flex-grow on the cards lets them share any extra height when the map's
+   own min-height is the taller side, so the last card's bottom edge
+   always lines up with the map card's bottom edge. */
 .gis-side{
-  flex: 0 0 30%;
-  max-width: 30%;
+  flex: 0 0 clamp(340px, 32%, 440px);
+  max-width: clamp(340px, 32%, 440px);
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
+.gis-side > .info-card{ flex: 1 0 auto; margin-bottom: 0; }
+.gis-side > .med-notice{ flex: none; margin: 0; }
 .gis-map-col{
   flex: 1;
   min-width: 0;
@@ -209,6 +219,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 14px;
 }
 .info-card-header h2{
@@ -313,8 +324,10 @@
   outline: none;
   appearance: none;
   -webkit-appearance: none;
+  max-width: 190px;
+  text-overflow: ellipsis;
 }
-.mini-select-wrap{ position: relative; }
+.mini-select-wrap{ position: relative; min-width: 0; }
 .mini-select-wrap i{
   position: absolute;
   right: 8px;
@@ -400,10 +413,13 @@
      collapses thin on a short left column — was a flat 560px that
      left blank space below the card once the left column grew taller. */
   flex: 1;
-  min-height: 420px;
+  min-height: 560px;
   background: #EDEBE3;
 }
-#gisMap{ width: 100%; height: 100%; }
+/* Absolutely filled rather than height:100% — a percentage height inside
+   a flex-grown parent doesn't always resolve, which left the map canvas
+   shorter than its card. */
+#gisMap{ position: absolute; inset: 0; }
 
 /* Floating "Legend" toggle button, upper-right of the map */
 .map-legend-btn{
@@ -424,10 +440,12 @@
 .map-legend-btn:hover{ background: var(--bg-light); }
 
 /* Compact in-map legend panel, toggled by .map-legend-btn */
+/* Opens to the LEFT of the control column under the Legend button
+   (see the .leaflet-top.leaflet-right override below), not over it. */
 .map-legend-panel{
   position: absolute;
   top: 62px;
-  right: 16px;
+  right: 66px;
   z-index: 500;
   background: #fff;
   border-radius: 10px;
@@ -441,18 +459,31 @@
 .map-legend-panel .legend-row{ font-size: 12px; margin-bottom: 8px; }
 .map-legend-panel .legend-row:last-child{ margin-bottom: 0; }
 
-/* Barangay marker (Leaflet divIcon) */
+/* Barangay marker (Leaflet divIcon) — compact white badge ringed in the
+   barangay's intensity color (--tier, set inline by gis.js), maroon icon;
+   gray ring/icon when it has no cases. */
 .barangay-marker{
-  width: 34px;
-  height: 34px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+  background: #fff;
+  border: 2.5px solid var(--tier, #9CA3AF);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-size: 15px;
+  color: var(--maroon, #5B0A0A);
+  font-size: 11px;
+  line-height: 1;
+}
+.barangay-marker.is-empty{ color: #6B7280; }
+
+/* Clicking a barangay shape focuses its SVG path, and the browser drew
+   its default focus ring — a black rectangle around the shape's bounding
+   box. Selection is shown by gis.js's "selected" style instead. */
+.leaflet-container .leaflet-interactive:focus,
+.leaflet-container .leaflet-marker-icon:focus{
+  outline: none;
 }
 .barangay-label-tooltip{
   background: transparent;
@@ -462,6 +493,11 @@
   text-align: center;
   line-height: 1.25;
   pointer-events: none;
+}
+/* White halo so labels stay readable over the darker choropleth fills */
+.barangay-label-tooltip .bl-name,
+.barangay-label-tooltip .bl-cases{
+  text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff;
 }
 .barangay-label-tooltip .bl-name{ font-weight: 700; font-size: 12.5px; color: var(--text-dark); }
 .barangay-label-tooltip .bl-cases{ font-size: 11px; color: var(--text-dark); }
@@ -480,26 +516,30 @@
   font-family: 'Poppins', sans-serif;
   padding: 6px 10px;
 }
-.barangay-hover-tooltip .bht-name{ font-weight: 700; font-size: 12.5px; color: var(--text-dark); }
-.barangay-hover-tooltip .bht-cases{ font-size: 11.5px; color: var(--text-dark); }
+/* Unscoped so the click popups (same markup — gis.js's hcBarangayInfoHtml()) get them too */
+.bht-name{ font-weight: 700; font-size: 12.5px; color: var(--text-dark); }
+.bht-cases{ font-size: 11.5px; color: var(--text-dark); margin-top: 2px; }
 .bht-breakdown{ font-size: 11px; color: var(--text-muted, #6B7280); }
 
 /* -- North Super Health Center's own map pin — a distinct maroon
       hospital icon (rather than the round colored dots used for
       barangay case-density markers), so the facility itself always
       reads as visually different from a barangay data point. -- */
+/* Rounded square (vs. the barangays' round badges) in solid maroon, so
+   facilities read as a different kind of place at a glance. */
 .facility-marker{
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
   background: var(--maroon, #5B0A0A);
-  border: 3px solid #fff;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+  border: 2px solid #fff;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-size: 18px;
+  font-size: 14px;
+  line-height: 1;
 }
 .facility-label-tooltip{
   background: transparent;
@@ -509,13 +549,29 @@
   text-align: center;
   pointer-events: none;
 }
-.facility-label-tooltip .bl-name{ font-weight: 700; font-size: 12.5px; color: var(--maroon, #5B0A0A); }
+.facility-label-tooltip .bl-name{
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--maroon, #5B0A0A);
+  text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff;
+}
 .facility-label-tooltip::before{ display: none; }
+
+/* Top-right control column, directly under the floating Legend button
+   (.map-legend-btn: top 16px + ~38px tall): reset-view, then zoom +/−,
+   right-aligned with that button, 8px apart. */
+.map-container .leaflet-top.leaflet-right{
+  top: 62px;
+  right: 16px;
+}
+.map-container .leaflet-top.leaflet-right .leaflet-control{
+  margin: 0 0 8px 0;
+}
 
 /* Leaflet default control overrides to match the theme */
 .leaflet-control-zoom{
   border: none !important;
-  box-shadow: var(--shadow-card-hover) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
 }
 .leaflet-control-zoom a{
   width: 40px !important;
@@ -534,13 +590,12 @@
   background: #fff;
   border: none;
   border-radius: 10px;
-  box-shadow: var(--shadow-card-hover);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-dark);
   font-size: 16px;
-  margin-top: 8px;
   cursor: pointer;
   transition: background .15s ease;
 }
@@ -574,6 +629,22 @@
 }
 .legend-item .dot{ width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 .legend-item .range{ color: var(--text-soft); font-size: 11px; }
+/* "No Cases" swatch — matches the map's near-empty neutral fill with its boundary line */
+.legend-row .dot.dot-empty,
+.legend-item .dot.dot-empty{
+  background: rgba(156,163,175,0.25);
+  box-shadow: inset 0 0 0 1.5px #5C0A0A;
+}
+/* Barangay boundary swatch — same dark line + white casing the map draws */
+.legend-line{
+  display: inline-block;
+  width: 22px;
+  height: 3px;
+  background: #5C0A0A;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1.5px #fff, 0 0 0 2.5px rgba(0,0,0,0.12);
+  flex-shrink: 0;
+}
 .legend-item .trend-icon-box{
   width: 22px;
   height: 22px;
@@ -592,6 +663,7 @@
 @media (max-width: 991.98px){
   .gis-layout{ flex-direction: column; }
   .gis-side{ flex: 1 1 100%; max-width: 100%; }
+  .gis-side > .info-card{ flex: none; }
   /* Stacked layout — the map no longer needs to stretch-match the left
      column's height (they're not side by side any more), so both go
      back to a plain fixed height instead of flex:1. */
