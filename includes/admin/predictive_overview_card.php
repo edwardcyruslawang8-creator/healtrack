@@ -70,6 +70,36 @@ $predictiveOverviewLinkLabel = $predictiveOverviewLinkLabel ?? 'View Facility An
 $predictiveOverviewLinkIsTab = $predictiveOverviewLinkHref !== null && str_starts_with($predictiveOverviewLinkHref, '#');
 $predictiveOverviewTrend = $predictiveOverviewTrend ?? null;
 ?>
+<style>
+/* Self-contained (not assets/css/predictive_analytics.css — most pages
+   that include this partial don't load that stylesheet) so the
+   "Unusual" anomaly badge and "Likely contributing factors" note on
+   $predictiveOverviewTopAlerts render correctly no matter which host
+   page included this card. Only the two rules this partial actually
+   uses; the full severity-pill palette lives in predictive_analytics.css
+   for the dedicated Predictive Analytics page itself. */
+.adm-predictive-overview-card .pn-severity.unusual{
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 50px;
+  white-space: nowrap;
+  background: #F1E8FD;
+  color: #8B5CF6;
+  margin-left: 6px;
+}
+.adm-predictive-overview-card .pn-causes-note{
+  display: block;
+  font-size: 11px;
+  color: var(--adm-text-muted, #6B7280);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+</style>
 <div class="adm-card adm-predictive-overview-card">
     <div class="adm-card-header">
         <h2><i class="bi bi-graph-up-arrow me-2"></i>Predictive &amp; Prescriptive Analytics</h2>
@@ -221,8 +251,9 @@ $predictiveOverviewTrend = $predictiveOverviewTrend ?? null;
                 <i class="bi <?= htmlspecialchars($r['icon']) ?>"></i>
             </span>
             <span class="adm-status-body">
-                <span class="adm-status-title"><?= htmlspecialchars($r['label']) ?></span>
+                <span class="adm-status-title"><?= htmlspecialchars($r['label']) ?><?php if (!empty($r['anomaly'])): ?><span class="pn-severity unusual" title="More than 2 standard deviations above this pair's own 30-day baseline">Unusual</span><?php endif; ?></span>
                 <span class="adm-status-desc"><?= htmlspecialchars($r['desc']) ?></span>
+                <?php if (!empty($r['causes'])): ?><span class="pn-causes-note">Likely contributing factors: <?= htmlspecialchars($r['causes']) ?></span><?php endif; ?>
             </span>
             <span class="adm-status-number" style="color:<?= htmlspecialchars($r['valueColor']) ?>;"><?= htmlspecialchars((string) $r['value']) ?></span>
         </div>
