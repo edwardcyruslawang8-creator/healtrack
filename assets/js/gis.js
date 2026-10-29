@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const gridColor = rootStyle.getPropertyValue('--border-soft').trim() || '#ECEDF3';
         const tickColor = rootStyle.getPropertyValue('--text-muted').trim() || '#6B7280';
 
-        new Chart(canvas, {
+        const chart = new Chart(canvas, {
             type: 'bar',
             data: {
                 labels: seasonal.monthlyLabels,
@@ -96,6 +96,27 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
             },
         });
+
+        // Real "View: [disease]" dropdown (hc_gis_seasonal_overview()'s
+        // own categoryMonthly, every real category's 12-month breakdown,
+        // already sent inline — this just swaps which one the SAME chart
+        // renders, client-side, no extra request).
+        const select = document.getElementById('seasonalDiseaseSelect');
+        const caption = document.getElementById('seasonalChartCaption');
+        if (select && seasonal.categoryMonthly) {
+            select.addEventListener('change', function () {
+                const category = select.value;
+                const monthly = seasonal.categoryMonthly[category];
+                if (!monthly) return;
+                chart.data.datasets[0].data = monthly;
+                chart.update();
+                if (caption) {
+                    caption.innerHTML = 'Monthly case totals for <strong>' + category.replace(/[&<>"]/g, function (ch) {
+                        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch];
+                    }) + '</strong>, every year on record.';
+                }
+            });
+        }
     })();
 
     const mapEl = document.getElementById('gisMap');

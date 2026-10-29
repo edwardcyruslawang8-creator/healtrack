@@ -446,7 +446,7 @@ if (!function_exists('hc_gis_seasonal_overview')) {
      *              matched case, every year on record) — re-used rather
      *              than re-matched here, so this always agrees exactly
      *              with every other real disease count this app shows.
-     * @return array{hasData: bool, monthlyLabels: array, monthlyTotals: array, topCategory: ?string, topCategoryMonthly: array, seasonCompare: array}
+     * @return array{hasData: bool, monthlyLabels: array, monthlyTotals: array, topCategory: ?string, topCategoryMonthly: array, categoryMonthly: array, categoryOptions: array, seasonCompare: array}
      */
     function hc_gis_seasonal_overview(array $notifiableCases): array
     {
@@ -490,6 +490,16 @@ if (!function_exists('hc_gis_seasonal_overview')) {
         }
         $topCategoryMonthly = $topCategory !== null ? array_values($categoryMonthTotals[$topCategory]) : array_fill(0, 12, 0);
 
+        // Every real category's own 12-month breakdown (not just the top
+        // one) — lets the chart's own "View" dropdown switch between
+        // diseases client-side, with no extra request, instead of only
+        // ever showing the single highest-volume category.
+        $categoryMonthly = [];
+        foreach ($categoryTotals as $category => $total) {
+            $categoryMonthly[$category] = array_values($categoryMonthTotals[$category]);
+        }
+        $categoryOptions = array_keys($categoryTotals); // already arsort()-ed by real total case count, highest first
+
         // Rainy-vs-dry is a raw case-count comparison (not a per-day
         // rate) — both halves of the year are an equal 6 months long, so
         // a raw count is already an honest comparison.
@@ -511,6 +521,8 @@ if (!function_exists('hc_gis_seasonal_overview')) {
             'monthlyTotals' => array_values($monthTotals),
             'topCategory' => $topCategory,
             'topCategoryMonthly' => $topCategoryMonthly,
+            'categoryMonthly' => $categoryMonthly,
+            'categoryOptions' => $categoryOptions,
             'seasonCompare' => array_slice($seasonCompare, 0, 5),
         ];
     }

@@ -202,11 +202,25 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
             <div class="info-card">
                 <div class="info-card-header">
                     <h2>Seasonal Patterns</h2>
+                    <?php if ($seasonalOverview['hasData'] && count($seasonalOverview['categoryOptions']) > 1): ?>
+                    <!-- Real toggle (assets/js/gis.js) — swaps the chart below
+                         between every real disease category's own 12-month
+                         breakdown (hc_gis_seasonal_overview()'s own
+                         categoryMonthly), client-side, no extra request. -->
+                    <div class="mini-select-wrap">
+                        <select class="mini-select" id="seasonalDiseaseSelect">
+                            <?php foreach ($seasonalOverview['categoryOptions'] as $catOpt): ?>
+                            <option value="<?= htmlspecialchars($catOpt) ?>" <?= $catOpt === $seasonalOverview['topCategory'] ? 'selected' : '' ?>><?= htmlspecialchars($catOpt) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <i class="bi bi-chevron-down"></i>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <?php if (!$seasonalOverview['hasData']): ?>
                 <p class="text-muted small mb-0">No notifiable-disease cases on record yet to find a seasonal pattern.</p>
                 <?php else: ?>
-                <p class="health-trend-caption" style="margin-top:0;">
+                <p class="health-trend-caption" style="margin-top:0;" id="seasonalChartCaption">
                     Monthly case totals for <strong><?= htmlspecialchars($seasonalOverview['topCategory']) ?></strong>, every year on record.
                 </p>
                 <div class="health-trend-canvas-box">
