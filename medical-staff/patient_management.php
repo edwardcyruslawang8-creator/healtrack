@@ -331,6 +331,7 @@ $staffNavItems = [
 </main>
 
 <?php require __DIR__ . '/../includes/medical-staff/add_patient_modal.php'; ?>
+<?php require_once __DIR__ . '/../includes/shared/patient_consent_request_modal.php'; ?>
 
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -339,5 +340,6 @@ $staffNavItems = [
 <script src="<?= asset_url('/assets/js/add-patient.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/patient-consent-gate.js') ?>"></script>
 </body>
 </html>
