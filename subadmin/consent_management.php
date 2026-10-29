@@ -280,19 +280,20 @@ $adminNavItems = [
     </div>
 
     <!-- ============ SEARCH & FILTER TOOLBAR ============ -->
-    <form class="csm-toolbar" method="get" action="consent_management.php">
+    <!-- No separate Search button: pressing Enter in the search field
+         submits the form (implicit submission — it's the form's only text
+         field), clearing it reloads the full list (assets/js/
+         consent_management.js), and the status dropdown submits on change. -->
+    <form class="csm-toolbar" method="get" action="consent_management.php" id="csmFilterForm">
         <div class="csm-search">
             <i class="bi bi-search"></i>
-            <input type="text" name="q" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Search by patient name or ID...">
+            <input type="search" name="q" id="csmSearchInput" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Search by patient name or ID..." enterkeyhint="search" aria-label="Search consent records by patient name or ID">
         </div>
-        <select class="form-select csm-filter-btn" name="status" aria-label="Filter by status" onchange="this.form.submit()">
+        <select class="form-select csm-filter-btn csm-status-select" name="status" aria-label="Filter by status" onchange="this.form.submit()">
             <?php foreach ($consentStatusOptions as $opt): ?>
             <option <?= $opt === $statusFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
             <?php endforeach; ?>
         </select>
-        <button type="submit" class="csm-filter-btn">
-            <i class="bi bi-search"></i> Search
-        </button>
     </form>
 
     <!-- ============ CONSENT RECORDS TABLE ============ -->
@@ -348,14 +349,14 @@ $adminNavItems = [
                         </td>
                         <td><span class="csm-type-badge" style="background:<?= htmlspecialchars($type['bg']) ?>; color:<?= htmlspecialchars($type['color']) ?>;"><?= htmlspecialchars($type['label']) ?></span></td>
                         <td class="csm-purpose-cell"><?= htmlspecialchars($c['purpose']) ?></td>
-                        <td><?= $c['requestedByName'] !== null ? htmlspecialchars($c['requestedByName']) . ' <span class="text-muted small">(' . htmlspecialchars($c['requestedByRoleLabel']) . ')</span>' : '—' ?></td>
+                        <td class="csm-requested-cell"><?php if ($c['requestedByName'] !== null): ?><span class="csm-requested-name"><?= htmlspecialchars($c['requestedByName']) ?></span><?php if ($c['requestedByRoleLabel'] !== null): ?><span class="csm-requested-role"><?= htmlspecialchars($c['requestedByRoleLabel']) ?></span><?php endif; ?><?php else: ?>—<?php endif; ?></td>
                         <td>
                             <span class="csm-status-badge" data-status-badge style="background:<?= htmlspecialchars($status['bg']) ?>; color:<?= htmlspecialchars($status['color']) ?>;">
                                 <i class="bi <?= $c['status'] === 'accepted' ? 'bi-check-circle-fill' : ($c['status'] === 'rejected' ? 'bi-x-circle-fill' : 'bi-clock-fill') ?>"></i>
                                 <?= htmlspecialchars($status['label']) ?>
                             </span>
                         </td>
-                        <td><?= htmlspecialchars($c['givenOn']) ?></td>
+                        <td class="csm-date-cell"><?= htmlspecialchars($c['givenOn']) ?></td>
                         <td>
                             <div class="adm-action-btns">
                                 <button type="button" class="adm-action-btn view csm-view-btn" aria-label="View" data-bs-toggle="modal" data-bs-target="#csmDetailsModal">
@@ -378,7 +379,11 @@ $adminNavItems = [
 </main>
 
 <!-- ============ CONSENT DETAILS MODAL (View) ============ -->
-<div class="modal fade" id="csmDetailsModal" tabindex="-1" aria-labelledby="csmDetailsModalLabel" aria-hidden="true">
+<!-- data-facility / data-generated-by feed the printed / PDF copy's
+     header and footer (assets/js/consent_management.js). -->
+<div class="modal fade" id="csmDetailsModal" tabindex="-1" aria-labelledby="csmDetailsModalLabel" aria-hidden="true"
+     data-facility="<?= htmlspecialchars($adminProfile['facility']) ?>"
+     data-generated-by="<?= htmlspecialchars($adminProfile['name']) ?>">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content csm-details-modal">
             <div class="modal-header">
@@ -388,33 +393,23 @@ $adminNavItems = [
             <div class="modal-body">
                 <div class="csm-details-patient">
                     <span class="csm-avatar csm-avatar-lg"><i class="bi bi-person-fill"></i></span>
-                    <div>
-                        <div class="csm-details-patient-name" id="csmDetailPatientName">—</div>
-                        <div class="csm-details-patient-id" id="csmDetailPatientId">—</div>
-                    </div>
+                    <div class="csm-details-patient-name" id="csmDetailPatientName">—</div>
                 </div>
 
                 <div class="csm-details-grid">
                     <div class="csm-detail-field"><span class="csm-detail-label">Consent Type</span><span class="csm-detail-value" id="csmDetailType">—</span></div>
-                    <div class="csm-detail-field"><span class="csm-detail-label">Status</span><span class="csm-detail-value" id="csmDetailStatus">—</span></div>
+                    <div class="csm-detail-field"><span class="csm-detail-label">Status</span><span><span class="csm-status-badge csm-detail-status" id="csmDetailStatus">—</span></span></div>
                     <div class="csm-detail-field csm-detail-field-full" id="csmDetailRequestedByRow"><span class="csm-detail-label">Requested By</span><span class="csm-detail-value" id="csmDetailRequestedBy">—</span></div>
                     <div class="csm-detail-field csm-detail-field-full"><span class="csm-detail-label">Purpose</span><span class="csm-detail-value" id="csmDetailPurpose">—</span></div>
                     <div class="csm-detail-field"><span class="csm-detail-label">Date Granted</span><span class="csm-detail-value" id="csmDetailGivenOn">—</span></div>
-                    <div class="csm-detail-field"><span class="csm-detail-label">Expiration Date</span><span class="csm-detail-value" id="csmDetailExpiration">—</span></div>
                     <div class="csm-detail-field"><span class="csm-detail-label">Authorized By</span><span class="csm-detail-value" id="csmDetailApprovedBy">—</span></div>
-                    <div class="csm-detail-field"><span class="csm-detail-label">Digital Signature</span><span class="csm-detail-value csm-signature-preview" id="csmDetailSignature">—</span></div>
                     <div class="csm-detail-field csm-detail-field-full"><span class="csm-detail-label">Notes</span><span class="csm-detail-value" id="csmDetailNotes">—</span></div>
-                </div>
-
-                <div class="csm-attached-file" id="csmDetailAttachedWrap">
-                    <span class="csm-file-icon"><i class="bi bi-file-earmark-pdf-fill"></i></span>
-                    <span id="csmDetailAttached">—</span>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="csm-modal-btn-outline" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="csm-modal-btn-outline"><i class="bi bi-download"></i> Download PDF</button>
-                <button type="button" class="csm-modal-btn-primary"><i class="bi bi-printer"></i> Print Consent</button>
+                <button type="button" class="csm-modal-btn-outline" id="csmDownloadPdfBtn"><i class="bi bi-download"></i> Download PDF</button>
+                <button type="button" class="csm-modal-btn-primary" id="csmPrintBtn"><i class="bi bi-printer"></i> Print Consent</button>
             </div>
         </div>
     </div>
@@ -424,6 +419,8 @@ $adminNavItems = [
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
+<!-- jsPDF — builds the Consent Details modal's "Download PDF" file (text-based, no screenshot) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="<?= asset_url('/assets/js/consent_management.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>

@@ -90,6 +90,15 @@
 }
 .usm-btn-add:hover{ background: var(--adm-red-bright-hover); color: #fff; }
 
+/* Add User modal's own submit button — same maroon as .usm-btn-add above.
+   Scoped to #addUserModal (the ID also out-ranks add_medicine_modal.css,
+   which loads after this file) so .am-btn-submit stays blue on the other
+   pages that share that modal stylesheet. */
+#addUserModal .am-btn-submit{ background: var(--adm-red-bright); color: #fff; }
+#addUserModal .am-btn-submit:hover,
+#addUserModal .am-btn-submit:active{ background: var(--adm-red-bright-hover); color: #fff; }
+#addUserModal .am-btn-submit:focus-visible{ outline: none; box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.2); }
+
 /* -- User List heading + table -- */
 .usm-list-header{ margin-bottom: 14px; }
 .usm-list-header h3{ font-size: 16px; font-weight: 700; color: var(--adm-text); margin: 0; }

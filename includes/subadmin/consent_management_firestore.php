@@ -3,11 +3,13 @@
  * =====================================================================
  * Consent Management — Data
  * ---------------------------------------------------------------------
- * Reads live from the real "consent_records" Firestore collection — a
- * brand-new collection seeded this session, tied to the real
- * "patients" collection (see includes/patient_management_firestore.php) via
- * each record's patientId. Doc IDs are Firestore auto-IDs (addDocument())
- * since nothing needs to address a consent record by a human-typed id.
+ * Two real sources, merged into one list:
+ *   - "consent_records" docs for this facility's patients (joined via
+ *     patientId) — e.g. live profile-access requests written by
+ *     api/request-patient-consent.php.
+ *   - Each patient's own registration "Share My Information" answer
+ *     (patients.consentShareInfo), shown as a Data Sharing consent —
+ *     see the comment above that loop below.
  *
  * The search box and status filter now really filter $consentRecords.
  * The date-range/type filters and pagination beyond page 1 are still
@@ -82,14 +84,59 @@ $avatarPalette = [
 // join includes/subadmin/subadmin_dashboard_firestore.php uses for
 // consultations.
 // ---------------------------------------------------------------------
-$cmFacilityPatientIds = array_column(
-    array_filter(hc_get_all_patients_summary(), fn ($p) => $p['facility'] === $adminProfile['facility']),
-    'id'
-);
+$cmFacilityPatientDocs = array_values(array_filter(
+    $firestore->listDocuments('patients'),
+    fn ($doc) => ($doc['fields']['facility'] ?? '') === $adminProfile['facility']
+));
+$cmFacilityPatientIds = array_column($cmFacilityPatientDocs, 'id');
 $rawConsents = array_values(array_filter(
     $firestore->listDocuments('consent_records'),
     fn ($doc) => in_array($doc['fields']['patientId'] ?? null, $cmFacilityPatientIds, true)
 ));
+
+// ---------------------------------------------------------------------
+// Registration data-sharing consent — every patient's own real answer to
+// the Add Patient wizard's required "Share My Information" question
+// (api/create-patient.php saves it as patients.consentShareInfo; it's
+// what lets other facilities find/request this patient — see
+// includes/firestore/patients.php). Read live from each patient doc, so
+// a newly registered patient shows up here immediately, rather than
+// copied into consent_records. These rows are display-only: they are
+// NOT consent_records docs, so includes/shared/patient_consent.php's
+// profile-access gate (which only reads consent_records) is unaffected.
+// A patient registered before that question existed has no
+// consentShareInfo field at all and is skipped rather than guessed.
+// ---------------------------------------------------------------------
+foreach ($cmFacilityPatientDocs as $doc) {
+    $p = $doc['fields'];
+    if (!array_key_exists('consentShareInfo', $p)) {
+        continue;
+    }
+    $shares = (bool) $p['consentShareInfo'];
+    $registrar = trim((string) ($p['primaryPhysician'] ?? ''));
+    // Purpose = what the registering staff member really typed on that
+    // same registration (Add Patient wizard Step 5's required "Chief
+    // Complaint / Primary Reason for Visit", saved as-entered) — the
+    // consent question's own wording only if that's somehow blank.
+    $typedReason = trim((string) ($p['initialReasonForVisit'] ?? ''));
+    $rawConsents[] = [
+        'id' => 'registration-' . $doc['id'],
+        'fields' => [
+            'patientId' => $doc['id'],
+            'patientName' => $p['name'] ?? '(no name)',
+            'type' => 'data_sharing',
+            'purpose' => $typedReason !== ''
+                ? $typedReason
+                : 'Sharing personal information and medical data with authorized healthcare personnel for treatment and care',
+            'status' => $shares ? 'accepted' : 'rejected',
+            'givenOn' => $p['dateRegistered'] ?? '',
+            'approvedBy' => $p['name'] ?? '—', // the patient's own answer
+            'notes' => 'Recorded at registration' . ($registrar !== '' ? ' by ' . $registrar : '') . ' ("Share My Information").',
+            'requestedByName' => $registrar !== '' ? $registrar : null,
+            'requestedByRole' => 'registration',
+        ],
+    ];
+}
 usort($rawConsents, fn ($a, $b) => strcmp($b['fields']['givenOn'] ?? '', $a['fields']['givenOn'] ?? ''));
 
 $allConsents = [];
@@ -116,6 +163,7 @@ foreach ($rawConsents as $i => $doc) {
             'subadmin' => 'Sub-Administrator',
             'doctor' => 'Doctor',
             'healthcare_staff' => 'Medical Staff',
+            'registration' => 'At registration',
         ][$fields['requestedByRole'] ?? ''] ?? null,
         'avatar' => $avatarPalette[$i % count($avatarPalette)],
     ];

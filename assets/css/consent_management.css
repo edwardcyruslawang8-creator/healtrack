@@ -72,6 +72,26 @@
   box-shadow: var(--adm-shadow);
 }
 .csm-filter-btn:hover{ background: var(--adm-hover-bg); }
+/* Status dropdown beside the search field — Bootstrap's .form-select is
+   width:100%, which pushed it onto its own row; a fixed width keeps it
+   on the search field's row, with room for the caret. */
+.csm-toolbar .csm-status-select{
+  flex: 0 0 220px;
+  width: 220px;
+  padding-right: 36px;
+  cursor: pointer;
+  /* .csm-filter-btn's `background:` shorthand (and its :hover) wiped
+     Bootstrap's dropdown caret, which is a background image — put it
+     back, changing only the background color on hover. */
+  background-color: var(--adm-card);
+  background-image: var(--bs-form-select-bg-img);
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 14px 10px;
+}
+.csm-toolbar .csm-status-select:hover{ background-color: var(--adm-hover-bg); }
+.csm-toolbar .csm-status-select:focus,
+.csm-toolbar .csm-status-select:focus-visible{ border-color: var(--adm-red-bright); box-shadow: none; outline: none; }
 .csm-filter-caret{ font-size: 11px; color: var(--adm-text-muted); margin-left: 4px; }
 
 .csm-btn-add{
@@ -105,9 +125,24 @@
   flex-shrink: 0;
 }
 .csm-patient-text{ display: flex; flex-direction: column; gap: 1px; }
-.csm-patient-name{ font-weight: 600; color: var(--adm-text); white-space: nowrap; }
+.csm-patient-name{ font-weight: 600; color: var(--adm-text); }
 .csm-patient-id{ font-size: 12px; color: #1A73E8; }
-.csm-purpose-cell{ color: var(--adm-text-muted); max-width: 260px; }
+
+/* Column balance — long names wrap (they used to be nowrap, which
+   made Patient the widest column and squeezed Purpose into four
+   lines); Purpose gets a readable width; badges, the date and the
+   action button never wrap. */
+.csm-table td{ vertical-align: middle; }
+.csm-table th:nth-child(1), .csm-table td:nth-child(1){ min-width: 200px; }
+.csm-table th:nth-child(3), .csm-table td:nth-child(3){ min-width: 240px; }
+.csm-table th:nth-child(4), .csm-table td:nth-child(4){ min-width: 160px; }
+.csm-table th:nth-child(7), .csm-table td:nth-child(7){ width: 1%; text-align: center; }
+.csm-purpose-cell{ color: var(--adm-text-muted); line-height: 1.45; }
+.csm-date-cell{ white-space: nowrap; }
+.csm-requested-cell{ line-height: 1.35; }
+.csm-requested-name{ display: block; color: var(--adm-text); font-weight: 500; }
+.csm-requested-role{ display: block; font-size: 11.5px; color: var(--adm-text-soft); margin-top: 2px; }
+.csm-table .adm-action-btns{ justify-content: center; }
 
 .csm-type-badge, .csm-status-badge{
   display: inline-flex;
@@ -174,7 +209,10 @@
 }
 .csm-avatar-lg{ width: 52px; height: 52px; font-size: 22px; background: #E8F0FE; color: #1A73E8; }
 .csm-details-patient-name{ font-size: 16px; font-weight: 700; color: var(--adm-text); }
-.csm-details-patient-id{ font-size: 12.5px; color: #1A73E8; }
+/* Status in the details modal — the same pill as the table's status
+   column (icon + label, fitted to its text) rather than a full-width
+   tinted bar. */
+.csm-detail-status{ align-self: flex-start; width: fit-content; }
 
 .csm-details-grid{
   display: grid;
@@ -186,17 +224,6 @@
 .csm-detail-field-full{ grid-column: 1 / -1; }
 .csm-detail-label{ font-size: 12px; color: var(--adm-text-muted); font-weight: 500; }
 .csm-detail-value{ font-size: 13.5px; color: var(--adm-text); font-weight: 600; }
-.csm-signature-preview{ font-family: 'Poppins', cursive, sans-serif; font-style: italic; font-size: 16px; }
-
-.csm-attached-file{
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--adm-hover-bg);
-  border-radius: 10px;
-  padding: 12px 14px;
-}
-.csm-file-icon{ font-size: 20px; color: #D93025; }
 
 /* -- Modal buttons (Consent Details + Add Consent) -- */
 .csm-modal-btn-outline{
@@ -241,6 +268,7 @@
 @media (max-width: 767.98px){
   .csm-summary-row{ grid-template-columns: 1fr; }
   .csm-toolbar{ flex-direction: column; align-items: stretch; }
+  .csm-toolbar .csm-status-select{ flex: none; width: 100%; }
   .csm-btn-add{ justify-content: center; }
   .csm-details-grid{ grid-template-columns: 1fr; }
   .csm-field-grid-2{ grid-template-columns: 1fr; }
