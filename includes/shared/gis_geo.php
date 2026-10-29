@@ -3,41 +3,33 @@
  * =====================================================================
  * Shared — GIS Mapping Barangay Shapes
  * ---------------------------------------------------------------------
- * Each barangay's CENTER POINT is real — geocoded from PhilAtlas
- * (philatlas.com), a real Philippine geographic reference site, one
- * barangay page at a time. The outline drawn around each center point
- * is still a plain schematic hexagon, NOT a real surveyed boundary —
- * no actual GIS boundary polygon data for these barangays exists
- * anywhere in this project, only their real centroid coordinates. That
- * still makes a real, meaningful difference from before: the old
- * version placed all 11 shapes on an arbitrary evenly-spaced ring
- * around Lipa's town-center point (and before that, on 7 entirely made-
- * up "Barangay 1"–"7" shapes over Quezon City) — so nothing was
- * actually near where these barangays sit relative to each other.
- * These real centers restore that — Marauoy/Balintawak sit near the
- * town center, San Lucas/Bugtong na Pulo sit well north, Talisay sits
- * east, etc., matching their genuine relative positions.
+ * Each barangay's OUTLINE is its real official boundary — the 11
+ * North District barangays' polygons from the PSA/NAMRIA 2023
+ * barangay boundary set (phl_admbnda_adm4_psa_namria_20231106, as
+ * mirrored by github.com/altcoder/philippines-psgc-shapefiles),
+ * extracted at full resolution into
+ * assets/data/lipa_north_barangays.geojson. Each feature carries its
+ * PSGC code (e.g. PH0401014021 = Inosloban), official name, this app's
+ * own spelling, and district. Only these 11 are in the file, so no
+ * barangay outside the North District is ever drawn.
  *
- * A few of this app's own HC_COVERED_BARANGAYS spellings still don't
- * exactly match Lipa's real official barangay names (likely typos from
- * whoever first typed this list) — matched to their real counterpart
- * for geocoding purposes only, WITHOUT changing the spelling used
- * everywhere else in this app (that's a separate, bigger cleanup this
- * task didn't ask for). "Pulis" and "Buclanin" were among these too until they were
- * corrected app-wide to their real spellings, "Pusil" and "Bulacnin":
- *   "Inosluban"  -> real "Inosloban"
- *   "Marawoy"    -> real "Marauoy"
- *   "Bugtong"    -> real "Bugtong na Pulo"
+ * Each barangay's CENTER POINT (where its marker/label sits) is
+ * geocoded from PhilAtlas (philatlas.com) — every one of them was
+ * checked to fall inside its own official polygon above.
  *
- * Swap hc_gis_barangay_shapes() for a real boundary GeoJSON source
- * (e.g. PSA/PhilGIS) if one is ever obtained — nothing else in
- * api/gis-data.php or the map JS needs to change for that.
+ * A few of this app's own HC_COVERED_BARANGAYS spellings don't exactly
+ * match Lipa's official barangay names — the GeoJSON's "name" property
+ * uses this app's spelling (so it joins straight onto case data keyed
+ * by HC_COVERED_BARANGAYS) and "official_name" keeps the PSA one:
+ *   "Inosluban"  -> official "Inosloban"
+ *   "Marawoy"    -> official "Marauoy"
+ *   "Bugtong"    -> official "Bugtong na Pulo"
  * =====================================================================
  */
 
 require_once __DIR__ . '/predictive_analytics_core.php'; // HC_COVERED_BARANGAYS
 
-const HC_GIS_HEX_RADIUS_DEG = 0.0055; // ~600m — how big each schematic hexagon is drawn around its real center point
+const HC_GIS_BOUNDARIES_PATH = __DIR__ . '/../../assets/data/lipa_north_barangays.geojson';
 
 if (!function_exists('hc_gis_barangay_centers')) {
     /**
@@ -65,42 +57,42 @@ if (!function_exists('hc_gis_barangay_centers')) {
     }
 }
 
-if (!function_exists('hc_gis_hexagon_ring')) {
-    /** A closed 7-point (first == last) hexagon ring around one center point, in [lng, lat] pairs. */
-    function hc_gis_hexagon_ring(float $centerLng, float $centerLat): array
-    {
-        $points = [];
-        for ($i = 0; $i <= 6; $i++) {
-            $angle = deg2rad($i * 60);
-            $points[] = [
-                round($centerLng + HC_GIS_HEX_RADIUS_DEG * cos($angle), 6),
-                // Slight vertical compression — degrees of longitude cover less
-                // real ground distance than degrees of latitude at this
-                // latitude, so an uncompressed circle would look visibly
-                // stretched east-west on the map.
-                round($centerLat + HC_GIS_HEX_RADIUS_DEG * sin($angle) * 0.85, 6),
-            ];
-        }
-        return $points;
-    }
-}
-
 if (!function_exists('hc_gis_barangay_shapes')) {
     /**
-     * @return array<string, array{polygon: array<int, array{0: float, 1: float}>, centroid: array{0: float, 1: float}}>
-     *         Keyed by real barangay name (HC_COVERED_BARANGAYS).
+     * Official boundary geometry per covered barangay (see this file's
+     * header comment). A barangay missing from the boundary file is left
+     * out rather than drawn with a made-up shape.
+     *
+     * @return array<string, array{geometry: array, centroid: array{0: float, 1: float}, officialName: string, psgc: string, district: string}>
+     *         Keyed by this app's own barangay spelling (HC_COVERED_BARANGAYS).
      */
     function hc_gis_barangay_shapes(): array
     {
+        static $shapes = null;
+        if ($shapes !== null) {
+            return $shapes;
+        }
+
+        $boundaries = [];
+        $geojson = json_decode((string) @file_get_contents(HC_GIS_BOUNDARIES_PATH), true);
+        foreach ($geojson['features'] ?? [] as $feature) {
+            $boundaries[$feature['properties']['name']] = $feature;
+        }
+
         $centers = hc_gis_barangay_centers();
         $shapes = [];
-
         foreach (HC_COVERED_BARANGAYS as $name) {
-            [$lat, $lng] = $centers[$name] ?? [13.9411, 121.1622]; // Lipa town-center fallback — should never actually hit if the list above stays in sync with HC_COVERED_BARANGAYS
-
+            if (!isset($boundaries[$name], $centers[$name])) {
+                continue;
+            }
+            [$lat, $lng] = $centers[$name];
+            $props = $boundaries[$name]['properties'];
             $shapes[$name] = [
-                'polygon' => hc_gis_hexagon_ring($lng, $lat),
+                'geometry' => $boundaries[$name]['geometry'],
                 'centroid' => [$lng, $lat],
+                'officialName' => $props['official_name'],
+                'psgc' => $props['psgc'],
+                'district' => $props['district'],
             ];
         }
 

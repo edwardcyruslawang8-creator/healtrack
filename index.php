@@ -167,11 +167,11 @@ require_once __DIR__ . '/includes/shared/sidebar.php';
                  don't leave a clean empty corner to float a legend box
                  over without covering part of the map. -->
             <div class="gis-legend-strip">
-                <span class="legend-item"><span class="dot" style="background:#D93025;"></span> Very High</span>
-                <span class="legend-item"><span class="dot" style="background:#E8710A;"></span> High</span>
-                <span class="legend-item"><span class="dot" style="background:#E8B800;"></span> Moderate</span>
-                <span class="legend-item"><span class="dot" style="background:#1E8E3E;"></span> Low</span>
-                <span class="legend-item"><span class="dot" style="background:#9CA3AF;"></span> No Data</span>
+                <span class="legend-item"><span class="dot" style="background:#6B0F0F;"></span> Very High</span>
+                <span class="legend-item"><span class="dot" style="background:#A31D1D;"></span> High</span>
+                <span class="legend-item"><span class="dot" style="background:#D9534F;"></span> Moderate</span>
+                <span class="legend-item"><span class="dot" style="background:#F2A7A3;"></span> Low</span>
+                <span class="legend-item"><span class="dot" style="background:rgba(156,163,175,.25); box-shadow:inset 0 0 0 1.5px #5C0A0A;"></span> No Cases</span>
             </div>
             <div class="panel-footer">
                 <a href="<?= BASE_URL ?>/patient/gis.php" class="btn-view-map">View Full Map <i class="bi bi-box-arrow-up-right"></i></a>
