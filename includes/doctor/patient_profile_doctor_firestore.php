@@ -27,6 +27,7 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/patient_overview.php';
+require_once __DIR__ . '/../shared/patient_consent.php'; // hc_patient_consent_status()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -51,10 +52,17 @@ $patient = hc_get_patient_profile($requestedPatientId);
 // to clinicians outside the facility that registered them (see
 // includes/doctor/patient_management_doctor_firestore.php's header
 // comment for the registration/listing side of this same rule). Every
-// doctor at a facility can see every patient registered there — there
-// is no per-doctor ownership/ "belongs to one doctor" restriction on
-// top of that.
-if ($patient !== null && $patient['facility'] !== $doctorProfile['facility']) {
+// doctor at a facility can SEE this same-facility patient exists (e.g.
+// in Patient Management's own list) — whether they can open the real
+// PROFILE is a separate, real per-patient consent check now (see
+// hc_patient_consent_status() below), not blanket facility-wide access
+// like it used to be. A patient from a DIFFERENT facility is also
+// resolvable here when their own real "Share My Information" consent
+// (Add Patient wizard, api/create-patient.php's 'consentShareInfo') is
+// true — same as api/quick-search-patients.php's own matching now
+// allows — but still goes through that exact same consent gate either
+// way.
+if ($patient !== null && $patient['facility'] !== $doctorProfile['facility'] && !$patient['consentShareInfo']) {
     $patient = null;
     // Every per-tab page (allergies.php, medications.php, medical_records.php,
     // ...) requires this file first for $patient, then independently
@@ -66,6 +74,28 @@ if ($patient !== null && $patient['facility'] !== $doctorProfile['facility']) {
     $requestedPatientId = '';
 }
 $patient = $patient ?? hc_not_found_patient_profile($requestedPatientId);
+
+// ---------------------------------------------------------------------
+// Patient-consent gate — real, see includes/shared/patient_consent.php's
+// own header comment for the 3 ways in (same-day registrant, same-day
+// assigned consultation, or real accepted patient consent). Every
+// per-tab page requires THIS file first, same as patient_profile.php
+// itself — gating here, once, covers all of them; every page but
+// patient_profile.php itself just bounces back to it instead of
+// duplicating the restricted-access UI in each one.
+// ---------------------------------------------------------------------
+$accessRestricted = false;
+$consentStatus = null;
+if ($requestedPatientId !== '') {
+    $consentStatus = hc_patient_consent_status($requestedPatientId, $myUid, $_SESSION['role'] ?? '', $_SESSION['name'] ?? '');
+    if (!$consentStatus['access']) {
+        $accessRestricted = true;
+        if (basename($_SERVER['SCRIPT_NAME']) !== 'patient_profile.php') {
+            header('Location: patient_profile.php?id=' . urlencode($requestedPatientId));
+            exit;
+        }
+    }
+}
 
 // ---------------------------------------------------------------------
 // Profile tabs — only Overview is real; see this file's header comment
@@ -83,15 +113,25 @@ $profileTabs = [
 ];
 
 // ---------------------------------------------------------------------
-// Overview tab — real, all scoped to $patient['id'].
+// Overview tab — real, all scoped to $patient['id']. Skipped entirely
+// when access is restricted.
 // ---------------------------------------------------------------------
-$overview = hc_get_patient_overview($patient['id']);
-$summary = $overview['summary'];
-$activeMedicalConditions = $overview['activeMedicalConditions'];
-$latestConsultation = $overview['latestConsultation'];
-$recentLabResults = $overview['recentLabResults'];
-$recentXray = $overview['recentXray'];
-$vaccinationHistory = $overview['vaccinationHistory'];
+if (!$accessRestricted) {
+    $overview = hc_get_patient_overview($patient['id']);
+    $summary = $overview['summary'];
+    $activeMedicalConditions = $overview['activeMedicalConditions'];
+    $latestConsultation = $overview['latestConsultation'];
+    $recentLabResults = $overview['recentLabResults'];
+    $recentXray = $overview['recentXray'];
+    $vaccinationHistory = $overview['vaccinationHistory'];
+} else {
+    $summary = ['totalConsultations' => 0, 'activeMedicalConditions' => 0, 'allergies' => 0, 'currentMedications' => 0];
+    $activeMedicalConditions = [];
+    $latestConsultation = null;
+    $recentLabResults = [];
+    $recentXray = [];
+    $vaccinationHistory = [];
+}
 
 $labStatusMeta = [
     'normal'   => ['label' => 'Normal',   'bg' => '#E4F7EA', 'color' => '#1E8E3E'],

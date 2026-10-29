@@ -19,6 +19,47 @@
 .ppf-breadcrumb-sep{ margin: 0 6px; color: var(--adm-text-soft); }
 .ppf-breadcrumb-current{ color: var(--adm-text); font-weight: 600; }
 
+/* -- Patient Details Restricted card (real patient-consent gate —
+   includes/shared/patient_consent.php) -- */
+.ppf-restricted{
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 16px 0;
+}
+.ppf-restricted-icon{ font-size: 40px; color: var(--adm-text-soft); display: block; margin-bottom: 12px; }
+.ppf-restricted h2{ font-size: 20px; font-weight: 800; color: var(--adm-text); margin: 0 0 6px; }
+.ppf-restricted-sub{ font-size: 13.5px; color: var(--adm-text-muted); margin: 0 0 18px; }
+.ppf-restricted-status{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+.ppf-restricted-status.pending{ background: #FDF3DC; color: #B7791F; }
+.ppf-restricted-status.declined{ background: #FCE4E4; color: #D93025; }
+.ppf-restricted-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  width: 100%;
+  background: var(--adm-red-bright, #5B0A0A);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 20px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.ppf-restricted-btn:disabled{ opacity: .7; }
+
 /* -- Profile header card -- */
 .ppf-profile-card{
   display: flex;

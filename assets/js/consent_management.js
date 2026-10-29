@@ -36,6 +36,16 @@ document.addEventListener('DOMContentLoaded', function () {
         set('csmDetailPatientId', row.dataset.patientId);
         set('csmDetailType', row.dataset.typeLabel);
         set('csmDetailPurpose', row.dataset.purpose);
+
+        const requestedByRow = document.getElementById('csmDetailRequestedByRow');
+        if (requestedByRow) {
+            if (row.dataset.requestedByName) {
+                set('csmDetailRequestedBy', row.dataset.requestedByName + (row.dataset.requestedByRole ? ' (' + row.dataset.requestedByRole + ')' : ''));
+                requestedByRow.style.display = '';
+            } else {
+                requestedByRow.style.display = 'none';
+            }
+        }
         set('csmDetailGivenOn', row.dataset.givenOn);
         set('csmDetailExpiration', row.dataset.expiration, 'No expiration on record');
         set('csmDetailApprovedBy', row.dataset.approvedBy);

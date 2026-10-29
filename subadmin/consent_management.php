@@ -304,6 +304,7 @@ $adminNavItems = [
                         <th>Patient</th>
                         <th>Consent Type</th>
                         <th>Purpose</th>
+                        <th>Requested By</th>
                         <th>Status</th>
                         <th>Given On</th>
                         <th>Actions</th>
@@ -312,7 +313,7 @@ $adminNavItems = [
                 <tbody id="csmTableBody">
                     <?php if (empty($consentRecords)): ?>
                     <tr>
-                        <td colspan="6">
+                        <td colspan="7">
                             <div class="csm-empty-state">
                                 <i class="bi bi-file-earmark-text"></i>
                                 <p>No consent records found.</p>
@@ -332,7 +333,9 @@ $adminNavItems = [
                         data-approved-by="<?= htmlspecialchars($c['approvedBy']) ?>"
                         data-notes="<?= htmlspecialchars($c['notes']) ?>"
                         data-signature="<?= htmlspecialchars($c['signature'] ?? '') ?>"
-                        data-attached-file="<?= htmlspecialchars($c['attachedFile'] ?? '') ?>">
+                        data-attached-file="<?= htmlspecialchars($c['attachedFile'] ?? '') ?>"
+                        data-requested-by-name="<?= htmlspecialchars($c['requestedByName'] ?? '') ?>"
+                        data-requested-by-role="<?= htmlspecialchars($c['requestedByRoleLabel'] ?? '') ?>">
                         <td>
                             <div class="csm-patient-cell">
                                 <span class="csm-avatar" style="background:<?= htmlspecialchars($c['avatar']['bg']) ?>; color:<?= htmlspecialchars($c['avatar']['color']) ?>;">
@@ -345,6 +348,7 @@ $adminNavItems = [
                         </td>
                         <td><span class="csm-type-badge" style="background:<?= htmlspecialchars($type['bg']) ?>; color:<?= htmlspecialchars($type['color']) ?>;"><?= htmlspecialchars($type['label']) ?></span></td>
                         <td class="csm-purpose-cell"><?= htmlspecialchars($c['purpose']) ?></td>
+                        <td><?= $c['requestedByName'] !== null ? htmlspecialchars($c['requestedByName']) . ' <span class="text-muted small">(' . htmlspecialchars($c['requestedByRoleLabel']) . ')</span>' : '—' ?></td>
                         <td>
                             <span class="csm-status-badge" data-status-badge style="background:<?= htmlspecialchars($status['bg']) ?>; color:<?= htmlspecialchars($status['color']) ?>;">
                                 <i class="bi <?= $c['status'] === 'accepted' ? 'bi-check-circle-fill' : ($c['status'] === 'rejected' ? 'bi-x-circle-fill' : 'bi-clock-fill') ?>"></i>
@@ -393,6 +397,7 @@ $adminNavItems = [
                 <div class="csm-details-grid">
                     <div class="csm-detail-field"><span class="csm-detail-label">Consent Type</span><span class="csm-detail-value" id="csmDetailType">—</span></div>
                     <div class="csm-detail-field"><span class="csm-detail-label">Status</span><span class="csm-detail-value" id="csmDetailStatus">—</span></div>
+                    <div class="csm-detail-field csm-detail-field-full" id="csmDetailRequestedByRow"><span class="csm-detail-label">Requested By</span><span class="csm-detail-value" id="csmDetailRequestedBy">—</span></div>
                     <div class="csm-detail-field csm-detail-field-full"><span class="csm-detail-label">Purpose</span><span class="csm-detail-value" id="csmDetailPurpose">—</span></div>
                     <div class="csm-detail-field"><span class="csm-detail-label">Date Granted</span><span class="csm-detail-value" id="csmDetailGivenOn">—</span></div>
                     <div class="csm-detail-field"><span class="csm-detail-label">Expiration Date</span><span class="csm-detail-value" id="csmDetailExpiration">—</span></div>

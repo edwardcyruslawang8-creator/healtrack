@@ -3,6 +3,7 @@
 config/gemini.php
 config/groq.php
 config/mail.php
+config/sms.php
 
 # --- Composer dependencies: regenerate with `php composer.phar install`
 # (composer.lock IS committed so installs stay pinned to the same versions).
