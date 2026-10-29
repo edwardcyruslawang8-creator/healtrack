@@ -23,7 +23,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const modal = new bootstrap.Modal(modalEl);
     const nameEl = document.getElementById('pcgPatientName');
-    const subEl = document.getElementById('pcgSub');
     const pendingStatus = document.getElementById('pcgPendingStatus');
     const pendingText = document.getElementById('pcgPendingText');
     const declinedStatus = document.getElementById('pcgDeclinedStatus');
@@ -43,12 +42,20 @@ document.addEventListener('DOMContentLoaded', function () {
         return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
 
+    function setFormVisible(visible) {
+        // The submit button lives in the modal footer (form="pcgForm"),
+        // outside <form id="pcgForm"> itself, so hiding the form alone
+        // wouldn't hide it — both are toggled together here.
+        form.classList.toggle('d-none', !visible);
+        submitBtn.classList.toggle('d-none', !visible);
+    }
+
     function resetModal() {
         errorBox.classList.add('d-none');
         pendingStatus.classList.add('d-none');
         declinedStatus.classList.add('d-none');
-        form.classList.remove('d-none');
         sentState.classList.add('d-none');
+        setFormVisible(true);
         reasonInput.value = '';
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="bi bi-send-fill"></i> Send Consent Request';
@@ -83,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data.pendingRequest) {
                     pendingText.textContent = 'Request sent on ' + formatDate(data.pendingRequest.givenOn) + ' — awaiting the patient\'s response.';
                     pendingStatus.classList.remove('d-none');
-                    form.classList.add('d-none');
+                    setFormVisible(false);
                 } else {
                     if (data.declinedRequest) {
                         declinedText.textContent = 'Previously declined on ' + formatDate(data.declinedRequest.respondedAt || data.declinedRequest.givenOn) + '. You may send a new request.';
@@ -123,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     submitBtn.innerHTML = '<i class="bi bi-send-fill"></i> Send Consent Request';
                     return;
                 }
-                form.classList.add('d-none');
+                setFormVisible(false);
                 sentState.classList.remove('d-none');
             })
             .catch(function () {
