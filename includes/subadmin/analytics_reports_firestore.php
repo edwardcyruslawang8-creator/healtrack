@@ -99,6 +99,18 @@ $rawAnalyticsRequests = array_values(array_filter(
 ));
 usort($rawAnalyticsRequests, fn ($a, $b) => strcmp($b['fields']['requestedAt'] ?? '', $a['fields']['requestedAt'] ?? ''));
 
+// Real "operational issue" comparative/anomaly view
+// (hc_operational_trends_overview()) over this facility's own stock
+// requests — same mean/standard-deviation anomaly method the disease/
+// consultation-volume checks already use, applied to real request
+// volume + real processing time (request -> decision). Reuses
+// $facilityStockRequests (already resolved to THIS same facility by
+// the predictive_analytics_firestore.php require chain above) rather
+// than reshaping $rawAnalyticsRequests' own raw-doc shape, since
+// hc_operational_trends_overview() needs the requestedAtRaw/
+// reviewedAtRaw fields hc_get_all_stock_requests() already provides.
+$operationalTrends = hc_operational_trends_overview($facilityStockRequests);
+
 // Real dispensed pharmacy orders at THIS facility (real "facility" field).
 $analyticsDispensedOrders = array_values(array_filter(
     $firestore->listDocuments('pharmacy_orders'),

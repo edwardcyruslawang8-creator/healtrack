@@ -40,6 +40,12 @@ $statusMeta = hc_stock_request_status_meta();
 
 $myRequests = array_values(array_filter(hc_get_all_stock_requests(), fn ($r) => $r['pharmacistUid'] === $myUid));
 
+// Real "operational issue" comparative/anomaly view (hc_operational_trends_overview())
+// over MY OWN stock requests — same mean/standard-deviation anomaly
+// method the disease/consultation-volume checks already use, applied
+// to real request volume + real processing time (request -> decision).
+$operationalTrends = hc_operational_trends_overview($myRequests);
+
 $myDispensed = [];
 foreach (hc_get_all_pharmacy_order_docs() as $doc) {
     $f = $doc['fields'];

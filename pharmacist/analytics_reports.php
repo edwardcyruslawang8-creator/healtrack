@@ -320,6 +320,46 @@ $staffNavItems = [
         <?php endif; ?>
     </div>
 
+    <!-- ============ OPERATIONAL TRENDS (comparative/anomaly analysis) ============
+         Real mean/standard-deviation anomaly check (same method the
+         disease/consultation-volume checks already use) over MY OWN
+         real stock requests — hc_operational_trends_overview()
+         (includes/shared/analytics_comparison.php). Self-contained
+         <style> since this page doesn't load predictive_analytics.css. -->
+    <style>
+    .pn-severity.unusual{
+        display: inline-flex; align-items: center; font-size: 10.5px; font-weight: 700;
+        letter-spacing: .3px; text-transform: uppercase; padding: 3px 9px; border-radius: 50px;
+        white-space: nowrap; background: #F1E8FD; color: #8B5CF6; margin-left: 6px;
+    }
+    .arp-op-trend-note{ font-size: 12.5px; color: var(--adm-text-muted, #6B7280); margin: 10px 0 0; }
+    </style>
+    <div class="adm-card sad-chart-card">
+        <div class="sad-card-header">
+            <h2>My Stock Request Volume (Last 30 Days)</h2>
+            <?php if ($operationalTrends['hasData'] && $operationalTrends['volumeAnomaly']): ?>
+            <span class="pn-severity unusual" title="More than 2 standard deviations from my own 30-day baseline">Unusual</span>
+            <?php endif; ?>
+        </div>
+        <?php if (!$operationalTrends['hasData']): ?>
+        <p class="adm-table-empty">No stock requests on record yet.</p>
+        <?php else: ?>
+        <div class="sad-canvas-box">
+            <canvas id="operationalVolumeChart"></canvas>
+        </div>
+        <p class="arp-op-trend-note">Recent 7-day average: <strong><?= $operationalTrends['volumeRecentAvg'] ?></strong>/day vs a 30-day baseline of <strong><?= $operationalTrends['volumeBaselineAvg'] ?></strong>/day.</p>
+        <?php if ($operationalTrends['hasTurnaroundData']): ?>
+        <p class="arp-op-trend-note">
+            Average processing time (request to decision): <strong><?= $operationalTrends['turnaroundRecentAvgHours'] ?>h</strong> recently vs a <strong><?= $operationalTrends['turnaroundBaselineAvgHours'] ?>h</strong> baseline
+            <?php if ($operationalTrends['turnaroundAnomaly']): ?><span class="pn-severity unusual">Unusual</span><?php endif; ?>
+        </p>
+        <?php else: ?>
+        <p class="arp-op-trend-note">Not enough decided requests yet to compare real processing time.</p>
+        <?php endif; ?>
+        <script>window.OPERATIONAL_TRENDS = <?= json_encode(['labels' => $operationalTrends['volumeLabels'], 'values' => $operationalTrends['volumeDaily'], 'anomaly' => $operationalTrends['volumeAnomaly']]) ?>;</script>
+        <?php endif; ?>
+    </div>
+
     <!-- ============ FOOTER NOTICE ============ -->
     <div class="arp-footer-notice">
         <i class="bi bi-info-circle-fill"></i>
@@ -361,5 +401,33 @@ $staffNavItems = [
 </script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/analytics_reports.js') ?>"></script>
+<script>
+// Operational Trends volume chart — real daily stock-request counts,
+// set inline as window.OPERATIONAL_TRENDS (hc_operational_trends_overview()).
+// Self-contained since assets/js/analytics_reports.js only supports one
+// generic trend chart per page (already used by "My Stock Requests Over Time" above).
+(function () {
+    const canvas = document.getElementById('operationalVolumeChart');
+    const op = window.OPERATIONAL_TRENDS;
+    if (!canvas || !op || typeof Chart === 'undefined') return;
+    const rootStyle = getComputedStyle(document.documentElement);
+    const gridColor = rootStyle.getPropertyValue('--adm-border') || '#ECEDF3';
+    const tickColor = rootStyle.getPropertyValue('--adm-text-muted') || '#6B7280';
+    const barColor = op.anomaly ? '#8B5CF6' : '#1A73E8';
+    new Chart(canvas, {
+        type: 'bar',
+        data: { labels: op.labels, datasets: [{ data: op.values, backgroundColor: barColor, borderRadius: 4, maxBarThickness: 16 }] },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
+                x: { grid: { display: false }, ticks: { color: tickColor, autoSkip: true, maxTicksLimit: 10 } },
+            },
+        },
+    });
+})();
+</script>
 </body>
 </html>
