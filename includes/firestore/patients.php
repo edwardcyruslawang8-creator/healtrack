@@ -44,7 +44,7 @@ if (!function_exists('hc_map_patient_summary_doc')) {
      * One raw patients/{id} doc -> the list-row shape Patient Management
      * pages need — used by hc_get_all_patients_summary() below.
      *
-     * @return array{id: string, name: string, age: int, gender: string, contact: string, address: string, dateRegisteredRaw: string, dateRegistered: string, initialReasonForVisit: string, birthDate: string, facility: string, primaryPhysician: ?string, intakeVitals: array}
+     * @return array{id: string, name: string, age: int, gender: string, contact: string, address: string, barangay: ?string, dateRegisteredRaw: string, dateRegistered: string, initialReasonForVisit: string, birthDate: string, facility: string, primaryPhysician: ?string, intakeVitals: array}
      */
     function hc_map_patient_summary_doc(array $doc): array
     {
@@ -57,6 +57,9 @@ if (!function_exists('hc_map_patient_summary_doc')) {
             'gender' => $f['gender'] ?? '—',
             'contact' => $f['contact'] ?? '—',
             'address' => hc_format_patient_address($f),
+            // The bare barangay on its own (null when not on file) — for
+            // per-barangay breakdowns like Facility Analytics' Patients tab.
+            'barangay' => trim((string) ($f['barangay'] ?? '')) !== '' ? trim((string) $f['barangay']) : null,
             'dateRegisteredRaw' => $f['dateRegistered'] ?? '',
             'dateRegistered' => isset($f['dateRegistered']) ? date('M j, Y', strtotime($f['dateRegistered'])) : '—',
             'initialReasonForVisit' => $f['initialReasonForVisit'] ?? '—',

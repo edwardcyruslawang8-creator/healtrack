@@ -54,7 +54,8 @@
             if (chart.config.type !== 'doughnut') return;
 
             var canvasParent = chart.canvas && chart.canvas.parentElement;
-            if (canvasParent && canvasParent.querySelector('.adm-donut-total')) return;
+            // .an-donut-total is Facility Analytics' own HTML total (same idea, "an-" prefix)
+            if (canvasParent && canvasParent.querySelector('.adm-donut-total, .an-donut-total')) return;
 
             var dataset = chart.data && chart.data.datasets && chart.data.datasets[0];
             if (!dataset || !Array.isArray(dataset.data)) return;

@@ -458,14 +458,22 @@ foreach ($facilityPatients as $p) {
     $barangayTallies[$bgy] = ($barangayTallies[$bgy] ?? 0) + 1;
 }
 arsort($barangayTallies);
+// Every barangay (not a top-N cut) — the card's list scrolls if long.
+$patientsWithBarangayCount = array_sum($barangayTallies);
 $patientsByBarangay = [];
-foreach (array_slice($barangayTallies, 0, 8, true) as $label => $count) {
-    $patientsByBarangay[] = ['label' => $label, 'value' => $count];
+foreach ($barangayTallies as $label => $count) {
+    $patientsByBarangay[] = [
+        'label' => $label,
+        'value' => $count,
+        'pct' => round($count / $patientsWithBarangayCount * 100, 1),
+    ];
 }
 $patientsByBarangayMax = $patientsByBarangay === [] ? 1 : max(array_column($patientsByBarangay, 'value'));
+$patientsWithoutBarangayCount = $totalPatients - $patientsWithBarangayCount;
 
-// Most recently registered 10, newest first (hc_get_all_patients_summary() already sorts that way).
-$recentPatientsTable = array_slice($facilityPatients, 0, 10);
+// Most recently registered 50, newest first (hc_get_all_patients_summary()
+// already sorts that way) — the table scrolls inside its card.
+$recentPatientsTable = array_slice($facilityPatients, 0, 50);
 
 // ---------------------------------------------------------------------
 // RECORDS TAB — this facility's own real medical_records docs.
@@ -473,10 +481,32 @@ $recentPatientsTable = array_slice($facilityPatients, 0, 10);
 $recordsConsultationCount = count(array_filter($facilityRecordDocs, fn ($d) => ($d['fields']['type'] ?? '') === 'consultation'));
 $recordsLaboratoryCount = count(array_filter($facilityRecordDocs, fn ($d) => ($d['fields']['type'] ?? '') === 'laboratory'));
 $recordsTotal = count($facilityRecordDocs);
-$recordsByType = array_values(array_filter([
-    ['label' => 'Consultation', 'value' => $recordsConsultationCount, 'color' => '#1A73E8'],
-    ['label' => 'Laboratory',   'value' => $recordsLaboratoryCount,   'color' => '#7C3AED'],
-], fn ($r) => $r['value'] > 0));
+// Every record type actually present (not just consultation/laboratory),
+// so the donut's total always equals $recordsTotal — prescription,
+// referral and procedure records used to be silently left out of it.
+$recordTypeColors = [
+    'consultation' => '#1A73E8',
+    'laboratory' => '#7C3AED',
+    'prescription' => '#1E8E3E',
+    'referral' => '#E8710A',
+    'procedure' => '#D93025',
+];
+$recordTypeFallbackColors = ['#0EA5E9', '#DB2777', '#CA8A04', '#64748B'];
+$recordTypeTallies = [];
+foreach ($facilityRecordDocs as $d) {
+    $type = strtolower(trim((string) ($d['fields']['type'] ?? '')));
+    $type = $type === '' ? 'other' : $type;
+    $recordTypeTallies[$type] = ($recordTypeTallies[$type] ?? 0) + 1;
+}
+arsort($recordTypeTallies);
+$recordsByType = [];
+foreach ($recordTypeTallies as $type => $count) {
+    $recordsByType[] = [
+        'label' => ucfirst($type),
+        'value' => $count,
+        'color' => $recordTypeColors[$type] ?? $recordTypeFallbackColors[count($recordsByType) % count($recordTypeFallbackColors)],
+    ];
+}
 $recordsByTypeTotal = array_sum(array_column($recordsByType, 'value'));
 
 $facilityRecordsSorted = $facilityRecordDocs;
@@ -487,7 +517,7 @@ $recentRecordsTable = array_map(fn ($d) => [
     'type' => ucfirst($d['fields']['type'] ?? '—'),
     'title' => $d['fields']['title'] ?? '—',
     'provider' => $d['fields']['provider'] ?? '—',
-], array_slice($facilityRecordsSorted, 0, 10));
+], array_slice($facilityRecordsSorted, 0, 50)); // latest 50 — the table scrolls inside its card
 
 // ---------------------------------------------------------------------
 // SERVICES TAB — this facility's own real consultations, by type AND
@@ -530,14 +560,18 @@ foreach ($allServiceTallies as $type => $count) {
 // STAFF TAB — real users/{uid} docs whose "facility" matches this one
 // (same field $facilityStaffCount above already counts by).
 // ---------------------------------------------------------------------
+// One clearly different hue per role — Pharmacist/Medical Technologist/
+// Radiologic Technologist used to be three near-identical blues/violets
+// that couldn't be told apart on the donut.
 $staffRoleMeta = [
-    'doctor'             => ['label' => 'Doctor',            'color' => '#B45309'],
-    'healthcare_staff'   => ['label' => 'Medical Staff',     'color' => '#1E8E3E'],
-    'pharmacist'         => ['label' => 'Pharmacist',        'color' => '#4F46E5'],
-    'medical_technician' => ['label' => 'Medical Technologist','color' => '#1A73E8'],
+    'doctor'             => ['label' => 'Doctor',                  'color' => '#7A1F2B'],
+    'healthcare_staff'   => ['label' => 'Medical Staff',           'color' => '#1E8E3E'],
+    'pharmacist'         => ['label' => 'Pharmacist',              'color' => '#E8710A'],
+    'medical_technician' => ['label' => 'Medical Technologist',    'color' => '#1A73E8'],
     'radio_technologist' => ['label' => 'Radiologic Technologist', 'color' => '#8B5CF6'],
-    'subadmin'           => ['label' => 'Sub-Admin',         'color' => '#D93025'],
+    'subadmin'           => ['label' => 'Sub-Admin',               'color' => '#64748B'],
 ];
+$staffRoleFallbackColors = ['#0EA5E9', '#DB2777', '#CA8A04', '#14B8A6'];
 $facilityStaffDocs = array_values(array_filter(
     $firestore->listDocuments('users'),
     fn ($doc) => ($doc['fields']['facility'] ?? '') === $facilityName
@@ -547,17 +581,25 @@ foreach ($facilityStaffDocs as $doc) {
     $role = $doc['fields']['role'] ?? 'other';
     $staffRoleTallies[$role] = ($staffRoleTallies[$role] ?? 0) + 1;
 }
+// Every role actually present — one outside $staffRoleMeta is still
+// counted (labelled from its own key) rather than silently dropped, so
+// the donut's total always equals the number of staff at this facility.
+// Largest first, so the legend reads top-down by size.
+arsort($staffRoleTallies);
 $staffByRole = [];
-foreach ($staffRoleMeta as $key => $meta) {
-    if (($staffRoleTallies[$key] ?? 0) > 0) {
-        $staffByRole[] = ['label' => $meta['label'], 'value' => $staffRoleTallies[$key], 'color' => $meta['color']];
-    }
+$staffFallbackIndex = 0;
+foreach ($staffRoleTallies as $key => $count) {
+    $meta = $staffRoleMeta[$key] ?? [
+        'label' => ucwords(str_replace('_', ' ', (string) $key)),
+        'color' => $staffRoleFallbackColors[$staffFallbackIndex++ % count($staffRoleFallbackColors)],
+    ];
+    $staffByRole[] = ['label' => $meta['label'], 'value' => $count, 'color' => $meta['color']];
 }
 $staffByRoleTotal = array_sum(array_column($staffByRole, 'value'));
 
 $staffTable = array_map(fn ($doc) => [
     'name' => $doc['fields']['name'] ?? '(unnamed)',
-    'role' => $staffRoleMeta[$doc['fields']['role'] ?? '']['label'] ?? ucfirst($doc['fields']['role'] ?? '—'),
+    'role' => $staffRoleMeta[$doc['fields']['role'] ?? '']['label'] ?? ucwords(str_replace('_', ' ', $doc['fields']['role'] ?? '—')),
     'email' => $doc['fields']['email'] ?? '—',
     'status' => ($doc['fields']['status'] ?? 'active') === 'pending' ? 'Pending' : (($doc['fields']['status'] ?? 'active') === 'inactive' ? 'Inactive' : 'Active'),
 ], $facilityStaffDocs);
@@ -569,11 +611,14 @@ usort($staffTable, fn ($a, $b) => strcasecmp($a['name'], $b['name']));
 // ---------------------------------------------------------------------
 $medicineCategoryTallies = [];
 foreach ($allMedicineItems as $m) {
-    $medicineCategoryTallies[$m['category']] = ($medicineCategoryTallies[$m['category']] ?? 0) + 1;
+    $category = trim((string) $m['category']) !== '' ? trim((string) $m['category']) : 'Uncategorized';
+    $medicineCategoryTallies[$category] = ($medicineCategoryTallies[$category] ?? 0) + 1;
 }
 arsort($medicineCategoryTallies);
+// Every category (not a top-8 cut) — the card's list scrolls if long,
+// and the counts always add up to the Total Medicines pill.
 $medicinesByCategory = [];
-foreach (array_slice($medicineCategoryTallies, 0, 8, true) as $label => $count) {
+foreach ($medicineCategoryTallies as $label => $count) {
     $medicinesByCategory[] = ['label' => $label, 'value' => $count];
 }
 $medicinesByCategoryMax = $medicinesByCategory === [] ? 1 : max(array_column($medicinesByCategory, 'value'));
@@ -585,7 +630,7 @@ $medicinesTable = array_map(fn ($m) => [
     'stock' => $m['currentStock'],
     'status' => $medicineStatusMetaTab[$m['status']] ?? ['label' => ucfirst($m['status']), 'bg' => '#EEF0F3', 'color' => '#6B7280'],
     'expiry' => $m['expiryDate'],
-], array_slice($allMedicineItems, 0, 20));
+], $allMedicineItems); // every medicine — the table scrolls inside its card
 
 // ---------------------------------------------------------------------
 // VACCINES TAB — inventory is system-wide (same caveat as Medicines),
@@ -595,15 +640,36 @@ $medicinesTable = array_map(fn ($m) => [
 // angle this tab adds on top of the shared inventory table.
 // ---------------------------------------------------------------------
 $vaccineCategoryTallies = [];
+$vaccineFormTallies = [];
+$vaccineUnits = [];
 foreach ($allVaccineItems as $v) {
-    $vaccineCategoryTallies[$v['category']] = ($vaccineCategoryTallies[$v['category']] ?? 0) + 1;
+    $category = trim((string) $v['category']) !== '' ? trim((string) $v['category']) : 'Uncategorized';
+    $vaccineCategoryTallies[$category] = ($vaccineCategoryTallies[$category] ?? 0) + 1;
+    $form = trim((string) $v['form']);
+    $form = $form !== '' && $form !== '—' ? $form : 'Unspecified';
+    $vaccineFormTallies[$form] = ($vaccineFormTallies[$form] ?? 0) + 1;
+    $vaccineUnits[strtolower(trim((string) $v['unit']))] = true;
 }
 arsort($vaccineCategoryTallies);
+arsort($vaccineFormTallies);
+// Every category (not a top-8 cut), each with its share of all vaccines.
 $vaccinesByCategory = [];
-foreach (array_slice($vaccineCategoryTallies, 0, 8, true) as $label => $count) {
-    $vaccinesByCategory[] = ['label' => $label, 'value' => $count];
+foreach ($vaccineCategoryTallies as $label => $count) {
+    $vaccinesByCategory[] = ['label' => $label, 'value' => $count, 'pct' => round($count / count($allVaccineItems) * 100, 1)];
 }
 $vaccinesByCategoryMax = $vaccinesByCategory === [] ? 1 : max(array_column($vaccinesByCategory, 'value'));
+// Same items by their real "form" field (Injection / Oral Drops / ...) —
+// extra context for the Vaccines by Category card, since every vaccine
+// may share one category.
+$vaccinesByForm = [];
+foreach ($vaccineFormTallies as $label => $count) {
+    $vaccinesByForm[] = ['label' => $label, 'value' => $count, 'pct' => round($count / count($allVaccineItems) * 100, 1)];
+}
+$vaccinesByFormMax = $vaccinesByForm === [] ? 1 : max(array_column($vaccinesByForm, 'value'));
+$vaccineStockTotal = array_sum(array_column($allVaccineItems, 'currentStock'));
+// "doses" only when every item really is stocked in doses; otherwise the
+// neutral "units" rather than mislabeling a mixed total.
+$vaccineStockUnitLabel = array_keys($vaccineUnits) === ['dose'] ? 'doses' : 'units';
 
 $immunizationsByVaccine = [];
 foreach ($facilityVaccineDocs as $doc) {
@@ -614,12 +680,13 @@ foreach ($facilityVaccineDocs as $doc) {
     $immunizationsByVaccine[$name] = ($immunizationsByVaccine[$name] ?? 0) + 1;
 }
 arsort($immunizationsByVaccine);
+$immunizationsTotal = count($facilityVaccineDocs);
+// Every vaccine given (not a top-8 cut) — the card's list scrolls if long.
 $immunizationsByVaccineTable = [];
-foreach (array_slice($immunizationsByVaccine, 0, 8, true) as $label => $count) {
-    $immunizationsByVaccineTable[] = ['label' => $label, 'value' => $count];
+foreach ($immunizationsByVaccine as $label => $count) {
+    $immunizationsByVaccineTable[] = ['label' => $label, 'value' => $count, 'pct' => round($count / $immunizationsTotal * 100, 1)];
 }
 $immunizationsByVaccineMax = $immunizationsByVaccineTable === [] ? 1 : max(array_column($immunizationsByVaccineTable, 'value'));
-$immunizationsTotal = count($facilityVaccineDocs);
 
 $vaccinesTable = array_map(fn ($v) => [
     'name' => $v['name'],
@@ -627,7 +694,7 @@ $vaccinesTable = array_map(fn ($v) => [
     'stock' => $v['currentStock'],
     'status' => $medicineStatusMetaTab[$v['status']] ?? ['label' => ucfirst($v['status']), 'bg' => '#EEF0F3', 'color' => '#6B7280'],
     'expiry' => $v['expiryDate'],
-], array_slice($allVaccineItems, 0, 20));
+], $allVaccineItems); // every vaccine — the table scrolls inside its card
 
 // ---------------------------------------------------------------------
 // REPORTS TAB — a real month-over-month summary, reusing every number

@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 listRowsEl.innerHTML = d.list.map(function (item) {
                                     const pct = Math.round((item.stock / d.listMax) * 100);
                                     return '<div class="an-inv-row">' +
-                                        '<span class="an-inv-row-name">' + escapeHtml(item.name) + '</span>' +
+                                        '<span class="an-inv-row-name" title="' + escapeHtml(item.name).replace(/"/g, '&quot;') + '">' + escapeHtml(item.name) + '</span>' +
                                         '<div class="an-inv-row-bar-track"><div class="an-inv-row-bar-fill" style="width:' + pct + '%;"></div></div>' +
                                         '<span class="an-inv-row-value">' + item.stock + '</span>' +
                                         '</div>';

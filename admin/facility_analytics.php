@@ -453,7 +453,7 @@ $adminNavItems = [
                             <?php endif; ?>
                             <?php foreach ($topLowStockMedicinesCard as $m): ?>
                             <div class="an-inv-row">
-                                <span class="an-inv-row-name"><?= htmlspecialchars($m['name']) ?></span>
+                                <span class="an-inv-row-name" title="<?= htmlspecialchars($m['name']) ?>"><?= htmlspecialchars($m['name']) ?></span>
                                 <div class="an-inv-row-bar-track">
                                     <div class="an-inv-row-bar-fill" style="width:<?= round($m['stock'] / $lowStockMedicinesMaxCard * 100) ?>%;"></div>
                                 </div>
@@ -526,7 +526,7 @@ $adminNavItems = [
                             <?php endif; ?>
                             <?php foreach ($vaccineStockCard as $v): ?>
                             <div class="an-inv-row">
-                                <span class="an-inv-row-name"><?= htmlspecialchars($v['name']) ?></span>
+                                <span class="an-inv-row-name" title="<?= htmlspecialchars($v['name']) ?>"><?= htmlspecialchars($v['name']) ?></span>
                                 <div class="an-inv-row-bar-track">
                                     <div class="an-inv-row-bar-fill" style="width:<?= round($v['stock'] / $vaccineStockMaxCard * 100) ?>%;"></div>
                                 </div>
@@ -1015,29 +1015,49 @@ $adminNavItems = [
                 <div class="an-summary-tile"><span class="an-tile-label">Average Age</span><span class="an-tile-value"><?= $patientsAverageAge ?></span></div>
             </div>
 
-            <div class="an-charts-row" style="grid-template-columns:1fr 1.6fr;">
-                <div class="an-card">
-                    <div class="an-card-header"><h3>Patients by Barangay</h3></div>
-                    <?php if ($patientsByBarangay === []): ?>
-                    <p class="adm-table-empty"><?= $totalPatients > 0 ? 'None of this facility\'s patients have a barangay on file yet.' : 'No patients registered at this facility yet.' ?></p>
-                    <?php else: ?>
-                    <div class="an-inv-list-header"><span>Patients</span></div>
-                    <?php foreach ($patientsByBarangay as $b): ?>
-                    <div class="an-inv-row">
-                        <span class="an-inv-row-name"><?= htmlspecialchars($b['label']) ?></span>
-                        <div class="an-inv-row-bar-track"><div class="an-inv-row-bar-fill" style="width:<?= round($b['value'] / $patientsByBarangayMax * 100) ?>%;"></div></div>
-                        <span class="an-inv-row-value"><?= number_format($b['value']) ?></span>
+            <div class="an-scroll-row">
+                <div class="an-card an-scroll-card">
+                    <div class="an-card-header">
+                        <h3>Patients by Barangay</h3>
+                        <?php if ($patientsByBarangay !== []): ?>
+                        <span class="an-card-header-note"><?= count($patientsByBarangay) ?> barangay<?= count($patientsByBarangay) === 1 ? '' : 's' ?></span>
+                        <?php endif; ?>
                     </div>
-                    <?php endforeach; ?>
+                    <?php if ($patientsByBarangay === []): ?>
+                    <div class="an-card-empty">
+                        <i class="bi bi-geo-alt"></i>
+                        <p><?= $totalPatients > 0
+                            ? 'No barangay data is available yet — none of this facility\'s patients have a barangay on file.'
+                            : 'No patients registered at this facility yet.' ?></p>
+                    </div>
+                    <?php else: ?>
+                    <div class="an-bar-list-header"><span>Barangay</span><span>Patients</span></div>
+                    <div class="an-bar-list">
+                        <?php foreach ($patientsByBarangay as $b): ?>
+                        <div class="an-bar-row">
+                            <span class="an-bar-name" title="<?= htmlspecialchars($b['label']) ?>"><?= htmlspecialchars($b['label']) ?></span>
+                            <div class="an-inv-row-bar-track"><div class="an-inv-row-bar-fill" style="width:<?= round($b['value'] / $patientsByBarangayMax * 100) ?>%;"></div></div>
+                            <span class="an-bar-value"><?= number_format($b['value']) ?> <span class="an-bar-pct"><?= rtrim(rtrim(number_format($b['pct'], 1), '0'), '.') ?>%</span></span>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php if ($patientsWithoutBarangayCount > 0): ?>
+                    <p class="an-bar-footnote"><i class="bi bi-info-circle"></i> <?= number_format($patientsWithoutBarangayCount) ?> patient<?= $patientsWithoutBarangayCount === 1 ? ' has' : 's have' ?> no barangay on file and <?= $patientsWithoutBarangayCount === 1 ? 'is' : 'are' ?> not counted above.</p>
+                    <?php endif; ?>
                     <?php endif; ?>
                 </div>
 
-                <div class="an-card">
-                    <div class="an-card-header"><h3>Recently Registered</h3></div>
+                <div class="an-card an-scroll-card">
+                    <div class="an-card-header">
+                        <h3>Recently Registered</h3>
+                        <?php if ($recentPatientsTable !== []): ?>
+                        <span class="an-card-header-note">Latest <?= count($recentPatientsTable) ?></span>
+                        <?php endif; ?>
+                    </div>
                     <?php if ($recentPatientsTable === []): ?>
                     <p class="adm-table-empty">No patients registered at this facility yet.</p>
                     <?php else: ?>
-                    <div class="adm-table-wrap">
+                    <div class="adm-table-wrap an-scroll-table">
                         <table class="adm-table">
                             <thead><tr><th>Name</th><th>Age</th><th>Gender</th><th>Barangay</th><th>Registered</th></tr></thead>
                             <tbody>
@@ -1066,14 +1086,14 @@ $adminNavItems = [
                 <div class="an-summary-tile"><span class="an-tile-label">Laboratory Records</span><span class="an-tile-value"><?= number_format($recordsLaboratoryCount) ?></span></div>
             </div>
 
-            <div class="an-charts-row" style="grid-template-columns:1fr 1.6fr;">
-                <div class="an-card">
+            <div class="an-scroll-row">
+                <div class="an-card an-scroll-card an-donut-card">
                     <div class="an-card-header"><h3>Records by Type</h3></div>
                     <?php if ($recordsByTypeTotal > 0): ?>
                     <div class="an-donut-wrap">
                         <div class="an-donut-canvas-box">
                             <canvas id="recordsByTypeChart"></canvas>
-                            <div class="an-donut-center"><div class="an-donut-total"><?= number_format($recordsByTypeTotal) ?></div><div class="an-donut-total-label">Total</div></div>
+                            <div class="an-donut-center"><div class="an-donut-total"><?= number_format($recordsByTypeTotal) ?></div><div class="an-donut-total-label">Total Records</div></div>
                         </div>
                     </div>
                     <div class="an-donut-legend">
@@ -1090,22 +1110,27 @@ $adminNavItems = [
                     <?php endif; ?>
                 </div>
 
-                <div class="an-card">
-                    <div class="an-card-header"><h3>Recent Records</h3></div>
+                <div class="an-card an-scroll-card">
+                    <div class="an-card-header">
+                        <h3>Recent Records</h3>
+                        <?php if ($recentRecordsTable !== []): ?>
+                        <span class="an-card-header-note">Latest <?= count($recentRecordsTable) ?></span>
+                        <?php endif; ?>
+                    </div>
                     <?php if ($recentRecordsTable === []): ?>
                     <p class="adm-table-empty">No medical records at this facility yet.</p>
                     <?php else: ?>
-                    <div class="adm-table-wrap">
-                        <table class="adm-table">
+                    <div class="adm-table-wrap an-scroll-table">
+                        <table class="adm-table an-records-table">
                             <thead><tr><th>Date</th><th>Patient</th><th>Type</th><th>Title</th><th>Provider</th></tr></thead>
                             <tbody>
                                 <?php foreach ($recentRecordsTable as $r): ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($r['date']) ?></td>
-                                    <td><?= htmlspecialchars($r['patientName']) ?></td>
-                                    <td><?= htmlspecialchars($r['type']) ?></td>
-                                    <td><?= htmlspecialchars($r['title']) ?></td>
-                                    <td><?= htmlspecialchars($r['provider']) ?></td>
+                                    <td class="col-date"><?= htmlspecialchars($r['date']) ?></td>
+                                    <td class="col-patient"><?= htmlspecialchars($r['patientName']) ?></td>
+                                    <td class="col-type"><?= htmlspecialchars($r['type']) ?></td>
+                                    <td class="col-title"><?= htmlspecialchars($r['title']) ?></td>
+                                    <td class="col-provider"><?= htmlspecialchars($r['provider']) ?></td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -1179,8 +1204,8 @@ $adminNavItems = [
                 <div class="an-summary-tile"><span class="an-tile-label">Medical Staff</span><span class="an-tile-value"><?= number_format($staffRoleTallies['healthcare_staff'] ?? 0) ?></span></div>
             </div>
 
-            <div class="an-charts-row" style="grid-template-columns:1fr 1.6fr;">
-                <div class="an-card">
+            <div class="an-scroll-row">
+                <div class="an-card an-scroll-card an-donut-card">
                     <div class="an-card-header"><h3>Staff by Role</h3></div>
                     <?php if ($staffByRoleTotal > 0): ?>
                     <div class="an-donut-wrap">
@@ -1199,25 +1224,36 @@ $adminNavItems = [
                         <?php endforeach; ?>
                     </div>
                     <?php else: ?>
-                    <p class="adm-table-empty">No staff assigned to this facility yet.</p>
+                    <div class="an-card-empty">
+                        <i class="bi bi-people"></i>
+                        <p>No staff are assigned to this facility yet.</p>
+                    </div>
                     <?php endif; ?>
                 </div>
 
-                <div class="an-card">
-                    <div class="an-card-header"><h3>Staff Directory</h3></div>
+                <div class="an-card an-scroll-card">
+                    <div class="an-card-header">
+                        <h3>Staff Directory</h3>
+                        <?php if ($staffTable !== []): ?>
+                        <span class="an-card-header-note"><?= count($staffTable) ?> staff</span>
+                        <?php endif; ?>
+                    </div>
                     <?php if ($staffTable === []): ?>
-                    <p class="adm-table-empty">No staff assigned to this facility yet.</p>
+                    <div class="an-card-empty">
+                        <i class="bi bi-person-badge"></i>
+                        <p>No staff are assigned to this facility yet.</p>
+                    </div>
                     <?php else: ?>
-                    <div class="adm-table-wrap">
-                        <table class="adm-table">
-                            <thead><tr><th>Name</th><th>Role</th><th>Email</th><th>Status</th></tr></thead>
+                    <div class="adm-table-wrap an-scroll-table">
+                        <table class="adm-table an-staff-table">
+                            <thead><tr><th>Name</th><th>Role</th><th>Email</th><th class="col-status">Status</th></tr></thead>
                             <tbody>
                                 <?php foreach ($staffTable as $s): ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($s['name']) ?></td>
-                                    <td><?= htmlspecialchars($s['role']) ?></td>
-                                    <td><?= htmlspecialchars($s['email']) ?></td>
-                                    <td><span class="an-status-badge" <?= $s['status'] !== 'Active' ? 'style="background:var(--adm-orange-bg);color:var(--adm-orange);"' : '' ?>><?= htmlspecialchars($s['status']) ?></span></td>
+                                    <td class="col-name"><?= htmlspecialchars($s['name']) ?></td>
+                                    <td class="col-role"><?= htmlspecialchars($s['role']) ?></td>
+                                    <td class="col-email"><?= htmlspecialchars($s['email']) ?></td>
+                                    <td class="col-status"><span class="an-status-badge status-<?= strtolower(htmlspecialchars($s['status'])) ?>"><?= htmlspecialchars($s['status']) ?></span></td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -1237,44 +1273,61 @@ $adminNavItems = [
                 <div class="an-inv-pill surplus"><span class="an-inv-pill-label">Overstocked</span><span class="an-inv-pill-value"><?= number_format($medicineInventory['overstocked']) ?></span></div>
             </div>
 
-            <div class="an-charts-row" style="grid-template-columns:1fr 1.6fr;">
-                <div class="an-card">
-                    <div class="an-card-header"><h3>Medicines by Category</h3></div>
-                    <?php if ($medicinesByCategory === []): ?>
-                    <p class="adm-table-empty">No medicines on record.</p>
-                    <?php else: ?>
-                    <div class="an-inv-list-header"><span>Items</span></div>
-                    <?php foreach ($medicinesByCategory as $c): ?>
-                    <div class="an-inv-row">
-                        <span class="an-inv-row-name"><?= htmlspecialchars($c['label']) ?></span>
-                        <div class="an-inv-row-bar-track"><div class="an-inv-row-bar-fill" style="width:<?= round($c['value'] / $medicinesByCategoryMax * 100) ?>%;"></div></div>
-                        <span class="an-inv-row-value"><?= number_format($c['value']) ?></span>
+            <div class="an-scroll-row">
+                <div class="an-card an-scroll-card">
+                    <div class="an-card-header">
+                        <h3>Medicines by Category</h3>
+                        <?php if ($medicinesByCategory !== []): ?>
+                        <span class="an-card-header-note"><?= count($medicinesByCategory) ?> categor<?= count($medicinesByCategory) === 1 ? 'y' : 'ies' ?></span>
+                        <?php endif; ?>
                     </div>
-                    <?php endforeach; ?>
+                    <?php if ($medicinesByCategory === []): ?>
+                    <div class="an-card-empty">
+                        <i class="bi bi-capsule"></i>
+                        <p>No medicines on record yet, so there are no categories to show.</p>
+                    </div>
+                    <?php else: ?>
+                    <div class="an-bar-list-header"><span>Category</span><span>Items</span></div>
+                    <div class="an-bar-list">
+                        <?php foreach ($medicinesByCategory as $c): ?>
+                        <div class="an-bar-row">
+                            <span class="an-bar-name" title="<?= htmlspecialchars($c['label']) ?>"><?= htmlspecialchars($c['label']) ?></span>
+                            <div class="an-inv-row-bar-track"><div class="an-inv-row-bar-fill" style="width:<?= round($c['value'] / $medicinesByCategoryMax * 100) ?>%;"></div></div>
+                            <span class="an-bar-value an-bar-value-sm"><?= number_format($c['value']) ?></span>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
                     <?php endif; ?>
                 </div>
 
-                <div class="an-card">
+                <div class="an-card an-scroll-card">
                     <div class="an-card-header">
                         <h3>Medicines</h3>
-                        <span class="an-card-header-note">System-wide inventory</span>
+                        <span class="an-card-header-note">System-wide inventory<?= $medicinesTable !== [] ? ' · ' . count($medicinesTable) . ' items' : '' ?></span>
                     </div>
-                    <div class="adm-table-wrap">
-                        <table class="adm-table">
-                            <thead><tr><th>Name</th><th>Category</th><th>Stock</th><th>Status</th><th>Expiry</th></tr></thead>
+                    <?php if ($medicinesTable === []): ?>
+                    <div class="an-card-empty">
+                        <i class="bi bi-capsule"></i>
+                        <p>No medicines on record yet.</p>
+                    </div>
+                    <?php else: ?>
+                    <div class="adm-table-wrap an-scroll-table">
+                        <table class="adm-table an-inventory-table">
+                            <thead><tr><th>Name</th><th>Category</th><th class="col-stock">Stock</th><th>Status</th><th>Expiry</th></tr></thead>
                             <tbody>
                                 <?php foreach ($medicinesTable as $m): ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($m['name']) ?></td>
-                                    <td><?= htmlspecialchars($m['category']) ?></td>
-                                    <td><?= number_format($m['stock']) ?></td>
-                                    <td><span class="an-status-badge" style="background:<?= htmlspecialchars($m['status']['bg']) ?>;color:<?= htmlspecialchars($m['status']['color']) ?>;"><?= htmlspecialchars($m['status']['label']) ?></span></td>
-                                    <td><?= htmlspecialchars($m['expiry']) ?></td>
+                                    <td class="col-name"><?= htmlspecialchars($m['name']) ?></td>
+                                    <td class="col-category"><?= htmlspecialchars($m['category']) ?></td>
+                                    <td class="col-stock"><?= number_format($m['stock']) ?></td>
+                                    <td class="col-status"><span class="an-status-badge" style="background:<?= htmlspecialchars($m['status']['bg']) ?>;color:<?= htmlspecialchars($m['status']['color']) ?>;"><?= htmlspecialchars($m['status']['label']) ?></span></td>
+                                    <td class="col-expiry"><?= htmlspecialchars($m['expiry']) ?></td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
                     </div>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -1288,65 +1341,108 @@ $adminNavItems = [
                 <div class="an-inv-pill surplus"><span class="an-inv-pill-label">Overstocked</span><span class="an-inv-pill-value"><?= number_format($vaccineInventory['overstocked']) ?></span></div>
             </div>
 
-            <div class="an-charts-row" style="grid-template-columns:1fr 1fr;">
-                <div class="an-card">
+            <div class="an-scroll-row an-scroll-row-even">
+                <div class="an-card an-scroll-card">
                     <div class="an-card-header">
                         <h3>Immunizations Given</h3>
                         <span class="an-card-header-note">At this facility</span>
                     </div>
                     <?php if ($immunizationsByVaccineTable === []): ?>
-                    <p class="adm-table-empty">No immunizations recorded at this facility yet.</p>
-                    <?php else: ?>
-                    <p style="font-size:12.5px;color:var(--adm-text-muted);margin:0 0 10px;"><?= number_format($immunizationsTotal) ?> total completed immunizations, all-time.</p>
-                    <div class="an-inv-list-header"><span>Doses</span></div>
-                    <?php foreach ($immunizationsByVaccineTable as $v): ?>
-                    <div class="an-inv-row">
-                        <span class="an-inv-row-name"><?= htmlspecialchars($v['label']) ?></span>
-                        <div class="an-inv-row-bar-track"><div class="an-inv-row-bar-fill" style="width:<?= round($v['value'] / $immunizationsByVaccineMax * 100) ?>%;"></div></div>
-                        <span class="an-inv-row-value"><?= number_format($v['value']) ?></span>
+                    <div class="an-card-empty">
+                        <i class="bi bi-droplet-half"></i>
+                        <p>No immunizations recorded at this facility yet.</p>
                     </div>
-                    <?php endforeach; ?>
+                    <?php else: ?>
+                    <p class="an-card-subtitle"><?= number_format($immunizationsTotal) ?> total completed immunizations, all-time.</p>
+                    <div class="an-bar-list-header"><span>Vaccine</span><span>Doses</span></div>
+                    <div class="an-bar-list">
+                        <?php foreach ($immunizationsByVaccineTable as $v): ?>
+                        <div class="an-bar-row">
+                            <span class="an-bar-name"><?= htmlspecialchars($v['label']) ?></span>
+                            <div class="an-inv-row-bar-track"><div class="an-inv-row-bar-fill" style="width:<?= round($v['value'] / $immunizationsByVaccineMax * 100) ?>%;"></div></div>
+                            <span class="an-bar-value"><?= number_format($v['value']) ?> <span class="an-bar-pct"><?= rtrim(rtrim(number_format($v['pct'], 1), '0'), '.') ?>%</span></span>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
                     <?php endif; ?>
                 </div>
 
-                <div class="an-card">
-                    <div class="an-card-header"><h3>Vaccines by Category</h3></div>
-                    <?php if ($vaccinesByCategory === []): ?>
-                    <p class="adm-table-empty">No vaccines on record.</p>
-                    <?php else: ?>
-                    <div class="an-inv-list-header"><span>Items</span></div>
-                    <?php foreach ($vaccinesByCategory as $c): ?>
-                    <div class="an-inv-row">
-                        <span class="an-inv-row-name"><?= htmlspecialchars($c['label']) ?></span>
-                        <div class="an-inv-row-bar-track"><div class="an-inv-row-bar-fill" style="width:<?= round($c['value'] / $vaccinesByCategoryMax * 100) ?>%;"></div></div>
-                        <span class="an-inv-row-value"><?= number_format($c['value']) ?></span>
+                <div class="an-card an-scroll-card">
+                    <div class="an-card-header">
+                        <h3>Vaccines by Category</h3>
+                        <?php if ($vaccinesByCategory !== []): ?>
+                        <span class="an-card-header-note">System-wide inventory</span>
+                        <?php endif; ?>
                     </div>
-                    <?php endforeach; ?>
+                    <?php if ($vaccinesByCategory === []): ?>
+                    <div class="an-card-empty">
+                        <i class="bi bi-droplet-half"></i>
+                        <p>No vaccines on record yet, so there are no categories to show.</p>
+                    </div>
+                    <?php else: ?>
+                    <div class="an-bar-scroll">
+                        <div class="an-bar-section">
+                            <div class="an-bar-list-header"><span>Category</span><span>Items</span></div>
+                            <?php foreach ($vaccinesByCategory as $c): ?>
+                            <div class="an-bar-row">
+                                <span class="an-bar-name"><?= htmlspecialchars($c['label']) ?></span>
+                                <div class="an-inv-row-bar-track"><div class="an-inv-row-bar-fill" style="width:<?= round($c['value'] / $vaccinesByCategoryMax * 100) ?>%;"></div></div>
+                                <span class="an-bar-value"><?= number_format($c['value']) ?> <span class="an-bar-pct"><?= rtrim(rtrim(number_format($c['pct'], 1), '0'), '.') ?>%</span></span>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+
+                        <div class="an-bar-section">
+                            <div class="an-bar-list-header"><span>By Form</span><span>Items</span></div>
+                            <?php foreach ($vaccinesByForm as $f): ?>
+                            <div class="an-bar-row">
+                                <span class="an-bar-name"><?= htmlspecialchars($f['label']) ?></span>
+                                <div class="an-inv-row-bar-track"><div class="an-inv-row-bar-fill" style="width:<?= round($f['value'] / $vaccinesByFormMax * 100) ?>%;"></div></div>
+                                <span class="an-bar-value"><?= number_format($f['value']) ?> <span class="an-bar-pct"><?= rtrim(rtrim(number_format($f['pct'], 1), '0'), '.') ?>%</span></span>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+
+                    <div class="an-summary-highlight an-bar-highlight">
+                        <div class="an-highlight-icon"><i class="bi bi-box-seam-fill"></i></div>
+                        <div>
+                            <div class="an-highlight-value"><?= number_format($vaccineStockTotal) ?> <?= $vaccineStockUnitLabel ?></div>
+                            <div class="an-highlight-label">In stock across <?= number_format($vaccineInventory['total']) ?> vaccine item<?= $vaccineInventory['total'] === 1 ? '' : 's' ?></div>
+                        </div>
+                    </div>
                     <?php endif; ?>
                 </div>
             </div>
 
-            <div class="an-card" style="margin-top:18px;">
+            <div class="an-card an-table-card">
                 <div class="an-card-header">
                     <h3>Vaccines</h3>
-                    <span class="an-card-header-note">System-wide inventory</span>
+                    <span class="an-card-header-note">System-wide inventory<?= $vaccinesTable !== [] ? ' · ' . count($vaccinesTable) . ' items' : '' ?></span>
                 </div>
-                <div class="adm-table-wrap">
-                    <table class="adm-table">
-                        <thead><tr><th>Name</th><th>Category</th><th>Stock</th><th>Status</th><th>Expiry</th></tr></thead>
+                <?php if ($vaccinesTable === []): ?>
+                <div class="an-card-empty">
+                    <i class="bi bi-droplet-half"></i>
+                    <p>No vaccines on record yet.</p>
+                </div>
+                <?php else: ?>
+                <div class="adm-table-wrap an-scroll-table">
+                    <table class="adm-table an-inventory-table">
+                        <thead><tr><th>Name</th><th>Category</th><th class="col-stock">Stock</th><th>Status</th><th>Expiry</th></tr></thead>
                         <tbody>
                             <?php foreach ($vaccinesTable as $v): ?>
                             <tr>
-                                <td><?= htmlspecialchars($v['name']) ?></td>
-                                <td><?= htmlspecialchars($v['category']) ?></td>
-                                <td><?= number_format($v['stock']) ?></td>
-                                <td><span class="an-status-badge" style="background:<?= htmlspecialchars($v['status']['bg']) ?>;color:<?= htmlspecialchars($v['status']['color']) ?>;"><?= htmlspecialchars($v['status']['label']) ?></span></td>
-                                <td><?= htmlspecialchars($v['expiry']) ?></td>
+                                <td class="col-name"><?= htmlspecialchars($v['name']) ?></td>
+                                <td class="col-category"><?= htmlspecialchars($v['category']) ?></td>
+                                <td class="col-stock"><?= number_format($v['stock']) ?></td>
+                                <td class="col-status"><span class="an-status-badge" style="background:<?= htmlspecialchars($v['status']['bg']) ?>;color:<?= htmlspecialchars($v['status']['color']) ?>;"><?= htmlspecialchars($v['status']['label']) ?></span></td>
+                                <td class="col-expiry"><?= htmlspecialchars($v['expiry']) ?></td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
+                <?php endif; ?>
             </div>
 
         <?php elseif ($tab['key'] === 'reports'): ?>

@@ -296,8 +296,12 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
+/* Five pills share one card's width, so each is narrow: the label may
+   wrap to two lines ("Total Medicines") instead of being clipped, and
+   space-between pins every value to the same baseline row whether its
+   label took one line or two. */
 .an-inv-pill{
   /* Same card treatment as .an-summary-tile above (and .adm-card
      elsewhere in this app) instead of a flat tinted block. */
@@ -305,13 +309,15 @@
   border: 1px solid var(--adm-border);
   border-radius: var(--adm-radius-md);
   box-shadow: var(--adm-shadow);
-  padding: 12px 14px;
+  padding: 10px 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
 }
-.an-inv-pill-label{ font-size: 10.5px; color: var(--adm-text-muted); white-space: nowrap; }
-.an-inv-pill-value{ font-size: 18px; font-weight: 800; color: var(--adm-text); }
+.an-inv-pill-label{ font-size: 10.5px; line-height: 1.3; color: var(--adm-text-muted); overflow-wrap: anywhere; }
+.an-inv-pill-value{ font-size: 18px; font-weight: 800; line-height: 1.1; color: var(--adm-text); }
 .an-inv-pill.good .an-inv-pill-value{ color: var(--adm-green); }
 .an-inv-pill.warn .an-inv-pill-value{ color: var(--adm-orange); }
 .an-inv-pill.bad  .an-inv-pill-value{ color: var(--adm-red); }
@@ -320,16 +326,23 @@
 .an-inv-split{
   display: grid;
   /* minmax(0, ...) — this column holds a donut canvas. */
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
 }
+/* Both column headings reserve two lines, so "Stock Status
+   Distribution" wrapping in the narrower donut column doesn't push the
+   donut lower than the list beside it. */
 .an-inv-list-col h4,
 .an-inv-donut-col h4{
   font-size: 12.5px;
   font-weight: 700;
+  line-height: 1.35;
+  min-height: 2.7em;
   color: var(--adm-text);
-  margin: 0 0 10px;
+  margin: 0 0 8px;
 }
+.an-inv-donut-col{ min-width: 0; }
 .an-inv-list-header{
   display: flex;
   justify-content: flex-end;
@@ -346,7 +359,7 @@
 .an-inv-row-name{
   font-size: 12px;
   color: var(--adm-text);
-  width: 40%;
+  width: 42%;
   flex-shrink: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -364,14 +377,17 @@
   border-radius: 50px;
   background: var(--adm-red-bright);
 }
-.an-inv-row-value{ font-size: 12px; font-weight: 700; color: var(--adm-text); width: 20px; text-align: right; flex-shrink: 0; }
+/* min-width (not a fixed 20px) — three-digit stock counts like "340" overflowed it */
+.an-inv-row-value{ font-size: 12px; font-weight: 700; color: var(--adm-text); min-width: 28px; text-align: right; flex-shrink: 0; white-space: nowrap; }
 
 /* -- Inventory Summary panel -- */
-/* justify-content:space-between spreads the tiles + two highlight boxes
-   across the card's full stretched height (matching Medicine/Vaccine
-   Inventory's height in the same row) instead of clustering at the top
-   with dead space below. */
-.an-summary-panel{ display: flex; flex-direction: column; justify-content: space-between; }
+/* Header, then the tile grid growing to fill the card's stretched
+   height (matching Medicine/Vaccine Inventory beside it), then the
+   expiring-items box pinned to the bottom — one even 16px gap between
+   each, instead of space-between leaving big uneven blank bands. */
+.an-summary-panel{ display: flex; flex-direction: column; gap: 16px; }
+.an-summary-panel > .an-card-header{ margin-bottom: 0; }
+.an-summary-panel .an-summary-tiles{ margin-bottom: 0; }
 .an-summary-tiles{
   display: grid;
   /* 4-across by default — these sections (Patients/Records/Services tab
@@ -389,7 +405,24 @@
    usual 4) — a dedicated modifier rather than changing .an-summary-tiles
    itself, since that shared class's other callers (Patients/Records/
    Services tab headers, etc.) genuinely always render exactly 4 tiles. */
-.an-summary-tiles-5{ grid-template-columns: repeat(5, minmax(0, 1fr)); }
+/* In the narrow side column, five tiles side by side were ~55px wide —
+   too small for their labels. There, "Total Items" spans the full width
+   as a headline and the four status tiles form a 2x2 grid; the rows
+   stretch to fill the panel's height with each tile's text centered.
+   When the panel drops to its own full-width row (see RESPONSIVE below),
+   the five go back to one row. */
+.an-summary-tiles-5{
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  flex: 1;
+  align-content: stretch;
+}
+.an-summary-tiles-5 > .an-summary-tile{ justify-content: center; }
+.an-summary-tiles-5 > .an-summary-tile:first-child{
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
 .an-summary-tile{
   /* Same card treatment as .adm-card elsewhere in this app (white/card
      background, bordered, soft shadow) instead of a flat tinted block —
@@ -404,8 +437,8 @@
   flex-direction: column;
   gap: 4px;
 }
-.an-tile-label{ font-size: 11px; color: var(--adm-text-muted); }
-.an-tile-value{ font-size: 19px; font-weight: 800; color: var(--adm-text); }
+.an-tile-label{ font-size: 11px; line-height: 1.3; color: var(--adm-text-muted); overflow-wrap: anywhere; }
+.an-tile-value{ font-size: 19px; font-weight: 800; line-height: 1.15; color: var(--adm-text); }
 .an-summary-tile.good .an-tile-value{ color: var(--adm-green); }
 .an-summary-tile.warn .an-tile-value{ color: var(--adm-orange); }
 .an-summary-tile.bad  .an-tile-value{ color: var(--adm-red); }
@@ -527,22 +560,219 @@
 .an-reco-empty p{ margin: 0; font-size: 13px; }
 
 /* =============================================================
+   SCROLLING CARD ROWS — Patients tab (Patients by Barangay +
+   Recently Registered) and Records tab (Records by Type + Recent
+   Records)
+   -------------------------------------------------------------
+   Both cards share one fixed height side by side; each scrolls its
+   own content (list / table) inside it, so a long list never
+   stretches the page. Stacked on narrower screens, where the cards
+   size to content and only the scroll areas are capped.
+   ============================================================= */
+.an-scroll-row{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+  gap: 18px;
+  margin-bottom: 20px;
+}
+.an-scroll-card{
+  display: flex;
+  flex-direction: column;
+  height: 520px;
+  min-width: 0;
+}
+/* Two equal columns (Vaccines tab) instead of the default narrow/wide pair */
+.an-scroll-row-even{ grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+
+/* Full-width table card under a scroll row (Vaccines tab's inventory):
+   capped height, the table scrolls inside it. */
+.an-table-card{
+  display: flex;
+  flex-direction: column;
+  max-height: 560px;
+  min-width: 0;
+}
+
+.an-card-subtitle{ font-size: 12.5px; color: var(--adm-text-muted); margin: -4px 0 12px; }
+
+/* Several bar sections stacked in one card (Vaccines by Category: by
+   category, then by form) — scroll together, with a summary box pinned
+   below them. */
+.an-bar-scroll{ flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; }
+.an-bar-section + .an-bar-section{ margin-top: 18px; }
+.an-bar-section .an-bar-row{ padding-left: 4px; padding-right: 4px; }
+.an-bar-highlight{ flex: none; margin-top: 14px; }
+
+.an-bar-list-header{
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--adm-text-soft);
+  padding: 0 4px 8px;
+  border-bottom: 1px solid var(--adm-border);
+}
+.an-bar-list{
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 4px 0;
+}
+.an-bar-row{
+  display: grid;
+  grid-template-columns: minmax(0, 38%) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--adm-border);
+}
+.an-bar-row:last-child{ border-bottom: none; }
+/* Long names wrap within their own column instead of being cut off or
+   pushing the bar — the bar column stays aligned on every row. */
+.an-bar-name{
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--adm-text);
+  overflow-wrap: anywhere;
+}
+.an-bar-value{
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--adm-text);
+  text-align: right;
+  white-space: nowrap;
+  min-width: 72px;
+}
+.an-bar-value-sm{ min-width: 28px; } /* count only, no percentage beside it */
+.an-bar-pct{ font-size: 11px; font-weight: 500; color: var(--adm-text-soft); margin-left: 4px; }
+.an-bar-footnote{
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--adm-border);
+  font-size: 11.5px;
+  color: var(--adm-text-muted);
+}
+.an-bar-footnote i{ margin-right: 4px; }
+
+.an-card-empty{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  padding: 20px;
+  color: var(--adm-text-soft);
+}
+.an-card-empty i{ font-size: 28px; color: var(--adm-text-soft); opacity: .7; }
+.an-card-empty p{ margin: 0; font-size: 13px; max-width: 280px; }
+
+/* Recently Registered: the table wrapper is the scroll container (both
+   axes), so the sticky header stays pinned while rows scroll under it. */
+.an-scroll-table{
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.an-scroll-table .adm-table thead th{
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--adm-card);
+  box-shadow: inset 0 -1px 0 var(--adm-border); /* border-bottom doesn't stick with border-collapse */
+}
+.an-scroll-table .adm-table tbody td{ white-space: nowrap; }
+
+/* Recent Records: dates/type stay on one line; patient, title and
+   provider may wrap, but each keeps a readable minimum width (the
+   wrapper scrolls sideways before anything gets squeezed). */
+.an-scroll-table .an-records-table tbody td{ white-space: normal; vertical-align: middle; }
+.an-records-table .col-date,
+.an-records-table .col-type{ white-space: nowrap !important; }
+.an-records-table .col-patient{ min-width: 170px; }
+.an-records-table .col-title{ min-width: 170px; }
+.an-records-table .col-provider{ min-width: 140px; }
+
+/* Staff Directory: name/role wrap if long, emails may break anywhere
+   rather than overflow, status badge stays one line and centered. */
+.an-scroll-table .an-staff-table tbody td{ white-space: normal; vertical-align: middle; }
+.an-staff-table .col-name{ min-width: 150px; }
+.an-staff-table .col-role{ min-width: 140px; }
+.an-staff-table .col-email{ min-width: 200px; overflow-wrap: anywhere; }
+.an-staff-table .col-status{ width: 1%; text-align: center; white-space: nowrap !important; }
+
+/* Medicines: names/categories wrap, numbers right-aligned, status
+   badges and expiry dates kept on one line so they stay readable. */
+.an-scroll-table .an-inventory-table tbody td{ white-space: normal; vertical-align: middle; }
+.an-inventory-table .col-name{ min-width: 190px; }
+.an-inventory-table .col-category{ min-width: 120px; }
+.an-inventory-table .col-stock{ text-align: right; white-space: nowrap !important; }
+.an-inventory-table .col-status,
+.an-inventory-table .col-expiry{ white-space: nowrap !important; }
+.an-inventory-table .an-status-badge{ white-space: nowrap; }
+
+/* Status badge tones (default .an-status-badge is the green "Active") */
+.an-status-badge.status-pending{ background: var(--adm-orange-bg); color: var(--adm-orange); }
+.an-status-badge.status-inactive{ background: var(--adm-bg); color: var(--adm-text-muted); }
+
+/* Donut cards (Records by Type, Staff by Role): donut centered in the
+   space above its legend; legend rows keep the label left and the
+   count + percentage right, with long role names wrapping instead of
+   pushing the numbers out. */
+.an-donut-card .an-donut-wrap{ flex: 1; min-height: 0; }
+.an-donut-card .an-donut-canvas-box{ width: 180px; height: 180px; }
+.an-donut-card .an-donut-legend{
+  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--adm-border);
+  max-height: 210px;
+  overflow-y: auto;
+}
+.an-donut-card .an-donut-legend .legend-label{ min-width: 0; line-height: 1.35; }
+.an-donut-card .an-donut-legend .legend-value{ white-space: nowrap; text-align: right; }
+
+/* =============================================================
    RESPONSIVE
    ============================================================= */
 @media (max-width: 1399.98px){
   .an-summary-row{ grid-template-columns: repeat(3, 1fr); }
-  .an-inventory-row{ grid-template-columns: 1fr 1fr; }
+  .an-inventory-row{ grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .an-summary-panel{ grid-column: 1 / -1; }
+  /* Full-width panel now — five tiles fit in one row again. */
+  .an-summary-tiles-5{ grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .an-summary-tiles-5 > .an-summary-tile:first-child{
+    grid-column: auto;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+  }
 }
 @media (max-width: 1199.98px){
   .an-charts-row{ grid-template-columns: 1fr; }
   .an-forecast-row{ grid-template-columns: 1fr; }
+  /* Stacked: cards size to content, only the scroll areas are capped. */
+  .an-scroll-row{ grid-template-columns: minmax(0, 1fr); }
+  .an-scroll-card{ height: auto; }
+  .an-bar-list,
+  .an-bar-scroll,
+  .an-scroll-table{ flex: none; max-height: 420px; }
 }
 @media (max-width: 899.98px){
   .an-summary-row{ grid-template-columns: repeat(2, 1fr); }
   .an-inventory-row{ grid-template-columns: 1fr; }
   .an-summary-tiles{ grid-template-columns: repeat(2, 1fr); }
   .an-inv-split{ grid-template-columns: 1fr; }
+  .an-inv-list-col h4,
+  .an-inv-donut-col h4{ min-height: 0; } /* stacked — no side-by-side heading to line up with */
+  /* Narrow screens: Total Items full-width headline + 2x2 again. */
+  .an-summary-tiles-5{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .an-summary-tiles-5 > .an-summary-tile:first-child{
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
   .an-forecast-tiles{ grid-template-columns: 1fr; }
 }
 @media (max-width: 767.98px){
@@ -551,5 +781,6 @@
 }
 @media (max-width: 575.98px){
   .an-summary-row{ grid-template-columns: 1fr; }
-  .an-inv-pills{ grid-template-columns: repeat(2, 1fr) !important; }
+  /* 3 + 2 rather than 2 + 2 + 1, so the last pill isn't stranded alone */
+  .an-inv-pills{ grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
 }
