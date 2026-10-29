@@ -52,8 +52,14 @@ $patient = hc_get_patient_profile($requestedPatientId);
 // render exactly like an invalid id — never leak that it exists at all
 // to staff outside the facility that registered them (see
 // includes/medical-staff/patient_management_medstaff_firestore.php's
-// header comment for the registration/listing side of this same rule).
-if ($patient !== null && $patient['facility'] !== $staffProfile['facility']) {
+// header comment for the registration/listing side of this same rule) —
+// UNLESS this patient's own real "Share My Information" consent (Add
+// Patient wizard, api/create-patient.php's 'consentShareInfo') is
+// true, in which case they're real and findable from any facility,
+// same as api/quick-search-patients.php's own matching now allows.
+// Opening the full profile from here still goes through the exact
+// same hc_patient_consent_status() gate below either way.
+if ($patient !== null && $patient['facility'] !== $staffProfile['facility'] && !$patient['consentShareInfo']) {
     $patient = null;
     // Every per-tab page (allergies.php, medications.php, medical_records.php,
     // ...) requires this file first for $patient, then independently

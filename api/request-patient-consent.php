@@ -58,7 +58,11 @@ $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
 $myFacility = $myDoc['facility'] ?? null;
 
 $patient = hc_get_patient_profile($patientId);
-if ($myFacility === null || $patient === null || $patient['facility'] !== $myFacility) {
+// Same-facility, OR a different facility but this patient's own real
+// "Share My Information" consent (api/create-patient.php's
+// 'consentShareInfo') is true — see includes/firestore/patients.php's
+// own comment on that field.
+if ($myFacility === null || $patient === null || ($patient['facility'] !== $myFacility && !$patient['consentShareInfo'])) {
     http_response_code(404);
     echo json_encode(['success' => false, 'error' => 'Patient not found.']);
     exit;

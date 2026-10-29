@@ -77,6 +77,16 @@ if (!function_exists('hc_map_patient_summary_doc')) {
             // of each other. An older patient's stale intake reading
             // is never reused for a new visit.
             'intakeVitals' => is_array($f['intakeVitals'] ?? null) ? $f['intakeVitals'] : [],
+            // Real "Share My Information" consent captured at registration
+            // (Add Patient wizard's own Step — api/create-patient.php sets
+            // this from the real $body['consent'] value). true = this
+            // patient may be found/viewed from OTHER facilities too (see
+            // api/quick-search-patients.php and every patient_profile_*_firestore.php's
+            // own facility-match check) — false (the default) keeps this
+            // patient strictly confined to their own registering facility,
+            // same as every other patient before this field had any real
+            // meaning.
+            'consentShareInfo' => !empty($f['consentShareInfo']),
         ];
     }
 }
@@ -148,9 +158,14 @@ if (!function_exists('hc_get_patient_profile')) {
             // Not shown on the profile card itself — callers use this to
             // enforce facility isolation (a patient belongs to exactly
             // one facility; a direct ?id= link must not expose one
-            // facility's patient to another facility's staff) before
-            // ever rendering the rest of this array.
+            // facility's patient to another facility's staff UNLESS
+            // consentShareInfo below is true) before ever rendering the
+            // rest of this array.
             'facility' => $doc['facility'] ?? '',
+            // Real "Share My Information" consent — see
+            // hc_map_patient_summary_doc()'s own comment on this same
+            // field for what it actually gates.
+            'consentShareInfo' => !empty($doc['consentShareInfo']),
         ];
     }
 }

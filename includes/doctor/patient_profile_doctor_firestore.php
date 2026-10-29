@@ -56,8 +56,13 @@ $patient = hc_get_patient_profile($requestedPatientId);
 // in Patient Management's own list) — whether they can open the real
 // PROFILE is a separate, real per-patient consent check now (see
 // hc_patient_consent_status() below), not blanket facility-wide access
-// like it used to be.
-if ($patient !== null && $patient['facility'] !== $doctorProfile['facility']) {
+// like it used to be. A patient from a DIFFERENT facility is also
+// resolvable here when their own real "Share My Information" consent
+// (Add Patient wizard, api/create-patient.php's 'consentShareInfo') is
+// true — same as api/quick-search-patients.php's own matching now
+// allows — but still goes through that exact same consent gate either
+// way.
+if ($patient !== null && $patient['facility'] !== $doctorProfile['facility'] && !$patient['consentShareInfo']) {
     $patient = null;
     // Every per-tab page (allergies.php, medications.php, medical_records.php,
     // ...) requires this file first for $patient, then independently
