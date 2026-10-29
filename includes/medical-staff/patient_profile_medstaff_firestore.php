@@ -28,6 +28,7 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/patient_overview.php';
+require_once __DIR__ . '/../shared/patient_consent.php'; // hc_patient_consent_status()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -66,6 +67,27 @@ if ($patient !== null && $patient['facility'] !== $staffProfile['facility']) {
 $patient = $patient ?? hc_not_found_patient_profile($requestedPatientId);
 
 // ---------------------------------------------------------------------
+// Patient-consent gate — real, see includes/shared/patient_consent.php's
+// own header comment for the 3 ways in. Every per-tab page requires
+// THIS file first, same as patient_profile.php itself — gating here,
+// once, covers all of them; every page but patient_profile.php itself
+// just bounces back to it instead of duplicating the restricted-access
+// UI in each one.
+// ---------------------------------------------------------------------
+$accessRestricted = false;
+$consentStatus = null;
+if ($requestedPatientId !== '') {
+    $consentStatus = hc_patient_consent_status($requestedPatientId, $myUid, $_SESSION['role'] ?? '', $_SESSION['name'] ?? '');
+    if (!$consentStatus['access']) {
+        $accessRestricted = true;
+        if (basename($_SERVER['SCRIPT_NAME']) !== 'patient_profile.php') {
+            header('Location: patient_profile.php?id=' . urlencode($requestedPatientId));
+            exit;
+        }
+    }
+}
+
+// ---------------------------------------------------------------------
 // Profile tabs — Documents has no medical-staff page yet, so it stays
 // an inert placeholder pane; every other tab now links to a real page.
 // ---------------------------------------------------------------------
@@ -81,15 +103,25 @@ $profileTabs = [
 ];
 
 // ---------------------------------------------------------------------
-// Overview tab — real, all scoped to $patient['id'].
+// Overview tab — real, all scoped to $patient['id']. Skipped entirely
+// when access is restricted.
 // ---------------------------------------------------------------------
-$overview = hc_get_patient_overview($patient['id']);
-$summary = $overview['summary'];
-$activeMedicalConditions = $overview['activeMedicalConditions'];
-$latestConsultation = $overview['latestConsultation'];
-$recentLabResults = $overview['recentLabResults'];
-$recentXray = $overview['recentXray'];
-$vaccinationHistory = $overview['vaccinationHistory'];
+if (!$accessRestricted) {
+    $overview = hc_get_patient_overview($patient['id']);
+    $summary = $overview['summary'];
+    $activeMedicalConditions = $overview['activeMedicalConditions'];
+    $latestConsultation = $overview['latestConsultation'];
+    $recentLabResults = $overview['recentLabResults'];
+    $recentXray = $overview['recentXray'];
+    $vaccinationHistory = $overview['vaccinationHistory'];
+} else {
+    $summary = ['totalConsultations' => 0, 'activeMedicalConditions' => 0, 'allergies' => 0, 'currentMedications' => 0];
+    $activeMedicalConditions = [];
+    $latestConsultation = null;
+    $recentLabResults = [];
+    $recentXray = [];
+    $vaccinationHistory = [];
+}
 
 $labStatusMeta = [
     'normal'   => ['label' => 'Normal',   'bg' => '#E4F7EA', 'color' => '#1E8E3E'],

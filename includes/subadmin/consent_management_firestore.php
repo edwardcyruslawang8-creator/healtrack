@@ -41,7 +41,7 @@ $dashboardDateLabel = date('F j, Y');
 $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'West Super Health Center'];
 
 $consentDateRangeLabel = 'All Date Ranges';
-$consentTypeOptions = ['All Types', 'Data Sharing', 'Medical Treatment', 'Laboratory', 'Research', 'Insurance', 'Vaccination'];
+$consentTypeOptions = ['All Types', 'Data Sharing', 'Medical Treatment', 'Laboratory', 'Research', 'Insurance', 'Vaccination', 'Patient Details Access Request'];
 $consentStatusOptions = ['All Status', 'Pending', 'Accepted', 'Rejected', 'Expired'];
 
 $consentTypeMeta = [
@@ -51,6 +51,12 @@ $consentTypeMeta = [
     'research'          => ['label' => 'Research Consent',          'bg' => '#FDECDD', 'color' => '#E8710A'],
     'insurance'         => ['label' => 'Insurance Consent',         'bg' => '#E3F6FB', 'color' => '#12A6C6'],
     'vaccination'       => ['label' => 'Vaccination Consent',       'bg' => '#FCE4E4', 'color' => '#D93025'],
+    // Real, live type — written by api/request-patient-consent.php
+    // whenever a staff member requests to view a patient's full
+    // profile (see includes/shared/patient_consent.php). Every other
+    // type above is still display-only/decorative (no write endpoint
+    // behind it) — this is the one real, live consent workflow.
+    'profile_access'    => ['label' => 'Patient Details Access Request', 'bg' => '#FDECDD', 'color' => '#B7224B'],
 ];
 
 $consentStatusMeta = [
@@ -102,6 +108,15 @@ foreach ($rawConsents as $i => $doc) {
         'notes' => $fields['notes'] ?? '',
         'signature' => $fields['signature'] ?? null,
         'attachedFile' => $fields['attachedFile'] ?? null,
+        // Real only for type='profile_access' (api/request-patient-consent.php)
+        // — every other (decorative) consent type has none of these.
+        'requestedByName' => $fields['requestedByName'] ?? null,
+        'requestedByRole' => $fields['requestedByRole'] ?? null,
+        'requestedByRoleLabel' => [
+            'subadmin' => 'Sub-Administrator',
+            'doctor' => 'Doctor',
+            'healthcare_staff' => 'Medical Staff',
+        ][$fields['requestedByRole'] ?? ''] ?? null,
         'avatar' => $avatarPalette[$i % count($avatarPalette)],
     ];
 }

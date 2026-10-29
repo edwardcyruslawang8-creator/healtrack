@@ -47,13 +47,14 @@ require_once __DIR__ . '/../includes/doctor/patient_profile_doctor_firestore.php
 // $doctorProfile, $dashboardDateLabel, $facilityOptions, $patient,
 // $profileTabs, $summary, $activeMedicalConditions, $latestConsultation,
 // $labStatusMeta, $recentLabResults, $recentXray, $vaccineStatusMeta,
-// $vaccinationHistory
+// $vaccinationHistory, $accessRestricted, $consentStatus
 
-// A real PHI-access record every time this page actually resolves a
-// patient (never for a blocked/not-found id — nothing was really
-// viewed then) — see subadmin/audit_logs.php and this account's own
-// Audit Logs tab for where this shows up.
-if ($patient !== null) {
+// A real PHI-access record every time this page actually resolves AND
+// shows a patient (never for a blocked/not-found id, and never while
+// $accessRestricted — nothing was really viewed then) — see
+// subadmin/audit_logs.php and this account's own Audit Logs tab for
+// where this shows up.
+if ($patient !== null && !$accessRestricted) {
     require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
     write_audit_log('viewed', 'Patient Management', 'Viewed ' . $patient['name'] . "'s patient profile.");
 }
@@ -258,6 +259,49 @@ $doctorNavItems = [
         </div>
     </div>
 
+    <?php if ($accessRestricted): ?>
+    <!-- ============ PATIENT DETAILS RESTRICTED ============
+         Real patient-consent gate — includes/shared/patient_consent.php's
+         hc_patient_consent_status() found no same-day registrant/
+         consultation exception and no accepted consent record for THIS
+         doctor and this exact patient. -->
+    <div class="adm-card ppf-profile-card">
+        <div class="ppf-restricted">
+            <i class="bi bi-shield-lock-fill ppf-restricted-icon"></i>
+            <h2><?= htmlspecialchars($patient['name']) ?></h2>
+            <p class="ppf-restricted-sub">This patient's full details are private. You need their consent before you can view this profile — unless you have a consultation assigned to you for them today.</p>
+
+            <?php if ($consentStatus['pendingRequest'] !== null): ?>
+            <div class="ppf-restricted-status pending">
+                <i class="bi bi-hourglass-split"></i>
+                Request sent on <?= htmlspecialchars(date('M j, Y', strtotime($consentStatus['pendingRequest']['givenOn']))) ?> — awaiting the patient's response.
+            </div>
+            <?php else: ?>
+
+            <?php if ($consentStatus['declinedRequest'] !== null): ?>
+            <div class="ppf-restricted-status declined">
+                <i class="bi bi-x-circle-fill"></i>
+                Previously declined on <?= htmlspecialchars(date('M j, Y', strtotime($consentStatus['declinedRequest']['respondedAt'] ?? $consentStatus['declinedRequest']['givenOn']))) ?>. You may send a new request.
+            </div>
+            <?php endif; ?>
+
+            <div id="pcrError" class="alert alert-danger py-2 px-3 d-none" style="font-size:13px;"></div>
+            <form id="patientConsentRequestForm">
+                <div class="mb-3 text-start">
+                    <label for="pcrReason" class="form-label fw-semibold">Why do you need to view this patient's details?</label>
+                    <textarea class="form-control" id="pcrReason" rows="3" required placeholder="e.g. Reviewing history ahead of an upcoming referral"></textarea>
+                </div>
+                <button type="submit" class="ppf-restricted-btn" id="pcrSubmitBtn">
+                    <i class="bi bi-send-fill"></i> Send Consent Request
+                </button>
+            </form>
+            <?php endif; ?>
+        </div>
+    </div>
+    <script>window.PATIENT_CONSENT_REQUEST = <?= json_encode(['patientId' => $requestedPatientId]) ?>;</script>
+    <script src="<?= asset_url('/assets/js/patient-consent-request.js') ?>"></script>
+
+    <?php else: ?>
     <!-- ============ PATIENT PROFILE HEADER CARD ============ -->
     <div class="adm-card ppf-profile-card">
         <div class="ppf-identity">
@@ -441,6 +485,7 @@ $doctorNavItems = [
         </div>
         <?php endforeach; ?>
     </div>
+    <?php endif; ?>
 
 </main>
 

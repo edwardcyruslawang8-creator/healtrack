@@ -25,6 +25,7 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/patient_overview.php';
+require_once __DIR__ . '/../shared/patient_consent.php'; // hc_patient_consent_status()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -66,6 +67,35 @@ if ($patient !== null && $patient['facility'] !== $adminProfile['facility']) {
 $patient = $patient ?? hc_not_found_patient_profile($requestedPatientId);
 
 // ---------------------------------------------------------------------
+// Patient-consent gate — real, see includes/shared/patient_consent.php's
+// own header comment for the 3 ways in. $requestedPatientId is '' for
+// an invalid/other-facility id (handled above already), so this only
+// runs for a genuinely real, same-facility patient.
+//
+// Every per-tab page (allergies.php, medications.php, medical_history.php,
+// patient_laboratory_xray.php, vaccination_records.php, documents.php,
+// history.php) requires THIS file first, same as patient_profile.php
+// itself — so gating here, once, covers all of them. Only
+// patient_profile.php itself (identified by its own real script name)
+// renders the "Access Restricted" card in place of the profile; every
+// other per-tab page just bounces back to it rather than duplicating
+// that UI 7 more times — there's nothing for them to show on their own
+// once the underlying profile itself isn't allowed to open.
+// ---------------------------------------------------------------------
+$accessRestricted = false;
+$consentStatus = null;
+if ($requestedPatientId !== '') {
+    $consentStatus = hc_patient_consent_status($requestedPatientId, $myUid, $_SESSION['role'] ?? '', $_SESSION['name'] ?? '');
+    if (!$consentStatus['access']) {
+        $accessRestricted = true;
+        if (basename($_SERVER['SCRIPT_NAME']) !== 'patient_profile.php') {
+            header('Location: patient_profile.php?id=' . urlencode($requestedPatientId));
+            exit;
+        }
+    }
+}
+
+// ---------------------------------------------------------------------
 // Profile tabs — only Overview has real content for now; the rest
 // render as empty panes, ready for content later without changing the
 // tab strip itself.
@@ -82,15 +112,26 @@ $profileTabs = [
 ];
 
 // ---------------------------------------------------------------------
-// Overview tab — real, all scoped to $patient['id'].
+// Overview tab — real, all scoped to $patient['id']. Skipped entirely
+// when access is restricted — nothing here should ever be fetched,
+// let alone rendered, until real consent exists.
 // ---------------------------------------------------------------------
-$overview = hc_get_patient_overview($patient['id']);
-$summary = $overview['summary'];
-$activeMedicalConditions = $overview['activeMedicalConditions'];
-$latestConsultation = $overview['latestConsultation'];
-$recentLabResults = $overview['recentLabResults'];
-$recentXray = $overview['recentXray'];
-$vaccinationHistory = $overview['vaccinationHistory'];
+if (!$accessRestricted) {
+    $overview = hc_get_patient_overview($patient['id']);
+    $summary = $overview['summary'];
+    $activeMedicalConditions = $overview['activeMedicalConditions'];
+    $latestConsultation = $overview['latestConsultation'];
+    $recentLabResults = $overview['recentLabResults'];
+    $recentXray = $overview['recentXray'];
+    $vaccinationHistory = $overview['vaccinationHistory'];
+} else {
+    $summary = ['totalConsultations' => 0, 'activeMedicalConditions' => 0, 'allergies' => 0, 'currentMedications' => 0];
+    $activeMedicalConditions = [];
+    $latestConsultation = null;
+    $recentLabResults = [];
+    $recentXray = [];
+    $vaccinationHistory = [];
+}
 
 $labStatusMeta = [
     'normal'   => ['label' => 'Normal',   'bg' => '#E4F7EA', 'color' => '#1E8E3E'],
