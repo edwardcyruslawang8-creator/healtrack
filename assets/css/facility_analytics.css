@@ -222,6 +222,11 @@
    (e.g. Consultations by Barangay) doesn't need the full default
    height. */
 .an-trend-canvas-box.small{ min-height: 140px; margin-bottom: 14px; }
+/* Tall variant — a horizontal bar chart with one row per real
+   inventory item (e.g. Order/Prescription Frequency, ~30 items) needs
+   real vertical room per bar to stay readable instead of squeezing
+   every label into a 200px box. */
+.an-trend-canvas-box.bar-tall{ min-height: 720px; }
 
 /* -- Demographics donut -- */
 .an-donut-wrap{ display: flex; flex: 1; align-items: center; justify-content: center; padding: 6px 0 10px; }

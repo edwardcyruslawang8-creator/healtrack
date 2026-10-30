@@ -125,6 +125,15 @@ window.HCPredictiveCharts = (function () {
         const stockCanvas = document.getElementById(idPrefix + 'T2StockProjectionChart');
         if (stockCanvas && data.t2StockProjection && data.t2StockProjection.labels.length) {
             const proj = data.t2StockProjection;
+            // The decline is real but usually small relative to the item's
+            // overall stock count (a handful of units/day) — beginAtZero
+            // squashes it flat against the top of a 0-100 axis. Zooming
+            // the axis to the data's own range (with a little breathing
+            // room) makes the actual slope visible instead.
+            const stockValues = proj.forecast.concat([proj.reorderLevel]);
+            const stockMin = Math.min.apply(null, stockValues);
+            const stockMax = Math.max.apply(null, stockValues);
+            const stockPad = Math.max(1, (stockMax - stockMin) * 0.15);
             track(new Chart(stockCanvas, {
                 type: 'line',
                 data: {
@@ -145,13 +154,18 @@ window.HCPredictiveCharts = (function () {
                     responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { display: false } }, // custom legend in HTML
                     scales: {
-                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
+                        y: {
+                            beginAtZero: false,
+                            min: Math.max(0, Math.floor(stockMin - stockPad)),
+                            max: Math.ceil(stockMax + stockPad),
+                            grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 },
+                        },
                         x: { grid: { display: false }, ticks: { color: tickColor, maxTicksLimit: 8 } },
                     },
                 },
             }));
         }
-        /* ---------- Tab 2: order/prescription frequency — EVERY real inventory item (bar, not a multi-line trend — see predictive_analytics_core.php's own comment on why) ---------- */
+        /* ---------- Tab 2: order/prescription frequency — EVERY real inventory item, horizontal bar (one real row per item, ~30 items — a vertical bar chart can't fit that many readable rotated labels; see predictive_analytics_core.php's own comment on the data shape) ---------- */
         const orderFreqCanvas = document.getElementById(idPrefix + 'T2OrderFreqChart');
         if (orderFreqCanvas && data.t2OrderFrequency && data.t2OrderFrequency.labels.length) {
             const of = data.t2OrderFrequency;
@@ -164,14 +178,17 @@ window.HCPredictiveCharts = (function () {
                         data: of.values,
                         backgroundColor: of.types.map(function (t) { return t === 'vaccine' ? '#12A6C6' : '#1A73E8'; }),
                         borderRadius: 3,
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.8,
                     }],
                 },
                 options: {
+                    indexAxis: 'y',
                     responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
-                        x: { grid: { display: false }, ticks: { color: tickColor, autoSkip: true, maxRotation: 60, minRotation: 60 } },
+                        x: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
+                        y: { grid: { display: false }, ticks: { color: tickColor, font: { size: 11 } } },
                     },
                 },
             }));

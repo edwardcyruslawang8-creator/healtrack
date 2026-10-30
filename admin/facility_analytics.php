@@ -779,29 +779,27 @@ $adminNavItems = [
                             </div>
                             <?php endforeach; ?>
                         </div>
-                        <div class="an-forecast-row">
-                            <div class="an-card">
-                                <div class="an-card-header"><h3>Projected Stock Decline — <?= htmlspecialchars($pt2StockProjection['itemName'] ?? 'Most Urgent Item') ?></h3></div>
-                                <p class="pn-note">System-wide stock/order pace — inventory has no per-facility field in this app's schema.</p>
-                                <?php if ($pt2StockProjection['itemName'] === null): ?>
-                                <div class="pn-empty"><i class="bi bi-info-circle-fill"></i><p>No item currently has enough recent order history to project a decline curve.</p></div>
-                                <?php else: ?>
-                                <div class="an-forecast-legend">
-                                    <span><span class="dot dashed" style="color:#D93025;"></span> Projected stock</span>
-                                    <span><span class="dot dashed" style="color:#E8710A;"></span> Reorder level</span>
-                                </div>
-                                <div class="an-trend-canvas-box"><canvas id="faPredT2StockProjectionChart"></canvas></div>
-                                <?php endif; ?>
+                        <div class="an-card">
+                            <div class="an-card-header"><h3>Projected Stock Decline — <?= htmlspecialchars($pt2StockProjection['itemName'] ?? 'Most Urgent Item') ?></h3></div>
+                            <p class="pn-note">System-wide stock/order pace — inventory has no per-facility field in this app's schema.</p>
+                            <?php if ($pt2StockProjection['itemName'] === null): ?>
+                            <div class="pn-empty"><i class="bi bi-info-circle-fill"></i><p>No item currently has enough recent order history to project a decline curve.</p></div>
+                            <?php else: ?>
+                            <div class="an-forecast-legend">
+                                <span><span class="dot dashed" style="color:#D93025;"></span> Projected stock</span>
+                                <span><span class="dot dashed" style="color:#E8710A;"></span> Reorder level</span>
                             </div>
-                            <div class="an-card">
-                                <div class="an-card-header"><h3>Order/Prescription Frequency — Every Inventory Item</h3></div>
-                                <?php if ($pt2OrderFrequency['labels'] === []): ?>
-                                <div class="pn-empty"><i class="bi bi-info-circle-fill"></i><p>No medicines or vaccines on record yet.</p></div>
-                                <?php else: ?>
-                                <p class="pn-note">Real orders/prescriptions in the last 30 days, per real inventory item — includes items with none.</p>
-                                <div class="an-trend-canvas-box"><canvas id="faPredT2OrderFreqChart"></canvas></div>
-                                <?php endif; ?>
-                            </div>
+                            <div class="an-trend-canvas-box"><canvas id="faPredT2StockProjectionChart"></canvas></div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="an-card">
+                            <div class="an-card-header"><h3>Order/Prescription Frequency — Every Inventory Item</h3></div>
+                            <?php if ($pt2OrderFrequency['labels'] === []): ?>
+                            <div class="pn-empty"><i class="bi bi-info-circle-fill"></i><p>No medicines or vaccines on record yet.</p></div>
+                            <?php else: ?>
+                            <p class="pn-note">Real orders/prescriptions in the last 30 days, per real inventory item — includes items with none. Sorted highest to lowest.</p>
+                            <div class="an-trend-canvas-box bar-tall"><canvas id="faPredT2OrderFreqChart"></canvas></div>
+                            <?php endif; ?>
                         </div>
                         <div class="an-card">
                             <div class="an-card-header"><h3>Projected Stock Decline — All At-Risk Items</h3></div>
