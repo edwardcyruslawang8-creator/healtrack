@@ -218,6 +218,10 @@
   flex-direction: column;
 }
 .an-trend-canvas-box{ position: relative; flex: 1; min-height: 200px; }
+/* Compact variant — a chart sharing a card with a ranked list below it
+   (e.g. Consultations by Barangay) doesn't need the full default
+   height. */
+.an-trend-canvas-box.small{ min-height: 140px; margin-bottom: 14px; }
 
 /* -- Demographics donut -- */
 .an-donut-wrap{ display: flex; flex: 1; align-items: center; justify-content: center; padding: 6px 0 10px; }

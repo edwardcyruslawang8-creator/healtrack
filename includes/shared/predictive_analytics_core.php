@@ -381,21 +381,26 @@ if (!function_exists('hc_disease_demand_forecast')) {
         ];
 
         // Trend graph — daily counts for whichever notifiable categories
-        // actually have at least one real case in the last 30 days.
-        $cutoff30 = date('Y-m-d', strtotime('-30 days'));
-        $categoryTotals30 = [];
+        // actually have at least one real case in the last 90 days (was
+        // 30 — widened so this chart reliably has real lines to draw
+        // instead of going empty whenever a facility's recent 30-day
+        // window happens to be thin; same reasoning as
+        // hc_gis_seasonal_overview()'s own all-time window).
+        $diseaseTrendWindowDays = 90;
+        $cutoffDiseaseTrend = date('Y-m-d', strtotime("-$diseaseTrendWindowDays days"));
+        $categoryTotalsTrend = [];
         foreach ($notifiableCases as $c) {
-            if ($c['date'] >= $cutoff30) {
-                $categoryTotals30[$c['category']] = ($categoryTotals30[$c['category']] ?? 0) + 1;
+            if ($c['date'] >= $cutoffDiseaseTrend) {
+                $categoryTotalsTrend[$c['category']] = ($categoryTotalsTrend[$c['category']] ?? 0) + 1;
             }
         }
-        arsort($categoryTotals30);
+        arsort($categoryTotalsTrend);
         $colors = ['#D93025', '#E8710A', '#7C3AED', '#1A73E8', '#0E9CA8'];
-        $diseaseTrend = ['labels' => hc_last_n_days([], 30)['labels'], 'datasets' => []];
+        $diseaseTrend = ['labels' => hc_last_n_days([], $diseaseTrendWindowDays)['labels'], 'datasets' => []];
         $colorIdx = 0;
-        foreach (array_slice($categoryTotals30, 0, 5, true) as $category => $total) {
+        foreach (array_slice($categoryTotalsTrend, 0, 5, true) as $category => $total) {
             $dates = array_column(array_values(array_filter($notifiableCases, fn ($c) => $c['category'] === $category)), 'date');
-            $diseaseTrend['datasets'][] = ['label' => $category, 'data' => hc_last_n_days($dates, 30)['values'], 'color' => $colors[$colorIdx % count($colors)]];
+            $diseaseTrend['datasets'][] = ['label' => $category, 'data' => hc_last_n_days($dates, $diseaseTrendWindowDays)['values'], 'color' => $colors[$colorIdx % count($colors)]];
             $colorIdx++;
         }
 
@@ -626,21 +631,24 @@ if (!function_exists('hc_medicine_vaccine_shortage')) {
             $stockProjection = ['labels' => $labels, 'forecast' => $forecast, 'reorderLevel' => $mostUrgent['minLevel'], 'itemName' => $mostUrgent['name']];
         }
 
-        // Trend graph — real order/prescription frequency, top 5 items by
-        // volume in the last 30 days.
+        // Order/prescription frequency — EVERY real medicine/vaccine
+        // currently in the system's own inventory (not just whichever
+        // few happen to have the most order history), one real bar per
+        // item. A multi-line daily-trend chart (the old shape) stops
+        // being readable past a handful of lines — this facility's own
+        // real inventory already has 20-30+ real items, which would be
+        // an unreadable tangle of overlapping lines, so this is a real
+        // bar chart instead: each item's own real ordersLast30 count,
+        // sorted highest-first, zero-order items included (a real 0,
+        // not hidden) so the chart honestly reflects the full real
+        // inventory rather than a thin historical subset.
         $byVolume = $items;
         usort($byVolume, fn ($a, $b) => $b['ordersLast30'] <=> $a['ordersLast30']);
-        $colors = ['#1A73E8', '#1E8E3E', '#E8710A', '#7C3AED', '#0E9CA8'];
-        $orderFrequency = ['labels' => hc_last_n_days([], 30)['labels'], 'datasets' => []];
-        $colorIdx = 0;
-        foreach (array_slice($byVolume, 0, 5) as $item) {
-            if ($item['ordersLast30'] <= 0) {
-                continue;
-            }
-            $orderDates = hc_predictive_order_dates_for_item($item['name'], $pharmacyOrderDocs, $medicationDocs);
-            $orderFrequency['datasets'][] = ['label' => $item['name'], 'data' => hc_last_n_days($orderDates, 30)['values'], 'color' => $colors[$colorIdx % count($colors)]];
-            $colorIdx++;
-        }
+        $orderFrequency = [
+            'labels' => array_column($byVolume, 'name'),
+            'values' => array_column($byVolume, 'ordersLast30'),
+            'types' => array_column($byVolume, 'itemType'),
+        ];
 
         // Shortage trend — projected stock decline for every at-risk item
         // at once (up to 5, same urgency ordering $stockProjection above

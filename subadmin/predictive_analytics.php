@@ -477,10 +477,11 @@ $adminNavItems = [
                         <?php endif; ?>
                     </div>
                     <div class="an-card">
-                        <div class="an-card-header"><h3>Order/Prescription Frequency — Top Items</h3></div>
-                        <?php if ($pt2OrderFrequency['datasets'] === []): ?>
-                        <div class="pn-empty"><i class="bi bi-info-circle-fill"></i><p>No real pharmacy orders or prescriptions on record in the last 30 days.</p></div>
+                        <div class="an-card-header"><h3>Order/Prescription Frequency — Every Inventory Item</h3></div>
+                        <?php if ($pt2OrderFrequency['labels'] === []): ?>
+                        <div class="pn-empty"><i class="bi bi-info-circle-fill"></i><p>No medicines or vaccines on record yet.</p></div>
                         <?php else: ?>
+                        <p class="pn-note">Real orders/prescriptions in the last 30 days, per real inventory item — includes items with none.</p>
                         <div class="an-trend-canvas-box"><canvas id="faPredT2OrderFreqChart"></canvas></div>
                         <?php endif; ?>
                     </div>
@@ -635,6 +636,7 @@ $adminNavItems = [
                     <div class="an-card">
                         <div class="an-card-header"><h3>Consultations by Barangay (Last 30 Days)</h3></div>
                         <p class="pn-note">This facility's own patients only, restricted to the 11 real barangays this clinic covers.</p>
+                        <div class="an-trend-canvas-box small"><canvas id="faPredT4BarangayChart"></canvas></div>
                         <div class="an-inv-list-header"><span>Consultations</span></div>
                         <?php foreach ($pt4Barangays as $b): ?>
                         <div class="an-inv-row">
@@ -718,6 +720,10 @@ $adminNavItems = [
         't2ShortageTrend' => $pt2ShortageTrend,
         't3RequestVolume' => $pt3RequestVolume,
         't4ForecastTrend' => $pt4ForecastTrend,
+        't4Barangays' => [
+            'labels' => array_column($pt4Barangays, 'barangay'),
+            'values' => array_column($pt4Barangays, 'total30'),
+        ],
     ]) ?>;
 </script>
 <script src="<?= asset_url('/assets/js/predictive-analytics.js') ?>"></script>

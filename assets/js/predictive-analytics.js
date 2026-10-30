@@ -6,7 +6,7 @@
    2's stock-projection + order-frequency, Tab 3's request-volume, Tab
    4's forecast) from one data object shaped like
    {t1ForecastTrend, t1DiseaseTrend, t2StockProjection, t2OrderFrequency,
-   t2ShortageTrend, t3RequestVolume, t4ForecastTrend}. $idPrefix is prepended to each
+   t2ShortageTrend, t3RequestVolume, t4ForecastTrend, t4Barangays}. $idPrefix is prepended to each
    canvas id (…T1ForecastChart, …T1DiseaseTrendChart, etc.) so the
    function stays reusable rather than hardcoding one page's ids — kept
    as a parameter (not inlined) since it's exercised by more than one
@@ -151,8 +151,31 @@ window.HCPredictiveCharts = (function () {
                 },
             }));
         }
-        /* ---------- Tab 2: order/prescription frequency, top items ---------- */
-        track(renderMultiLineChart(idPrefix + 'T2OrderFreqChart', data.t2OrderFrequency));
+        /* ---------- Tab 2: order/prescription frequency — EVERY real inventory item (bar, not a multi-line trend — see predictive_analytics_core.php's own comment on why) ---------- */
+        const orderFreqCanvas = document.getElementById(idPrefix + 'T2OrderFreqChart');
+        if (orderFreqCanvas && data.t2OrderFrequency && data.t2OrderFrequency.labels.length) {
+            const of = data.t2OrderFrequency;
+            track(new Chart(orderFreqCanvas, {
+                type: 'bar',
+                data: {
+                    labels: of.labels,
+                    datasets: [{
+                        label: 'Orders/Prescriptions (Last 30 Days)',
+                        data: of.values,
+                        backgroundColor: of.types.map(function (t) { return t === 'vaccine' ? '#12A6C6' : '#1A73E8'; }),
+                        borderRadius: 3,
+                    }],
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
+                        x: { grid: { display: false }, ticks: { color: tickColor, autoSkip: true, maxRotation: 60, minRotation: 60 } },
+                    },
+                },
+            }));
+        }
         /* ---------- Tab 2: projected stock decline, EVERY at-risk item (vs. the single most-urgent-item chart above) ---------- */
         track(renderMultiLineChart(idPrefix + 'T2ShortageTrendChart', data.t2ShortageTrend));
 
@@ -182,6 +205,30 @@ window.HCPredictiveCharts = (function () {
 
         /* ---------- Tab 4: barangays combined — actual vs forecast ---------- */
         track(renderForecastChart(idPrefix + 'T4ForecastChart', data.t4ForecastTrend));
+        /* ---------- Tab 4: consultations by barangay, last 30 days (bar) ---------- */
+        const barangayCanvas = document.getElementById(idPrefix + 'T4BarangayChart');
+        if (barangayCanvas && data.t4Barangays && data.t4Barangays.labels.length) {
+            track(new Chart(barangayCanvas, {
+                type: 'bar',
+                data: {
+                    labels: data.t4Barangays.labels,
+                    datasets: [{
+                        label: 'Consultations (Last 30 Days)',
+                        data: data.t4Barangays.values,
+                        backgroundColor: '#1A73E8',
+                        borderRadius: 3,
+                    }],
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
+                        x: { grid: { display: false }, ticks: { color: tickColor, autoSkip: true, maxRotation: 45, minRotation: 45 } },
+                    },
+                },
+            }));
+        }
 
         // Resize every real chart created above once its own tab (outer
         // or inner) actually becomes visible — see the comment on
