@@ -6,7 +6,7 @@
    2's stock-projection + order-frequency, Tab 3's request-volume, Tab
    4's forecast) from one data object shaped like
    {t1ForecastTrend, t1DiseaseTrend, t2StockProjection,
-   t2StockProjectionsByItem, t2OrderFrequency, t2ShortageTrend,
+   t2StockProjectionsByItem, t2ShortageTrend,
    t3RequestVolume, t4ForecastTrend, t4Barangays}. $idPrefix is prepended to each
    canvas id (…T1ForecastChart, …T1DiseaseTrendChart, etc.) so the
    function stays reusable rather than hardcoding one page's ids — kept
@@ -185,34 +185,7 @@ window.HCPredictiveCharts = (function () {
                 if (picked) renderStockProjection(Object.assign({ itemName: stockFilter.value }, picked));
             });
         }
-        /* ---------- Tab 2: order/prescription frequency — EVERY real inventory item, horizontal bar (one real row per item, ~30 items — a vertical bar chart can't fit that many readable rotated labels; see predictive_analytics_core.php's own comment on the data shape) ---------- */
-        const orderFreqCanvas = document.getElementById(idPrefix + 'T2OrderFreqChart');
-        if (orderFreqCanvas && data.t2OrderFrequency && data.t2OrderFrequency.labels.length) {
-            const of = data.t2OrderFrequency;
-            track(new Chart(orderFreqCanvas, {
-                type: 'bar',
-                data: {
-                    labels: of.labels,
-                    datasets: [{
-                        label: 'Orders/Prescriptions (Last 30 Days)',
-                        data: of.values,
-                        backgroundColor: of.types.map(function (t) { return t === 'vaccine' ? '#12A6C6' : '#1A73E8'; }),
-                        borderRadius: 3,
-                        barPercentage: 0.7,
-                        categoryPercentage: 0.8,
-                    }],
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
-                        y: { grid: { display: false }, ticks: { color: tickColor, font: { size: 11 } } },
-                    },
-                },
-            }));
-        }
+        /* ---------- Tab 2: order/prescription frequency is now its own custom top-5 list + "View All" modal, not a Chart.js canvas — see assets/js/order-frequency.js ---------- */
         /* ---------- Tab 2: projected stock decline, EVERY at-risk item (vs. the single most-urgent-item chart above) ---------- */
         track(renderMultiLineChart(idPrefix + 'T2ShortageTrendChart', data.t2ShortageTrend));
 

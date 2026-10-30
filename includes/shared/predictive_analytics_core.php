@@ -564,6 +564,72 @@ if (!function_exists('hc_predictive_order_dates_for_item')) {
     }
 }
 
+if (!function_exists('hc_order_frequency_breakdown')) {
+    /**
+     * Per-item order/prescription counts over a real date window, with
+     * 'orders' (real pharmacy_orders docs — a doctor routed this
+     * medicine/vaccine to Pharmacy during a consultation, 'orderedDate')
+     * and 'prescriptions' (real medications docs — this item on a
+     * patient's own medication record, 'startDate') kept as separate
+     * real counts instead of only a blended total, since they come from
+     * two different real collections with different meanings. 'dispensed'
+     * is the subset of 'orders' whose status is actually 'dispensed'
+     * (not just ordered) — real pharmacy_orders.status, not a units/
+     * quantity figure (that field is only populated on a handful of real
+     * docs, too sparse to report honestly as a quantity metric).
+     * $days === null means all-time (no lower bound).
+     *
+     * @return array<int, array{name: string, itemType: string, orders: int, dispensed: int, prescriptions: int, total: int}>
+     */
+    function hc_order_frequency_breakdown(array $allInventoryItems, array $pharmacyOrderDocs, array $medicationDocs, ?int $days = 30): array
+    {
+        $cutoff = $days !== null ? date('Y-m-d', strtotime("-$days days")) : null;
+        $rows = [];
+        foreach ($allInventoryItems as $item) {
+            $orders = 0;
+            $dispensed = 0;
+            foreach ($pharmacyOrderDocs as $doc) {
+                $f = $doc['fields'];
+                $name = $f['itemName'] ?? '';
+                $date = $f['orderedDate'] ?? '';
+                if ($name === '' || $date === '' || !hc_item_names_match($item['name'], $name)) {
+                    continue;
+                }
+                if ($cutoff !== null && $date < $cutoff) {
+                    continue;
+                }
+                $orders++;
+                if (($f['status'] ?? '') === 'dispensed') {
+                    $dispensed++;
+                }
+            }
+            $prescriptions = 0;
+            foreach ($medicationDocs as $doc) {
+                $name = $doc['fields']['name'] ?? '';
+                $date = $doc['fields']['startDate'] ?? '';
+                if ($name === '' || $date === '' || !hc_item_names_match($item['name'], $name)) {
+                    continue;
+                }
+                if ($cutoff !== null && $date < $cutoff) {
+                    continue;
+                }
+                $prescriptions++;
+            }
+            $rows[] = [
+                'name' => $item['name'],
+                'itemType' => $item['itemType'],
+                'orders' => $orders,
+                'dispensed' => $dispensed,
+                'prescriptions' => $prescriptions,
+                'total' => $orders + $prescriptions,
+            ];
+        }
+        usort($rows, fn ($a, $b) => $b['total'] <=> $a['total'] ?: strcasecmp($a['name'], $b['name']));
+
+        return $rows;
+    }
+}
+
 if (!function_exists('hc_medicine_vaccine_shortage')) {
     /**
      * @param array $allInventoryItems hc_get_inventory_items() rows for BOTH types, each tagged with 'itemType' — always system-wide (see this file's header comment).
@@ -658,22 +724,17 @@ if (!function_exists('hc_medicine_vaccine_shortage')) {
 
         // Order/prescription frequency — EVERY real medicine/vaccine
         // currently in the system's own inventory (not just whichever
-        // few happen to have the most order history), one real bar per
-        // item. A multi-line daily-trend chart (the old shape) stops
-        // being readable past a handful of lines — this facility's own
-        // real inventory already has 20-30+ real items, which would be
-        // an unreadable tangle of overlapping lines, so this is a real
-        // bar chart instead: each item's own real ordersLast30 count,
-        // sorted highest-first, zero-order items included (a real 0,
-        // not hidden) so the chart honestly reflects the full real
-        // inventory rather than a thin historical subset.
-        $byVolume = $items;
-        usort($byVolume, fn ($a, $b) => $b['ordersLast30'] <=> $a['ordersLast30']);
-        $orderFrequency = [
-            'labels' => array_column($byVolume, 'name'),
-            'values' => array_column($byVolume, 'ordersLast30'),
-            'types' => array_column($byVolume, 'itemType'),
-        ];
+        // few happen to have the most order history), with orders
+        // (pharmacy_orders) and prescriptions (medications) kept as
+        // separate real counts — see hc_order_frequency_breakdown()'s
+        // own comment. Default window matches $items' own 'ordersLast30'
+        // (same 30-day cutoff), so this is the same real numbers that
+        // function already computed, just also split by source collection.
+        // Rendered as the "Order/Prescription Frequency" card's top-5
+        // list + "View All Items" modal (assets/js/order-frequency.js),
+        // not a chart — api/get-order-frequency.php calls this same
+        // helper again for that card's own date-range filter.
+        $orderFrequencyBreakdown = hc_order_frequency_breakdown($allInventoryItems, $pharmacyOrderDocs, $medicationDocs, 30);
 
         // Shortage trend — projected stock decline for every at-risk item
         // at once (up to 5, same urgency ordering $stockProjection above
@@ -728,7 +789,7 @@ if (!function_exists('hc_medicine_vaccine_shortage')) {
             return $meta + ['label' => $i['name'], 'desc' => $i['alreadyOut'] ? 'Out of stock now' : ($i['daysUntilStockout'] . ' day(s) to projected stockout'), 'value' => $i['alreadyOut'] ? 0 : $i['daysUntilStockout']];
         }, $atRisk);
 
-        return compact('items', 'atRisk', 'medicinesAtRisk', 'vaccinesAtRisk', 'alreadyOutCount', 'stockProjection', 'stockProjections', 'orderFrequency', 'shortageTrend', 'predictionCards', 'recommendations', 'riskRows');
+        return compact('items', 'atRisk', 'medicinesAtRisk', 'vaccinesAtRisk', 'alreadyOutCount', 'stockProjection', 'stockProjections', 'orderFrequencyBreakdown', 'shortageTrend', 'predictionCards', 'recommendations', 'riskRows');
     }
 }
 

@@ -801,15 +801,91 @@ $adminNavItems = [
                             <div class="an-trend-canvas-box"><canvas id="faPredT2StockProjectionChart"></canvas></div>
                             <?php endif; ?>
                         </div>
-                        <div class="an-card">
-                            <div class="an-card-header"><h3>Order/Prescription Frequency — Every Inventory Item</h3></div>
-                            <?php if ($pt2OrderFrequency['labels'] === []): ?>
+                        <div class="an-card opf-card">
+                            <div class="an-card-header">
+                                <h3>Order/Prescription Frequency</h3>
+                                <?php if ($pt2OrderFrequencyBreakdown !== []): ?>
+                                <button type="button" class="opf-viewall-btn" data-bs-toggle="modal" data-bs-target="#faPredOPFModal"><i class="bi bi-table"></i> View All Items</button>
+                                <?php endif; ?>
+                            </div>
+                            <?php if ($pt2OrderFrequencyBreakdown === []): ?>
                             <div class="pn-empty"><i class="bi bi-info-circle-fill"></i><p>No medicines or vaccines on record yet.</p></div>
                             <?php else: ?>
-                            <p class="pn-note">Real orders/prescriptions in the last 30 days, per real inventory item — includes items with none. Sorted highest to lowest.</p>
-                            <div class="an-trend-canvas-box bar-tall"><canvas id="faPredT2OrderFreqChart"></canvas></div>
+                            <p class="pn-note">Real orders (pharmacy_orders) and prescriptions (medications), per real inventory item.</p>
+                            <div class="opf-toolbar">
+                                <div class="opf-seg" id="faPredOPFCategorySeg" role="tablist" aria-label="Filter by category">
+                                    <button type="button" class="opf-seg-btn active" data-category="all">All Items</button>
+                                    <button type="button" class="opf-seg-btn" data-category="medicine">Medicines</button>
+                                    <button type="button" class="opf-seg-btn" data-category="vaccine">Vaccines</button>
+                                </div>
+                                <select class="form-select opf-range-select" id="faPredOPFRange" aria-label="Date range">
+                                    <option value="7">Last 7 Days</option>
+                                    <option value="30" selected>Last 30 Days</option>
+                                    <option value="90">Last 90 Days</option>
+                                    <option value="all">All Time</option>
+                                </select>
+                            </div>
+                            <div class="opf-summary">
+                                <div class="opf-stat">
+                                    <span class="opf-stat-value" id="faPredOPFTotalRequests">0</span>
+                                    <span class="opf-stat-label">Total Requests</span>
+                                </div>
+                                <div class="opf-stat">
+                                    <span class="opf-stat-value" id="faPredOPFItemsRequested">0</span>
+                                    <span class="opf-stat-label">Items Requested</span>
+                                </div>
+                            </div>
+                            <div class="opf-top5-list" id="faPredOPFTop5List"></div>
+                            <p class="opf-top5-empty" id="faPredOPFTop5Empty" style="display:none;">No items match this filter.</p>
                             <?php endif; ?>
                         </div>
+
+                        <div class="modal fade" id="faPredOPFModal" tabindex="-1" aria-labelledby="faPredOPFModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                <div class="modal-content opf-modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="faPredOPFModalLabel">Order/Prescription Frequency — All Items</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="opf-modal-toolbar">
+                                            <div class="opf-modal-search">
+                                                <i class="bi bi-search"></i>
+                                                <input type="text" id="faPredOPFModalSearch" placeholder="Search by item name...">
+                                            </div>
+                                            <div class="opf-seg" id="faPredOPFModalCategorySeg" role="tablist" aria-label="Filter by category">
+                                                <button type="button" class="opf-seg-btn active" data-category="all">All</button>
+                                                <button type="button" class="opf-seg-btn" data-category="medicine">Medicines</button>
+                                                <button type="button" class="opf-seg-btn" data-category="vaccine">Vaccines</button>
+                                            </div>
+                                            <select class="form-select opf-sort-select" id="faPredOPFModalSort" aria-label="Sort">
+                                                <option value="total-desc" selected>Highest to Lowest</option>
+                                                <option value="total-asc">Lowest to Highest</option>
+                                                <option value="name-asc">Name (A-Z)</option>
+                                            </select>
+                                        </div>
+                                        <div class="opf-modal-table-wrap">
+                                            <table class="opf-modal-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Item</th>
+                                                        <th>Type</th>
+                                                        <th>Orders</th>
+                                                        <th>Dispensed</th>
+                                                        <th>Prescriptions</th>
+                                                        <th>Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="faPredOPFModalTableBody"></tbody>
+                                            </table>
+                                            <p class="opf-modal-empty" id="faPredOPFModalEmpty" style="display:none;">No items match your search.</p>
+                                        </div>
+                                        <div class="opf-modal-pagination" id="faPredOPFModalPagination"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="an-card">
                             <div class="an-card-header"><h3>Projected Stock Decline — All At-Risk Items</h3></div>
                             <p class="pn-note">Every medicine/vaccine currently projected to stock out within 30 days, side by side — not just the single most urgent one above.</p>
@@ -1597,7 +1673,6 @@ $adminNavItems = [
                 array_column($pt2StockProjections, 'name'),
                 array_map(fn ($p) => ['labels' => $p['labels'], 'forecast' => $p['forecast'], 'reorderLevel' => $p['reorderLevel']], $pt2StockProjections)
             ),
-            't2OrderFrequency' => $pt2OrderFrequency,
             't2ShortageTrend' => $pt2ShortageTrend,
             't3RequestVolume' => $pt3RequestVolume,
             't4ForecastTrend' => $pt4ForecastTrend,
@@ -1610,10 +1685,14 @@ $adminNavItems = [
 </script>
 <!-- Predictive Analytics charts (6.3.1–6.3.4) — same renderer facility_management.php uses -->
 <script src="<?= asset_url('/assets/js/predictive-analytics.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/order-frequency.js') ?>"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         if (window.FACILITY_ANALYTICS_DATA && window.FACILITY_ANALYTICS_DATA.predictive && window.HCPredictiveCharts) {
             window.HCPredictiveCharts.renderAll(window.FACILITY_ANALYTICS_DATA.predictive, 'faPred');
+        }
+        if (window.HCOrderFrequency) {
+            window.HCOrderFrequency.init('faPred', <?= json_encode($pt2OrderFrequencyBreakdown) ?>, '<?= BASE_URL ?>/api/get-order-frequency.php');
         }
     });
 </script>
