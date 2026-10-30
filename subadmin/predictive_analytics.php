@@ -399,16 +399,94 @@ $adminNavItems = [
                         </div>
                         <div class="an-trend-canvas-box"><canvas id="faPredT1ForecastChart"></canvas></div>
                     </div>
-                    <div class="an-card">
-                        <div class="an-card-header"><h3>Top Notifiable-Disease Categories</h3></div>
-                        <p class="pn-note">Daily case counts, last 90 days, at <?= htmlspecialchars($facilityName) ?> — keyword-matched from real diagnosis/chief-complaint text.</p>
-                        <?php if ($pt1DiseaseTrend['datasets'] === []): ?>
-                        <div class="pn-empty"><i class="bi bi-check-circle-fill"></i><p>No notifiable-disease cases on record here in the last 30 days.</p></div>
-                        <?php else: ?>
-                        <div class="an-trend-canvas-box"><canvas id="faPredT1DiseaseTrendChart"></canvas></div>
-                        <?php endif; ?>
+                    <div class="an-card pnd-card">
+                        <div class="an-card-header">
+                            <h3>Potential Notifiable Disease Cases</h3>
+                        </div>
+                        <p class="pn-note">Keyword-matched from real diagnosis/chief-complaint text at <?= htmlspecialchars($facilityName) ?> — not a validated/coded diagnosis.</p>
+                        <div class="pnd-toolbar">
+                            <select class="form-select pnd-range-select" id="faPredPNDRange" aria-label="Date range">
+                                <option value="7">Last 7 Days</option>
+                                <option value="30">Last 30 Days</option>
+                                <option value="90" selected>Last 90 Days</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
+                            <div class="pnd-custom-range" id="faPredPNDCustomRange" hidden>
+                                <input type="date" id="faPredPNDStartDate" aria-label="Start date">
+                                <span>&ndash;</span>
+                                <input type="date" id="faPredPNDEndDate" aria-label="End date">
+                                <button type="button" class="pnd-apply-btn" id="faPredPNDApplyRange">Apply</button>
+                            </div>
+                        </div>
+                        <div class="opf-summary" id="faPredPNDSummary"></div>
+                        <div class="pnd-top5-list" id="faPredPNDTop5List"></div>
+                        <div class="pn-empty" id="faPredPNDEmpty" style="display:none;"><i class="bi bi-check-circle-fill"></i><p>No notifiable-disease cases in this date range.</p></div>
+                        <div class="pnd-actions">
+                            <button type="button" class="opf-viewall-btn" id="faPredPNDViewTrendsBtn" data-bs-toggle="modal" data-bs-target="#faPredPNDTrendsModal"><i class="bi bi-graph-up"></i> View Trends</button>
+                            <button type="button" class="opf-viewall-btn" id="faPredPNDViewAllBtn" data-bs-toggle="modal" data-bs-target="#faPredPNDAllModal"><i class="bi bi-table"></i> View All</button>
+                        </div>
                     </div>
                 </div>
+
+                <div class="modal fade" id="faPredPNDTrendsModal" tabindex="-1" aria-labelledby="faPredPNDTrendsModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                        <div class="modal-content opf-modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="faPredPNDTrendsModalLabel">Disease Case Trends</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="pnd-trends-toolbar">
+                                    <div class="opf-seg" id="faPredPNDGranularitySeg" role="tablist" aria-label="Aggregation">
+                                        <button type="button" class="opf-seg-btn active" data-granularity="week">Weekly</button>
+                                        <button type="button" class="opf-seg-btn" data-granularity="month">Monthly</button>
+                                    </div>
+                                </div>
+                                <div class="an-trend-canvas-box" style="min-height:320px;"><canvas id="faPredPNDTrendsChart"></canvas></div>
+                                <div class="pn-empty" id="faPredPNDTrendsEmpty" style="display:none;"><i class="bi bi-check-circle-fill"></i><p>No notifiable-disease cases in this date range.</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal fade" id="faPredPNDAllModal" tabindex="-1" aria-labelledby="faPredPNDAllModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                        <div class="modal-content opf-modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="faPredPNDAllModalLabel">All Notifiable Disease Categories</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="opf-modal-toolbar">
+                                    <div class="opf-modal-search">
+                                        <i class="bi bi-search"></i>
+                                        <input type="text" id="faPredPNDAllSearch" placeholder="Search disease category...">
+                                    </div>
+                                    <select class="form-select opf-sort-select" id="faPredPNDAllSort" aria-label="Sort">
+                                        <option value="count-desc" selected>Highest to Lowest</option>
+                                        <option value="count-asc">Lowest to Highest</option>
+                                        <option value="name-asc">Name (A-Z)</option>
+                                    </select>
+                                </div>
+                                <div class="opf-modal-table-wrap">
+                                    <table class="opf-modal-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Disease Category</th>
+                                                <th>Cases</th>
+                                                <th>First Reported</th>
+                                                <th>Last Reported</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="faPredPNDAllTableBody"></tbody>
+                                    </table>
+                                    <p class="opf-modal-empty" id="faPredPNDAllEmpty" style="display:none;">No categories match your search.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="an-forecast-row">
                     <div class="adm-card">
                         <div class="adm-card-header"><h3>Risk &amp; Alert Indicators</h3></div>
@@ -823,7 +901,6 @@ $adminNavItems = [
     var forecastTrendData = <?= json_encode($forecastTrend) ?>;
     window.PREDICTIVE_TAB_DATA = <?= json_encode([
         't1ForecastTrend' => $pt1ForecastTrend,
-        't1DiseaseTrend' => $pt1DiseaseTrend,
         't2ShortageTrend' => $pt2ShortageTrend,
         't3RequestVolume' => $pt3RequestVolume,
         't4ForecastTrend' => $pt4ForecastTrend,
@@ -836,6 +913,7 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/predictive-analytics.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/order-frequency.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/stock-projection.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/notifiable-diseases.js') ?>"></script>
 <!-- Exposed as window.initReportPageCharts() — same name
      assets/js/analytics_reports.js and its 5 siblings each define — so
      assets/js/ajax-tab-nav.js's fixed list of re-init hooks picks this
@@ -907,6 +985,15 @@ $adminNavItems = [
                 defaultDetail: <?= json_encode($pt2DefaultDetail) ?>,
                 apiUrl: '<?= BASE_URL ?>/api/get-stock-projection.php',
                 inventoryUrl: '<?= BASE_URL ?>/subadmin/medicine_vaccine_inventory.php',
+            });
+        }
+        if (window.HCNotifiableDiseases) {
+            window.HCNotifiableDiseases.init('faPred', {
+                facilityId: '<?= htmlspecialchars($facility['id']) ?>',
+                defaultDays: <?= $pndDefaultDays ?>,
+                defaultSummary: <?= json_encode($pndDefaultSummary) ?>,
+                defaultTrend: <?= json_encode($pndDefaultTrend) ?>,
+                apiUrl: '<?= BASE_URL ?>/api/get-disease-trends.php',
             });
         }
     };

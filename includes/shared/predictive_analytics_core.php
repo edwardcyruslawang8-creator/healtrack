@@ -237,18 +237,26 @@ if (!function_exists('hc_disease_causes_narrative')) {
     }
 }
 
-if (!function_exists('hc_disease_demand_forecast')) {
+if (!function_exists('hc_notifiable_cases_from_records')) {
     /**
-     * @param array $medicalRecordDocs Raw medical_records docs (type=consultation only), already scoped by the caller (system-wide or one facility's own).
-     * @param array $consultations hc_get_all_consultations()-shaped rows, same scoping as $medicalRecordDocs.
-     * @param array $patientBarangayById patientId => real barangay string.
-     * @param array $patientAgeById patientId => real age (int) — optional (default []), only needed by a caller that renders hc_disease_causes_narrative()'s age-group clause; every other caller (dashboard preview widgets that never show that narrative) can omit it with no behavior change.
+     * The real case-extraction step hc_disease_demand_forecast() itself
+     * uses — split out so a caller that only needs the raw case list
+     * (e.g. api/get-disease-trends.php, refreshing the "Potential
+     * Notifiable Disease Cases" card's date filter) doesn't have to pay
+     * for that function's much heavier risk-alert/anomaly computation
+     * just to get it.
+     *
+     * One category per real case — a case whose text matches more than
+     * one category's keywords is counted once, under whichever
+     * category's keyword it hit FIRST (not once per matching category).
+     *
+     * @return array<int, array{date: string, category: string, barangay: string, patientId: string}>
      */
-    function hc_disease_demand_forecast(array $medicalRecordDocs, array $consultations, array $patientBarangayById, array $patientAgeById = []): array
+    function hc_notifiable_cases_from_records(array $medicalRecordDocs, array $patientBarangayById = []): array
     {
         $keywordCategories = hc_notifiable_disease_categories();
 
-        $notifiableCases = []; // [['date' => Y-m-d, 'category' => ..., 'barangay' => ..., 'patientId' => ...], ...]
+        $notifiableCases = [];
         foreach ($medicalRecordDocs as $doc) {
             $f = $doc['fields'];
             $text = hc_normalize_text(($f['diagnosis'] ?? '') . ' ' . ($f['chiefComplaint'] ?? ''));
@@ -269,6 +277,21 @@ if (!function_exists('hc_disease_demand_forecast')) {
                 }
             }
         }
+
+        return $notifiableCases;
+    }
+}
+
+if (!function_exists('hc_disease_demand_forecast')) {
+    /**
+     * @param array $medicalRecordDocs Raw medical_records docs (type=consultation only), already scoped by the caller (system-wide or one facility's own).
+     * @param array $consultations hc_get_all_consultations()-shaped rows, same scoping as $medicalRecordDocs.
+     * @param array $patientBarangayById patientId => real barangay string.
+     * @param array $patientAgeById patientId => real age (int) — optional (default []), only needed by a caller that renders hc_disease_causes_narrative()'s age-group clause; every other caller (dashboard preview widgets that never show that narrative) can omit it with no behavior change.
+     */
+    function hc_disease_demand_forecast(array $medicalRecordDocs, array $consultations, array $patientBarangayById, array $patientAgeById = []): array
+    {
+        $notifiableCases = hc_notifiable_cases_from_records($medicalRecordDocs, $patientBarangayById);
 
         $cutoff14 = date('Y-m-d', strtotime('-14 days'));
         $cutoff7 = date('Y-m-d', strtotime('-7 days'));
@@ -380,29 +403,11 @@ if (!function_exists('hc_disease_demand_forecast')) {
             'forecast' => array_merge(array_fill(0, 13, null), [end($consultDaily14['values'])], $consultForecast7),
         ];
 
-        // Trend graph — daily counts for whichever notifiable categories
-        // actually have at least one real case in the last 90 days (was
-        // 30 — widened so this chart reliably has real lines to draw
-        // instead of going empty whenever a facility's recent 30-day
-        // window happens to be thin; same reasoning as
-        // hc_gis_seasonal_overview()'s own all-time window).
-        $diseaseTrendWindowDays = 90;
-        $cutoffDiseaseTrend = date('Y-m-d', strtotime("-$diseaseTrendWindowDays days"));
-        $categoryTotalsTrend = [];
-        foreach ($notifiableCases as $c) {
-            if ($c['date'] >= $cutoffDiseaseTrend) {
-                $categoryTotalsTrend[$c['category']] = ($categoryTotalsTrend[$c['category']] ?? 0) + 1;
-            }
-        }
-        arsort($categoryTotalsTrend);
-        $colors = ['#D93025', '#E8710A', '#7C3AED', '#1A73E8', '#0E9CA8'];
-        $diseaseTrend = ['labels' => hc_last_n_days([], $diseaseTrendWindowDays)['labels'], 'datasets' => []];
-        $colorIdx = 0;
-        foreach (array_slice($categoryTotalsTrend, 0, 5, true) as $category => $total) {
-            $dates = array_column(array_values(array_filter($notifiableCases, fn ($c) => $c['category'] === $category)), 'date');
-            $diseaseTrend['datasets'][] = ['label' => $category, 'data' => hc_last_n_days($dates, $diseaseTrendWindowDays)['values'], 'color' => $colors[$colorIdx % count($colors)]];
-            $colorIdx++;
-        }
+        // The old daily-90-day trend chart that used to live here is now
+        // "Potential Notifiable Disease Cases"' own card, with a real
+        // date-range filter + weekly/monthly aggregation — see
+        // hc_notifiable_disease_summary()/hc_notifiable_disease_trend_aggregated()
+        // and api/get-disease-trends.php.
 
         $predictionCards = [
             ['label' => 'Consultations (Next 7 Days)', 'icon' => 'bi-graph-up-arrow', 'iconBg' => '#E8F0FE', 'iconColor' => '#1A73E8',
@@ -430,7 +435,158 @@ if (!function_exists('hc_disease_demand_forecast')) {
             return $meta + ['label' => 'Barangay ' . $a['barangay'], 'desc' => $a['category'], 'value' => $a['count14'], 'anomaly' => $a['anomaly'], 'causes' => $a['causes']];
         }, $riskAlerts);
 
-        return compact('notifiableCases', 'casesLast14', 'riskAlerts', 'barangaysUnderWatch', 'consultFit', 'consultForecastTotal', 'consultPast7Total', 'forecastTrend', 'diseaseTrend', 'predictionCards', 'recommendations', 'riskRows', 'consultVolumeAnomaly');
+        return compact('notifiableCases', 'casesLast14', 'riskAlerts', 'barangaysUnderWatch', 'consultFit', 'consultForecastTotal', 'consultPast7Total', 'forecastTrend', 'predictionCards', 'recommendations', 'riskRows', 'consultVolumeAnomaly');
+    }
+}
+
+if (!function_exists('hc_notifiable_disease_summary')) {
+    /**
+     * Per-category totals for $notifiableCases (hc_disease_demand_forecast()'s
+     * own list — one category per real case; a case matching more than
+     * one category's keywords is already counted once, under whichever
+     * category's keyword it hit FIRST, not once per matching category —
+     * see that function's own "break 2" comment) within
+     * [$startDate, $endDate] inclusive (Y-m-d, null = no bound on that
+     * side).
+     *
+     * Covers EVERY real category from hc_notifiable_disease_categories()
+     * (14 total), zero-count ones included — same reasoning as
+     * hc_order_frequency_breakdown()'s own "includes items with none":
+     * the "Potential Notifiable Disease Cases" card's "View All" table
+     * should honestly show the full real taxonomy, not just whichever
+     * categories happened to have a hit in this window.
+     *
+     * @return array{categories: array<int, array{category: string, count: int, firstDate: ?string, lastDate: ?string}>, totalCases: int, categoryCount: int}
+     */
+    function hc_notifiable_disease_summary(array $notifiableCases, ?string $startDate, ?string $endDate): array
+    {
+        $filtered = array_filter($notifiableCases, function ($c) use ($startDate, $endDate) {
+            if ($c['date'] === '') {
+                return false;
+            }
+            if ($startDate !== null && $c['date'] < $startDate) {
+                return false;
+            }
+            if ($endDate !== null && $c['date'] > $endDate) {
+                return false;
+            }
+
+            return true;
+        });
+
+        $byCategory = [];
+        foreach ($filtered as $c) {
+            $byCategory[$c['category']][] = $c['date'];
+        }
+
+        $categories = [];
+        foreach (array_keys(hc_notifiable_disease_categories()) as $category) {
+            $dates = $byCategory[$category] ?? [];
+            sort($dates);
+            $categories[] = [
+                'category' => $category,
+                'count' => count($dates),
+                'firstDate' => $dates !== [] ? $dates[0] : null,
+                'lastDate' => $dates !== [] ? end($dates) : null,
+            ];
+        }
+        usort($categories, fn ($a, $b) => $b['count'] <=> $a['count'] ?: strcmp($a['category'], $b['category']));
+
+        return [
+            'categories' => $categories,
+            'totalCases' => array_sum(array_column($categories, 'count')),
+            'categoryCount' => count(array_filter($categories, fn ($c) => $c['count'] > 0)),
+        ];
+    }
+}
+
+if (!function_exists('hc_notifiable_disease_trend_aggregated')) {
+    /**
+     * Weekly or monthly aggregated trend (not daily — too many real days
+     * have zero cases, which clutters a daily line chart with mostly-flat
+     * overlapping lines) for the top $topN categories by total case
+     * count within [$startDate, $endDate]. $granularity is 'week'
+     * (ISO-8601 week) or 'month'. Zero-case buckets stay in the
+     * underlying data (so totals/averages downstream are still
+     * correct) — only the chart's own point MARKERS are hidden for
+     * them client-side (assets/js/notifiable-diseases.js), not the data
+     * point itself.
+     *
+     * @return array{labels: array<int, string>, datasets: array<int, array{label: string, data: array<int, int>, color: string}>}
+     */
+    function hc_notifiable_disease_trend_aggregated(array $notifiableCases, ?string $startDate, ?string $endDate, string $granularity, int $topN = 5): array
+    {
+        $filtered = array_values(array_filter($notifiableCases, function ($c) use ($startDate, $endDate) {
+            if ($c['date'] === '') {
+                return false;
+            }
+            if ($startDate !== null && $c['date'] < $startDate) {
+                return false;
+            }
+            if ($endDate !== null && $c['date'] > $endDate) {
+                return false;
+            }
+
+            return true;
+        }));
+
+        if ($filtered === []) {
+            return ['labels' => [], 'datasets' => []];
+        }
+
+        $totals = [];
+        foreach ($filtered as $c) {
+            $totals[$c['category']] = ($totals[$c['category']] ?? 0) + 1;
+        }
+        arsort($totals);
+        $topCategories = array_slice(array_keys($totals), 0, $topN);
+
+        $bucketKey = function (string $date) use ($granularity) {
+            return $granularity === 'month' ? substr($date, 0, 7) : date('o-\WW', strtotime($date));
+        };
+        $bucketLabel = function (string $key) use ($granularity) {
+            if ($granularity === 'month') {
+                return date('M Y', strtotime($key . '-01'));
+            }
+            [$y, $w] = explode('-W', $key);
+            $dto = new DateTime();
+            $dto->setISODate((int) $y, (int) $w);
+
+            return 'Wk of ' . $dto->format('M j');
+        };
+
+        $dates = array_column($filtered, 'date');
+        sort($dates);
+        $minDate = $dates[0];
+        $maxDate = $dates[count($dates) - 1];
+
+        $bucketKeys = [];
+        $cursor = $minDate;
+        while (strtotime($cursor) <= strtotime($maxDate)) {
+            $key = $bucketKey($cursor);
+            if (!in_array($key, $bucketKeys, true)) {
+                $bucketKeys[] = $key;
+            }
+            $cursor = date('Y-m-d', strtotime($cursor . ' +1 day'));
+        }
+
+        $colors = ['#D93025', '#E8710A', '#7C3AED', '#1A73E8', '#0E9CA8'];
+        $datasets = [];
+        $colorIdx = 0;
+        foreach ($topCategories as $category) {
+            $catDates = array_column(array_values(array_filter($filtered, fn ($c) => $c['category'] === $category)), 'date');
+            $data = [];
+            foreach ($bucketKeys as $key) {
+                $data[] = count(array_filter($catDates, fn ($d) => $bucketKey($d) === $key));
+            }
+            $datasets[] = ['label' => $category, 'data' => $data, 'color' => $colors[$colorIdx % count($colors)]];
+            $colorIdx++;
+        }
+
+        return [
+            'labels' => array_map($bucketLabel, $bucketKeys),
+            'datasets' => $datasets,
+        ];
     }
 }
 

@@ -736,6 +736,74 @@
 .an-donut-card .an-donut-legend .legend-value{ white-space: nowrap; text-align: right; }
 
 /* =============================================================
+   POTENTIAL NOTIFIABLE DISEASE CASES CARD ("pnd-" prefixed)
+   -------------------------------------------------------------
+   Mostly reuses the already-generic .opf-* classes (summary tiles,
+   top-5 bar rows, modal table) from the Order/Prescription Frequency
+   card — only what's genuinely new to this card gets its own rule. */
+.pnd-card{ display: flex; flex-direction: column; }
+.pnd-toolbar{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.pnd-range-select{
+  width: auto;
+  background-color: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 7px 30px 7px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+}
+.pnd-custom-range{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pnd-custom-range input[type="date"]{
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--adm-text);
+}
+.pnd-custom-range span{ color: var(--adm-text-soft); font-size: 12px; }
+.pnd-apply-btn{
+  background: var(--adm-red-bright);
+  color: #fff;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.pnd-apply-btn:hover{ background: var(--adm-red-bright-hover); }
+
+.pnd-top5-list{ flex: 1; display: flex; flex-direction: column; gap: 12px; justify-content: flex-start; }
+
+.pnd-actions{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--adm-border);
+}
+
+.pnd-trends-toolbar{ display: flex; justify-content: flex-end; margin-bottom: 12px; }
+
+@media (max-width: 575.98px){
+  .pnd-toolbar{ flex-direction: column; align-items: stretch; }
+  .pnd-range-select{ width: 100%; }
+  .pnd-actions{ flex-direction: column; align-items: stretch; }
+}
+
+/* =============================================================
    PROJECTED STOCK DECLINE CARD ("psd-" prefixed)
    ------------------------------------------------------------- */
 .psd-header{ flex-wrap: wrap; align-items: flex-start; gap: 14px; }

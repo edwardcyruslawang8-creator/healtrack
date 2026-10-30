@@ -5,11 +5,13 @@
    Predictive Analytics charts (Tab 1's forecast + disease-trend, Tab
    2's stock-projection + order-frequency, Tab 3's request-volume, Tab
    4's forecast) from one data object shaped like
-   {t1ForecastTrend, t1DiseaseTrend, t2ShortageTrend,
-   t3RequestVolume, t4ForecastTrend, t4Barangays} (Tab 2's own
-   "Projected Stock Decline" card is handled separately — see
-   assets/js/stock-projection.js). $idPrefix is prepended to each
-   canvas id (…T1ForecastChart, …T1DiseaseTrendChart, etc.) so the
+   {t1ForecastTrend, t2ShortageTrend,
+   t3RequestVolume, t4ForecastTrend, t4Barangays} (Tab 1's own
+   "Potential Notifiable Disease Cases" card and Tab 2's own
+   "Projected Stock Decline" card are each handled separately — see
+   assets/js/notifiable-diseases.js and assets/js/stock-projection.js).
+   $idPrefix is prepended to each
+   canvas id (…T1ForecastChart, etc.) so the
    function stays reusable rather than hardcoding one page's ids — kept
    as a parameter (not inlined) since it's exercised by more than one
    caller within admin/facility_analytics.php itself.
@@ -120,8 +122,7 @@ window.HCPredictiveCharts = (function () {
 
         /* ---------- Tab 1: consultation forecast ---------- */
         track(renderForecastChart(idPrefix + 'T1ForecastChart', data.t1ForecastTrend));
-        /* ---------- Tab 1: top notifiable-disease categories, daily ---------- */
-        track(renderMultiLineChart(idPrefix + 'T1DiseaseTrendChart', data.t1DiseaseTrend));
+        /* ---------- Tab 1: "Potential Notifiable Disease Cases" owns its own chart/filters/summary entirely — see assets/js/notifiable-diseases.js ---------- */
 
         /* ---------- Tab 2: "Projected Stock Decline" owns its own chart/dropdown/summary entirely — see assets/js/stock-projection.js ---------- */
         /* ---------- Tab 2: order/prescription frequency is now its own custom top-5 list + "View All" modal, not a Chart.js canvas — see assets/js/order-frequency.js ---------- */

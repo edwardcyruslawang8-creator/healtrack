@@ -859,10 +859,20 @@ $facilityStockRequests = array_values(array_filter(hc_get_all_stock_requests(), 
 $pt1 = hc_disease_demand_forecast($facilityConsultationRecordDocs, $facilityConsultations, $patientBarangayById, $patientAgeById);
 $pt1PredictionCards = $pt1['predictionCards'];
 $pt1ForecastTrend = $pt1['forecastTrend'];
-$pt1DiseaseTrend = $pt1['diseaseTrend'];
 $pt1RiskRows = $pt1['riskRows'];
 $pt1Recommendations = $pt1['recommendations'];
 $pt1ConsultVolumeAnomaly = $pt1['consultVolumeAnomaly'];
+
+// "Potential Notifiable Disease Cases" card — default date range is the
+// last 90 days (same reasoning the old daily chart's own widened
+// window already established: this clinic's real notifiable-case data
+// is thin enough that 7/30 days usually come back empty — see
+// hc_notifiable_disease_summary()'s own header comment).
+$pndDefaultDays = 90;
+$pndDefaultStart = date('Y-m-d', strtotime("-$pndDefaultDays days"));
+$pndDefaultEnd = date('Y-m-d');
+$pndDefaultSummary = hc_notifiable_disease_summary($pt1['notifiableCases'], $pndDefaultStart, $pndDefaultEnd);
+$pndDefaultTrend = hc_notifiable_disease_trend_aggregated($pt1['notifiableCases'], $pndDefaultStart, $pndDefaultEnd, 'week');
 
 $allPharmacyOrderDocsForShortage = hc_get_all_pharmacy_order_docs(); // system-wide — see comment above
 $allMedicationDocsForShortage = $firestore->listDocuments('medications');
