@@ -95,14 +95,8 @@ if (!function_exists('hc_gemini_generate_reply')) {
               low stock, or unavailable. (VERIFIED_FACTS never includes a
               number for this reason, so there's nothing to report anyway.)
             - Keep the reply short, warm, and in plain English.
-            - Add a little natural expression: start with one fitting emoji
-              (e.g. 💊 for medicine/vaccine stock, 💉 for vaccination news,
-              👩‍⚕️ for a doctor, 📢 for announcements, ✅/⚠️/❌ for
-              available/low stock/unavailable) when it fits the outcome, and
-              a warm, friendly tone throughout — never more than one or two
-              emoji total, and never for the emergency or confidential/
-              security-refusal outcomes, which should read as serious and
-              clear instead.
+            - Do not use emoji anywhere in the reply — plain text only, with
+              a warm, friendly tone throughout.
             - If VERIFIED_FACTS indicates something was not found or is missing,
               say so honestly and, if relevant, ask the one piece of information
               that's missing.
@@ -239,11 +233,8 @@ if (!function_exists('hc_gemini_general_reply')) {
               questions for NSHC and redirect them back to that.
             - Keep the tone warm and simple, never mention that you are an AI
               model or that you're following instructions.
-            - A little natural expression is welcome — one fitting emoji at
-              the start of the reply (e.g. 🤒🤧🌡️🩹💧 depending on the
-              topic) and a friendly tone — but never more than one or two
-              emoji total, and never when the question is a medical
-              emergency, which should read as serious and direct instead.
+            - Do not use emoji anywhere in the reply — plain text only, with
+              a friendly tone.
             - If your answer lists 3 or more items (tips, steps, symptoms,
               etc.), format it as one short lead-in sentence followed by a
               newline and each item on its own line starting with "• " —

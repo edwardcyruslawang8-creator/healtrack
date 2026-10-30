@@ -298,7 +298,7 @@ if (!function_exists('hc_chatbot_log_exchange')) {
      * reply, so this never throws. Returns the new chatbot_logs doc's
      * id (or null on failure/empty message) — api/chatbot-ask.php hands
      * this back to the browser as 'logId' so assets/js/chatbot-widget.js's
-     * "👎 This didn't answer my question" link (api/chatbot-feedback.php)
+     * "This didn't answer my question" link (api/chatbot-feedback.php)
      * can reference exactly this exchange.
      */
     function hc_chatbot_log_exchange(string $message, string $answer, string $matchType, ?string $customAnswerId = null, ?string $geminiFailureReason = null): ?string
@@ -358,9 +358,9 @@ if (!function_exists('hc_chatbot_item_status_reply')) {
         $statusLabel = hc_medicine_status_meta()[$item['status']]['label'] ?? ucfirst($item['status']);
 
         return match ($item['status']) {
-            'available' => "✅ Yes — {$item['name']} is currently {$statusLabel}.",
-            'low' => "⚠️ {$item['name']} is currently {$statusLabel} — stock is limited, so please check with our pharmacy before visiting.",
-            default => "❌ Unfortunately, {$item['name']} is currently {$statusLabel}. Please check back later or contact our pharmacy for alternatives.",
+            'available' => "Yes — {$item['name']} is currently {$statusLabel}.",
+            'low' => "{$item['name']} is currently {$statusLabel} — stock is limited, so please check with our pharmacy before visiting.",
+            default => "Unfortunately, {$item['name']} is currently {$statusLabel}. Please check back later or contact our pharmacy for alternatives.",
         };
     }
 }
@@ -521,7 +521,7 @@ if (!function_exists('hc_chatbot_meta_reply')) {
     /** The honest reply for hc_chatbot_is_meta_question() — never re-guesses, just asks for the real subject plainly. */
     function hc_chatbot_meta_reply(): string
     {
-        return '🙏 Sorry, I think I misunderstood your last question. Could you rephrase it, or tell me specifically which medicine, vaccine, service, or topic you\'d like to know about?';
+        return 'Sorry, I think I misunderstood your last question. Could you rephrase it, or tell me specifically which medicine, vaccine, service, or topic you\'d like to know about?';
     }
 }
 
@@ -537,7 +537,7 @@ if (!function_exists('hc_chatbot_announcement_reply')) {
     function hc_chatbot_announcement_reply(array $a, bool $isLatest = true): string
     {
         $posted = ($a['date'] ?? '') !== '' ? " (posted {$a['date']})" : '';
-        $lead = $isLatest ? '📢 Here' . '\'s our latest announcement' : '📢 Here' . '\'s our previous announcement';
+        $lead = $isLatest ? 'Here' . '\'s our latest announcement' : 'Here' . '\'s our previous announcement';
 
         return "{$lead}{$posted}: \"{$a['title']}\" — {$a['desc']}";
     }
@@ -617,10 +617,10 @@ if (!function_exists('hc_chatbot_followup_reply')) {
 
         return match ($topic['type']) {
             'medicine' => hc_chatbot_item_status_reply($d),
-            'doctor' => "👩‍⚕️ Yes, {$d['name']} is one of our doctors here at NSHC. {$doctorOutro}",
+            'doctor' => "Yes, {$d['name']} is one of our doctors here at NSHC. {$doctorOutro}",
             'health_topic' => (hc_chatbot_health_topic_answer($d['topic']) ?? 'I don\'t have verified information on that topic yet.')
                 . ' This is general information, not a diagnosis — for anything specific to you, please consult our healthcare staff directly.',
-            'vaccination_announcement' => '💉 Here' . '\'s our latest vaccination announcement'
+            'vaccination_announcement' => 'Here' . '\'s our latest vaccination announcement'
                 . (($d['postedAt'] ?? '') !== '' ? " (posted {$d['postedAt']})" : '') . ": \"{$d['title']}\" — {$d['desc']}",
             // A generic follow-up ("tell me more") on the real announcement
             // just shown re-states that SAME one's full detail again —
@@ -910,7 +910,7 @@ if (!function_exists('hc_chatbot_harm_reply')) {
      */
     function hc_chatbot_harm_reply(): string
     {
-        return '💙 I\'m not able to help with that — this assistant is only here for real patient care questions (medicine/vaccine availability, services, appointments). '
+        return 'I\'m not able to help with that — this assistant is only here for real patient care questions (medicine/vaccine availability, services, appointments). '
             . 'If you\'re having thoughts of hurting yourself, please reach out right now: the National Center for Mental Health Crisis Hotline (Philippines) at 1553 (toll-free landline), '
             . '0966-351-4518 or 0917-899-8727 (Globe/TM), or 0908-639-2672 (Smart/TNT) — someone is available to talk, any time. '
             . 'If this is about keeping someone else safe, please contact your local authorities or emergency hotline directly.';
@@ -939,16 +939,16 @@ if (!function_exists('hc_chatbot_health_topics')) {
         // in Tagalog still get a grounded answer instead of the generic
         // "I'm not sure I understood that" fallback.
         return [
-            ['cold', '/\b(common cold|colds?|sipon)\b/i', '🤧 A common cold usually brings a runny or stuffy nose, sore throat, cough, sneezing, and mild body aches or low fever, typically clearing up in about 7–10 days. Rest and fluids help; see a doctor if it doesn\'t improve or gets worse. (Source: CDC — https://www.cdc.gov/common-cold/about/index.html)'],
-            ['flu', '/\b(flu|influenza|trangkaso)\b/i', '🤒 Flu symptoms usually start suddenly and are more intense than a cold — fever, chills, muscle aches, fatigue, headache, cough, and sore throat. Rest, fluids, and staying home to avoid spreading it are key; seek care if breathing becomes difficult or symptoms are severe. (Source: WHO — https://www.who.int/news-room/fact-sheets/detail/influenza-(seasonal))'],
-            ['dengue', '/\bdengue\b/i', '🦟 Common dengue symptoms include sudden high fever, severe headache, pain behind the eyes, joint and muscle pain, and rash. Warning signs like severe abdominal pain, persistent vomiting, or bleeding need immediate medical attention — dengue can worsen quickly. (Source: Philippine DOH — https://doh.gov.ph/uhc/health-programs/dengue-prevention-and-control-program/)'],
-            ['fever', '/\b(fevers?|lagnat)\b/i', '🌡️ For a mild fever at home: rest, drink plenty of fluids, dress lightly, and you may take paracetamol as directed on the packaging. Seek medical care if the fever is very high, lasts more than 2–3 days, or comes with other worrying symptoms. (Source: CDC — https://www.cdc.gov/common-cold/treatment/index.html)'],
-            ['headache', '/\b(headaches?|sakit ng ulo|(sumasakit|masakit) (ang |na )?ulo)\b/i', '🤕 Common headache causes include stress, dehydration, lack of sleep, eye strain, and skipped meals. Most improve with rest, hydration, and over-the-counter pain relief. Seek care for a sudden, severe headache or one with other symptoms like vision changes. (Source: WHO — https://www.who.int/news-room/fact-sheets/detail/headache-disorders)'],
-            ['diarrhea', '/\b(diarrh(o?ea)|pagtatae|nagtatae|lbm)\b/i', '🚰 Diarrhea means frequent loose or watery stools, sometimes with cramping, nausea, or fever. The main risk is dehydration, so fluids and oral rehydration salts (ORS) are important. See a doctor if it lasts more than 2 days, or has blood. (Source: WHO — https://www.who.int/news-room/fact-sheets/detail/diarrhoeal-disease)'],
-            ['dehydration', '/\bdehydrat(ion|ed)?\b/i', '💧 To prevent dehydration, drink water regularly — more during heat, illness, exercise, or diarrhea/vomiting, when oral rehydration salts (ORS) help too. Watch for warning signs like dark urine, dizziness, or a dry mouth. (Source: WHO — https://www.who.int/news-room/fact-sheets/detail/diarrhoeal-disease)'],
-            ['sore_throat', '/\b(sore throats?|sakit ng lalamunan|masakit (ang |na )?lalamunan)\b/i', '🗣️ A sore throat usually causes pain or scratchiness when swallowing, sometimes with redness or a mild fever. Warm fluids, rest, and lozenges can help; see a doctor if it\'s severe, lasts over a week, or comes with high fever or trouble breathing. (Source: CDC — https://www.cdc.gov/common-cold/about/index.html)'],
-            ['infection_prevention', '/\binfectious disease|communicable disease|spread(ing)? of (disease|infection)/i', '🧼 Common ways to prevent the spread of infectious diseases include frequent handwashing, covering coughs and sneezes, staying home when sick, keeping vaccinations up to date, and practicing good food and water hygiene. (Source: WHO — https://www.who.int/health-topics/infection-prevention-and-control)'],
-            ['cough', '/\b(coughs?|ubo)\b/i', '😮‍💨 See a healthcare professional if a cough lasts more than 2–3 weeks, or comes with fever, shortness of breath, chest pain, blood, or unexplained weight loss. (Source: CDC — https://www.cdc.gov/respiratory-viruses/about/index.html)'],
+            ['cold', '/\b(common cold|colds?|sipon)\b/i', 'A common cold usually brings a runny or stuffy nose, sore throat, cough, sneezing, and mild body aches or low fever, typically clearing up in about 7–10 days. Rest and fluids help; see a doctor if it doesn\'t improve or gets worse. (Source: CDC — https://www.cdc.gov/common-cold/about/index.html)'],
+            ['flu', '/\b(flu|influenza|trangkaso)\b/i', 'Flu symptoms usually start suddenly and are more intense than a cold — fever, chills, muscle aches, fatigue, headache, cough, and sore throat. Rest, fluids, and staying home to avoid spreading it are key; seek care if breathing becomes difficult or symptoms are severe. (Source: WHO — https://www.who.int/news-room/fact-sheets/detail/influenza-(seasonal))'],
+            ['dengue', '/\bdengue\b/i', 'Common dengue symptoms include sudden high fever, severe headache, pain behind the eyes, joint and muscle pain, and rash. Warning signs like severe abdominal pain, persistent vomiting, or bleeding need immediate medical attention — dengue can worsen quickly. (Source: Philippine DOH — https://doh.gov.ph/uhc/health-programs/dengue-prevention-and-control-program/)'],
+            ['fever', '/\b(fevers?|lagnat)\b/i', 'For a mild fever at home: rest, drink plenty of fluids, dress lightly, and you may take paracetamol as directed on the packaging. Seek medical care if the fever is very high, lasts more than 2–3 days, or comes with other worrying symptoms. (Source: CDC — https://www.cdc.gov/common-cold/treatment/index.html)'],
+            ['headache', '/\b(headaches?|sakit ng ulo|(sumasakit|masakit) (ang |na )?ulo)\b/i', 'Common headache causes include stress, dehydration, lack of sleep, eye strain, and skipped meals. Most improve with rest, hydration, and over-the-counter pain relief. Seek care for a sudden, severe headache or one with other symptoms like vision changes. (Source: WHO — https://www.who.int/news-room/fact-sheets/detail/headache-disorders)'],
+            ['diarrhea', '/\b(diarrh(o?ea)|pagtatae|nagtatae|lbm)\b/i', 'Diarrhea means frequent loose or watery stools, sometimes with cramping, nausea, or fever. The main risk is dehydration, so fluids and oral rehydration salts (ORS) are important. See a doctor if it lasts more than 2 days, or has blood. (Source: WHO — https://www.who.int/news-room/fact-sheets/detail/diarrhoeal-disease)'],
+            ['dehydration', '/\bdehydrat(ion|ed)?\b/i', 'To prevent dehydration, drink water regularly — more during heat, illness, exercise, or diarrhea/vomiting, when oral rehydration salts (ORS) help too. Watch for warning signs like dark urine, dizziness, or a dry mouth. (Source: WHO — https://www.who.int/news-room/fact-sheets/detail/diarrhoeal-disease)'],
+            ['sore_throat', '/\b(sore throats?|sakit ng lalamunan|masakit (ang |na )?lalamunan)\b/i', 'A sore throat usually causes pain or scratchiness when swallowing, sometimes with redness or a mild fever. Warm fluids, rest, and lozenges can help; see a doctor if it\'s severe, lasts over a week, or comes with high fever or trouble breathing. (Source: CDC — https://www.cdc.gov/common-cold/about/index.html)'],
+            ['infection_prevention', '/\binfectious disease|communicable disease|spread(ing)? of (disease|infection)/i', 'Common ways to prevent the spread of infectious diseases include frequent handwashing, covering coughs and sneezes, staying home when sick, keeping vaccinations up to date, and practicing good food and water hygiene. (Source: WHO — https://www.who.int/health-topics/infection-prevention-and-control)'],
+            ['cough', '/\b(coughs?|ubo)\b/i', 'See a healthcare professional if a cough lasts more than 2–3 weeks, or comes with fever, shortness of breath, chest pain, blood, or unexplained weight loss. (Source: CDC — https://www.cdc.gov/respiratory-viruses/about/index.html)'],
         ];
     }
 }
@@ -1012,7 +1012,7 @@ if (!function_exists('hc_chatbot_lab_tests_reply')) {
         }
 
         return hc_chatbot_bullet_list(
-            '🧪 Our laboratory currently offers these tests:',
+            'Our laboratory currently offers these tests:',
             $lines,
             'We also offer X-ray imaging — ask our staff on-site about the specific exam you need. Availability can vary by day, so please confirm with our laboratory staff before your visit.'
         );
@@ -1262,7 +1262,7 @@ if (!function_exists('hc_chatbot_answer')) {
                 }
             }
 
-            $decline = '🙏 I\'m not able to recommend a specific medicine — that needs to come from a doctor or pharmacist, not this chat, even for something that happens to be in our stock.';
+            $decline = 'I\'m not able to recommend a specific medicine — that needs to come from a doctor or pharmacist, not this chat, even for something that happens to be in our stock.';
             if ($topicKey !== null) {
                 return $decline . ' Here\'s some general information instead: ' . hc_chatbot_health_topic_answer($topicKey);
             }
@@ -1289,7 +1289,7 @@ if (!function_exists('hc_chatbot_answer')) {
                 return 'We don\'t have any medicines or vaccines marked as available right now. Please contact our pharmacy directly for the latest status.';
             }
 
-            return hc_chatbot_bullet_list('💊 Here\'s what we currently have available:', $all);
+            return hc_chatbot_bullet_list('Here\'s what we currently have available:', $all);
         }
 
         // 2. Vaccination schedule — the real most recent vaccination announcement.
@@ -1300,7 +1300,7 @@ if (!function_exists('hc_chatbot_answer')) {
                 $posted = $date !== '' ? " (posted {$date})" : '';
                 hc_chatbot_remember_topic('vaccination_announcement', ['title' => $ann['title'], 'desc' => $ann['desc'], 'postedAt' => $date]);
 
-                return "💉 Here's our latest vaccination announcement{$posted}: \"{$ann['title']}\" — {$ann['desc']}";
+                return "Here's our latest vaccination announcement{$posted}: \"{$ann['title']}\" — {$ann['desc']}";
             }
 
             return 'There\'s no upcoming vaccination announcement on file right now. Please check our Announcements page or contact us directly for the latest schedule.';
@@ -1335,7 +1335,7 @@ if (!function_exists('hc_chatbot_answer')) {
             if ($namedDoctor !== null) {
                 hc_chatbot_remember_topic('doctor', ['name' => $namedDoctor]);
 
-                return "👩‍⚕️ Yes, {$namedDoctor} is one of our doctors here at NSHC. " . $outro;
+                return "Yes, {$namedDoctor} is one of our doctors here at NSHC. " . $outro;
             }
 
             $doctors = hc_chatbot_list_doctors();
@@ -1343,7 +1343,7 @@ if (!function_exists('hc_chatbot_answer')) {
                 return 'We don\'t have any doctor accounts on file right now. ' . $outro;
             }
 
-            return hc_chatbot_bullet_list('👩‍⚕️ Our doctors are:', $doctors, $outro);
+            return hc_chatbot_bullet_list('Our doctors are:', $doctors, $outro);
         }
 
         // 2e. Laboratory/X-ray tests offered — checked BEFORE #3's
@@ -1362,7 +1362,7 @@ if (!function_exists('hc_chatbot_answer')) {
         // does; there's no "services" collection to query, so this stays
         // static rather than pretending otherwise.
         if (preg_match('/service|offer|what can you do|help with/i', $lower) === 1) {
-            return hc_chatbot_bullet_list('🏥 NSHC offers:', [
+            return hc_chatbot_bullet_list('NSHC offers:', [
                 'Patient consultations',
                 'Medicine & vaccine dispensing',
                 'Laboratory & X-ray testing',
@@ -1375,7 +1375,7 @@ if (!function_exists('hc_chatbot_answer')) {
         // disease-mapping feature already covers (HC_COVERED_BARANGAYS),
         // not a guess.
         if (preg_match('/barangay/i', $lower) === 1) {
-            return hc_chatbot_bullet_list('📍 NSHC covers the following barangays:', HC_COVERED_BARANGAYS);
+            return hc_chatbot_bullet_list('NSHC covers the following barangays:', HC_COVERED_BARANGAYS);
         }
 
         // 4. Hours / contact / location — same real values as this site's own footer.
@@ -1441,7 +1441,7 @@ if (!function_exists('hc_chatbot_answer')) {
         // 5. General health tips — genuinely general, not personalized
         // medical advice (same disclaimer already shown on the chat page).
         if (preg_match('/healthy|health tip|wellness|stay healthy/i', $lower) === 1) {
-            return hc_chatbot_bullet_list('💡 A few general tips:', [
+            return hc_chatbot_bullet_list('A few general tips:', [
                 'Stay hydrated',
                 'Eat a balanced diet',
                 'Get regular exercise',
@@ -1452,7 +1452,7 @@ if (!function_exists('hc_chatbot_answer')) {
 
         // 6. Greeting
         if (preg_match('/^(hi|hello|hey|kumusta|good\s?(morning|afternoon|evening))\b/i', $lower) === 1) {
-            return '👋 Hello! I can help you check medicine/vaccine availability, our services, vaccination announcements, or our operating hours — what would you like to know?';
+            return 'Hello! I can help you check medicine/vaccine availability, our services, vaccination announcements, or our operating hours — what would you like to know?';
         }
 
         // 7. Nothing structured matched — let the caller try the

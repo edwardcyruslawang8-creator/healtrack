@@ -285,7 +285,7 @@ if (!function_exists('hc_chatbot_phrase_decision')) {
                     return 'We don\'t have any medicines or vaccines marked as available right now. Please contact our pharmacy directly for the latest status.';
                 }
 
-                return hc_chatbot_bullet_list('💊 Here\'s what we currently have available:', $all);
+                return hc_chatbot_bullet_list('Here\'s what we currently have available:', $all);
             })(),
             // Deliberately no exact quantity — only available/low/
             // unavailable, never a count (see this outcome's own
@@ -293,12 +293,12 @@ if (!function_exists('hc_chatbot_phrase_decision')) {
             // engine's own identical wording via hc_chatbot_item_status_reply().
             'medicine_found' => hc_chatbot_item_status_reply($d),
             'medicine_not_found' => "I couldn't find \"{$d['queried']}\" in our medicine/vaccine list. Could you double-check the spelling, or ask about something else?",
-            'vaccination_announcement_found' => '💉 Here' . '\'s our latest vaccination announcement'
+            'vaccination_announcement_found' => 'Here' . '\'s our latest vaccination announcement'
                 . ($d['postedAt'] !== '' ? " (posted {$d['postedAt']})" : '') . ": \"{$d['title']}\" — {$d['desc']}",
             'no_vaccination_announcement' => 'There\'s no upcoming vaccination announcement on file right now. Please check our Announcements page or contact us directly.',
-            'services_info' => hc_chatbot_bullet_list('🏥 NSHC offers:', $d['services']),
+            'services_info' => hc_chatbot_bullet_list('NSHC offers:', $d['services']),
             'lab_tests_info' => hc_chatbot_lab_tests_reply(),
-            'covered_barangays_info' => hc_chatbot_bullet_list('📍 NSHC covers the following barangays:', $d['barangays']),
+            'covered_barangays_info' => hc_chatbot_bullet_list('NSHC covers the following barangays:', $d['barangays']),
             'health_topic_info' => (hc_chatbot_health_topic_answer($d['topic']) ?? 'I don\'t have verified information on that topic yet.')
                 . ' This is general information, not a diagnosis — for anything specific to you, please consult our healthcare staff directly.',
             // Dialogflow matched the intent but extracted a topic phrase
@@ -320,10 +320,10 @@ if (!function_exists('hc_chatbot_phrase_decision')) {
             'about_facility_info' => 'North Super Health Center is a community-based healthcare facility committed to providing accessible, reliable, and compassionate care to every barangay we serve — from general consultations and vaccinations to medicine availability and health advisories.',
             'doctors_info' => $d['doctors'] === []
                 ? 'We don\'t have any doctor accounts on file right now. We don\'t have live schedule/duty data online yet, so for who\'s available today, please call us at ' . hc_chatbot_contact_settings()['contactPhone'] . ' or visit in person.'
-                : hc_chatbot_bullet_list('👩‍⚕️ Our doctors are:', $d['doctors'], 'We don\'t have live schedule/duty data online yet, so for who\'s available today, please call us at ' . hc_chatbot_contact_settings()['contactPhone'] . ' or visit in person.'),
+                : hc_chatbot_bullet_list('Our doctors are:', $d['doctors'], 'We don\'t have live schedule/duty data online yet, so for who\'s available today, please call us at ' . hc_chatbot_contact_settings()['contactPhone'] . ' or visit in person.'),
             'contact_info_scoped' => $d['reply'],
-            'health_tips_info' => hc_chatbot_bullet_list('💡 A few general tips:', $d['tips'], 'For advice specific to you, please consult our healthcare staff directly.'),
-            'greeting' => '👋 Hello! I can help you check medicine/vaccine availability, our services, vaccination announcements, or our operating hours — what would you like to know?',
+            'health_tips_info' => hc_chatbot_bullet_list('A few general tips:', $d['tips'], 'For advice specific to you, please consult our healthcare staff directly.'),
+            'greeting' => 'Hello! I can help you check medicine/vaccine availability, our services, vaccination announcements, or our operating hours — what would you like to know?',
             default => 'I\'m not sure I understood that. You can ask me things like "Is Paracetamol available?", "What services are available?", "When is the next vaccination?", or "What are your hours?".',
         };
     }
