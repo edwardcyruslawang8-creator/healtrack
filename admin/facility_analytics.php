@@ -811,7 +811,7 @@ $adminNavItems = [
                             <?php if ($pt2OrderFrequencyBreakdown === []): ?>
                             <div class="pn-empty"><i class="bi bi-info-circle-fill"></i><p>No medicines or vaccines on record yet.</p></div>
                             <?php else: ?>
-                            <p class="pn-note">Real orders (pharmacy_orders) and prescriptions (medications), per real inventory item.</p>
+                            <p class="pn-note">How often each medicine and vaccine has been ordered or prescribed.</p>
                             <div class="opf-toolbar">
                                 <div class="opf-seg" id="faPredOPFCategorySeg" role="tablist" aria-label="Filter by category">
                                     <button type="button" class="opf-seg-btn active" data-category="all">All Items</button>
