@@ -31,12 +31,34 @@ window.HCPredictiveCharts = (function () {
         const gridColor = rootStyle.getPropertyValue('--adm-border').trim() || '#ECEDF3';
         const tickColor = rootStyle.getPropertyValue('--adm-text-muted').trim() || '#6B7280';
 
+        // Every chart below gets created in this same tick regardless of
+        // which Bootstrap tab (outer AND the 4 inner 6.3.1–6.3.4 ones)
+        // happens to be visible right now — only the one tab marked
+        // "show active" in the HTML has a real, non-zero size at this
+        // point, so Chart.js silently draws every OTHER chart at 0×0
+        // (a real, well-known Chart.js-inside-a-hidden-Bootstrap-tab
+        // failure mode, not a data problem — compare this page's
+        // Disease & Service Demand tab, which IS the hardcoded default
+        // "show active" inner tab and so always renders fine, against
+        // Medicine & Vaccine Shortage/Inventory Replenishment/
+        // Consultation Trends, which don't). Every created chart is
+        // tracked here and resized once its own tab-pane actually
+        // becomes visible (Bootstrap's 'shown.bs.tab' event, delegated
+        // on document so this works for both the outer tab strip and
+        // the inner one) — resize() is a cheap no-op for a chart whose
+        // tab was already visible.
+        const createdCharts = [];
+        function track(chart) {
+            if (chart) createdCharts.push(chart);
+            return chart;
+        }
+
         /** Shared actual-vs-forecast line chart (Tab 1's own forecast, Tab 4's all-barangays combined). */
         function renderForecastChart(canvasId, trend) {
             const canvas = document.getElementById(canvasId);
-            if (!canvas || !trend) return;
+            if (!canvas || !trend) return null;
 
-            new Chart(canvas, {
+            return new Chart(canvas, {
                 type: 'line',
                 data: {
                     labels: trend.labels,
@@ -67,9 +89,9 @@ window.HCPredictiveCharts = (function () {
         /** Shared multi-line trend chart (Tab 1 disease categories, Tab 2 order frequency). */
         function renderMultiLineChart(canvasId, series) {
             const canvas = document.getElementById(canvasId);
-            if (!canvas || !series || !series.datasets.length) return;
+            if (!canvas || !series || !series.datasets.length) return null;
 
-            new Chart(canvas, {
+            return new Chart(canvas, {
                 type: 'line',
                 data: {
                     labels: series.labels,
@@ -95,15 +117,15 @@ window.HCPredictiveCharts = (function () {
         }
 
         /* ---------- Tab 1: consultation forecast ---------- */
-        renderForecastChart(idPrefix + 'T1ForecastChart', data.t1ForecastTrend);
+        track(renderForecastChart(idPrefix + 'T1ForecastChart', data.t1ForecastTrend));
         /* ---------- Tab 1: top notifiable-disease categories, daily ---------- */
-        renderMultiLineChart(idPrefix + 'T1DiseaseTrendChart', data.t1DiseaseTrend);
+        track(renderMultiLineChart(idPrefix + 'T1DiseaseTrendChart', data.t1DiseaseTrend));
 
         /* ---------- Tab 2: most urgent item's projected stock decline ---------- */
         const stockCanvas = document.getElementById(idPrefix + 'T2StockProjectionChart');
         if (stockCanvas && data.t2StockProjection && data.t2StockProjection.labels.length) {
             const proj = data.t2StockProjection;
-            new Chart(stockCanvas, {
+            track(new Chart(stockCanvas, {
                 type: 'line',
                 data: {
                     labels: proj.labels,
@@ -127,17 +149,17 @@ window.HCPredictiveCharts = (function () {
                         x: { grid: { display: false }, ticks: { color: tickColor, maxTicksLimit: 8 } },
                     },
                 },
-            });
+            }));
         }
         /* ---------- Tab 2: order/prescription frequency, top items ---------- */
-        renderMultiLineChart(idPrefix + 'T2OrderFreqChart', data.t2OrderFrequency);
+        track(renderMultiLineChart(idPrefix + 'T2OrderFreqChart', data.t2OrderFrequency));
         /* ---------- Tab 2: projected stock decline, EVERY at-risk item (vs. the single most-urgent-item chart above) ---------- */
-        renderMultiLineChart(idPrefix + 'T2ShortageTrendChart', data.t2ShortageTrend);
+        track(renderMultiLineChart(idPrefix + 'T2ShortageTrendChart', data.t2ShortageTrend));
 
         /* ---------- Tab 3: weekly stock-request volume by status ---------- */
         const requestCanvas = document.getElementById(idPrefix + 'T3RequestVolumeChart');
         if (requestCanvas && data.t3RequestVolume && data.t3RequestVolume.labels.length) {
-            new Chart(requestCanvas, {
+            track(new Chart(requestCanvas, {
                 type: 'bar',
                 data: {
                     labels: data.t3RequestVolume.labels,
@@ -155,11 +177,26 @@ window.HCPredictiveCharts = (function () {
                         x: { stacked: true, grid: { display: false }, ticks: { color: tickColor } },
                     },
                 },
-            });
+            }));
         }
 
         /* ---------- Tab 4: barangays combined — actual vs forecast ---------- */
-        renderForecastChart(idPrefix + 'T4ForecastChart', data.t4ForecastTrend);
+        track(renderForecastChart(idPrefix + 'T4ForecastChart', data.t4ForecastTrend));
+
+        // Resize every real chart created above once its own tab (outer
+        // or inner) actually becomes visible — see the comment on
+        // createdCharts above for why this is needed at all. Delegated
+        // on document (not a specific tab-button element) so one
+        // listener covers both admin/facility_analytics.php's outer
+        // tab strip AND its nested 6.3.1–6.3.4 inner one, and
+        // subadmin/predictive_analytics.php's own single tab strip,
+        // without needing to know which markup this particular caller
+        // uses.
+        document.addEventListener('shown.bs.tab', function () {
+            createdCharts.forEach(function (chart) {
+                if (chart && typeof chart.resize === 'function') chart.resize();
+            });
+        });
     }
 
     return { renderAll: renderAll };
