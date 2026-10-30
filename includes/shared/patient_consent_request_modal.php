@@ -81,7 +81,7 @@
 
         <form id="pcgForm">
           <label for="pcgReason" class="pcg-form-label">Why do you need to view this patient's details?</label>
-          <textarea class="pcg-form-control" id="pcgReason" rows="3" required placeholder="e.g. Following up on today's walk-in visit"></textarea>
+          <textarea class="pcg-form-control" id="pcgReason" rows="3" required placeholder="e.g. Reviewing the patient's medical history before consultation"></textarea>
         </form>
 
         <div id="pcgSentState" class="d-none">

@@ -107,6 +107,41 @@ $rawConsents = array_values(array_filter(
 // A patient registered before that question existed has no
 // consentShareInfo field at all and is skipped rather than guessed.
 // ---------------------------------------------------------------------
+// Purpose = why staff need to open this patient's records, NOT the
+// patient's own reason for visit. Derived from what the registering
+// staff member really typed on that same registration (Add Patient
+// wizard Step 5's "Chief Complaint / Primary Reason for Visit") — that
+// visit reason decides which part of the record has to be reviewed.
+// First matching rule wins; a blank or unmatched reason falls back to
+// a general medical-history review.
+function cm_registration_access_purpose(string $visitReason): string
+{
+    $rules = [
+        '/vaccin|immuni[sz]|bakuna|booster|\bshots?\b|\bbcg\b|\bmmr\b|\bdpt\b|\bpenta|\bopv\b|tetanus|anti-?rabies/i'
+            => 'Checking the patient\'s vaccination history and immunization records.',
+        '/\blab|x-?ray|result|urinalysis|\bcbc\b|ultrasound|\becg\b|\bekg\b|fbs|lipid|sputum|\btests?\b/i'
+            => 'Verifying the patient\'s previous laboratory and X-ray results.',
+        '/follow[\s-]?up|refill|maintenance|continu|monitor/i'
+            => 'Reviewing previous consultation records for treatment continuity.',
+        '/prenatal|pre-natal|postnatal|post-natal|pregnan|family planning|contracept|maternal|\bob\b/i'
+            => 'Reviewing the patient\'s maternal and reproductive health records before consultation.',
+        '/allerg|rash|itch|hives|medication|medicine|\bmeds?\b|drug/i'
+            => 'Reviewing existing medications and recorded allergies.',
+        '/hypertens|blood pressure|\bbp\b|diabet|sugar|asthma|heart|cardiac|kidney|chronic|tuberculosis|\btb\b/i'
+            => 'Reviewing the patient\'s medical history and existing medications for ongoing condition management.',
+        '/update|record|certificate|clearance|referral|transfer/i'
+            => 'Updating the patient\'s healthcare records.',
+        '/pain|ache|fever|cough|cold|flu|urinat|burning|dizz|vomit|diarr|sore|swell|bleed|wound|injur|headache|breath/i'
+            => 'Reviewing the patient\'s medical history and recorded allergies before assessing current symptoms.',
+    ];
+    foreach ($rules as $pattern => $purpose) {
+        if (preg_match($pattern, $visitReason)) {
+            return $purpose;
+        }
+    }
+    return 'Reviewing the patient\'s medical history before consultation.';
+}
+
 foreach ($cmFacilityPatientDocs as $doc) {
     $p = $doc['fields'];
     if (!array_key_exists('consentShareInfo', $p)) {
@@ -114,20 +149,13 @@ foreach ($cmFacilityPatientDocs as $doc) {
     }
     $shares = (bool) $p['consentShareInfo'];
     $registrar = trim((string) ($p['primaryPhysician'] ?? ''));
-    // Purpose = what the registering staff member really typed on that
-    // same registration (Add Patient wizard Step 5's required "Chief
-    // Complaint / Primary Reason for Visit", saved as-entered) — the
-    // consent question's own wording only if that's somehow blank.
-    $typedReason = trim((string) ($p['initialReasonForVisit'] ?? ''));
     $rawConsents[] = [
         'id' => 'registration-' . $doc['id'],
         'fields' => [
             'patientId' => $doc['id'],
             'patientName' => $p['name'] ?? '(no name)',
             'type' => 'data_sharing',
-            'purpose' => $typedReason !== ''
-                ? $typedReason
-                : 'Sharing personal information and medical data with authorized healthcare personnel for treatment and care',
+            'purpose' => cm_registration_access_purpose(trim((string) ($p['initialReasonForVisit'] ?? ''))),
             'status' => $shares ? 'accepted' : 'rejected',
             'givenOn' => $p['dateRegistered'] ?? '',
             'approvedBy' => $p['name'] ?? '—', // the patient's own answer
