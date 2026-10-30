@@ -872,12 +872,57 @@ $allInventoryItemsForShortage = array_merge(
 );
 $pt2 = hc_medicine_vaccine_shortage($allInventoryItemsForShortage, $allPharmacyOrderDocsForShortage, $allMedicationDocsForShortage);
 $pt2PredictionCards = $pt2['predictionCards'];
-$pt2StockProjection = $pt2['stockProjection'];
-$pt2StockProjections = $pt2['stockProjections'];
 $pt2OrderFrequencyBreakdown = $pt2['orderFrequencyBreakdown'];
 $pt2ShortageTrend = $pt2['shortageTrend'];
 $pt2RiskRows = $pt2['riskRows'];
 $pt2Recommendations = $pt2['recommendations'];
+
+// "Projected Stock Decline" card's dropdown — every real item, sorted
+// by name. Two or more real inventory docs can share the exact same
+// name (a real, confirmed case here), so each option's value is the
+// item's own real doc id, and its label gets a disambiguating
+// "— N in stock" suffix whenever its name isn't unique, rather than
+// showing two identical-looking, unselectable-apart options.
+$pt2ItemList = $allInventoryItemsForShortage;
+usort($pt2ItemList, fn ($a, $b) => strcasecmp($a['name'], $b['name']) ?: $a['currentStock'] <=> $b['currentStock']);
+$pt2ItemNameCounts = array_count_values(array_column($pt2ItemList, 'name'));
+$pt2ItemList = array_map(function ($i) use ($pt2ItemNameCounts) {
+    return [
+        'id' => $i['id'],
+        'name' => $i['name'],
+        'itemType' => $i['itemType'],
+        'label' => $pt2ItemNameCounts[$i['name']] > 1 ? ($i['name'] . ' — ' . number_format($i['currentStock']) . ' in stock') : $i['name'],
+    ];
+}, $pt2ItemList);
+
+// Default item on first load: prefer one that's already genuinely out
+// of stock or below its own reorder level by real currentStock vs
+// minLevel (never the old order-frequency-based "urgency" — see
+// hc_stock_projection_detail()'s own comment), falling back to the
+// first item alphabetically so the card never opens empty.
+$pt2DefaultItemId = null;
+foreach (['out_of_stock', 'critical', 'low'] as $priorityStatus) {
+    foreach ($allInventoryItemsForShortage as $i) {
+        $sharedName = $pt2ItemNameCounts[$i['name']] > 1;
+        $probe = hc_stock_projection_detail($i, $allPharmacyOrderDocsForShortage, 30, $sharedName);
+        if ($probe['stockStatus'] === $priorityStatus) {
+            $pt2DefaultItemId = $i['id'];
+            break 2;
+        }
+    }
+}
+if ($pt2DefaultItemId === null && $pt2ItemList !== []) {
+    $pt2DefaultItemId = $pt2ItemList[0]['id'];
+}
+$pt2DefaultDetail = null;
+if ($pt2DefaultItemId !== null) {
+    foreach ($allInventoryItemsForShortage as $i) {
+        if ($i['id'] === $pt2DefaultItemId) {
+            $pt2DefaultDetail = hc_stock_projection_detail($i, $allPharmacyOrderDocsForShortage, 30, $pt2ItemNameCounts[$i['name']] > 1);
+            break;
+        }
+    }
+}
 
 $pt3 = hc_inventory_replenishment($pt2['items'], $facilityStockRequests);
 $pt3PredictionCards = $pt3['predictionCards'];

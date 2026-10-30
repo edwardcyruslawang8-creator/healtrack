@@ -462,26 +462,52 @@ $adminNavItems = [
                     </div>
                     <?php endforeach; ?>
                 </div>
-                <div class="an-card">
-                    <div class="an-card-header">
-                        <h3>Projected Stock Decline</h3>
-                        <?php if ($pt2StockProjections !== []): ?>
-                        <select class="form-select an-item-filter" id="faPredT2ItemFilter" aria-label="Select a medicine or vaccine">
-                            <?php foreach ($pt2StockProjections as $p): ?>
-                            <option value="<?= htmlspecialchars($p['name']) ?>" <?= $p['name'] === ($pt2StockProjection['itemName'] ?? '') ? 'selected' : '' ?>><?= htmlspecialchars($p['name']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                <div class="an-card psd-card">
+                    <div class="an-card-header psd-header">
+                        <div class="psd-header-title">
+                            <h3>Projected Stock Decline</h3>
+                            <p class="pn-note">System-wide stock pace — inventory has no per-facility field in this app's schema.</p>
+                        </div>
+                        <?php if ($pt2ItemList !== []): ?>
+                        <div class="psd-header-controls">
+                            <div class="psd-dropdown" id="faPredPSDDropdown">
+                                <button type="button" class="psd-dropdown-btn" id="faPredPSDDropdownBtn" aria-haspopup="listbox" aria-expanded="false">
+                                    <span id="faPredPSDDropdownLabel">—</span>
+                                    <i class="bi bi-chevron-down"></i>
+                                </button>
+                                <div class="psd-dropdown-panel" id="faPredPSDDropdownPanel" hidden>
+                                    <div class="psd-dropdown-search">
+                                        <i class="bi bi-search"></i>
+                                        <input type="text" id="faPredPSDDropdownSearch" placeholder="Search medicine or vaccine..." autocomplete="off">
+                                    </div>
+                                    <div class="opf-seg psd-dropdown-seg" id="faPredPSDDropdownSeg" role="tablist" aria-label="Filter by category">
+                                        <button type="button" class="opf-seg-btn active" data-category="all">All</button>
+                                        <button type="button" class="opf-seg-btn" data-category="medicine">Medicines</button>
+                                        <button type="button" class="opf-seg-btn" data-category="vaccine">Vaccines</button>
+                                    </div>
+                                    <ul class="psd-dropdown-list" id="faPredPSDDropdownList" role="listbox"></ul>
+                                </div>
+                            </div>
+                            <select class="form-select psd-period-select" id="faPredPSDPeriod" aria-label="Forecast period">
+                                <option value="7">7 Days</option>
+                                <option value="14">14 Days</option>
+                                <option value="30" selected>30 Days</option>
+                            </select>
+                            <button type="button" class="psd-refresh-btn" id="faPredPSDRefresh" aria-label="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
+                        </div>
                         <?php endif; ?>
                     </div>
-                    <p class="pn-note">System-wide stock/order pace — inventory has no per-facility field in this app's schema. Pick any real medicine or vaccine above.</p>
-                    <?php if ($pt2StockProjections === []): ?>
+                    <?php if ($pt2DefaultDetail === null): ?>
                     <div class="pn-empty"><i class="bi bi-info-circle-fill"></i><p>No medicines or vaccines on record yet.</p></div>
                     <?php else: ?>
-                    <div class="an-forecast-legend">
+                    <div id="faPredPSDSharedNameNote"></div>
+                    <div class="psd-summary" id="faPredPSDSummary"></div>
+                    <div class="an-forecast-legend" id="faPredPSDLegend">
                         <span><span class="dot dashed" style="color:#D93025;"></span> Projected stock</span>
                         <span><span class="dot dashed" style="color:#E8710A;"></span> Reorder level</span>
                     </div>
                     <div class="an-trend-canvas-box"><canvas id="faPredT2StockProjectionChart"></canvas></div>
+                    <div class="psd-recommendation" id="faPredPSDRecommendation"></div>
                     <?php endif; ?>
                 </div>
                 <div class="an-card opf-card">
@@ -798,11 +824,6 @@ $adminNavItems = [
     window.PREDICTIVE_TAB_DATA = <?= json_encode([
         't1ForecastTrend' => $pt1ForecastTrend,
         't1DiseaseTrend' => $pt1DiseaseTrend,
-        't2StockProjection' => $pt2StockProjection,
-        't2StockProjectionsByItem' => array_combine(
-            array_column($pt2StockProjections, 'name'),
-            array_map(fn ($p) => ['labels' => $p['labels'], 'forecast' => $p['forecast'], 'reorderLevel' => $p['reorderLevel']], $pt2StockProjections)
-        ),
         't2ShortageTrend' => $pt2ShortageTrend,
         't3RequestVolume' => $pt3RequestVolume,
         't4ForecastTrend' => $pt4ForecastTrend,
@@ -814,6 +835,7 @@ $adminNavItems = [
 </script>
 <script src="<?= asset_url('/assets/js/predictive-analytics.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/order-frequency.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/stock-projection.js') ?>"></script>
 <!-- Exposed as window.initReportPageCharts() — same name
      assets/js/analytics_reports.js and its 5 siblings each define — so
      assets/js/ajax-tab-nav.js's fixed list of re-init hooks picks this
@@ -878,6 +900,14 @@ $adminNavItems = [
         }
         if (window.HCOrderFrequency) {
             window.HCOrderFrequency.init('faPred', <?= json_encode($pt2OrderFrequencyBreakdown) ?>, '<?= BASE_URL ?>/api/get-order-frequency.php');
+        }
+        if (window.HCStockProjection) {
+            window.HCStockProjection.init('faPred', {
+                items: <?= json_encode($pt2ItemList) ?>,
+                defaultDetail: <?= json_encode($pt2DefaultDetail) ?>,
+                apiUrl: '<?= BASE_URL ?>/api/get-stock-projection.php',
+                inventoryUrl: '<?= BASE_URL ?>/subadmin/medicine_vaccine_inventory.php',
+            });
         }
     };
 

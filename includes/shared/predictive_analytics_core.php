@@ -630,6 +630,133 @@ if (!function_exists('hc_order_frequency_breakdown')) {
     }
 }
 
+if (!function_exists('hc_stock_projection_detail')) {
+    /**
+     * Full real detail for ONE real inventory item (resolved by its own
+     * doc id, not name — see $sharedName below) — the data behind the
+     * "Projected Stock Decline" card's summary indicators, chart, and
+     * recommendation.
+     *
+     * Average daily consumption comes ONLY from real dispensed-quantity
+     * data: pharmacy_orders docs for this item whose status is
+     * 'dispensed' AND whose 'quantity' field is a real number — NEVER
+     * from order/prescription event counts (hc_order_frequency_breakdown()
+     * is a frequency signal, not a units-consumed one; conflating the
+     * two is exactly what this function is built to avoid). That
+     * quantity field is only reliably populated on a handful of real
+     * docs today (most historical/seeded orders never recorded it), so
+     * most items will honestly come back with insufficientData = true
+     * rather than a fabricated rate — the chart still renders (a flat
+     * line at the item's real current stock) but is clearly marked as
+     * not a real forecast.
+     *
+     * pharmacy_orders has no itemId field, only itemName — so dispensed-
+     * quantity matching is still necessarily name-based (hc_item_names_match()).
+     * When two or more real inventory docs share the exact same name
+     * (a real, confirmed case in this system — e.g. two separate
+     * "Metronidazole 500 mg Tablet" batches with different stock
+     * counts), their real order history can't be told apart by name
+     * alone, so $sharedName (passed in by the caller, which can see the
+     * whole real inventory) marks the detail as combined across every
+     * same-named item rather than silently attributing one batch's
+     * entire order history to a specific one.
+     *
+     * @param array{id: string, name: string, itemType: string, currentStock: int, minLevel: int, maxLevel: int, unit: string} $item
+     */
+    function hc_stock_projection_detail(array $item, array $pharmacyOrderDocs, int $forecastDays, bool $sharedName = false): array
+    {
+        $qtySum = 0;
+        $qtyDocs = 0;
+        $earliestDate = null;
+        $latestDate = null;
+        foreach ($pharmacyOrderDocs as $doc) {
+            $f = $doc['fields'];
+            $name = $f['itemName'] ?? '';
+            if ($name === '' || !hc_item_names_match($item['name'], $name)) {
+                continue;
+            }
+            if (($f['status'] ?? '') !== 'dispensed') {
+                continue;
+            }
+            $qty = $f['quantity'] ?? null;
+            if (!is_int($qty) && !(is_string($qty) && ctype_digit($qty))) {
+                continue; // not a real, usable number on this doc
+            }
+            $date = ($f['dispensedDate'] ?? '') !== '' ? $f['dispensedDate'] : ($f['orderedDate'] ?? '');
+            if ($date === '') {
+                continue;
+            }
+            $qtySum += (int) $qty;
+            $qtyDocs++;
+            if ($earliestDate === null || $date < $earliestDate) {
+                $earliestDate = $date;
+            }
+            if ($latestDate === null || $date > $latestDate) {
+                $latestDate = $date;
+            }
+        }
+
+        $insufficientData = $qtyDocs === 0;
+        $avgDailyConsumption = null;
+        if (!$insufficientData) {
+            $spanDays = $earliestDate === $latestDate ? 1 : ((int) ((strtotime($latestDate) - strtotime($earliestDate)) / 86400) + 1);
+            $avgDailyConsumption = round($qtySum / max(1, $spanDays), 2);
+        }
+
+        $currentStock = $item['currentStock'];
+        $minLevel = $item['minLevel'];
+
+        $estimatedDaysRemaining = ($avgDailyConsumption !== null && $avgDailyConsumption > 0)
+            ? (int) floor($currentStock / $avgDailyConsumption)
+            : null;
+
+        // Out-of-stock and low-stock are real facts derivable from
+        // currentStock vs minLevel alone — they don't need consumption
+        // data, so they're checked BEFORE insufficientData. Only
+        // "critical" (an estimated days-remaining) genuinely needs real
+        // consumption data; "insufficient_data" is the honest fallback
+        // only once stock already looks fine by its own threshold but
+        // there's no way to confirm it'll stay that way.
+        if ($currentStock <= 0) {
+            $stockStatus = 'out_of_stock';
+        } elseif ($estimatedDaysRemaining !== null && $estimatedDaysRemaining <= 7) {
+            $stockStatus = 'critical';
+        } elseif ($currentStock <= $minLevel) {
+            $stockStatus = 'low';
+        } elseif ($insufficientData) {
+            $stockStatus = 'insufficient_data';
+        } else {
+            $stockStatus = 'healthy';
+        }
+
+        $labels = [];
+        $projected = [];
+        for ($i = 0; $i <= $forecastDays; $i++) {
+            $labels[] = date('M j', strtotime("+$i days"));
+            $decline = $avgDailyConsumption !== null ? $avgDailyConsumption * $i : 0;
+            $projected[] = max(0, round($currentStock - $decline, 1));
+        }
+
+        return [
+            'id' => $item['id'],
+            'name' => $item['name'],
+            'itemType' => $item['itemType'],
+            'unit' => $item['unit'],
+            'currentStock' => $currentStock,
+            'minLevel' => $minLevel,
+            'maxLevel' => $item['maxLevel'],
+            'avgDailyConsumption' => $avgDailyConsumption,
+            'insufficientData' => $insufficientData,
+            'sharedName' => $sharedName,
+            'estimatedDaysRemaining' => $estimatedDaysRemaining,
+            'stockStatus' => $stockStatus,
+            'forecastDays' => $forecastDays,
+            'labels' => $labels,
+            'projected' => $projected,
+        ];
+    }
+}
+
 if (!function_exists('hc_medicine_vaccine_shortage')) {
     /**
      * @param array $allInventoryItems hc_get_inventory_items() rows for BOTH types, each tagged with 'itemType' — always system-wide (see this file's header comment).
@@ -680,47 +807,17 @@ if (!function_exists('hc_medicine_vaccine_shortage')) {
         $vaccinesAtRisk = count(array_filter($atRisk, fn ($i) => $i['itemType'] === 'vaccine' && !$i['alreadyOut']));
         $alreadyOutCount = count(array_filter($items, fn ($i) => $i['alreadyOut']));
 
-        // "Which item is this chart about" used to be hardcoded to
-        // whichever one is most urgent — the user wanted to browse any
-        // medicine/vaccine, not just that one. $stockProjections now
-        // covers EVERY real item (one entry each, same fixed 30-day
-        // horizon so the x-axis doesn't jump around as the dropdown
-        // selection changes); $mostUrgent still picks which one is
-        // selected by default when the page first loads.
+        // The per-item stock-decline chart ("Projected Stock Decline"
+        // card) used to live here, built from $items' own ratePerDay
+        // (an order/prescription EVENT-COUNT rate) — moved out to its
+        // own hc_stock_projection_detail(), which uses real dispensed
+        // QUANTITY data instead (see that function's own comment on
+        // why event counts and units consumed are not the same thing).
+        // $stillStocked itself is still used below, by the "All At-Risk
+        // Items" shortage-trend chart (a different, still-ratePerDay-
+        // based card this redesign doesn't touch).
         $stillStocked = array_values(array_filter($items, fn ($i) => !$i['alreadyOut'] && $i['ratePerDay'] > 0));
         usort($stillStocked, fn ($a, $b) => $a['daysUntilStockout'] <=> $b['daysUntilStockout']);
-        $mostUrgent = $stillStocked[0] ?? ($atRisk[0] ?? null);
-
-        $stockHorizon = 30;
-        $stockProjections = [];
-        foreach ($items as $item) {
-            $labels = [];
-            $forecast = [];
-            for ($i = 0; $i <= $stockHorizon; $i++) {
-                $labels[] = date('M j', strtotime("+$i days"));
-                $forecast[] = max(0, round($item['currentStock'] - ($item['ratePerDay'] * $i), 1));
-            }
-            $stockProjections[] = [
-                'name' => $item['name'],
-                'itemType' => $item['itemType'],
-                'labels' => $labels,
-                'forecast' => $forecast,
-                'reorderLevel' => $item['minLevel'],
-                'ratePerDay' => round($item['ratePerDay'], 3),
-                'currentStock' => $item['currentStock'],
-            ];
-        }
-        usort($stockProjections, fn ($a, $b) => strcasecmp($a['name'], $b['name']));
-
-        $stockProjection = ['labels' => [], 'forecast' => [], 'reorderLevel' => 0, 'itemName' => null];
-        if ($mostUrgent !== null) {
-            foreach ($stockProjections as $p) {
-                if ($p['name'] === $mostUrgent['name']) {
-                    $stockProjection = ['labels' => $p['labels'], 'forecast' => $p['forecast'], 'reorderLevel' => $p['reorderLevel'], 'itemName' => $p['name']];
-                    break;
-                }
-            }
-        }
 
         // Order/prescription frequency — EVERY real medicine/vaccine
         // currently in the system's own inventory (not just whichever
@@ -789,7 +886,7 @@ if (!function_exists('hc_medicine_vaccine_shortage')) {
             return $meta + ['label' => $i['name'], 'desc' => $i['alreadyOut'] ? 'Out of stock now' : ($i['daysUntilStockout'] . ' day(s) to projected stockout'), 'value' => $i['alreadyOut'] ? 0 : $i['daysUntilStockout']];
         }, $atRisk);
 
-        return compact('items', 'atRisk', 'medicinesAtRisk', 'vaccinesAtRisk', 'alreadyOutCount', 'stockProjection', 'stockProjections', 'orderFrequencyBreakdown', 'shortageTrend', 'predictionCards', 'recommendations', 'riskRows');
+        return compact('items', 'atRisk', 'medicinesAtRisk', 'vaccinesAtRisk', 'alreadyOutCount', 'orderFrequencyBreakdown', 'shortageTrend', 'predictionCards', 'recommendations', 'riskRows');
     }
 }
 

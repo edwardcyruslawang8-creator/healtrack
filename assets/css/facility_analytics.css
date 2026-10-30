@@ -185,20 +185,6 @@
 }
 .an-card-header h3{ font-size: 15px; font-weight: 700; color: var(--adm-text); margin: 0; }
 .an-card-header-note{ font-size: 11.5px; color: var(--adm-text-soft); }
-/* Per-item dropdown (e.g. "Projected Stock Decline" — pick which real
-   medicine/vaccine the chart below is about), same look as
-   medicine_vaccine_inventory.css's own .mvi-filter-select. */
-.an-item-filter{
-  width: auto;
-  max-width: 220px;
-  background-color: var(--adm-card);
-  border: 1px solid var(--adm-border);
-  border-radius: 10px;
-  padding: 7px 30px 7px 12px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--adm-text);
-}
 
 .an-range-btn{
   background: var(--adm-bg);
@@ -748,6 +734,200 @@
 }
 .an-donut-card .an-donut-legend .legend-label{ min-width: 0; line-height: 1.35; }
 .an-donut-card .an-donut-legend .legend-value{ white-space: nowrap; text-align: right; }
+
+/* =============================================================
+   PROJECTED STOCK DECLINE CARD ("psd-" prefixed)
+   ------------------------------------------------------------- */
+.psd-header{ flex-wrap: wrap; align-items: flex-start; gap: 14px; }
+.psd-header-title h3{ margin: 0 0 4px; }
+.psd-header-title .pn-note{ margin: 0; }
+.psd-header-controls{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* -- Custom searchable dropdown -- */
+.psd-dropdown{ position: relative; }
+.psd-dropdown-btn{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 220px;
+  max-width: 280px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 7px 10px 7px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+}
+.psd-dropdown-btn span{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.psd-dropdown-btn i{ color: var(--adm-text-soft); font-size: 11px; flex-shrink: 0; transition: transform .15s ease; }
+.psd-dropdown.open .psd-dropdown-btn i{ transform: rotate(180deg); }
+.psd-dropdown-panel{
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 300px;
+  max-width: 90vw;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 12px;
+  box-shadow: var(--adm-shadow-hover);
+  padding: 10px;
+  z-index: 20;
+}
+.psd-dropdown-search{ position: relative; margin-bottom: 8px; }
+.psd-dropdown-search i{
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  color: var(--adm-text-soft); font-size: 12px;
+}
+.psd-dropdown-search input{
+  width: 100%;
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  padding: 7px 10px 7px 28px;
+  font-size: 12.5px;
+  color: var(--adm-text);
+}
+.psd-dropdown-seg{ margin-bottom: 8px; width: 100%; }
+.psd-dropdown-seg .opf-seg-btn{ flex: 1; text-align: center; }
+.psd-dropdown-list{
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 224px; /* ~6 rows */
+  overflow-y: auto;
+}
+.psd-dropdown-item{
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--adm-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.psd-dropdown-item .dot{ width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.psd-dropdown-item:hover, .psd-dropdown-item.focused{ background: var(--adm-hover-bg); }
+.psd-dropdown-item.selected{ background: var(--adm-bg); font-weight: 700; }
+.psd-dropdown-empty{ text-align: center; color: var(--adm-text-muted); font-size: 12px; padding: 14px 0; }
+
+.psd-period-select{
+  width: auto;
+  background-color: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 7px 30px 7px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+}
+.psd-refresh-btn{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  color: var(--adm-text-muted);
+}
+.psd-refresh-btn:hover{ color: var(--adm-red-bright); border-color: var(--adm-red-bright); }
+.psd-refresh-btn.spinning i{ animation: psd-spin .6s linear; }
+@keyframes psd-spin{ from{ transform: rotate(0deg); } to{ transform: rotate(360deg); } }
+
+/* -- Summary indicators -- */
+.psd-summary{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+}
+.psd-summary-tile{
+  background: var(--adm-bg);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.psd-summary-tile-label{ font-size: 11px; color: var(--adm-text-muted); font-weight: 500; }
+.psd-summary-tile-value{ font-size: 16px; font-weight: 700; color: var(--adm-text); }
+.psd-summary-tile-value.muted{ font-size: 12.5px; font-weight: 600; color: var(--adm-text-soft); }
+.psd-status-row{ display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.psd-status-badge{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 11px;
+  border-radius: 50px;
+}
+.psd-status-badge .dot{ width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.psd-status-healthy{ background: #E4F7EA; color: #1E8E3E; }
+.psd-status-low{ background: #FDECDD; color: #E8710A; }
+.psd-status-critical{ background: #FCE4E4; color: #D93025; }
+.psd-status-out_of_stock{ background: var(--adm-red-bright); color: #fff; }
+.psd-status-insufficient_data{ background: #EEF0F3; color: var(--adm-text-muted); }
+
+.psd-shared-name-note{
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #FFF8E6;
+  border: 1px solid #F5DFA0;
+  color: #92650C;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 11.5px;
+  margin-bottom: 12px;
+}
+.psd-shared-name-note i{ margin-top: 1px; }
+
+/* -- Recommendation -- */
+.psd-recommendation{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: var(--adm-bg);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-top: 14px;
+}
+.psd-recommendation-text{ font-size: 12.5px; color: var(--adm-text); line-height: 1.5; flex: 1; min-width: 200px; }
+.psd-recommendation-text strong{ color: var(--adm-text); }
+.psd-recommendation-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--adm-red-bright);
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.psd-recommendation-btn:hover{ background: var(--adm-red-bright-hover); color: #fff; }
+
+@media (max-width: 575.98px){
+  .psd-summary{ grid-template-columns: repeat(2, 1fr); }
+  .psd-dropdown-btn{ min-width: 0; width: 100%; }
+  .psd-header-controls{ width: 100%; }
+  .psd-period-select{ flex: 1; }
+}
 
 /* =============================================================
    ORDER/PRESCRIPTION FREQUENCY CARD ("opf-" prefixed)
