@@ -930,12 +930,24 @@ if (!function_exists('hc_medicine_vaccine_shortage')) {
 
             $daysUntilStockout = $ratePerDay > 0 ? (int) floor($item['currentStock'] / $ratePerDay) : null;
             $alreadyOut = $item['currentStock'] <= 0;
+            // A real, CURRENT fact — already at or under this item's own
+            // configured reorder trigger (the same 'minLevel' field the
+            // Medicine & Vaccine Inventory page's own "Low Stock" badge
+            // is computed from, see api/adjust-medicine-stock.php's own
+            // comment) — independent of order/prescription pace. Without
+            // this, an item with real low stock but little/no recent
+            // order history (ratePerDay === 0, so daysUntilStockout is
+            // null) was invisible here even though it's genuinely at
+            // risk right now.
+            $belowReorderLevel = !$alreadyOut && $item['currentStock'] <= $item['minLevel'];
 
             $severity = null;
             if ($alreadyOut) {
                 $severity = 'critical';
             } elseif ($daysUntilStockout !== null && $daysUntilStockout <= 7) {
                 $severity = 'critical';
+            } elseif ($belowReorderLevel) {
+                $severity = 'warning';
             } elseif ($daysUntilStockout !== null && $daysUntilStockout <= 30) {
                 $severity = 'warning';
             }
@@ -945,10 +957,24 @@ if (!function_exists('hc_medicine_vaccine_shortage')) {
                 'ratePerDay' => $ratePerDay,
                 'daysUntilStockout' => $daysUntilStockout,
                 'alreadyOut' => $alreadyOut,
+                'belowReorderLevel' => $belowReorderLevel,
                 'severity' => $severity,
-                'suggestedReorderQty' => $ratePerDay > 0
-                    ? max(0, (int) ceil(($ratePerDay * 30) - $item['currentStock']))
-                    : ($alreadyOut ? max(1, $item['reorderLevel'] * 2) : 0),
+                'suggestedReorderQty' => match (true) {
+                    $alreadyOut => max(1, $item['reorderLevel'] * 2),
+                    // Below its own real reorder trigger — the thin
+                    // rate-based 30-day projection alone can badly
+                    // undersell the real need when order history is
+                    // sparse (e.g. Ibuprofen: real pace projects needing
+                    // only ~2 more units over 30 days, even though it's
+                    // already 10 under its own reorder level) — take
+                    // whichever of the two real signals suggests more.
+                    $belowReorderLevel => max(
+                        $ratePerDay > 0 ? max(0, (int) ceil(($ratePerDay * 30) - $item['currentStock'])) : 0,
+                        max(1, $item['reorderLevel'] - $item['currentStock'])
+                    ),
+                    $ratePerDay > 0 => max(0, (int) ceil(($ratePerDay * 30) - $item['currentStock'])),
+                    default => 0,
+                },
             ];
         }
         usort($items, function ($a, $b) {
@@ -1006,6 +1032,7 @@ if (!function_exists('hc_medicine_vaccine_shortage')) {
             $shortageTrendLabels[] = date('M j', strtotime("+$i days"));
         }
         $shortageTrend = ['labels' => $shortageTrendLabels, 'datasets' => []];
+        $colors = ['#D93025', '#E8710A', '#7C3AED', '#1A73E8', '#0E9CA8'];
         $colorIdx = 0;
         $stillStockedAtRisk = array_values(array_filter($stillStocked, fn ($i) => $i['severity'] !== null));
         foreach (array_slice($stillStockedAtRisk, 0, 5) as $item) {
@@ -1028,7 +1055,21 @@ if (!function_exists('hc_medicine_vaccine_shortage')) {
 
         $recommendations = [];
         foreach (array_slice($atRisk, 0, 6) as $item) {
-            $when = $item['alreadyOut'] ? 'is already out of stock' : ('is projected to run out around ' . date('M j, Y', strtotime("+{$item['daysUntilStockout']} days")));
+            // "Already below its reorder level" (a real, CURRENT fact)
+            // takes priority over a distant rate-based projection — an
+            // item can have real but thin order history that projects a
+            // technically-true but misleading far-off date (e.g.
+            // "~1,350 days") while it's already under its own real
+            // reorder trigger right now.
+            if ($item['alreadyOut']) {
+                $when = 'is already out of stock';
+            } elseif ($item['belowReorderLevel']) {
+                $when = 'is already below its reorder level (' . number_format($item['currentStock']) . ' / ' . number_format($item['minLevel']) . ' ' . $item['unit'] . ')';
+            } elseif ($item['daysUntilStockout'] !== null) {
+                $when = 'is projected to run out around ' . date('M j, Y', strtotime("+{$item['daysUntilStockout']} days"));
+            } else {
+                $when = 'needs attention';
+            }
             $recommendations[] = [
                 'type' => $item['severity'],
                 'icon' => $item['itemType'] === 'vaccine' ? 'bi-droplet-half' : 'bi-capsule',
@@ -1039,7 +1080,29 @@ if (!function_exists('hc_medicine_vaccine_shortage')) {
 
         $riskRows = array_map(function ($i) {
             $meta = hc_predictive_severity_meta($i['severity']);
-            return $meta + ['label' => $i['name'], 'desc' => $i['alreadyOut'] ? 'Out of stock now' : ($i['daysUntilStockout'] . ' day(s) to projected stockout'), 'value' => $i['alreadyOut'] ? 0 : $i['daysUntilStockout']];
+            if ($i['alreadyOut']) {
+                $desc = 'Out of stock now';
+            } elseif ($i['belowReorderLevel']) {
+                $desc = 'Below reorder level (' . number_format($i['currentStock']) . ' / ' . number_format($i['minLevel']) . ' ' . $i['unit'] . ')';
+            } elseif ($i['daysUntilStockout'] !== null) {
+                $desc = $i['daysUntilStockout'] . ' day(s) to projected stockout';
+            } else {
+                $desc = 'Needs attention';
+            }
+
+            // The standalone number badge next to $desc: real days-left
+            // when that's what $desc is actually about, otherwise the
+            // real unit shortfall (minLevel - currentStock) — never the
+            // OTHER signal's number when it isn't the one $desc
+            // describes (e.g. Ibuprofen's real-but-misleading ~1,350
+            // days shouldn't show next to a "Below reorder level" desc).
+            $value = match (true) {
+                $i['alreadyOut'] => 0,
+                $i['belowReorderLevel'] => max(0, $i['minLevel'] - $i['currentStock']),
+                default => $i['daysUntilStockout'] ?? 0,
+            };
+
+            return $meta + ['label' => $i['name'], 'desc' => $desc, 'value' => $value];
         }, $atRisk);
 
         return compact('items', 'atRisk', 'medicinesAtRisk', 'vaccinesAtRisk', 'alreadyOutCount', 'orderFrequencyBreakdown', 'shortageTrend', 'predictionCards', 'recommendations', 'riskRows');
@@ -1076,11 +1139,18 @@ if (!function_exists('hc_inventory_replenishment')) {
      */
     function hc_inventory_replenishment(array $shortageItems, array $stockRequests): array
     {
-        $needingReorder = array_values(array_filter($shortageItems, fn ($i) => $i['alreadyOut'] || ($i['daysUntilStockout'] !== null && $i['daysUntilStockout'] <= 30)));
+        // "Needs reorder" = whatever hc_medicine_vaccine_shortage() already
+        // flagged at-risk (its own 'severity' !== null) — already out,
+        // ≤30 real days to projected stockout, OR already below its own
+        // real reorder level with no order/prescription history to
+        // project a date from (see that function's own 'belowReorderLevel'
+        // comment). Was alreadyOut-or-daysUntilStockout-only before,
+        // which silently missed that third real case.
+        $needingReorder = array_values(array_filter($shortageItems, fn ($i) => $i['severity'] !== null));
         $earliestStockout = null;
         foreach ($needingReorder as $i) {
-            if ($i['alreadyOut']) {
-                continue;
+            if ($i['alreadyOut'] || $i['daysUntilStockout'] === null) {
+                continue; // no real order-rate history to project an exact date from
             }
             $date = date('Y-m-d', strtotime("+{$i['daysUntilStockout']} days"));
             if ($earliestStockout === null || $date < $earliestStockout) {
@@ -1095,7 +1165,11 @@ if (!function_exists('hc_inventory_replenishment')) {
         $gapAlerts = [];
         foreach ($needingReorder as $i) {
             $daysLeft = $i['alreadyOut'] ? 0 : $i['daysUntilStockout'];
-            if ($daysLeft > 14) {
+            // A real alreadyOut/≤30-day item with no projectable date
+            // (belowReorderLevel only) is already a current problem —
+            // never skipped by the ≤14-day window, which only exists to
+            // exclude items with a real, further-out projected date.
+            if ($daysLeft !== null && $daysLeft > 14) {
                 continue;
             }
             if (!hc_predictive_has_pending_request($i['name'], $stockRequests)) {
@@ -1138,7 +1212,13 @@ if (!function_exists('hc_inventory_replenishment')) {
 
         $recommendations = [];
         foreach (array_slice($gapAlerts, 0, 6) as $item) {
-            $target = $item['alreadyOut'] ? 'as soon as possible' : ('by ' . date('M j, Y', strtotime("+{$item['daysUntilStockout']} days")));
+            if ($item['alreadyOut']) {
+                $target = 'as soon as possible';
+            } elseif ($item['daysUntilStockout'] !== null) {
+                $target = 'by ' . date('M j, Y', strtotime("+{$item['daysUntilStockout']} days"));
+            } else {
+                $target = 'soon — it is already below its reorder level';
+            }
             $recommendations[] = [
                 'type' => 'critical',
                 'icon' => 'bi-clipboard2-x-fill',
@@ -1149,7 +1229,8 @@ if (!function_exists('hc_inventory_replenishment')) {
 
         $riskRows = array_map(function ($i) {
             $meta = hc_predictive_severity_meta('critical');
-            return $meta + ['label' => $i['name'], 'desc' => 'No pending/approved reorder on file', 'value' => $i['alreadyOut'] ? 0 : $i['daysUntilStockout']];
+
+            return $meta + ['label' => $i['name'], 'desc' => 'No pending/approved reorder on file', 'value' => $i['alreadyOut'] ? 0 : ($i['daysUntilStockout'] ?? 0)];
         }, $gapAlerts);
 
         return compact('needingReorder', 'earliestStockout', 'pendingRequestsCount', 'rankedItems', 'rankedMax', 'gapAlerts', 'requestVolume', 'predictionCards', 'recommendations', 'riskRows');
