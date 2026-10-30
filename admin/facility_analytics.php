@@ -718,7 +718,7 @@ $adminNavItems = [
                             </div>
                             <div class="an-card">
                                 <div class="an-card-header"><h3>Top Notifiable-Disease Categories</h3></div>
-                                <p class="pn-note">Daily case counts, last 30 days, at <?= htmlspecialchars($facilityName) ?> — keyword-matched from real diagnosis/chief-complaint text.</p>
+                                <p class="pn-note">Daily case counts, last 90 days, at <?= htmlspecialchars($facilityName) ?> — keyword-matched from real diagnosis/chief-complaint text.</p>
                                 <?php if ($pt1DiseaseTrend['datasets'] === []): ?>
                                 <div class="pn-empty"><i class="bi bi-check-circle-fill"></i><p>No notifiable-disease cases on record here in the last 30 days.</p></div>
                                 <?php else: ?>
