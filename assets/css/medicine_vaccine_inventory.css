@@ -133,6 +133,20 @@
 }
 .mvi-btn-add:hover{ background: #1558B0; color: #fff; }
 
+/* -- Search-first toolbar (opt-in) --
+   subadmin/medicine_vaccine_inventory.php puts the search box + Search
+   button on the left and the Category/Status dropdowns on the right.
+   Every control is stretched to one shared height. Pages without the
+   modifier keep the original filters-first row above. */
+.mvi-toolbar--search-first{ align-items: stretch; }
+.mvi-toolbar--search-first .mvi-search input{ height: 100%; }
+.mvi-toolbar--search-first .mvi-filter-select{ flex: 0 0 190px; min-width: 0; }
+@media (max-width: 1199.98px){
+  /* Search + button keep a row of their own; dropdowns share the next. */
+  .mvi-toolbar--search-first .mvi-search{ flex: 1 1 calc(100% - 130px); }
+  .mvi-toolbar--search-first .mvi-filter-select{ flex: 1 1 0; }
+}
+
 /* -- Medicines table -- */
 .mvi-table-card{ margin-bottom: 18px; }
 
@@ -315,6 +329,9 @@
   .mvi-toolbar{ flex-direction: column; align-items: stretch; }
   .mvi-filter-select{ min-width: 0; width: 100%; }
   .mvi-btn-add{ justify-content: center; }
+  .mvi-toolbar--search-first .mvi-search,
+  .mvi-toolbar--search-first .mvi-filter-select{ flex: 0 0 auto; }
+  .mvi-toolbar--search-first .mvi-search input{ height: auto; }
 }
 
 /* -- Maroon accent (opt-in) --
