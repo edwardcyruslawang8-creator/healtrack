@@ -5,8 +5,9 @@
    Predictive Analytics charts (Tab 1's forecast + disease-trend, Tab
    2's stock-projection + order-frequency, Tab 3's request-volume, Tab
    4's forecast) from one data object shaped like
-   {t1ForecastTrend, t1DiseaseTrend, t2StockProjection, t2OrderFrequency,
-   t2ShortageTrend, t3RequestVolume, t4ForecastTrend, t4Barangays}. $idPrefix is prepended to each
+   {t1ForecastTrend, t1DiseaseTrend, t2StockProjection,
+   t2StockProjectionsByItem, t2OrderFrequency, t2ShortageTrend,
+   t3RequestVolume, t4ForecastTrend, t4Barangays}. $idPrefix is prepended to each
    canvas id (…T1ForecastChart, …T1DiseaseTrendChart, etc.) so the
    function stays reusable rather than hardcoding one page's ids — kept
    as a parameter (not inlined) since it's exercised by more than one
@@ -121,10 +122,12 @@ window.HCPredictiveCharts = (function () {
         /* ---------- Tab 1: top notifiable-disease categories, daily ---------- */
         track(renderMultiLineChart(idPrefix + 'T1DiseaseTrendChart', data.t1DiseaseTrend));
 
-        /* ---------- Tab 2: most urgent item's projected stock decline ---------- */
+        /* ---------- Tab 2: projected stock decline — any real medicine/vaccine, picked via #<idPrefix>T2ItemFilter ---------- */
         const stockCanvas = document.getElementById(idPrefix + 'T2StockProjectionChart');
-        if (stockCanvas && data.t2StockProjection && data.t2StockProjection.labels.length) {
-            const proj = data.t2StockProjection;
+        const stockFilter = document.getElementById(idPrefix + 'T2ItemFilter');
+        let stockChart = null;
+        function renderStockProjection(proj) {
+            if (!stockCanvas || !proj || !proj.labels.length) return;
             // The decline is real but usually small relative to the item's
             // overall stock count (a handful of units/day) — beginAtZero
             // squashes it flat against the top of a 0-100 axis. Zooming
@@ -134,13 +137,26 @@ window.HCPredictiveCharts = (function () {
             const stockMin = Math.min.apply(null, stockValues);
             const stockMax = Math.max.apply(null, stockValues);
             const stockPad = Math.max(1, (stockMax - stockMin) * 0.15);
-            track(new Chart(stockCanvas, {
+            const yMin = Math.max(0, Math.floor(stockMin - stockPad));
+            const yMax = Math.ceil(stockMax + stockPad);
+
+            if (stockChart) {
+                stockChart.data.labels = proj.labels;
+                stockChart.data.datasets[0].label = (proj.itemName || '') + ' — projected stock';
+                stockChart.data.datasets[0].data = proj.forecast;
+                stockChart.data.datasets[1].data = proj.labels.map(function () { return proj.reorderLevel; });
+                stockChart.options.scales.y.min = yMin;
+                stockChart.options.scales.y.max = yMax;
+                stockChart.update();
+                return;
+            }
+            stockChart = track(new Chart(stockCanvas, {
                 type: 'line',
                 data: {
                     labels: proj.labels,
                     datasets: [
                         {
-                            label: proj.itemName + ' — projected stock', data: proj.forecast,
+                            label: (proj.itemName || '') + ' — projected stock', data: proj.forecast,
                             borderColor: '#D93025', backgroundColor: '#D9302533',
                             borderWidth: 2, borderDash: [6, 4], tension: 0.2, pointRadius: 0, fill: true,
                         },
@@ -154,16 +170,20 @@ window.HCPredictiveCharts = (function () {
                     responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { display: false } }, // custom legend in HTML
                     scales: {
-                        y: {
-                            beginAtZero: false,
-                            min: Math.max(0, Math.floor(stockMin - stockPad)),
-                            max: Math.ceil(stockMax + stockPad),
-                            grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 },
-                        },
+                        y: { beginAtZero: false, min: yMin, max: yMax, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
                         x: { grid: { display: false }, ticks: { color: tickColor, maxTicksLimit: 8 } },
                     },
                 },
             }));
+        }
+        if (data.t2StockProjection && data.t2StockProjection.labels.length) {
+            renderStockProjection(data.t2StockProjection);
+        }
+        if (stockFilter && data.t2StockProjectionsByItem) {
+            stockFilter.addEventListener('change', function () {
+                const picked = data.t2StockProjectionsByItem[stockFilter.value];
+                if (picked) renderStockProjection(Object.assign({ itemName: stockFilter.value }, picked));
+            });
         }
         /* ---------- Tab 2: order/prescription frequency — EVERY real inventory item, horizontal bar (one real row per item, ~30 items — a vertical bar chart can't fit that many readable rotated labels; see predictive_analytics_core.php's own comment on the data shape) ---------- */
         const orderFreqCanvas = document.getElementById(idPrefix + 'T2OrderFreqChart');

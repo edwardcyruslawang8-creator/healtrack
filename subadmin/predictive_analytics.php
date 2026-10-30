@@ -463,10 +463,19 @@ $adminNavItems = [
                     <?php endforeach; ?>
                 </div>
                 <div class="an-card">
-                    <div class="an-card-header"><h3>Projected Stock Decline — <?= htmlspecialchars($pt2StockProjection['itemName'] ?? 'Most Urgent Item') ?></h3></div>
-                    <p class="pn-note">System-wide stock/order pace — inventory has no per-facility field in this app's schema.</p>
-                    <?php if ($pt2StockProjection['itemName'] === null): ?>
-                    <div class="pn-empty"><i class="bi bi-info-circle-fill"></i><p>No item currently has enough recent order history to project a decline curve.</p></div>
+                    <div class="an-card-header">
+                        <h3>Projected Stock Decline</h3>
+                        <?php if ($pt2StockProjections !== []): ?>
+                        <select class="form-select an-item-filter" id="faPredT2ItemFilter" aria-label="Select a medicine or vaccine">
+                            <?php foreach ($pt2StockProjections as $p): ?>
+                            <option value="<?= htmlspecialchars($p['name']) ?>" <?= $p['name'] === ($pt2StockProjection['itemName'] ?? '') ? 'selected' : '' ?>><?= htmlspecialchars($p['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <?php endif; ?>
+                    </div>
+                    <p class="pn-note">System-wide stock/order pace — inventory has no per-facility field in this app's schema. Pick any real medicine or vaccine above.</p>
+                    <?php if ($pt2StockProjections === []): ?>
+                    <div class="pn-empty"><i class="bi bi-info-circle-fill"></i><p>No medicines or vaccines on record yet.</p></div>
                     <?php else: ?>
                     <div class="an-forecast-legend">
                         <span><span class="dot dashed" style="color:#D93025;"></span> Projected stock</span>
@@ -714,6 +723,10 @@ $adminNavItems = [
         't1ForecastTrend' => $pt1ForecastTrend,
         't1DiseaseTrend' => $pt1DiseaseTrend,
         't2StockProjection' => $pt2StockProjection,
+        't2StockProjectionsByItem' => array_combine(
+            array_column($pt2StockProjections, 'name'),
+            array_map(fn ($p) => ['labels' => $p['labels'], 'forecast' => $p['forecast'], 'reorderLevel' => $p['reorderLevel']], $pt2StockProjections)
+        ),
         't2OrderFrequency' => $pt2OrderFrequency,
         't2ShortageTrend' => $pt2ShortageTrend,
         't3RequestVolume' => $pt3RequestVolume,

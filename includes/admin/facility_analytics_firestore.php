@@ -873,6 +873,7 @@ $allInventoryItemsForShortage = array_merge(
 $pt2 = hc_medicine_vaccine_shortage($allInventoryItemsForShortage, $allPharmacyOrderDocsForShortage, $allMedicationDocsForShortage);
 $pt2PredictionCards = $pt2['predictionCards'];
 $pt2StockProjection = $pt2['stockProjection'];
+$pt2StockProjections = $pt2['stockProjections'];
 $pt2OrderFrequency = $pt2['orderFrequency'];
 $pt2ShortageTrend = $pt2['shortageTrend'];
 $pt2RiskRows = $pt2['riskRows'];

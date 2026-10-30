@@ -614,21 +614,46 @@ if (!function_exists('hc_medicine_vaccine_shortage')) {
         $vaccinesAtRisk = count(array_filter($atRisk, fn ($i) => $i['itemType'] === 'vaccine' && !$i['alreadyOut']));
         $alreadyOutCount = count(array_filter($items, fn ($i) => $i['alreadyOut']));
 
-        // Chart needs an item that's actually still declining — an
-        // already-out item would just draw a flat zero line.
+        // "Which item is this chart about" used to be hardcoded to
+        // whichever one is most urgent — the user wanted to browse any
+        // medicine/vaccine, not just that one. $stockProjections now
+        // covers EVERY real item (one entry each, same fixed 30-day
+        // horizon so the x-axis doesn't jump around as the dropdown
+        // selection changes); $mostUrgent still picks which one is
+        // selected by default when the page first loads.
         $stillStocked = array_values(array_filter($items, fn ($i) => !$i['alreadyOut'] && $i['ratePerDay'] > 0));
         usort($stillStocked, fn ($a, $b) => $a['daysUntilStockout'] <=> $b['daysUntilStockout']);
         $mostUrgent = $stillStocked[0] ?? ($atRisk[0] ?? null);
-        $stockProjection = ['labels' => [], 'forecast' => [], 'reorderLevel' => 0, 'itemName' => null];
-        if ($mostUrgent !== null && $mostUrgent['ratePerDay'] > 0) {
-            $horizon = min(30, max(7, ($mostUrgent['daysUntilStockout'] ?? 14) + 3));
+
+        $stockHorizon = 30;
+        $stockProjections = [];
+        foreach ($items as $item) {
             $labels = [];
             $forecast = [];
-            for ($i = 0; $i <= $horizon; $i++) {
+            for ($i = 0; $i <= $stockHorizon; $i++) {
                 $labels[] = date('M j', strtotime("+$i days"));
-                $forecast[] = max(0, round($mostUrgent['currentStock'] - ($mostUrgent['ratePerDay'] * $i), 1));
+                $forecast[] = max(0, round($item['currentStock'] - ($item['ratePerDay'] * $i), 1));
             }
-            $stockProjection = ['labels' => $labels, 'forecast' => $forecast, 'reorderLevel' => $mostUrgent['minLevel'], 'itemName' => $mostUrgent['name']];
+            $stockProjections[] = [
+                'name' => $item['name'],
+                'itemType' => $item['itemType'],
+                'labels' => $labels,
+                'forecast' => $forecast,
+                'reorderLevel' => $item['minLevel'],
+                'ratePerDay' => round($item['ratePerDay'], 3),
+                'currentStock' => $item['currentStock'],
+            ];
+        }
+        usort($stockProjections, fn ($a, $b) => strcasecmp($a['name'], $b['name']));
+
+        $stockProjection = ['labels' => [], 'forecast' => [], 'reorderLevel' => 0, 'itemName' => null];
+        if ($mostUrgent !== null) {
+            foreach ($stockProjections as $p) {
+                if ($p['name'] === $mostUrgent['name']) {
+                    $stockProjection = ['labels' => $p['labels'], 'forecast' => $p['forecast'], 'reorderLevel' => $p['reorderLevel'], 'itemName' => $p['name']];
+                    break;
+                }
+            }
         }
 
         // Order/prescription frequency — EVERY real medicine/vaccine
@@ -703,7 +728,7 @@ if (!function_exists('hc_medicine_vaccine_shortage')) {
             return $meta + ['label' => $i['name'], 'desc' => $i['alreadyOut'] ? 'Out of stock now' : ($i['daysUntilStockout'] . ' day(s) to projected stockout'), 'value' => $i['alreadyOut'] ? 0 : $i['daysUntilStockout']];
         }, $atRisk);
 
-        return compact('items', 'atRisk', 'medicinesAtRisk', 'vaccinesAtRisk', 'alreadyOutCount', 'stockProjection', 'orderFrequency', 'shortageTrend', 'predictionCards', 'recommendations', 'riskRows');
+        return compact('items', 'atRisk', 'medicinesAtRisk', 'vaccinesAtRisk', 'alreadyOutCount', 'stockProjection', 'stockProjections', 'orderFrequency', 'shortageTrend', 'predictionCards', 'recommendations', 'riskRows');
     }
 }
 
