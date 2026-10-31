@@ -3,13 +3,15 @@
  * =====================================================================
  * Get Stock Movement (api/get-stock-movement.php)
  * ---------------------------------------------------------------------
- * Backs subadmin/inventory_reports.php's "Stock Movement Summary"
- * card: its date-range filter (?action=summary) and its "View Stock
- * Movements" modal's real transaction list (?action=transactions).
- * Both call the SAME real functions
- * (includes/shared/inventory_movement_monitor.php) the page's own
- * default render uses, so these never drift from what the page itself
- * would compute.
+ * Backs the "Stock Movement Summary" card's date-range filter
+ * (?action=summary) and its "View Stock Movements" modal's real
+ * transaction list (?action=transactions) on BOTH
+ * subadmin/inventory_reports.php and pharmacist/analytics_reports.php
+ * — the card is system-wide inventory data, not owned by one role, so
+ * the same endpoint serves both (see includes/shared/inventory_movement_monitor.php's
+ * own header comment). Both pages call the SAME real functions their
+ * own default render already uses, so these never drift from what
+ * either page itself would compute.
  * =====================================================================
  */
 
@@ -20,10 +22,12 @@ require_once __DIR__ . '/../includes/shared/inventory_movement_monitor.php';
 
 header('Content-Type: application/json');
 
-// Same role this page itself is gated to — inventory is system-wide,
-// not facility-scoped (see inventory_reports_firestore.php's own
-// header comment), so no facility lock is needed here.
-if (($_SESSION['role'] ?? null) !== 'subadmin') {
+// Same roles the two pages embedding this card are gated to
+// (subadmin/inventory_reports.php, pharmacist/analytics_reports.php)
+// — inventory is system-wide, not facility-scoped (see
+// inventory_reports_firestore.php's own header comment), so no
+// facility lock is needed here.
+if (!in_array($_SESSION['role'] ?? null, ['subadmin', 'pharmacist'], true)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Not authorized.']);
     exit;

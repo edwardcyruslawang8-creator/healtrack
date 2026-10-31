@@ -141,3 +141,28 @@ foreach (array_slice($itemCounts, 0, 5, true) as $label => $value) {
     $topMedicinesDispensed[] = ['label' => $label, 'value' => $value];
 }
 $topMedicinesDispensedMax = $topMedicinesDispensed !== [] ? max(array_column($topMedicinesDispensed, 'value')) : 1;
+
+// ---------------------------------------------------------------------
+// Stock Movement Summary + Inventory Expiry Monitor — real, same as
+// subadmin/inventory_reports.php's own cards (facility-wide inventory
+// data, not owned by one pharmacist — same reasoning as Inventory
+// Status Summary above). See
+// includes/shared/inventory_movement_monitor.php's own header comment.
+// ---------------------------------------------------------------------
+require_once __DIR__ . '/../shared/inventory_movement_monitor.php';
+
+$irMovementDefaultDays = 30;
+$irMovementStart = date('Y-m-d', strtotime("-{$irMovementDefaultDays} days"));
+$irMovementEnd = date('Y-m-d');
+$irStockMovement = hc_compute_stock_movement_summary($irMovementStart, $irMovementEnd);
+$stockMovementSummary = $irStockMovement['byCategory'];
+$stockMovementTotal = $irStockMovement['total'];
+
+$irExpiryMonitor = hc_compute_inventory_expiry_monitor();
+$irExpiryAllItems = $irExpiryMonitor['items'];
+$irExpiryExpiredCount = $irExpiryMonitor['expiredCount'];
+$irExpiryExpiringSoonCount = $irExpiryMonitor['expiringSoonCount'];
+$irExpiryTop5 = array_slice(array_values(array_filter(
+    $irExpiryAllItems,
+    fn ($r) => in_array($r['status'], ['expired', 'today', 'expiring_soon'], true)
+)), 0, 5);

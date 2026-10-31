@@ -42,7 +42,9 @@ if (($_SESSION['role'] ?? null) !== 'pharmacist') {
 require_once __DIR__ . '/../includes/pharmacist/analytics_reports_pharmacist_firestore.php';
 // $staffProfile, $dashboardDateLabel, $analyticsDateRangeLabel, $kpiCards,
 // $trendLabels, $trendCounts, $requestsByStatus, $requestsByStatusTotal,
-// $inventoryStatusSummary, $inventoryStatusTotal, $topMedicinesDispensed, $topMedicinesDispensedMax
+// $inventoryStatusSummary, $inventoryStatusTotal, $topMedicinesDispensed, $topMedicinesDispensedMax,
+// $stockMovementSummary, $stockMovementTotal, $irExpiryAllItems, $irExpiryTop5,
+// $irExpiryExpiredCount, $irExpiryExpiringSoonCount
 // hc_pharmacist_unread_notification_count() (sidebar/topbar badge) already
 // comes from config/constants.php, required above.
 
@@ -93,6 +95,7 @@ $staffNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/subadmin_dashboard.css') ?>">
 <!-- Analytics & Reports page styles (KPI cards, ranked list, footer notice) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/analytics_reports.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/inventory_reports.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -299,6 +302,203 @@ $staffNavItems = [
 
     </div>
 
+    <!-- ============ STOCK MOVEMENT SUMMARY + INVENTORY EXPIRY MONITOR ============
+         Same real cards as subadmin/inventory_reports.php's own (facility-
+         wide inventory data, not owned by one pharmacist) — see
+         includes/shared/inventory_movement_monitor.php's own header
+         comment. assets/css/inventory_reports.css / assets/js/inventory_movement_cards.js
+         are shared verbatim with that page. -->
+    <div class="ir-grid-60-40">
+
+        <!-- ===== Stock Movement Summary ===== -->
+        <div class="adm-card ir-movement-card">
+            <div class="adm-card-header ir-card-header">
+                <h2>Stock Movement Summary</h2>
+                <div class="ir-header-controls">
+                    <select class="form-select ir-range-select" id="irMovementRange" aria-label="Date range">
+                        <option value="7">Last 7 Days</option>
+                        <option value="30" selected>Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                    <div class="ir-custom-range" id="irMovementCustomRange" hidden>
+                        <input type="date" id="irMovementStartDate" aria-label="Start date">
+                        <span>&ndash;</span>
+                        <input type="date" id="irMovementEndDate" aria-label="End date">
+                        <button type="button" class="ir-apply-btn" id="irMovementApplyRange">Apply</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ir-movement-summary">
+                <div class="ir-stat"><span class="ir-stat-value" id="irMovementTotalReceived"><?= number_format($stockMovementTotal['received']) ?></span><span class="ir-stat-label">Total Received</span></div>
+                <div class="ir-stat"><span class="ir-stat-value" id="irMovementTotalIssued"><?= number_format($stockMovementTotal['issued']) ?></span><span class="ir-stat-label">Total Issued</span></div>
+                <div class="ir-stat"><span class="ir-stat-value" id="irMovementClosingStock"><?= number_format($stockMovementTotal['closing']) ?></span><span class="ir-stat-label">Closing Stock</span></div>
+            </div>
+
+            <div class="adm-table-wrap">
+                <table class="adm-table ir-movement-table" style="min-width:0;">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Opening Stock</th>
+                            <th>Received</th>
+                            <th>Issued</th>
+                            <th>Closing Stock</th>
+                        </tr>
+                    </thead>
+                    <tbody id="irMovementTableBody">
+                        <?php foreach ($stockMovementSummary as $row): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($row['category']) ?></td>
+                            <td><?= number_format($row['opening']) ?></td>
+                            <td><?= number_format($row['received']) ?></td>
+                            <td><?= number_format($row['issued']) ?></td>
+                            <td><?= number_format($row['closing']) ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                    <tfoot>
+                        <tr class="ir-movement-total-row">
+                            <td>Total</td>
+                            <td id="irMovementFootOpening"><?= number_format($stockMovementTotal['opening']) ?></td>
+                            <td id="irMovementFootReceived"><?= number_format($stockMovementTotal['received']) ?></td>
+                            <td id="irMovementFootIssued"><?= number_format($stockMovementTotal['issued']) ?></td>
+                            <td id="irMovementFootClosing"><?= number_format($stockMovementTotal['closing']) ?></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="ir-card-actions">
+                <button type="button" class="ir-viewall-btn" data-bs-toggle="modal" data-bs-target="#irMovementsModal"><i class="bi bi-list-ul"></i> View Stock Movements</button>
+            </div>
+        </div>
+
+        <!-- ===== Inventory Expiry Monitor ===== -->
+        <div class="adm-card ir-expiry-card">
+            <div class="adm-card-header ir-card-header">
+                <h2>Inventory Expiry Monitor</h2>
+            </div>
+            <div class="ir-expiry-badges">
+                <span class="ir-expiry-badge ir-expiry-badge-expired"><i class="bi bi-exclamation-octagon-fill"></i> <?= (int) $irExpiryExpiredCount ?> Expired</span>
+                <span class="ir-expiry-badge ir-expiry-badge-soon"><i class="bi bi-clock-history"></i> <?= (int) $irExpiryExpiringSoonCount ?> Expiring Soon</span>
+            </div>
+            <div class="ir-expiry-filters" id="irExpiryFilterSeg" role="tablist" aria-label="Filter">
+                <button type="button" class="ir-expiry-filter-btn active" data-filter="relevant">All</button>
+                <button type="button" class="ir-expiry-filter-btn" data-filter="expired">Expired</button>
+                <button type="button" class="ir-expiry-filter-btn" data-filter="expiring_soon">Next 30 Days</button>
+            </div>
+
+            <div class="ir-expiry-list" id="irExpiryList">
+                <?php foreach ($irExpiryTop5 as $r): ?>
+                <div class="ir-expiry-row">
+                    <div class="ir-expiry-row-main">
+                        <span class="ir-expiry-row-name"><?= htmlspecialchars($r['name']) ?></span>
+                        <span class="ir-expiry-row-meta"><?= htmlspecialchars($r['category']) ?> &middot; Batch: <?= htmlspecialchars($r['batchNo']) ?></span>
+                    </div>
+                    <div class="ir-expiry-row-side">
+                        <span class="ir-expiry-status-badge ir-expiry-status-<?= htmlspecialchars($r['status']) ?>">
+                            <?php if ($r['status'] === 'expired'): ?>Expired <?= abs((int) $r['daysFromToday']) ?>d ago
+                            <?php elseif ($r['status'] === 'today'): ?>Expires Today
+                            <?php else: ?><?= (int) $r['daysFromToday'] ?>d left
+                            <?php endif; ?>
+                        </span>
+                        <span class="ir-expiry-row-qty"><?= number_format($r['quantity']) ?> <?= htmlspecialchars($r['unit']) ?></span>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+                <?php if ($irExpiryTop5 === []): ?>
+                <div class="ir-empty"><i class="bi bi-check-circle-fill"></i><p>No expired or soon-to-expire batches right now.</p></div>
+                <?php endif; ?>
+            </div>
+
+            <div class="ir-card-actions">
+                <button type="button" class="ir-viewall-btn" data-bs-toggle="modal" data-bs-target="#irExpiryAllModal"><i class="bi bi-table"></i> View All Items</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== View Stock Movements modal ===== -->
+    <div class="modal fade" id="irMovementsModal" tabindex="-1" aria-labelledby="irMovementsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content ir-modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="irMovementsModalLabel">Stock Movement Transactions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="ir-modal-note">Every real stock receipt and dispense recorded in the date range currently selected above.</p>
+                    <div class="adm-table-wrap ir-modal-table-wrap">
+                        <table class="adm-table ir-modal-table" style="min-width:0;">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Item</th>
+                                    <th>Category</th>
+                                    <th>Quantity</th>
+                                    <th>Detail</th>
+                                </tr>
+                            </thead>
+                            <tbody id="irMovementsModalTableBody"></tbody>
+                        </table>
+                        <p class="ir-modal-empty" id="irMovementsModalEmpty" style="display:none;">No real stock movements recorded in this date range.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== View All Items (Expiry Monitor) modal ===== -->
+    <div class="modal fade" id="irExpiryAllModal" tabindex="-1" aria-labelledby="irExpiryAllModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content ir-modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="irExpiryAllModalLabel">Complete Inventory Expiry Report</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="ir-modal-toolbar">
+                        <div class="ir-modal-search">
+                            <i class="bi bi-search"></i>
+                            <input type="text" id="irExpiryAllSearch" placeholder="Search item name...">
+                        </div>
+                        <div class="ir-expiry-filters" id="irExpiryAllFilterSeg" role="tablist" aria-label="Filter">
+                            <button type="button" class="ir-expiry-filter-btn active" data-filter="all">All</button>
+                            <button type="button" class="ir-expiry-filter-btn" data-filter="expired">Expired</button>
+                            <button type="button" class="ir-expiry-filter-btn" data-filter="expiring_soon">Next 30 Days</button>
+                        </div>
+                        <select class="form-select ir-sort-select" id="irExpiryAllSort" aria-label="Sort">
+                            <option value="urgency" selected>Most Urgent First</option>
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="expiry-asc">Expiry Date (Soonest)</option>
+                            <option value="qty-desc">Quantity (Highest)</option>
+                        </select>
+                    </div>
+                    <div class="adm-table-wrap ir-modal-table-wrap">
+                        <table class="adm-table ir-modal-table" style="min-width:0;">
+                            <thead>
+                                <tr>
+                                    <th>Item Name</th>
+                                    <th>Category</th>
+                                    <th>Batch No.</th>
+                                    <th>Expiry Date</th>
+                                    <th>Quantity</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="irExpiryAllTableBody"></tbody>
+                        </table>
+                        <p class="ir-modal-empty" id="irExpiryAllEmpty" style="display:none;">No items match your search.</p>
+                    </div>
+                    <div class="ir-modal-pagination" id="irExpiryAllPagination"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ============ TOP MEDICINES I DISPENSED ============ -->
     <div class="adm-card sad-chart-card">
         <div class="sad-card-header"><h2>Top 5 Medicines/Vaccines I Dispensed</h2></div>
@@ -398,6 +598,21 @@ $staffNavItems = [
             ],
         ],
     ]) ?>;
+    // Stock Movement Summary / Inventory Expiry Monitor cards — same
+    // real data shape subadmin/inventory_reports.php feeds the same
+    // shared assets/js/inventory_movement_cards.js.
+    window.INVENTORY_MOVEMENT_DATA = <?= json_encode([
+        'stockMovementApiUrl' => BASE_URL . '/api/get-stock-movement.php',
+        'expiryAllItems' => $irExpiryAllItems,
+    ]) ?>;
+</script>
+<script src="<?= asset_url('/assets/js/inventory_movement_cards.js') ?>"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof window.initInventoryMovementCards === 'function') {
+            window.initInventoryMovementCards(window.INVENTORY_MOVEMENT_DATA);
+        }
+    });
 </script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/analytics_reports.js') ?>"></script>

@@ -658,6 +658,7 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/sortable-table.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/inventory_movement_cards.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/inventory_reports.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-report-nav.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-tab-nav.js') ?>"></script>
