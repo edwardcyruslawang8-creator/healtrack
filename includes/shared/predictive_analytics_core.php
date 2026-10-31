@@ -996,10 +996,16 @@ if (!function_exists('hc_medicine_vaccine_shortage')) {
         // QUANTITY data instead (see that function's own comment on
         // why event counts and units consumed are not the same thing).
         // $stillStocked itself is still used below, by the "All At-Risk
-        // Items" shortage-trend chart (a different, still-ratePerDay-
-        // based card this redesign doesn't touch).
-        $stillStocked = array_values(array_filter($items, fn ($i) => !$i['alreadyOut'] && $i['ratePerDay'] > 0));
-        usort($stillStocked, fn ($a, $b) => $a['daysUntilStockout'] <=> $b['daysUntilStockout']);
+        // Items" shortage-trend chart. No longer requires ratePerDay > 0
+        // — an item flagged at-risk purely for being below its own real
+        // reorder level (see $belowReorderLevel above) has no real order
+        // rate to decline from, but it's still a real, current item that
+        // belongs on this chart; its own line is honestly flat at its
+        // real current stock rather than excluded from the chart
+        // entirely (which is what silently emptied this chart whenever
+        // every real at-risk item happened to lack order history).
+        $stillStocked = array_values(array_filter($items, fn ($i) => !$i['alreadyOut']));
+        usort($stillStocked, fn ($a, $b) => ($a['daysUntilStockout'] ?? PHP_INT_MAX) <=> ($b['daysUntilStockout'] ?? PHP_INT_MAX));
 
         // Order/prescription frequency — EVERY real medicine/vaccine
         // currently in the system's own inventory (not just whichever
