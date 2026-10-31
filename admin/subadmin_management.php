@@ -202,19 +202,6 @@ $adminNavItems = [
                     </ul>
                 </div>
             </div>
-
-            <div class="sam-toolbar-row">
-                <form class="sam-search" method="get" action="subadmin_management.php">
-                    <i class="bi bi-search"></i>
-                    <!-- Real fuzzy search now (hc_fuzzy_match(), see
-                         includes/admin/subadmin_management_firestore.php) — submits on
-                         Enter, same as every other plain-text search box in this app. -->
-                    <input type="text" id="subadminSearchInput" name="q" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Search by name, email or facility...">
-                </form>
-                <button type="button" class="btn-add-subadmin" id="btnAddSubadmin">
-                    <i class="bi bi-plus-lg"></i> Add Sub-Administrator
-                </button>
-            </div>
         </div>
     </div>
 
@@ -239,33 +226,50 @@ $adminNavItems = [
         <?php endforeach; ?>
     </div>
 
-    <!-- ============ TABS + FILTER/SORT ============ -->
-    <div class="sam-tabs-row">
-        <ul class="nav adm-tabs sam-tabs" role="tablist">
-            <?php foreach ($subadminTabs as $tab): ?>
-            <li class="nav-item" role="presentation">
-                <a href="?<?= hc_sam_query(['status' => $tab['key'], 'page' => 1]) ?>" class="nav-link <?= !empty($tab['active']) ? 'active' : '' ?>" role="tab">
-                    <?= htmlspecialchars($tab['label']) ?>
-                </a>
-            </li>
-            <?php endforeach; ?>
-        </ul>
+    <!-- ============ SEARCH + STATUS + SORT + ADD ============
+         One row below the stat cards. Status is a dropdown of real links
+         (the same ?status= URLs the old tabs used, via hc_sam_query()),
+         and the search form carries the current status in a hidden field
+         so searching doesn't reset the filter. -->
+    <div class="sam-controls-row">
+        <form class="sam-search" method="get" action="subadmin_management.php">
+            <i class="bi bi-search"></i>
+            <!-- Real fuzzy search (hc_fuzzy_match(), see
+                 includes/admin/subadmin_management_firestore.php) — submits on
+                 Enter, same as every other plain-text search box in this app. -->
+            <input type="text" id="subadminSearchInput" name="q" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Search by name, email or facility...">
+            <?php if ($subadminStatusFilter !== 'all'): ?>
+            <input type="hidden" name="status" value="<?= htmlspecialchars($subadminStatusFilter) ?>">
+            <?php endif; ?>
+        </form>
 
-        <div class="sam-tabs-actions">
-            <!-- Not wired up yet — front-end only, same as the search box above. -->
-            <button type="button" class="sam-filter-btn"><i class="bi bi-funnel"></i> Filter</button>
-            <div class="dropdown">
-                <button class="sam-sort-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    Sort by: Newest
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="#">Newest</a></li>
-                    <li><a class="dropdown-item" href="#">Oldest</a></li>
-                    <li><a class="dropdown-item" href="#">Name (A–Z)</a></li>
-                    <li><a class="dropdown-item" href="#">Last Login</a></li>
-                </ul>
-            </div>
+        <?php $activeStatusTab = current(array_filter($subadminTabs, fn ($tab) => !empty($tab['active']))) ?: $subadminTabs[0]; ?>
+        <div class="dropdown">
+            <button class="sam-control-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-funnel"></i> Status: <?= htmlspecialchars($activeStatusTab['label']) ?>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <?php foreach ($subadminTabs as $tab): ?>
+                <li><a class="dropdown-item <?= !empty($tab['active']) ? 'active' : '' ?>" href="?<?= hc_sam_query(['status' => $tab['key'], 'page' => 1]) ?>"><?= htmlspecialchars($tab['label']) ?></a></li>
+                <?php endforeach; ?>
+            </ul>
         </div>
+
+        <div class="dropdown">
+            <button class="sam-control-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Sort by: Newest
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="#">Newest</a></li>
+                <li><a class="dropdown-item" href="#">Oldest</a></li>
+                <li><a class="dropdown-item" href="#">Name (A–Z)</a></li>
+                <li><a class="dropdown-item" href="#">Last Login</a></li>
+            </ul>
+        </div>
+
+        <button type="button" class="btn-add-subadmin" id="btnAddSubadmin">
+            <i class="bi bi-plus-lg"></i> Add Sub-Administrator
+        </button>
     </div>
 
     <!-- ============ SUB-ADMINISTRATOR TABLE ============ -->
@@ -352,7 +356,7 @@ $adminNavItems = [
 
     <!-- ============ STATUS LEGEND ============ -->
     <div class="sam-legend">
-        <?php foreach ($statusLegend as $key => $l): ?>
+        <?php foreach ($statusLegendStrip as $key => $l): ?>
         <span class="sam-legend-item">
             <span class="sam-legend-dot <?= htmlspecialchars($key) ?>"></span>
             <strong><?= htmlspecialchars($l['label']) ?></strong> &ndash; <?= htmlspecialchars($l['desc']) ?>

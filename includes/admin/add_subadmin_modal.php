@@ -25,9 +25,9 @@
           <div id="addSubadminError" class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
 
           <div class="mb-3">
-            <label for="subadminUsername" class="form-label">Username</label>
-            <input type="text" class="form-control" id="subadminUsername" name="username" placeholder="e.g. maria.santos" required>
-            <div class="invalid-feedback">Please enter a username.</div>
+            <label for="subadminUsername" class="form-label">Name</label>
+            <input type="text" class="form-control" id="subadminUsername" name="username" placeholder="e.g. Maria Santos" required>
+            <div class="invalid-feedback">Please enter a name.</div>
           </div>
 
           <div class="mb-3">
@@ -47,13 +47,19 @@
 
           <div class="mb-3">
             <label for="subadminPassword" class="form-label">Password</label>
-            <input type="password" class="form-control" id="subadminPassword" name="password" placeholder="At least 6 characters" minlength="6" required>
+            <div class="adm-password-wrap">
+              <input type="password" class="form-control" id="subadminPassword" name="password" placeholder="At least 6 characters" minlength="6" required>
+              <button type="button" class="adm-password-toggle" data-target="subadminPassword" aria-label="Show password"><i class="bi bi-eye"></i></button>
+            </div>
             <div class="invalid-feedback">Password must be at least 6 characters.</div>
           </div>
 
           <div class="mb-0">
             <label for="subadminConfirmPassword" class="form-label">Confirm Password</label>
-            <input type="password" class="form-control" id="subadminConfirmPassword" name="confirmPassword" placeholder="Re-enter password" minlength="6" required>
+            <div class="adm-password-wrap">
+              <input type="password" class="form-control" id="subadminConfirmPassword" name="confirmPassword" placeholder="Re-enter password" minlength="6" required>
+              <button type="button" class="adm-password-toggle" data-target="subadminConfirmPassword" aria-label="Show password"><i class="bi bi-eye"></i></button>
+            </div>
             <div class="invalid-feedback">Passwords do not match.</div>
           </div>
         </div>

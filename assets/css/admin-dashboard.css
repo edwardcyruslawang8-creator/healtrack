@@ -1143,3 +1143,29 @@ body.adm-body{
   transition: background .15s ease;
 }
 .adm-modal-btn-submit:hover{ background: var(--adm-red-bright-hover); color: #fff; }
+
+/* -- Password field with a show/hide eye button (e.g. the Add
+      Sub-Administrator modal, includes/admin/add_subadmin_modal.php).
+      The .invalid-feedback stays OUTSIDE the wrap, so Bootstrap's
+      sibling selector no longer reaches it — the :has() rule restores
+      it, and Bootstrap's red validation icon shifts left of the eye. -- */
+.adm-password-wrap{ position: relative; }
+.adm-password-wrap .form-control{ padding-right: 44px; }
+.was-validated .adm-password-wrap .form-control:invalid,
+.was-validated .adm-password-wrap .form-control:valid{ padding-right: 72px; background-position: right 44px center; }
+.was-validated .adm-password-wrap:has(.form-control:invalid) ~ .invalid-feedback{ display: block; }
+.adm-password-toggle{
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--adm-text-soft);
+  cursor: pointer;
+}
+.adm-password-toggle:hover{ color: var(--adm-text-muted); }
+.adm-password-toggle:focus-visible{ outline: 2px solid var(--adm-red-bright); outline-offset: 1px; border-radius: 6px; }

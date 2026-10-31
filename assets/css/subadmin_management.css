@@ -8,15 +8,19 @@
    and is "sam-" prefixed (Sub-Administrator Management).
    ============================================================= */
 
-/* -- Search + Add Sub-Administrator (sits below the bell/profile row
-   inside .adm-topbar-right, which is already a right-aligned column) -- */
-.sam-toolbar-row{
+/* -- Controls row below the stat cards: search (fills the free
+   space), Status dropdown, Sort dropdown, Add Sub-Administrator --
+   all one 42px height. -- */
+.sam-controls-row{
   display: flex;
   align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 18px;
 }
+.sam-controls-row .sam-search{ flex: 1 1 auto; width: auto; min-width: 0; }
+.sam-controls-row .sam-search input,
+.sam-controls-row .sam-control-btn,
+.sam-controls-row .btn-add-subadmin{ height: 42px; }
 .sam-search{
   position: relative;
   width: 280px;
@@ -72,7 +76,7 @@
 /* -- Summary stat cards -- */
 .sam-stats-row{
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 22px;
 }
@@ -102,37 +106,22 @@
 .sam-stat-sub{ font-size: 11px; color: var(--adm-text-soft); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .sam-stat-growth{ color: var(--adm-green); font-weight: 600; display: inline-flex; align-items: center; }
 
-/* -- Tabs row: red-underline tabs (left) + Filter/Sort (right) -- */
-.sam-tabs-row{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-.sam-tabs{ flex: 1; margin-bottom: 0; border-bottom: none; }
-.sam-tabs-actions{
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 12px;
-}
-.sam-filter-btn,
-.sam-sort-btn{
+.sam-control-btn{
   display: flex;
   align-items: center;
   gap: 7px;
   background: var(--adm-card);
   border: 1px solid var(--adm-border);
-  border-radius: 9px;
-  padding: 8px 14px;
-  font-size: 12.5px;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--adm-text);
   white-space: nowrap;
+  box-shadow: var(--adm-shadow);
 }
-.sam-filter-btn:hover,
-.sam-sort-btn:hover{ background: var(--adm-hover-bg); }
+.sam-control-btn:hover{ background: var(--adm-hover-bg); }
+.sam-control-btn i{ color: var(--adm-text-muted); }
 
 /* -- Actions column — a single "Manage Account" button instead of a
    row of bare icon buttons (View/Edit/Unlock/Delete) — opens
@@ -297,18 +286,23 @@
 /* =============================================================
    RESPONSIVE
    ============================================================= */
-@media (max-width: 1399.98px){
-  .sam-stats-row{ grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 1199.98px){
+  .sam-stats-row{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 991.98px){
   .adm-topbar-right{ width: 100%; }
-  .sam-toolbar-row{ width: 100%; justify-content: flex-start; }
-  .sam-search{ width: 100%; }
+  /* Search gets its own full-width line; the dropdowns + Add sit below. */
+  .sam-controls-row{ flex-wrap: wrap; }
+  .sam-controls-row .sam-search{ flex: 1 1 100%; }
+  .sam-controls-row .btn-add-subadmin{ margin-left: auto; }
 }
 @media (max-width: 767.98px){
   .sam-stats-row{ grid-template-columns: repeat(2, 1fr); }
-  .sam-tabs-row{ flex-direction: column; align-items: stretch; }
-  .sam-tabs-actions{ justify-content: flex-end; padding-bottom: 0; margin-bottom: 14px; }
+}
+@media (max-width: 575.98px){
+  .sam-controls-row .dropdown{ flex: 1 1 0; }
+  .sam-controls-row .sam-control-btn{ width: 100%; justify-content: center; }
+  .sam-controls-row .btn-add-subadmin{ flex: 1 1 100%; justify-content: center; margin-left: 0; }
 }
 @media (max-width: 575.98px){
   .sam-stats-row{ grid-template-columns: 1fr; }

@@ -27,7 +27,7 @@ require_once __DIR__ . '/../shared/fuzzy_search.php';               // hc_fuzzy_
 // own badges and the summary stat cards above already read), carried
 // through search/pagination by hc_sam_query() below same as ?q=/?page=.
 // ---------------------------------------------------------------------
-$subadminStatusTabKeys = ['all', 'active', 'inactive', 'locked', 'pending'];
+$subadminStatusTabKeys = ['all', 'active', 'inactive', 'locked'];
 $subadminStatusFilter = $_GET['status'] ?? 'all';
 if (!in_array($subadminStatusFilter, $subadminStatusTabKeys, true)) {
     $subadminStatusFilter = 'all';
@@ -37,7 +37,6 @@ $subadminTabs = [
     ['key' => 'active',   'label' => 'Active',   'active' => $subadminStatusFilter === 'active'],
     ['key' => 'inactive', 'label' => 'Inactive', 'active' => $subadminStatusFilter === 'inactive'],
     ['key' => 'locked',   'label' => 'Locked',   'active' => $subadminStatusFilter === 'locked'],
-    ['key' => 'pending',  'label' => 'Pending',  'active' => $subadminStatusFilter === 'pending'],
 ];
 
 // Role → badge color lookup, so the table loop doesn't hardcode colors per row.
@@ -61,6 +60,11 @@ $statusLegend = [
 // Option lists for the "Edit Sub-Administrator" modal's Role/Status selects.
 $roleOptions = array_keys($roleColors);
 $statusOptions = array_keys($statusLegend);
+
+// The legend strip at the bottom of the page shows Active/Inactive/Locked
+// only — Pending stays in $statusLegend itself so a pending account still
+// gets a labelled badge and the Edit modal keeps its status option.
+$statusLegendStrip = array_diff_key($statusLegend, ['pending' => true]);
 
 // ---------------------------------------------------------------------
 // Real sub-administrator accounts. Firestore's REST API (via
@@ -135,7 +139,6 @@ $subadminStats = [
     ['icon' => 'bi-person-check-fill', 'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E', 'label' => 'Active Accounts',          'value' => $statusCounts['active'],   'sub' => 'Currently active'],
     ['icon' => 'bi-person-dash-fill',  'iconBg' => '#FDECDD', 'iconColor' => '#E8710A', 'label' => 'Inactive Accounts',        'value' => $statusCounts['inactive'], 'sub' => 'Currently inactive'],
     ['icon' => 'bi-lock-fill',         'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'label' => 'Locked Accounts',          'value' => $statusCounts['locked'],   'sub' => 'Currently locked'],
-    ['icon' => 'bi-envelope-fill',     'iconBg' => '#EFE7FB', 'iconColor' => '#7C3AED', 'label' => 'Pending Invitations',      'value' => $statusCounts['pending'],  'sub' => 'Awaiting response'],
 ];
 
 // ---------------------------------------------------------------------
