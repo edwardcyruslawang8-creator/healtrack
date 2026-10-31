@@ -219,25 +219,41 @@ $staffNavItems = [
         <?php endforeach; ?>
     </div>
 
-    <!-- ============ PREDICTIVE & PRESCRIPTIVE ANALYTICS (PREVIEW) ============
+    <!-- ============ PREDICTIVE & PRESCRIPTIVE ANALYTICS ============
          Medicine & Vaccine Shortage + Inventory Replenishment only — see
          includes/pharmacist/predictive_overview_firestore.php's header
-         comment. -->
-    <?php
-    $predictiveOverviewLinkHref = null; // no dedicated full predictive page for this role yet
-    require __DIR__ . '/../includes/admin/predictive_overview_card.php';
-    ?>
+         comment. NOT includes/admin/predictive_overview_card.php here —
+         that shared partial's own mini multi-line "all at-risk items"
+         chart is replaced with the full interactive per-item tool
+         (searchable dropdown, 7/14/30-day period, real summary
+         indicators, chart, recommendation) in the SAME position, inside
+         the SAME card, rather than sitting as a second, separate card
+         below it. The KPI tiles + risk-alerts list markup below is
+         intentionally a copy of that shared partial's own (not worth a
+         shared-partial parameter just for one page's different middle
+         section). -->
+    <div class="adm-card adm-predictive-overview-card">
+        <div class="adm-card-header">
+            <h2><i class="bi bi-graph-up-arrow me-2"></i>Predictive &amp; Prescriptive Analytics</h2>
+        </div>
 
-    <!-- ============ PROJECTED STOCK DECLINE ============
-         Same full, interactive per-item card as admin/facility_analytics.php's
-         and subadmin/predictive_analytics.php's own Predictive &
-         Prescriptive tab — searchable dropdown over every real item,
-         7/14/30-day period, real summary indicators, chart,
-         recommendation. assets/css/facility_analytics.css ("an-"/"psd-"
-         prefixed) and assets/js/stock-projection.js are the exact same
-         files those two pages load. -->
-    <div class="an-card psd-card">
-        <div class="an-card-header psd-header">
+        <div class="adm-mini-stats-row">
+            <?php foreach ($predictiveOverviewCards as $c): ?>
+            <div class="adm-mini-stat">
+                <div class="adm-mini-stat-icon" style="background:<?= htmlspecialchars($c['iconBg']) ?>; color:<?= htmlspecialchars($c['iconColor']) ?>;">
+                    <i class="bi <?= htmlspecialchars($c['icon']) ?>"></i>
+                </div>
+                <div>
+                    <div class="adm-mini-stat-label"><?= htmlspecialchars($c['label']) ?></div>
+                    <div class="adm-mini-stat-value"><?= htmlspecialchars($c['value']) ?></div>
+                    <div class="adm-mini-stat-sub"><?= htmlspecialchars($c['sub']) ?></div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+
+        <!-- ===== Projected Stock Decline — full interactive per-item tool ===== -->
+        <div class="psd-header" style="margin-top:18px;">
             <div class="psd-header-title">
                 <h3>Projected Stock Decline</h3>
                 <p class="pn-note">System-wide stock pace — inventory has no per-facility field in this app's schema.</p>
@@ -283,6 +299,28 @@ $staffNavItems = [
         <div class="an-trend-canvas-box"><canvas id="phmT2StockProjectionChart"></canvas></div>
         <div class="psd-recommendation" id="phmPSDRecommendation"></div>
         <?php endif; ?>
+
+        <div style="margin-top:18px;">
+            <?php if (!empty($predictiveOverviewTopAlerts)): ?>
+            <div class="adm-status-list">
+                <?php foreach ($predictiveOverviewTopAlerts as $r): ?>
+                <div class="adm-status-row">
+                    <span class="adm-status-icon" style="background:<?= htmlspecialchars($r['iconBg']) ?>; color:<?= htmlspecialchars($r['iconColor']) ?>;">
+                        <i class="bi <?= htmlspecialchars($r['icon']) ?>"></i>
+                    </span>
+                    <span class="adm-status-body">
+                        <span class="adm-status-title"><?= htmlspecialchars($r['label']) ?><?php if (!empty($r['anomaly'])): ?><span class="pn-severity unusual" title="More than 2 standard deviations above this pair's own 30-day baseline">Unusual</span><?php endif; ?></span>
+                        <span class="adm-status-desc"><?= htmlspecialchars($r['desc']) ?></span>
+                        <?php if (!empty($r['causes'])): ?><span class="pn-causes-note">Likely contributing factors: <?= htmlspecialchars($r['causes']) ?></span><?php endif; ?>
+                    </span>
+                    <span class="adm-status-number" style="color:<?= htmlspecialchars($r['valueColor']) ?>;"><?= htmlspecialchars((string) $r['value']) ?></span>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php else: ?>
+            <p class="text-muted small mb-0">No active risk alerts right now.</p>
+            <?php endif; ?>
+        </div>
     </div>
 
     <!-- ============ TREND + REQUEST STATUS + INVENTORY STATUS ============ -->
