@@ -289,16 +289,22 @@ if (!function_exists('hc_compute_inventory_expiry_monitor')) {
                     };
                 }
 
-                // "Not Recorded" for a batch id itself never fires today —
-                // hc_get_batches_for_medicine() always returns a real
-                // Firestore batch doc id — but the field stays honest if
-                // that ever changes, per the no-invented-numbers rule.
+                // The real Firestore batch doc id IS the batch's real,
+                // unique identifier — but shown raw (a 20-character
+                // random string) it reads as noise, not a batch number.
+                // "Not Recorded" for a batch id itself never fires today
+                // (hc_get_batches_for_medicine() always returns a real
+                // id), but the field stays honest if that ever changes.
+                // Shortened to an 8-char reference, uppercased — still
+                // the real id (just its leading chars), not an invented
+                // number, and still unique enough in practice for a
+                // facility's own real batch count.
                 $rows[] = [
                     'medicineId' => $item['id'],
                     'batchId' => $batch['id'],
                     'name' => $item['name'],
                     'category' => $item['itemType'] === 'vaccine' ? 'Vaccine' : 'Medicine',
-                    'batchNo' => $batch['id'] !== '' ? $batch['id'] : 'Not Recorded',
+                    'batchNo' => $batch['id'] !== '' ? ('BATCH-' . strtoupper(substr($batch['id'], 0, 8))) : 'Not Recorded',
                     'expiryDateRaw' => $expiryRaw,
                     'expiryDate' => $expiryTs !== false ? date('M j, Y', $expiryTs) : 'Not Recorded',
                     'quantity' => $batch['quantity'],

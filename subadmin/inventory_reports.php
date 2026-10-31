@@ -544,7 +544,7 @@ $adminNavItems = [
                 </div>
                 <div class="modal-body">
                     <p class="ir-modal-note">Every real stock receipt and dispense recorded in the date range currently selected above.</p>
-                    <div class="adm-table-wrap">
+                    <div class="adm-table-wrap ir-modal-table-wrap">
                         <table class="adm-table ir-modal-table" style="min-width:0;">
                             <thead>
                                 <tr>
@@ -591,7 +591,7 @@ $adminNavItems = [
                             <option value="qty-desc">Quantity (Highest)</option>
                         </select>
                     </div>
-                    <div class="adm-table-wrap">
+                    <div class="adm-table-wrap ir-modal-table-wrap">
                         <table class="adm-table ir-modal-table" style="min-width:0;">
                             <thead>
                                 <tr>

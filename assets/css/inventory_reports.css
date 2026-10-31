@@ -236,7 +236,18 @@
   font-weight: 600;
   color: var(--adm-text);
 }
+/* The modal's own table-wrap scrolls internally once there are more
+   rows than fit — without this the table just grows the whole modal
+   past the viewport with no way to reach the pagination/footer below
+   it. */
+.ir-modal-table-wrap{ max-height: 420px; overflow-y: auto; }
 .ir-modal-table{ font-size: 12.5px; }
+.ir-modal-table thead th{
+  position: sticky;
+  top: 0;
+  background: var(--adm-card);
+  z-index: 1;
+}
 .ir-modal-empty{ text-align: center; color: var(--adm-text-muted); font-size: 12.5px; padding: 24px 0; }
 .ir-modal-pagination{
   display: flex;
