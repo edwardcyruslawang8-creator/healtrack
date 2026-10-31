@@ -164,3 +164,12 @@
   .srq-filter-select{ min-width: 0; width: 100%; }
   .srq-btn-add{ justify-content: center; }
 }
+
+/* -- New Stock Request modal: maroon Submit Request button (the shared
+      .am-btn-submit in add_medicine_modal.css is blue by default; scoped
+      by the modal's id so other modals sharing that class are untouched,
+      same approach as user_management.css's #addUserModal). -- */
+#newStockRequestModal .am-btn-submit{ background: var(--adm-red-bright); color: #fff; }
+#newStockRequestModal .am-btn-submit:hover,
+#newStockRequestModal .am-btn-submit:active{ background: var(--adm-red-bright-hover); color: #fff; }
+#newStockRequestModal .am-btn-submit:focus-visible{ outline: none; box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.2); }
