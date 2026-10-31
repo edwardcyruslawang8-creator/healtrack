@@ -202,7 +202,7 @@ $staffNavItems = [
     </div>
 
     <!-- ============ KPI SUMMARY CARDS ============ -->
-    <div class="arp-kpi-row">
+    <div class="arp-kpi-row phm-kpi-row">
         <?php foreach ($kpiCards as $kpi): ?>
         <div class="adm-card arp-kpi-card">
             <div class="arp-kpi-icon" style="background:<?= htmlspecialchars($kpi['iconBg']) ?>; color:<?= htmlspecialchars($kpi['iconColor']) ?>;">
@@ -237,13 +237,13 @@ $staffNavItems = [
             <h2><i class="bi bi-graph-up-arrow me-2"></i>Predictive &amp; Prescriptive Analytics</h2>
         </div>
 
-        <div class="adm-mini-stats-row">
+        <div class="adm-mini-stats-row phm-predictive-stats">
             <?php foreach ($predictiveOverviewCards as $c): ?>
             <div class="adm-mini-stat">
                 <div class="adm-mini-stat-icon" style="background:<?= htmlspecialchars($c['iconBg']) ?>; color:<?= htmlspecialchars($c['iconColor']) ?>;">
                     <i class="bi <?= htmlspecialchars($c['icon']) ?>"></i>
                 </div>
-                <div>
+                <div class="phm-predictive-stat-body">
                     <div class="adm-mini-stat-label"><?= htmlspecialchars($c['label']) ?></div>
                     <div class="adm-mini-stat-value"><?= htmlspecialchars($c['value']) ?></div>
                     <div class="adm-mini-stat-sub"><?= htmlspecialchars($c['sub']) ?></div>
@@ -253,7 +253,7 @@ $staffNavItems = [
         </div>
 
         <!-- ===== Projected Stock Decline — full interactive per-item tool ===== -->
-        <div class="psd-header" style="margin-top:18px;">
+        <div class="psd-header phm-psd-header">
             <div class="psd-header-title">
                 <h3>Projected Stock Decline</h3>
                 <p class="pn-note">System-wide stock pace — inventory has no per-facility field in this app's schema.</p>
