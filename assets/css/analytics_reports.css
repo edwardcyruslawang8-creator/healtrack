@@ -23,27 +23,87 @@
       dark-navy .arp-breadcrumb-current. -- */
 .arp-breadcrumb-current-red{ color: var(--adm-red-bright) !important; font-weight: 600; }
 
-/* -- Analytics tabs (red active underline, distinct from .adm-tabs'
-      blue — this page intentionally uses the app's red brand accent) -- */
-.arp-tabs{
-  display: flex;
-  gap: 28px;
-  border-bottom: 1px solid var(--adm-border);
+/* -- Analytics & Reports navigation (includes/subadmin/_analytics_tabs.php)
+      Two rows inside one card: the main sections (Overview, Predictive &
+      Prescriptive) on top, every report category below in an even grid —
+      all visible at once, no horizontal scrolling. Active tab = solid
+      maroon button with white text. -- */
+:root{ --arp-nav-active-bg: #700D0D; }
+:root[data-bs-theme="dark"]{ --arp-nav-active-bg: var(--adm-red-bright); }
+
+.arp-nav{
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-md);
+  box-shadow: var(--adm-shadow);
+  padding: 10px 14px;
   margin-bottom: 20px;
-  flex-wrap: wrap;
 }
-.arp-tabs .nav-link{
-  border: none;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  padding: 10px 2px 14px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--adm-text-muted);
-  background: none;
+.arp-nav-row{
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+.arp-nav-row-reports{
+  border-top: 1px solid var(--adm-border);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.arp-nav-label{
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--adm-text-soft);
   white-space: nowrap;
 }
-.arp-tabs .nav-link.active{ color: var(--adm-red-bright); border-bottom-color: var(--adm-red-bright); font-weight: 700; }
+.arp-nav-primary{ display: flex; flex-wrap: wrap; gap: 8px; }
+.arp-nav-reports{
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+.arp-nav-tab{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--adm-text-muted);
+  text-decoration: none;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.arp-nav-tab-primary{ padding: 8px 18px; font-size: 13.5px; }
+.arp-nav-tab:hover{ background: var(--adm-hover-bg, var(--adm-bg)); color: var(--adm-text); text-decoration: none; }
+.arp-nav-tab:focus-visible{ outline: 2px solid var(--adm-red-bright); outline-offset: 2px; }
+.arp-nav-tab.active,
+.arp-nav-tab.active:hover{
+  background: var(--arp-nav-active-bg);
+  border-color: transparent;
+  border-radius: 10px;
+  color: #FFFFFF;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+@media (max-width: 1399.98px){
+  .arp-nav-reports{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 767.98px){
+  .arp-nav-row{ grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .arp-nav-primary .arp-nav-tab{ flex: 1 1 0; }
+}
+@media (max-width: 575.98px){
+  .arp-nav-reports{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .arp-nav-tab{ font-size: 12.5px; padding: 8px 8px; }
+}
 
 /* -- Section intro (title + subtitle above a report tab's filter
       toolbar — e.g. "Patient Reports" / "Inventory Reports" and their
@@ -210,6 +270,20 @@
 }
 @media (max-width: 575.98px){
   .arp-kpi-row{ grid-template-columns: 1fr; }
+}
+
+/* -- Overview's Predictive Analytics preview (3 cards) — its own
+      3-up grid so the cards fill the row at equal width instead of
+      taking 3 of .arp-kpi-row's 5 columns; equal height, with icon and
+      text vertically centered in each. -- */
+.arp-predictive-title{ font-size: 16px; font-weight: 700; color: var(--adm-text); margin: 0 0 14px; }
+.arp-kpi-row.arp-predictive-row{ grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; margin-bottom: 26px; }
+.arp-predictive-row > .arp-kpi-card{ margin-bottom: 0; height: 100%; min-height: 128px; }
+@media (max-width: 991.98px){
+  .arp-kpi-row.arp-predictive-row{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 575.98px){
+  .arp-kpi-row.arp-predictive-row{ grid-template-columns: minmax(0, 1fr); }
 }
 
 /* -- AJAX card-refresh loading state (Consultations Over Time range

@@ -80,6 +80,45 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    /* ---------- Lab & X-ray Requests (two lines) ----------
+       Range-filterable too — dashboard-range-filters.js updates both
+       datasets from the endpoint's "series" array. */
+    const labXrayCanvas = document.getElementById('labXrayTrendChart');
+    if (labXrayCanvas && data.labXrayTrend) {
+        const line = function (label, values, color) {
+            return {
+                label: label,
+                data: values,
+                borderColor: color,
+                backgroundColor: color,
+                borderWidth: 2,
+                tension: 0.4,
+                pointRadius: 3,
+                pointBackgroundColor: color,
+            };
+        };
+        window.HC_DASHBOARD_CHARTS.labXrayTrend = new Chart(labXrayCanvas, {
+            type: 'line',
+            data: {
+                labels: data.labXrayTrend.labels,
+                datasets: [
+                    line('Laboratory', data.labXrayTrend.series[0], '#7C3AED'),
+                    line('X-ray', data.labXrayTrend.series[1], '#1A73E8'),
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
+                    x: { grid: { display: false }, ticks: { color: tickColor, autoSkip: true, maxTicksLimit: 7 } },
+                },
+            },
+        });
+    }
+
     /* ---------- Reusable doughnut renderer (gender) ---------- */
     function renderDoughnut(canvasId, dataset) {
         const canvas = document.getElementById(canvasId);

@@ -67,3 +67,33 @@
 .pn-empty p{ margin: 0; font-size: 12.5px; }
 
 .pn-note{ font-size: 11.5px; color: var(--adm-text-soft); margin: 0 0 12px; }
+
+/* -- Spacing/alignment inside the 6.3.1–6.3.4 sub-tabs --
+   Full-width .an-card blocks stacked directly in a tab pane (Projected
+   Stock Decline, Order/Prescription Frequency, ...) have no margin of
+   their own, so they sat flush against each other — give them the same
+   20px rhythm .an-forecast-row/.an-forecast-tiles already use. */
+.pn-section .tab-pane > .an-card{ margin-bottom: 20px; }
+.pn-section .tab-pane > :last-child{ margin-bottom: 0; }
+
+/* Risk & Alert Indicators reuses admin-dashboard.css's .adm-card, whose
+   own 22px bottom margin made it end shorter than its Recommendations
+   partner in the same row, and whose header only styles h2 — its h3
+   fell back to Bootstrap's oversized default. Match .an-card/
+   .an-card-header exactly so both cards in the row line up. */
+.pn-section .an-forecast-row > .adm-card{ margin-bottom: 0; padding: 20px; display: flex; flex-direction: column; }
+.pn-section .an-forecast-row > .an-card{ display: flex; flex-direction: column; }
+.pn-section .adm-card-header{ margin-bottom: 14px; gap: 10px; }
+.pn-section .adm-card-header h3{ font-size: 15px; font-weight: 700; color: var(--adm-text); margin: 0; line-height: 1.3; }
+.pn-section .an-card-header h3{ line-height: 1.3; }
+/* Empty states sit centered in whatever height the taller partner sets. */
+.pn-section .an-forecast-row > * > .pn-empty,
+.pn-section .an-forecast-row > * > .an-reco-empty{ flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+@media (max-width: 575.98px){
+  .pn-section .tab-pane > .an-card,
+  .pn-section .an-forecast-row > .adm-card,
+  .pn-section .an-forecast-row > .an-card{ padding: 16px; }
+  .pn-section .an-card-header,
+  .pn-section .adm-card-header{ flex-wrap: wrap; }
+}

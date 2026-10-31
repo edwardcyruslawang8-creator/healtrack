@@ -21,12 +21,31 @@ document.addEventListener('DOMContentLoaded', function () {
     const passwordInput = document.getElementById('subadminPassword');
     const confirmInput = document.getElementById('subadminConfirmPassword');
 
+    /* ---------- Password visibility toggles (eye icon) ---------- */
+    const toggleButtons = form.querySelectorAll('.adm-password-toggle');
+    function setPasswordVisible(btn, visible) {
+        const input = document.getElementById(btn.dataset.target);
+        const icon = btn.querySelector('i');
+        if (!input || !icon) return;
+        input.type = visible ? 'text' : 'password';
+        icon.classList.toggle('bi-eye', !visible);
+        icon.classList.toggle('bi-eye-slash', visible);
+        btn.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
+    }
+    toggleButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const input = document.getElementById(btn.dataset.target);
+            setPasswordVisible(btn, input && input.type === 'password');
+        });
+    });
+
     document.querySelectorAll('#btnAddSubadmin').forEach(function (btn) {
         btn.addEventListener('click', function () {
             form.reset();
             form.classList.remove('was-validated');
             confirmInput.setCustomValidity('');
             errorBox.classList.add('d-none');
+            toggleButtons.forEach(function (b) { setPasswordVisible(b, false); }); // reopen hidden
             modal.show();
         });
     });

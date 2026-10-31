@@ -284,15 +284,7 @@ $adminNavItems = [
     </div>
 
     <!-- ============ REPORT TABS ============ -->
-    <ul class="nav arp-tabs" role="tablist">
-        <?php foreach ($analyticsTabs as $tab): ?>
-        <li class="nav-item" role="presentation">
-            <a href="<?= htmlspecialchars($tab['href']) ?>" class="nav-link <?= !empty($tab['active']) ? 'active' : '' ?>" data-ajax-tab>
-                <?= htmlspecialchars($tab['label']) ?>
-            </a>
-        </li>
-        <?php endforeach; ?>
-    </ul>
+    <?php require __DIR__ . '/../includes/subadmin/_analytics_tabs.php'; ?>
 
     <!-- ============ SECTION INTRO ============ -->
     <div class="arp-section-intro">

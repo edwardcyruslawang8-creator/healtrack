@@ -38,6 +38,13 @@
   margin-bottom: 24px;
 }
 .mvi-summary-card{ display: flex; align-items: center; gap: 16px; }
+/* Three-card variant (pharmacist/archived_items.php) — the cards share
+   the full row at equal width instead of taking 3 of the 5 columns, and
+   stretch to one height. */
+.mvi-summary-row.mvi-summary-row--3{ grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
+@media (max-width: 767.98px){
+  .mvi-summary-row.mvi-summary-row--3{ grid-template-columns: minmax(0, 1fr); }
+}
 .mvi-summary-icon{
   width: 56px;
   height: 56px;
@@ -340,6 +347,57 @@
    use the app's standard maroon for the active tab and Search/Add buttons
    instead of this file's default blue. */
 .mvi-accent-maroon .mvi-tabs .nav-link.active{ color: var(--adm-red-bright); border-bottom-color: var(--adm-red-bright); }
+
+/* Search box + category/status dropdowns: maroon focus ring instead of
+   the default blue (this file's own #1A73E8 search focus, and
+   Bootstrap's .form-select:focus glow). */
+.mvi-accent-maroon .mvi-search input:focus,
+.mvi-accent-maroon .mvi-filter-select:focus{
+  outline: none;
+  border-color: var(--adm-red-bright);
+  box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.14);
+}
+/* Separate rule: a browser that doesn't know :open would otherwise drop
+   the focus rule above along with it. */
+.mvi-accent-maroon .mvi-filter-select:open{ border-color: var(--adm-red-bright); box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.14); }
+/* The selected option in the open list: maroon instead of the
+   browser's blue. Browsers that support customizable <select>
+   (appearance: base-select) get the whole open list styled to match;
+   others keep their native list, just with the maroon checked row
+   where the browser allows option colors at all. */
+.mvi-accent-maroon .mvi-filter-select option:checked{ background-color: var(--adm-red-bright); color: #fff; }
+@supports (appearance: base-select){
+  .mvi-accent-maroon .mvi-filter-select,
+  .mvi-accent-maroon .mvi-filter-select::picker(select){ appearance: base-select; }
+  .mvi-accent-maroon .mvi-filter-select::picker-icon{ display: none; } /* Bootstrap's own chevron stays */
+  .mvi-accent-maroon .mvi-filter-select::picker(select){
+    /* Always drop DOWN directly under the select, same width, like a
+       normal dropdown — the browser's default was flipping it upward
+       over the summary cards. Long lists scroll instead. */
+    position-area: block-end span-inline-end;
+    position-try-fallbacks: none;
+    min-width: anchor-size(width);
+    max-height: min(320px, 45vh);
+    overflow-y: auto;
+    margin-top: 4px;
+    padding: 6px;
+    background: var(--adm-card);
+    border: 1px solid var(--adm-border);
+    border-radius: 10px;
+    box-shadow: var(--adm-shadow-hover, 0 10px 24px rgba(0, 0, 0, 0.12));
+  }
+  .mvi-accent-maroon .mvi-filter-select option{
+    padding: 8px 12px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--adm-text);
+  }
+  .mvi-accent-maroon .mvi-filter-select option::checkmark{ display: none; }
+  .mvi-accent-maroon .mvi-filter-select option:hover,
+  .mvi-accent-maroon .mvi-filter-select option:focus-visible{ background: var(--adm-red-bg, #FCE4E4); color: var(--adm-red-bright); outline: none; }
+  .mvi-accent-maroon .mvi-filter-select option:checked{ background: var(--adm-red-bright); color: #fff; font-weight: 600; }
+}
 .mvi-accent-maroon .mvi-btn-add{ background: var(--adm-red-bright); }
 .mvi-accent-maroon .mvi-btn-add:hover,
 .mvi-accent-maroon .mvi-btn-add:focus-visible{ background: var(--adm-red-bright-hover); color: #fff; }

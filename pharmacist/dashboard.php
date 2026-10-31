@@ -390,10 +390,9 @@ $staffNavItems = [
             <a href="medicine_vaccine_inventory.php" class="adm-card-footer-link" style="margin-top:0;">View All Medicines <i class="bi bi-arrow-right"></i></a>
         </div>
         <div class="adm-table-wrap">
-            <table class="adm-table">
+            <table class="adm-table phm-low-stock-table">
                 <thead>
                     <tr>
-                        <th>Medicine ID</th>
                         <th>Medicine Name</th>
                         <th>Category</th>
                         <th>Current Stock</th>
@@ -404,12 +403,11 @@ $staffNavItems = [
                 <tbody>
                     <?php if (empty($lowStockMedicines)): ?>
                     <tr>
-                        <td colspan="6" class="adm-table-empty">No low stock medicines right now.</td>
+                        <td colspan="5" class="adm-table-empty">No low stock medicines right now.</td>
                     </tr>
                     <?php endif; ?>
                     <?php foreach ($lowStockMedicines as $m): ?>
                     <tr>
-                        <td><?= htmlspecialchars($m['id']) ?></td>
                         <td><?= htmlspecialchars($m['name']) ?></td>
                         <td><?= htmlspecialchars($m['category']) ?></td>
                         <td><?= (int) $m['currentStock'] ?></td>

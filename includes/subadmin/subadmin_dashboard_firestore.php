@@ -54,6 +54,8 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/consultations.php';
+require_once __DIR__ . '/../firestore/lab_results.php'; // hc_get_all_lab_result_docs()
+require_once __DIR__ . '/../firestore/xray_results.php'; // hc_get_all_xray_result_docs()
 require_once __DIR__ . '/../shared/query_helpers.php'; // hc_url_with_params(), hc_matches_date_range_key()
 
 $myUid = $_SESSION['uid'] ?? '';
@@ -262,4 +264,44 @@ $topHealthConditionsAxisMax = $niceAxisMax;
 $topHealthConditionsAxis = [];
 for ($i = 0; $i <= 4; $i++) {
     $topHealthConditionsAxis[] = (int) round($niceAxisMax * $i / 4);
+}
+
+// ---------------------------------------------------------------------
+// Laboratory & X-ray — real "lab_results"/"xray_results" docs, scoped
+// to this facility via each doc's own real "facility" field (see header
+// comment). Backs the Lab & X-ray Requests trend (by real orderedDate,
+// same range buckets as Consultations Trend) and the Lab & X-ray
+// Summary card; the full breakdown lives on subadmin/lab_xray_reports.php.
+// ---------------------------------------------------------------------
+$facilityLabDocs = array_values(array_filter(hc_get_all_lab_result_docs(), fn ($doc) => ($doc['fields']['facility'] ?? '') === $adminProfile['facility']));
+$facilityXrayDocs = array_values(array_filter(hc_get_all_xray_result_docs(), fn ($doc) => ($doc['fields']['facility'] ?? '') === $adminProfile['facility']));
+
+$labXrayTrendRangeState = hc_resolve_dashboard_range('labXrayRange', ['this_week' => 'This Week', 'this_month' => 'This Month', 'this_year' => 'This Year'], 'this_week');
+$labXrayTrendRange = $labXrayTrendRangeState['label'];
+$labTrendSeries = hc_dashboard_trend_series($facilityLabDocs, fn ($doc) => (string) ($doc['fields']['orderedDate'] ?? ''), $labXrayTrendRangeState['key'], $labXrayTrendRangeState['customFrom'], $labXrayTrendRangeState['customTo']);
+$xrayTrendSeries = hc_dashboard_trend_series($facilityXrayDocs, fn ($doc) => (string) ($doc['fields']['orderedDate'] ?? ''), $labXrayTrendRangeState['key'], $labXrayTrendRangeState['customFrom'], $labXrayTrendRangeState['customTo']);
+$labXrayTrend = [
+    'labels' => $labTrendSeries['labels'],
+    'values' => $labTrendSeries['values'],
+    'series' => [$labTrendSeries['values'], $xrayTrendSeries['values']],
+];
+
+$labXraySummary = [];
+foreach ([
+    ['label' => 'Laboratory', 'icon' => 'bi-eyedropper',                'color' => '#7C3AED', 'bg' => '#EFE7FB', 'docs' => $facilityLabDocs],
+    ['label' => 'X-ray',      'icon' => 'bi-file-earmark-medical-fill', 'color' => '#1A73E8', 'bg' => '#E8F0FE', 'docs' => $facilityXrayDocs],
+] as $group) {
+    $total = count($group['docs']);
+    $completed = count(array_filter($group['docs'], fn ($doc) => ($doc['fields']['status'] ?? '') === 'completed'));
+    $labXraySummary[] = [
+        'label' => $group['label'],
+        'icon' => $group['icon'],
+        'color' => $group['color'],
+        'bg' => $group['bg'],
+        'total' => $total,
+        'completed' => $completed,
+        'pending' => $total - $completed,
+        'completionPct' => $total > 0 ? round($completed / $total * 100) : 0,
+        'thisMonth' => count(array_filter($group['docs'], fn ($doc) => str_starts_with($doc['fields']['orderedDate'] ?? '', $thisMonthPrefix))),
+    ];
 }

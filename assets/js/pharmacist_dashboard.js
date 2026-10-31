@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
 
-        new Chart(canvas, {
+        const chart = new Chart(canvas, {
             type: 'doughnut',
             data: {
                 labels: dataset.labels,
@@ -112,6 +112,10 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             options: {
                 cutout: '68%',
+                // Fill the (square) canvas box exactly, with room for the
+                // hovered slice's 6px offset so it never gets clipped.
+                maintainAspectRatio: false,
+                layout: { padding: 8 },
                 animation: { duration: 700, easing: 'easeOutQuart' },
                 plugins: {
                     legend: { display: false }, // custom legend rendered in HTML instead
@@ -122,6 +126,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     },
                 },
             },
+        });
+
+        // Clear the hovered slice + tooltip whenever the pointer leaves the
+        // canvas, so a tooltip can never stay stuck on screen.
+        canvas.addEventListener('mouseleave', function () {
+            chart.setActiveElements([]);
+            chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+            chart.update('none');
         });
     }
 
