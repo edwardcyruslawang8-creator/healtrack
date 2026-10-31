@@ -87,7 +87,7 @@ if (!function_exists('arc_page_url')) {
 <link rel="stylesheet" href="<?= asset_url('/assets/css/medicine_vaccine_inventory.css') ?>">
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 </head>
-<body class="adm-body">
+<body class="adm-body mvi-accent-maroon">
 
 <!-- Mobile sidebar trigger -->
 <button class="adm-mobile-menu-btn" id="admSidebarToggle" aria-label="Open menu">
@@ -197,7 +197,7 @@ if (!function_exists('arc_page_url')) {
     </div>
 
     <!-- ============ ARCHIVED SUMMARY CARDS ============ -->
-    <div class="mvi-summary-row">
+    <div class="mvi-summary-row mvi-summary-row--3">
         <div class="adm-card mvi-summary-card">
             <div class="mvi-summary-icon" style="background:#EEF0F3; color:#6B7280;"><i class="bi bi-archive-fill"></i></div>
             <div class="mvi-summary-text">
@@ -240,17 +240,19 @@ if (!function_exists('arc_page_url')) {
     <div class="tab-pane fade show active" id="arc-tab-medicines" role="tabpanel">
 
         <!-- ============ FILTER & SEARCH TOOLBAR ============ -->
-        <form class="mvi-toolbar" method="get" action="archived_items.php">
+        <!-- Search left, category right; no separate Search button — Enter
+             submits the search (the form's only text field), and picking a
+             category submits straight away. -->
+        <form class="mvi-toolbar mvi-toolbar--search-first" method="get" action="archived_items.php">
+            <div class="mvi-search">
+                <i class="bi bi-search"></i>
+                <input type="text" name="q" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Search medicine name, category..." autocomplete="off" enterkeyhint="search">
+            </div>
             <select class="form-select mvi-filter-select" name="category" aria-label="Filter by category" onchange="this.form.submit()">
                 <?php foreach ($medicineCategoryOptions as $opt): ?>
                 <option <?= $opt === $categoryFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
                 <?php endforeach; ?>
             </select>
-            <div class="mvi-search">
-                <i class="bi bi-search"></i>
-                <input type="text" name="q" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Search medicine name, category..." autocomplete="off">
-            </div>
-            <button type="submit" class="mvi-btn-add" style="background:var(--adm-card); color:var(--adm-text-muted); border:1px solid var(--adm-border);"><i class="bi bi-search"></i></button>
         </form>
 
         <!-- ============ ARCHIVED MEDICINES TABLE ============ -->
@@ -330,20 +332,19 @@ if (!function_exists('arc_page_url')) {
     <div class="tab-pane fade" id="arc-tab-vaccines" role="tabpanel">
 
         <!-- ============ FILTER & SEARCH TOOLBAR ============ -->
-        <form class="mvi-toolbar" method="get" action="archived_items.php">
+        <form class="mvi-toolbar mvi-toolbar--search-first" method="get" action="archived_items.php">
             <input type="hidden" name="q" value="<?= htmlspecialchars($searchTerm) ?>">
             <input type="hidden" name="category" value="<?= htmlspecialchars($categoryFilter) ?>">
             <input type="hidden" name="page" value="<?= (int) $medicinesCurrentPage ?>">
+            <div class="mvi-search">
+                <i class="bi bi-search"></i>
+                <input type="text" name="vq" value="<?= htmlspecialchars($vaccineSearchTerm) ?>" placeholder="Search vaccine name, category..." autocomplete="off" enterkeyhint="search">
+            </div>
             <select class="form-select mvi-filter-select" name="vcategory" aria-label="Filter by category" onchange="this.form.submit()">
                 <?php foreach ($vaccineCategoryOptions as $opt): ?>
                 <option <?= $opt === $vaccineCategoryFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
                 <?php endforeach; ?>
             </select>
-            <div class="mvi-search">
-                <i class="bi bi-search"></i>
-                <input type="text" name="vq" value="<?= htmlspecialchars($vaccineSearchTerm) ?>" placeholder="Search vaccine name, category..." autocomplete="off">
-            </div>
-            <button type="submit" class="mvi-btn-add" style="background:var(--adm-card); color:var(--adm-text-muted); border:1px solid var(--adm-border);"><i class="bi bi-search"></i></button>
         </form>
 
         <!-- ============ ARCHIVED VACCINES TABLE ============ -->

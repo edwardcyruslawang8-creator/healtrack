@@ -297,7 +297,11 @@ if (!function_exists('mvi_page_url')) {
     <div class="tab-pane fade show active" id="mvi-tab-medicines" role="tabpanel">
 
         <!-- ============ FILTER & SEARCH TOOLBAR ============ -->
-        <form class="mvi-toolbar" method="get" action="medicine_vaccine_inventory.php">
+        <form class="mvi-toolbar mvi-toolbar--search-first" method="get" action="medicine_vaccine_inventory.php">
+            <div class="mvi-search">
+                <i class="bi bi-search"></i>
+                <input type="text" name="q" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Search medicine name, category..." autocomplete="off" data-quick-search="<?= BASE_URL ?>/api/quick-search-medicines.php?type=medicine">
+            </div>
             <select class="form-select mvi-filter-select" name="category" aria-label="Filter by category" onchange="this.form.submit()">
                 <?php foreach ($medicineCategoryOptions as $opt): ?>
                 <option <?= $opt === $categoryFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
@@ -308,11 +312,6 @@ if (!function_exists('mvi_page_url')) {
                 <option <?= $opt === $statusFilterLabel ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
                 <?php endforeach; ?>
             </select>
-            <div class="mvi-search">
-                <i class="bi bi-search"></i>
-                <input type="text" name="q" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Search medicine name, category..." autocomplete="off" data-quick-search="<?= BASE_URL ?>/api/quick-search-medicines.php?type=medicine">
-            </div>
-            <button type="submit" class="mvi-btn-add" style="background:var(--adm-card); color:var(--adm-text-muted); border:1px solid var(--adm-border);"><i class="bi bi-search"></i></button>
             <button type="button" class="mvi-btn-add" id="btnAddMedicine"><i class="bi bi-plus-lg"></i> Add Medicine</button>
         </form>
 
@@ -420,7 +419,11 @@ if (!function_exists('mvi_page_url')) {
     <div class="tab-pane fade" id="mvi-tab-vaccines" role="tabpanel">
 
         <!-- ============ FILTER & SEARCH TOOLBAR ============ -->
-        <form class="mvi-toolbar" method="get" action="medicine_vaccine_inventory.php#vaccines">
+        <form class="mvi-toolbar mvi-toolbar--search-first" method="get" action="medicine_vaccine_inventory.php#vaccines">
+            <div class="mvi-search">
+                <i class="bi bi-search"></i>
+                <input type="text" name="vq" value="<?= htmlspecialchars($vaccineSearchTerm) ?>" placeholder="Search vaccine name, category..." autocomplete="off" data-quick-search="<?= BASE_URL ?>/api/quick-search-medicines.php?type=vaccine">
+            </div>
             <select class="form-select mvi-filter-select" name="vcategory" aria-label="Filter by category" onchange="this.form.submit()">
                 <?php foreach ($vaccineCategoryOptions as $opt): ?>
                 <option <?= $opt === $vaccineCategoryFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
@@ -431,11 +434,6 @@ if (!function_exists('mvi_page_url')) {
                 <option <?= $opt === $vaccineStatusFilterLabel ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
                 <?php endforeach; ?>
             </select>
-            <div class="mvi-search">
-                <i class="bi bi-search"></i>
-                <input type="text" name="vq" value="<?= htmlspecialchars($vaccineSearchTerm) ?>" placeholder="Search vaccine name, category..." autocomplete="off" data-quick-search="<?= BASE_URL ?>/api/quick-search-medicines.php?type=vaccine">
-            </div>
-            <button type="submit" class="mvi-btn-add" style="background:var(--adm-card); color:var(--adm-text-muted); border:1px solid var(--adm-border);"><i class="bi bi-search"></i></button>
             <button type="button" class="mvi-btn-add" id="btnAddVaccine"><i class="bi bi-plus-lg"></i> Add Vaccine</button>
         </form>
 
