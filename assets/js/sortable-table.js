@@ -44,6 +44,10 @@ function initSortableTables() {
             const iconSpan = document.createElement('i');
             iconSpan.className = 'bi bi-arrow-down-up sort-icon';
             th.appendChild(iconSpan);
+            // A plain icon alone wasn't obvious enough at a glance — a
+            // native hover tooltip spells out exactly what clicking does
+            // and what state the column is currently in.
+            th.setAttribute('title', 'Click to sort');
 
             th.addEventListener('click', function () {
                 sortByColumn(table, tbody, colIndex, th, headerRow);
@@ -68,9 +72,15 @@ function initSortableTables() {
         Array.from(headerRow.children).forEach(function (h) {
             h.removeAttribute('data-sort-dir');
             h.classList.remove('sorted-asc', 'sorted-desc');
+            if (!h.hasAttribute('data-no-sort') && h !== th) {
+                h.setAttribute('title', 'Click to sort');
+            }
         });
         th.setAttribute('data-sort-dir', nextDir);
         th.classList.add(nextDir === 'asc' ? 'sorted-asc' : 'sorted-desc');
+        th.setAttribute('title', nextDir === 'asc'
+            ? 'Sorted ascending (lowest to highest) — click to reverse'
+            : 'Sorted descending (highest to lowest) — click to reverse');
 
         const allNumeric = rows.every(function (r) {
             const v = cellSortText(r, colIndex).replace(/[^0-9.\-]/g, '');

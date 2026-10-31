@@ -222,15 +222,16 @@
 /* -- Sortable table columns (assets/js/sortable-table.js) -- */
 .adm-table thead th.sortable-th{ cursor: pointer; user-select: none; }
 .adm-table thead th.sortable-th:hover{ color: var(--adm-text); }
+.adm-table thead th.sortable-th:hover .sort-icon{ color: var(--adm-text-muted); }
 .adm-table thead th .sort-icon{
   margin-left: 5px;
-  font-size: 11px;
-  color: var(--adm-text-soft);
+  font-size: 12px;
+  color: var(--adm-text-muted); /* was --adm-text-soft — too faint to read as "this is clickable" at a glance */
 }
 .adm-table thead th.sorted-asc .sort-icon:before{ content: "\F148"; } /* bi-arrow-up */
 .adm-table thead th.sorted-desc .sort-icon:before{ content: "\F12F"; } /* bi-arrow-down */
 .adm-table thead th.sorted-asc .sort-icon,
-.adm-table thead th.sorted-desc .sort-icon{ color: var(--adm-red-bright); }
+.adm-table thead th.sorted-desc .sort-icon{ color: var(--adm-red-bright); font-size: 13px; }
 
 /* -- Disabled pagination button (includes/shared/pagination_helpers.php) -- */
 .adm-pagination .page-btn.disabled{ opacity: .4; pointer-events: none; }
