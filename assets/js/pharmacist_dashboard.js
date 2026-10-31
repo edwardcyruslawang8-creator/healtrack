@@ -99,6 +99,45 @@ document.addEventListener('DOMContentLoaded', function () {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
 
+        const total = dataset.values.reduce(function (sum, v) { return sum + (Number(v) || 0); }, 0);
+
+        // HTML tooltip anchored just outside the hovered slice's outer edge,
+        // so it never covers the center total (and isn't clipped by the canvas).
+        const tip = document.createElement('div');
+        tip.className = 'phm-donut-tooltip';
+        tip.setAttribute('role', 'tooltip');
+        canvas.parentNode.appendChild(tip);
+
+        function hideTip() { tip.classList.remove('is-visible'); }
+
+        function externalTooltip(context) {
+            const tooltip = context.tooltip;
+            const point = tooltip.dataPoints && tooltip.dataPoints[0];
+            if (tooltip.opacity === 0 || !point) { hideTip(); return; }
+
+            const arc = point.element;
+            const value = Number(point.parsed) || 0;
+            const pct = total > 0 ? Math.round(value / total * 1000) / 10 : 0;
+
+            tip.innerHTML = '';
+            const swatch = document.createElement('span');
+            swatch.className = 'phm-donut-tooltip-dot';
+            swatch.style.background = dataset.colors[point.dataIndex];
+            const label = document.createElement('span');
+            label.textContent = point.label + ': ' + value.toLocaleString() + ' (' + pct + '%)';
+            tip.append(swatch, label);
+
+            // Anchor on the slice's mid-angle, a little beyond its outer
+            // radius; the translate keeps the box on the outside of the ring.
+            const mid = (arc.startAngle + arc.endAngle) / 2;
+            const r = arc.outerRadius + 8;
+            const cos = Math.cos(mid), sin = Math.sin(mid);
+            tip.style.left = (arc.x + cos * r) + 'px';
+            tip.style.top = (arc.y + sin * r) + 'px';
+            tip.style.transform = 'translate(' + ((cos - 1) * 50) + '%, ' + ((sin - 1) * 50) + '%)';
+            tip.classList.add('is-visible');
+        }
+
         const chart = new Chart(canvas, {
             type: 'doughnut',
             data: {
@@ -107,11 +146,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     data: dataset.values,
                     backgroundColor: dataset.colors,
                     borderWidth: 0,
+                    spacing: 2,
                     hoverOffset: 6,
                 }],
             },
             options: {
-                cutout: '68%',
+                cutout: '70%',
                 // Fill the (square) canvas box exactly, with room for the
                 // hovered slice's 6px offset so it never gets clipped.
                 maintainAspectRatio: false,
@@ -119,11 +159,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 animation: { duration: 700, easing: 'easeOutQuart' },
                 plugins: {
                     legend: { display: false }, // custom legend rendered in HTML instead
-                    tooltip: {
-                        callbacks: {
-                            label: function (ctx) { return ctx.label + ': ' + ctx.parsed; },
-                        },
-                    },
+                    tooltip: { enabled: false, external: externalTooltip },
                 },
             },
         });
@@ -134,6 +170,7 @@ document.addEventListener('DOMContentLoaded', function () {
             chart.setActiveElements([]);
             chart.tooltip.setActiveElements([], { x: 0, y: 0 });
             chart.update('none');
+            hideTip();
         });
     }
 
