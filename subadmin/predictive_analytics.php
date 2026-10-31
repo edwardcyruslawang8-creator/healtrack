@@ -673,15 +673,6 @@ $adminNavItems = [
                     </div>
                 </div>
 
-                <div class="an-card">
-                    <div class="an-card-header"><h3>Projected Stock Decline — All At-Risk Items</h3></div>
-                    <p class="pn-note">Every medicine/vaccine currently projected to stock out within 30 days, side by side — not just the single most urgent one above.</p>
-                    <?php if ($pt2ShortageTrend['datasets'] === []): ?>
-                    <div class="pn-empty"><i class="bi bi-check-circle-fill"></i><p>No medicine or vaccine is currently projected to run low.</p></div>
-                    <?php else: ?>
-                    <div class="an-trend-canvas-box"><canvas id="faPredT2ShortageTrendChart"></canvas></div>
-                    <?php endif; ?>
-                </div>
                 <div class="an-forecast-row">
                     <div class="adm-card">
                         <div class="adm-card-header"><h3>Risk &amp; Alert Indicators</h3></div>
@@ -901,7 +892,6 @@ $adminNavItems = [
     var forecastTrendData = <?= json_encode($forecastTrend) ?>;
     window.PREDICTIVE_TAB_DATA = <?= json_encode([
         't1ForecastTrend' => $pt1ForecastTrend,
-        't2ShortageTrend' => $pt2ShortageTrend,
         't3RequestVolume' => $pt3RequestVolume,
         't4ForecastTrend' => $pt4ForecastTrend,
         't4Barangays' => [

@@ -33,12 +33,10 @@
  * draws between "my requests" (personal) and "inventory levels"
  * (system-wide).
  *
- * Exposes $predictiveOverviewCards / $predictiveOverviewTrend (one
- * declining projected-stock line per at-risk medicine/vaccine, all at
- * once — see includes/admin/predictive_overview_card.php's own header
- * comment for how it tells this shape apart from the other roles'
- * disease-forecast actual/forecast shape) / $predictiveOverviewTopAlerts,
- * same shape rendered by that shared partial.
+ * Exposes $predictiveOverviewCards / $predictiveOverviewTopAlerts, same
+ * shape rendered by includes/admin/predictive_overview_card.php. No
+ * $predictiveOverviewTrend — the old multi-line "all at-risk items"
+ * chart was removed (see below, where it used to be built).
  * =====================================================================
  */
 
@@ -102,20 +100,17 @@ $predictiveOverviewCards = [
 ];
 
 // ---------------------------------------------------------------------
-// Trend chart — the real stock-depletion PROJECTION line for EVERY
-// at-risk medicine AND vaccine at once (hc_medicine_vaccine_shortage()'s
-// own 'shortageTrend', up to 5 items, same multi-line shape/pattern
-// assets/js/predictive-analytics.js's renderMultiLineChart() already
-// draws for the full Predictive Analytics page's own identical chart —
-// includes/admin/predictive_overview_card.php auto-detects this shape
-// via the presence of a 'datasets' key). Not an actual-vs-forecast
-// split either (there's no "disease" forecast in this role's card).
-// Previously this showed only hc_medicine_vaccine_shortage()'s
-// 'stockProjection' — a single line for whichever ONE item happened to
-// be most urgent (e.g. always "Paracetamol"), not the full at-risk
-// picture across the whole real inventory.
+// No trend chart here anymore — the old 'shortageTrend' multi-line "all
+// at-risk items at once" chart mostly drew flat, uninformative lines
+// once an item could be flagged at-risk purely for being below its own
+// reorder level (no real order-rate history required), and was removed
+// from the full Predictive Analytics page for the same reason (see
+// assets/js/predictive-analytics.js's own comment). Leaving
+// $predictiveOverviewTrend unset skips that section of
+// includes/admin/predictive_overview_card.php entirely (its own header
+// comment documents this as the supported way to omit the chart) —
+// this card now shows only the real prediction tiles + risk alerts.
 // ---------------------------------------------------------------------
-$predictiveOverviewTrend = $poShortage['shortageTrend'];
 
 // ---------------------------------------------------------------------
 // Top risk alerts — pooled across both categories, most severe first.

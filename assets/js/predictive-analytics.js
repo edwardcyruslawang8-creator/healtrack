@@ -5,7 +5,7 @@
    Predictive Analytics charts (Tab 1's forecast + disease-trend, Tab
    2's stock-projection + order-frequency, Tab 3's request-volume, Tab
    4's forecast) from one data object shaped like
-   {t1ForecastTrend, t2ShortageTrend,
+   {t1ForecastTrend,
    t3RequestVolume, t4ForecastTrend, t4Barangays} (Tab 1's own
    "Potential Notifiable Disease Cases" card and Tab 2's own
    "Projected Stock Decline" card are each handled separately — see
@@ -90,44 +90,13 @@ window.HCPredictiveCharts = (function () {
             });
         }
 
-        /** Shared multi-line trend chart (Tab 1 disease categories, Tab 2 order frequency). */
-        function renderMultiLineChart(canvasId, series) {
-            const canvas = document.getElementById(canvasId);
-            if (!canvas || !series || !series.datasets.length) return null;
-
-            return new Chart(canvas, {
-                type: 'line',
-                data: {
-                    labels: series.labels,
-                    datasets: series.datasets.map(function (ds) {
-                        return {
-                            label: ds.label, data: ds.data,
-                            borderColor: ds.color, backgroundColor: ds.color,
-                            borderWidth: 2, tension: 0.3, pointRadius: 2,
-                        };
-                    }),
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, position: 'bottom', labels: { color: tickColor, boxWidth: 10, font: { size: 11 } } },
-                    },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
-                        x: { grid: { display: false }, ticks: { color: tickColor } },
-                    },
-                },
-            });
-        }
-
         /* ---------- Tab 1: consultation forecast ---------- */
         track(renderForecastChart(idPrefix + 'T1ForecastChart', data.t1ForecastTrend));
         /* ---------- Tab 1: "Potential Notifiable Disease Cases" owns its own chart/filters/summary entirely — see assets/js/notifiable-diseases.js ---------- */
 
         /* ---------- Tab 2: "Projected Stock Decline" owns its own chart/dropdown/summary entirely — see assets/js/stock-projection.js ---------- */
         /* ---------- Tab 2: order/prescription frequency is now its own custom top-5 list + "View All" modal, not a Chart.js canvas — see assets/js/order-frequency.js ---------- */
-        /* ---------- Tab 2: projected stock decline, EVERY at-risk item (vs. the single most-urgent-item chart above) ---------- */
-        track(renderMultiLineChart(idPrefix + 'T2ShortageTrendChart', data.t2ShortageTrend));
+        /* ---------- Tab 2: the old "All At-Risk Items" multi-line chart (every item flat/declining together) was removed — it mostly drew flat, uninformative lines once items could be flagged at-risk with no real order history. The single-item "Projected Stock Decline" card above is honest about that case per-item instead. ---------- */
 
         /* ---------- Tab 3: weekly stock-request volume by status ---------- */
         const requestCanvas = document.getElementById(idPrefix + 'T3RequestVolumeChart');
