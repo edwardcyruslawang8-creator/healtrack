@@ -41,9 +41,23 @@ function initSortableTables() {
             if (th.hasAttribute('data-no-sort')) return;
 
             th.classList.add('sortable-th');
-            const iconSpan = document.createElement('i');
-            iconSpan.className = 'bi bi-arrow-down-up sort-icon';
+            // Two separate, always-visible arrows (▲ ascending stacked
+            // above ▼ descending) instead of one combined glyph that only
+            // swapped to a single up/down arrow after the first click —
+            // up = ascending and down = descending should read at a
+            // glance, not only once a column is already active.
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'sort-icon';
+            const upIcon = document.createElement('i');
+            upIcon.className = 'bi bi-caret-up-fill sort-icon-up';
+            const downIcon = document.createElement('i');
+            downIcon.className = 'bi bi-caret-down-fill sort-icon-down';
+            iconSpan.appendChild(upIcon);
+            iconSpan.appendChild(downIcon);
             th.appendChild(iconSpan);
+            // A hover tooltip spells out exactly what clicking does and
+            // what state the column is currently in, on top of the icon.
+            th.setAttribute('title', 'Click to sort');
 
             th.addEventListener('click', function () {
                 sortByColumn(table, tbody, colIndex, th, headerRow);
@@ -68,9 +82,15 @@ function initSortableTables() {
         Array.from(headerRow.children).forEach(function (h) {
             h.removeAttribute('data-sort-dir');
             h.classList.remove('sorted-asc', 'sorted-desc');
+            if (!h.hasAttribute('data-no-sort') && h !== th) {
+                h.setAttribute('title', 'Click to sort');
+            }
         });
         th.setAttribute('data-sort-dir', nextDir);
         th.classList.add(nextDir === 'asc' ? 'sorted-asc' : 'sorted-desc');
+        th.setAttribute('title', nextDir === 'asc'
+            ? 'Sorted ascending (lowest to highest) — click to reverse'
+            : 'Sorted descending (highest to lowest) — click to reverse');
 
         const allNumeric = rows.every(function (r) {
             const v = cellSortText(r, colIndex).replace(/[^0-9.\-]/g, '');

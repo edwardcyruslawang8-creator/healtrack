@@ -15,6 +15,13 @@
    report page's own JS file follows. Previously-created Chart
    instances are destroyed first, since the swap leaves their old
    <canvas> elements orphaned.
+
+   Stock Movement Summary / Inventory Expiry Monitor's own logic lives
+   in assets/js/inventory_movement_cards.js instead (shared verbatim
+   with pharmacist/analytics_reports.php, which has no Chart.js
+   doughnuts of its own to gate this file's re-init guard on) —
+   initReportPageCharts() just calls into it once this page's own data
+   is ready.
    ============================================================= */
 var __inventoryReportsCharts = []; // var, not let: ajax-tab-nav.js re-injects this file on each tab visit
 
@@ -65,6 +72,13 @@ function initReportPageCharts() {
 
     renderDoughnut('inventoryStatusOverviewChart', data.inventoryStatusOverview);
     renderDoughnut('inventoryByCategoryChart', data.inventoryByCategory);
+
+    // Stock Movement Summary + Inventory Expiry Monitor cards — shared
+    // with pharmacist/analytics_reports.php, see
+    // assets/js/inventory_movement_cards.js (loaded alongside this file).
+    if (typeof window.initInventoryMovementCards === 'function') {
+        window.initInventoryMovementCards(data);
+    }
 }
 
 window.initReportPageCharts = initReportPageCharts;

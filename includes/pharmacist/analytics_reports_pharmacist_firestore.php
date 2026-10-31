@@ -141,3 +141,84 @@ foreach (array_slice($itemCounts, 0, 5, true) as $label => $value) {
     $topMedicinesDispensed[] = ['label' => $label, 'value' => $value];
 }
 $topMedicinesDispensedMax = $topMedicinesDispensed !== [] ? max(array_column($topMedicinesDispensed, 'value')) : 1;
+
+// ---------------------------------------------------------------------
+// Stock Movement Summary + Inventory Expiry Monitor — real, same as
+// subadmin/inventory_reports.php's own cards (facility-wide inventory
+// data, not owned by one pharmacist — same reasoning as Inventory
+// Status Summary above). See
+// includes/shared/inventory_movement_monitor.php's own header comment.
+// ---------------------------------------------------------------------
+require_once __DIR__ . '/../shared/inventory_movement_monitor.php';
+
+$irMovementDefaultDays = 30;
+$irMovementStart = date('Y-m-d', strtotime("-{$irMovementDefaultDays} days"));
+$irMovementEnd = date('Y-m-d');
+$irStockMovement = hc_compute_stock_movement_summary($irMovementStart, $irMovementEnd);
+$stockMovementSummary = $irStockMovement['byCategory'];
+$stockMovementTotal = $irStockMovement['total'];
+
+$irExpiryMonitor = hc_compute_inventory_expiry_monitor();
+$irExpiryAllItems = $irExpiryMonitor['items'];
+$irExpiryExpiredCount = $irExpiryMonitor['expiredCount'];
+$irExpiryExpiringSoonCount = $irExpiryMonitor['expiringSoonCount'];
+$irExpiryTop5 = array_slice(array_values(array_filter(
+    $irExpiryAllItems,
+    fn ($r) => in_array($r['status'], ['expired', 'today', 'expiring_soon'], true)
+)), 0, 5);
+
+// ---------------------------------------------------------------------
+// Projected Stock Decline — the same full, interactive per-item card as
+// admin/facility_analytics.php's and subadmin/predictive_analytics.php's
+// own Predictive & Prescriptive tab (searchable dropdown over every
+// real item, 7/14/30-day period, real summary indicators, chart,
+// recommendation) — see includes/admin/facility_analytics_firestore.php's
+// own copy of this exact block for the full reasoning (duplicated here
+// rather than shared, since that file assumes a $facility_id query
+// param + a different Firestore read path this role's page doesn't
+// have). System-wide, same as everything else inventory-related on
+// this page.
+// ---------------------------------------------------------------------
+require_once __DIR__ . '/../shared/predictive_analytics_core.php'; // hc_stock_projection_detail()
+
+$pt2AllInventoryItemsForProjection = array_merge(
+    array_map(fn ($m) => $m + ['itemType' => 'medicine'], hc_get_inventory_items('medicine')),
+    array_map(fn ($v) => $v + ['itemType' => 'vaccine'], hc_get_inventory_items('vaccine'))
+);
+$pt2AllPharmacyOrderDocsForProjection = hc_get_all_pharmacy_order_docs();
+
+$pt2ItemList = $pt2AllInventoryItemsForProjection;
+usort($pt2ItemList, fn ($a, $b) => strcasecmp($a['name'], $b['name']) ?: $a['currentStock'] <=> $b['currentStock']);
+$pt2ItemNameCounts = array_count_values(array_column($pt2ItemList, 'name'));
+$pt2ItemList = array_map(function ($i) use ($pt2ItemNameCounts) {
+    return [
+        'id' => $i['id'],
+        'name' => $i['name'],
+        'itemType' => $i['itemType'],
+        'label' => $pt2ItemNameCounts[$i['name']] > 1 ? ($i['name'] . ' — ' . number_format($i['currentStock']) . ' in stock') : $i['name'],
+    ];
+}, $pt2ItemList);
+
+$pt2DefaultItemId = null;
+foreach (['out_of_stock', 'critical', 'low'] as $priorityStatus) {
+    foreach ($pt2AllInventoryItemsForProjection as $i) {
+        $sharedName = $pt2ItemNameCounts[$i['name']] > 1;
+        $probe = hc_stock_projection_detail($i, $pt2AllPharmacyOrderDocsForProjection, 30, $sharedName);
+        if ($probe['stockStatus'] === $priorityStatus) {
+            $pt2DefaultItemId = $i['id'];
+            break 2;
+        }
+    }
+}
+if ($pt2DefaultItemId === null && $pt2ItemList !== []) {
+    $pt2DefaultItemId = $pt2ItemList[0]['id'];
+}
+$pt2DefaultDetail = null;
+if ($pt2DefaultItemId !== null) {
+    foreach ($pt2AllInventoryItemsForProjection as $i) {
+        if ($i['id'] === $pt2DefaultItemId) {
+            $pt2DefaultDetail = hc_stock_projection_detail($i, $pt2AllPharmacyOrderDocsForProjection, 30, $pt2ItemNameCounts[$i['name']] > 1);
+            break;
+        }
+    }
+}

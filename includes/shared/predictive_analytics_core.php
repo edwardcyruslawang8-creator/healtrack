@@ -995,11 +995,13 @@ if (!function_exists('hc_medicine_vaccine_shortage')) {
         // own hc_stock_projection_detail(), which uses real dispensed
         // QUANTITY data instead (see that function's own comment on
         // why event counts and units consumed are not the same thing).
-        // $stillStocked itself is still used below, by the "All At-Risk
-        // Items" shortage-trend chart (a different, still-ratePerDay-
-        // based card this redesign doesn't touch).
-        $stillStocked = array_values(array_filter($items, fn ($i) => !$i['alreadyOut'] && $i['ratePerDay'] > 0));
-        usort($stillStocked, fn ($a, $b) => $a['daysUntilStockout'] <=> $b['daysUntilStockout']);
+        // The old "All At-Risk Items" multi-line chart that used to live
+        // here too (built from $stillStocked, a since-removed variable)
+        // was removed outright — once an item could be flagged at-risk
+        // purely for being below its own reorder level (no real order
+        // rate required), that chart mostly drew flat, uninformative
+        // lines rather than real declines; the single-item "Projected
+        // Stock Decline" card is honest about that case per-item instead.
 
         // Order/prescription frequency — EVERY real medicine/vaccine
         // currently in the system's own inventory (not just whichever
@@ -1014,35 +1016,6 @@ if (!function_exists('hc_medicine_vaccine_shortage')) {
         // not a chart — api/get-order-frequency.php calls this same
         // helper again for that card's own date-range filter.
         $orderFrequencyBreakdown = hc_order_frequency_breakdown($allInventoryItems, $pharmacyOrderDocs, $medicationDocs, 30);
-
-        // Shortage trend — projected stock decline for every at-risk item
-        // at once (up to 5, same urgency ordering $stockProjection above
-        // already sorted $stillStocked by), not just the single most
-        // urgent one — same reasoning as 6.3.1's own multi-category trend
-        // chart: a side-by-side comparison across items is a different,
-        // complementary view from drilling into one item's own decline +
-        // reorder-level line above. A fixed 30-day horizon (vs. that
-        // single-item chart's own item-specific horizon) so every line
-        // shares one consistent, comparable x-axis. Already-out items are
-        // excluded here for the same reason $mostUrgent skips them above
-        // — a flat zero line adds no trend information (see
-        // "Already Out of Stock" tile/Risk & Alert list for those).
-        $shortageTrendLabels = [];
-        for ($i = 0; $i <= 30; $i++) {
-            $shortageTrendLabels[] = date('M j', strtotime("+$i days"));
-        }
-        $shortageTrend = ['labels' => $shortageTrendLabels, 'datasets' => []];
-        $colors = ['#D93025', '#E8710A', '#7C3AED', '#1A73E8', '#0E9CA8'];
-        $colorIdx = 0;
-        $stillStockedAtRisk = array_values(array_filter($stillStocked, fn ($i) => $i['severity'] !== null));
-        foreach (array_slice($stillStockedAtRisk, 0, 5) as $item) {
-            $data = [];
-            for ($i = 0; $i <= 30; $i++) {
-                $data[] = max(0, round($item['currentStock'] - ($item['ratePerDay'] * $i), 1));
-            }
-            $shortageTrend['datasets'][] = ['label' => $item['name'], 'data' => $data, 'color' => $colors[$colorIdx % count($colors)]];
-            $colorIdx++;
-        }
 
         $predictionCards = [
             ['label' => 'Medicines Projected to Stock Out (≤30 Days)', 'icon' => 'bi-capsule', 'iconBg' => '#FDECDD', 'iconColor' => '#E8710A',
@@ -1105,7 +1078,7 @@ if (!function_exists('hc_medicine_vaccine_shortage')) {
             return $meta + ['label' => $i['name'], 'desc' => $desc, 'value' => $value];
         }, $atRisk);
 
-        return compact('items', 'atRisk', 'medicinesAtRisk', 'vaccinesAtRisk', 'alreadyOutCount', 'orderFrequencyBreakdown', 'shortageTrend', 'predictionCards', 'recommendations', 'riskRows');
+        return compact('items', 'atRisk', 'medicinesAtRisk', 'vaccinesAtRisk', 'alreadyOutCount', 'orderFrequencyBreakdown', 'predictionCards', 'recommendations', 'riskRows');
     }
 }
 

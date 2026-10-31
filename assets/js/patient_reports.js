@@ -69,6 +69,12 @@ function initReportPageCharts() {
     // (.sad-condition-list.arp-ranked-list — the same widget Overview
     // uses for Top 5 Medicines Dispensed / Top 5 Diagnoses), not a
     // Chart.js canvas, so there's no chart to initialize here for it.
+
+    // "New Patient Registrations" card — see
+    // assets/js/new-patient-registrations.js.
+    if (typeof window.initNewPatientRegistrations === 'function') {
+        window.initNewPatientRegistrations();
+    }
 }
 
 window.initReportPageCharts = initReportPageCharts;

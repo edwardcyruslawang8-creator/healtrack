@@ -42,7 +42,9 @@ if (($_SESSION['role'] ?? null) !== 'pharmacist') {
 require_once __DIR__ . '/../includes/pharmacist/analytics_reports_pharmacist_firestore.php';
 // $staffProfile, $dashboardDateLabel, $analyticsDateRangeLabel, $kpiCards,
 // $trendLabels, $trendCounts, $requestsByStatus, $requestsByStatusTotal,
-// $inventoryStatusSummary, $inventoryStatusTotal, $topMedicinesDispensed, $topMedicinesDispensedMax
+// $inventoryStatusSummary, $inventoryStatusTotal, $topMedicinesDispensed, $topMedicinesDispensedMax,
+// $stockMovementSummary, $stockMovementTotal, $irExpiryAllItems, $irExpiryTop5,
+// $irExpiryExpiredCount, $irExpiryExpiringSoonCount, $pt2ItemList, $pt2DefaultDetail
 // hc_pharmacist_unread_notification_count() (sidebar/topbar badge) already
 // comes from config/constants.php, required above.
 
@@ -93,6 +95,8 @@ $staffNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/subadmin_dashboard.css') ?>">
 <!-- Analytics & Reports page styles (KPI cards, ranked list, footer notice) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/analytics_reports.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/inventory_reports.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/facility_analytics.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -215,14 +219,109 @@ $staffNavItems = [
         <?php endforeach; ?>
     </div>
 
-    <!-- ============ PREDICTIVE & PRESCRIPTIVE ANALYTICS (PREVIEW) ============
+    <!-- ============ PREDICTIVE & PRESCRIPTIVE ANALYTICS ============
          Medicine & Vaccine Shortage + Inventory Replenishment only — see
          includes/pharmacist/predictive_overview_firestore.php's header
-         comment. -->
-    <?php
-    $predictiveOverviewLinkHref = null; // no dedicated full predictive page for this role yet
-    require __DIR__ . '/../includes/admin/predictive_overview_card.php';
-    ?>
+         comment. NOT includes/admin/predictive_overview_card.php here —
+         that shared partial's own mini multi-line "all at-risk items"
+         chart is replaced with the full interactive per-item tool
+         (searchable dropdown, 7/14/30-day period, real summary
+         indicators, chart, recommendation) in the SAME position, inside
+         the SAME card, rather than sitting as a second, separate card
+         below it. The KPI tiles + risk-alerts list markup below is
+         intentionally a copy of that shared partial's own (not worth a
+         shared-partial parameter just for one page's different middle
+         section). -->
+    <div class="adm-card adm-predictive-overview-card">
+        <div class="adm-card-header">
+            <h2><i class="bi bi-graph-up-arrow me-2"></i>Predictive &amp; Prescriptive Analytics</h2>
+        </div>
+
+        <div class="adm-mini-stats-row">
+            <?php foreach ($predictiveOverviewCards as $c): ?>
+            <div class="adm-mini-stat">
+                <div class="adm-mini-stat-icon" style="background:<?= htmlspecialchars($c['iconBg']) ?>; color:<?= htmlspecialchars($c['iconColor']) ?>;">
+                    <i class="bi <?= htmlspecialchars($c['icon']) ?>"></i>
+                </div>
+                <div>
+                    <div class="adm-mini-stat-label"><?= htmlspecialchars($c['label']) ?></div>
+                    <div class="adm-mini-stat-value"><?= htmlspecialchars($c['value']) ?></div>
+                    <div class="adm-mini-stat-sub"><?= htmlspecialchars($c['sub']) ?></div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+
+        <!-- ===== Projected Stock Decline — full interactive per-item tool ===== -->
+        <div class="psd-header" style="margin-top:18px;">
+            <div class="psd-header-title">
+                <h3>Projected Stock Decline</h3>
+                <p class="pn-note">System-wide stock pace — inventory has no per-facility field in this app's schema.</p>
+            </div>
+            <?php if ($pt2ItemList !== []): ?>
+            <div class="psd-header-controls">
+                <div class="psd-dropdown" id="phmPSDDropdown">
+                    <button type="button" class="psd-dropdown-btn" id="phmPSDDropdownBtn" aria-haspopup="listbox" aria-expanded="false">
+                        <span id="phmPSDDropdownLabel">—</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                    <div class="psd-dropdown-panel" id="phmPSDDropdownPanel" hidden>
+                        <div class="psd-dropdown-search">
+                            <i class="bi bi-search"></i>
+                            <input type="text" id="phmPSDDropdownSearch" placeholder="Search medicine or vaccine..." autocomplete="off">
+                        </div>
+                        <div class="opf-seg psd-dropdown-seg" id="phmPSDDropdownSeg" role="tablist" aria-label="Filter by category">
+                            <button type="button" class="opf-seg-btn active" data-category="all">All</button>
+                            <button type="button" class="opf-seg-btn" data-category="medicine">Medicines</button>
+                            <button type="button" class="opf-seg-btn" data-category="vaccine">Vaccines</button>
+                        </div>
+                        <ul class="psd-dropdown-list" id="phmPSDDropdownList" role="listbox"></ul>
+                    </div>
+                </div>
+                <select class="form-select psd-period-select" id="phmPSDPeriod" aria-label="Forecast period">
+                    <option value="7">7 Days</option>
+                    <option value="14">14 Days</option>
+                    <option value="30" selected>30 Days</option>
+                </select>
+                <button type="button" class="psd-refresh-btn" id="phmPSDRefresh" aria-label="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php if ($pt2DefaultDetail === null): ?>
+        <div class="pn-empty"><i class="bi bi-info-circle-fill"></i><p>No medicines or vaccines on record yet.</p></div>
+        <?php else: ?>
+        <div id="phmPSDSharedNameNote"></div>
+        <div class="psd-summary" id="phmPSDSummary"></div>
+        <div class="an-forecast-legend" id="phmPSDLegend">
+            <span><span class="dot dashed" style="color:#D93025;"></span> Projected stock</span>
+            <span><span class="dot dashed" style="color:#E8710A;"></span> Reorder level</span>
+        </div>
+        <div class="an-trend-canvas-box"><canvas id="phmT2StockProjectionChart"></canvas></div>
+        <div class="psd-recommendation" id="phmPSDRecommendation"></div>
+        <?php endif; ?>
+
+        <div style="margin-top:18px;">
+            <?php if (!empty($predictiveOverviewTopAlerts)): ?>
+            <div class="adm-status-list">
+                <?php foreach ($predictiveOverviewTopAlerts as $r): ?>
+                <div class="adm-status-row">
+                    <span class="adm-status-icon" style="background:<?= htmlspecialchars($r['iconBg']) ?>; color:<?= htmlspecialchars($r['iconColor']) ?>;">
+                        <i class="bi <?= htmlspecialchars($r['icon']) ?>"></i>
+                    </span>
+                    <span class="adm-status-body">
+                        <span class="adm-status-title"><?= htmlspecialchars($r['label']) ?><?php if (!empty($r['anomaly'])): ?><span class="pn-severity unusual" title="More than 2 standard deviations above this pair's own 30-day baseline">Unusual</span><?php endif; ?></span>
+                        <span class="adm-status-desc"><?= htmlspecialchars($r['desc']) ?></span>
+                        <?php if (!empty($r['causes'])): ?><span class="pn-causes-note">Likely contributing factors: <?= htmlspecialchars($r['causes']) ?></span><?php endif; ?>
+                    </span>
+                    <span class="adm-status-number" style="color:<?= htmlspecialchars($r['valueColor']) ?>;"><?= htmlspecialchars((string) $r['value']) ?></span>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php else: ?>
+            <p class="text-muted small mb-0">No active risk alerts right now.</p>
+            <?php endif; ?>
+        </div>
+    </div>
 
     <!-- ============ TREND + REQUEST STATUS + INVENTORY STATUS ============ -->
     <div class="sad-row-3">
@@ -297,6 +396,203 @@ $staffNavItems = [
             <?php endif; ?>
         </div>
 
+    </div>
+
+    <!-- ============ STOCK MOVEMENT SUMMARY + INVENTORY EXPIRY MONITOR ============
+         Same real cards as subadmin/inventory_reports.php's own (facility-
+         wide inventory data, not owned by one pharmacist) — see
+         includes/shared/inventory_movement_monitor.php's own header
+         comment. assets/css/inventory_reports.css / assets/js/inventory_movement_cards.js
+         are shared verbatim with that page. -->
+    <div class="ir-grid-60-40">
+
+        <!-- ===== Stock Movement Summary ===== -->
+        <div class="adm-card ir-movement-card">
+            <div class="adm-card-header ir-card-header">
+                <h2>Stock Movement Summary</h2>
+                <div class="ir-header-controls">
+                    <select class="form-select ir-range-select" id="irMovementRange" aria-label="Date range">
+                        <option value="7">Last 7 Days</option>
+                        <option value="30" selected>Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                    <div class="ir-custom-range" id="irMovementCustomRange" hidden>
+                        <input type="date" id="irMovementStartDate" aria-label="Start date">
+                        <span>&ndash;</span>
+                        <input type="date" id="irMovementEndDate" aria-label="End date">
+                        <button type="button" class="ir-apply-btn" id="irMovementApplyRange">Apply</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ir-movement-summary">
+                <div class="ir-stat"><span class="ir-stat-value" id="irMovementTotalReceived"><?= number_format($stockMovementTotal['received']) ?></span><span class="ir-stat-label">Total Received</span></div>
+                <div class="ir-stat"><span class="ir-stat-value" id="irMovementTotalIssued"><?= number_format($stockMovementTotal['issued']) ?></span><span class="ir-stat-label">Total Issued</span></div>
+                <div class="ir-stat"><span class="ir-stat-value" id="irMovementClosingStock"><?= number_format($stockMovementTotal['closing']) ?></span><span class="ir-stat-label">Closing Stock</span></div>
+            </div>
+
+            <div class="adm-table-wrap">
+                <table class="adm-table ir-movement-table" style="min-width:0;">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Opening Stock</th>
+                            <th>Received</th>
+                            <th>Issued</th>
+                            <th>Closing Stock</th>
+                        </tr>
+                    </thead>
+                    <tbody id="irMovementTableBody">
+                        <?php foreach ($stockMovementSummary as $row): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($row['category']) ?></td>
+                            <td><?= number_format($row['opening']) ?></td>
+                            <td><?= number_format($row['received']) ?></td>
+                            <td><?= number_format($row['issued']) ?></td>
+                            <td><?= number_format($row['closing']) ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                    <tfoot>
+                        <tr class="ir-movement-total-row">
+                            <td>Total</td>
+                            <td id="irMovementFootOpening"><?= number_format($stockMovementTotal['opening']) ?></td>
+                            <td id="irMovementFootReceived"><?= number_format($stockMovementTotal['received']) ?></td>
+                            <td id="irMovementFootIssued"><?= number_format($stockMovementTotal['issued']) ?></td>
+                            <td id="irMovementFootClosing"><?= number_format($stockMovementTotal['closing']) ?></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="ir-card-actions">
+                <button type="button" class="ir-viewall-btn" data-bs-toggle="modal" data-bs-target="#irMovementsModal"><i class="bi bi-list-ul"></i> View Stock Movements</button>
+            </div>
+        </div>
+
+        <!-- ===== Inventory Expiry Monitor ===== -->
+        <div class="adm-card ir-expiry-card">
+            <div class="adm-card-header ir-card-header">
+                <h2>Inventory Expiry Monitor</h2>
+            </div>
+            <div class="ir-expiry-badges">
+                <span class="ir-expiry-badge ir-expiry-badge-expired"><i class="bi bi-exclamation-octagon-fill"></i> <?= (int) $irExpiryExpiredCount ?> Expired</span>
+                <span class="ir-expiry-badge ir-expiry-badge-soon"><i class="bi bi-clock-history"></i> <?= (int) $irExpiryExpiringSoonCount ?> Expiring Soon</span>
+            </div>
+            <div class="ir-expiry-filters" id="irExpiryFilterSeg" role="tablist" aria-label="Filter">
+                <button type="button" class="ir-expiry-filter-btn active" data-filter="relevant">All</button>
+                <button type="button" class="ir-expiry-filter-btn" data-filter="expired">Expired</button>
+                <button type="button" class="ir-expiry-filter-btn" data-filter="expiring_soon">Next 30 Days</button>
+            </div>
+
+            <div class="ir-expiry-list" id="irExpiryList">
+                <?php foreach ($irExpiryTop5 as $r): ?>
+                <div class="ir-expiry-row">
+                    <div class="ir-expiry-row-main">
+                        <span class="ir-expiry-row-name"><?= htmlspecialchars($r['name']) ?></span>
+                        <span class="ir-expiry-row-meta"><?= htmlspecialchars($r['category']) ?> &middot; Batch: <?= htmlspecialchars($r['batchNo']) ?></span>
+                    </div>
+                    <div class="ir-expiry-row-side">
+                        <span class="ir-expiry-status-badge ir-expiry-status-<?= htmlspecialchars($r['status']) ?>">
+                            <?php if ($r['status'] === 'expired'): ?>Expired <?= abs((int) $r['daysFromToday']) ?>d ago
+                            <?php elseif ($r['status'] === 'today'): ?>Expires Today
+                            <?php else: ?><?= (int) $r['daysFromToday'] ?>d left
+                            <?php endif; ?>
+                        </span>
+                        <span class="ir-expiry-row-qty"><?= number_format($r['quantity']) ?> <?= htmlspecialchars($r['unit']) ?></span>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+                <?php if ($irExpiryTop5 === []): ?>
+                <div class="ir-empty"><i class="bi bi-check-circle-fill"></i><p>No expired or soon-to-expire batches right now.</p></div>
+                <?php endif; ?>
+            </div>
+
+            <div class="ir-card-actions">
+                <button type="button" class="ir-viewall-btn" data-bs-toggle="modal" data-bs-target="#irExpiryAllModal"><i class="bi bi-table"></i> View All Items</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== View Stock Movements modal ===== -->
+    <div class="modal fade" id="irMovementsModal" tabindex="-1" aria-labelledby="irMovementsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content ir-modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="irMovementsModalLabel">Stock Movement Transactions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="ir-modal-note">Every real stock receipt and dispense recorded in the date range currently selected above.</p>
+                    <div class="adm-table-wrap ir-modal-table-wrap">
+                        <table class="adm-table ir-modal-table" style="min-width:0;">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Item</th>
+                                    <th>Category</th>
+                                    <th>Quantity</th>
+                                    <th>Detail</th>
+                                </tr>
+                            </thead>
+                            <tbody id="irMovementsModalTableBody"></tbody>
+                        </table>
+                        <p class="ir-modal-empty" id="irMovementsModalEmpty" style="display:none;">No real stock movements recorded in this date range.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== View All Items (Expiry Monitor) modal ===== -->
+    <div class="modal fade" id="irExpiryAllModal" tabindex="-1" aria-labelledby="irExpiryAllModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content ir-modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="irExpiryAllModalLabel">Complete Inventory Expiry Report</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="ir-modal-toolbar">
+                        <div class="ir-modal-search">
+                            <i class="bi bi-search"></i>
+                            <input type="text" id="irExpiryAllSearch" placeholder="Search item name...">
+                        </div>
+                        <div class="ir-expiry-filters" id="irExpiryAllFilterSeg" role="tablist" aria-label="Filter">
+                            <button type="button" class="ir-expiry-filter-btn active" data-filter="all">All</button>
+                            <button type="button" class="ir-expiry-filter-btn" data-filter="expired">Expired</button>
+                            <button type="button" class="ir-expiry-filter-btn" data-filter="expiring_soon">Next 30 Days</button>
+                        </div>
+                        <select class="form-select ir-sort-select" id="irExpiryAllSort" aria-label="Sort">
+                            <option value="urgency" selected>Most Urgent First</option>
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="expiry-asc">Expiry Date (Soonest)</option>
+                            <option value="qty-desc">Quantity (Highest)</option>
+                        </select>
+                    </div>
+                    <div class="adm-table-wrap ir-modal-table-wrap">
+                        <table class="adm-table ir-modal-table" style="min-width:0;">
+                            <thead>
+                                <tr>
+                                    <th>Item Name</th>
+                                    <th>Category</th>
+                                    <th>Batch No.</th>
+                                    <th>Expiry Date</th>
+                                    <th>Quantity</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="irExpiryAllTableBody"></tbody>
+                        </table>
+                        <p class="ir-modal-empty" id="irExpiryAllEmpty" style="display:none;">No items match your search.</p>
+                    </div>
+                    <div class="ir-modal-pagination" id="irExpiryAllPagination"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- ============ TOP MEDICINES I DISPENSED ============ -->
@@ -398,6 +694,30 @@ $staffNavItems = [
             ],
         ],
     ]) ?>;
+    // Stock Movement Summary / Inventory Expiry Monitor cards — same
+    // real data shape subadmin/inventory_reports.php feeds the same
+    // shared assets/js/inventory_movement_cards.js.
+    window.INVENTORY_MOVEMENT_DATA = <?= json_encode([
+        'stockMovementApiUrl' => BASE_URL . '/api/get-stock-movement.php',
+        'expiryAllItems' => $irExpiryAllItems,
+    ]) ?>;
+</script>
+<script src="<?= asset_url('/assets/js/inventory_movement_cards.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/stock-projection.js') ?>"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof window.initInventoryMovementCards === 'function') {
+            window.initInventoryMovementCards(window.INVENTORY_MOVEMENT_DATA);
+        }
+        if (window.HCStockProjection) {
+            window.HCStockProjection.init('phm', {
+                items: <?= json_encode($pt2ItemList) ?>,
+                defaultDetail: <?= json_encode($pt2DefaultDetail) ?>,
+                apiUrl: '<?= BASE_URL ?>/api/get-stock-projection.php',
+                inventoryUrl: '<?= BASE_URL ?>/pharmacist/medicine_vaccine_inventory.php',
+            });
+        }
+    });
 </script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/analytics_reports.js') ?>"></script>

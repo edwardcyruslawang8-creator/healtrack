@@ -293,18 +293,28 @@
       page doesn't load that stylesheet. -- */
 .arp-card-loading{ opacity: .45; pointer-events: none; transition: opacity .15s ease; }
 
-/* -- Sortable table columns (assets/js/sortable-table.js) -- */
+/* -- Sortable table columns (assets/js/sortable-table.js) --
+   Two stacked arrows (▲ ascending over ▼ descending), both always
+   visible, so "up = ascending, down = descending" reads at a glance —
+   not just a single glyph that swaps meaning after the first click. */
 .adm-table thead th.sortable-th{ cursor: pointer; user-select: none; }
 .adm-table thead th.sortable-th:hover{ color: var(--adm-text); }
 .adm-table thead th .sort-icon{
-  margin-left: 5px;
-  font-size: 11px;
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.adm-table thead th .sort-icon i{
+  font-size: 8px;
+  line-height: 1;
   color: var(--adm-text-soft);
 }
-.adm-table thead th.sorted-asc .sort-icon:before{ content: "\F148"; } /* bi-arrow-up */
-.adm-table thead th.sorted-desc .sort-icon:before{ content: "\F12F"; } /* bi-arrow-down */
-.adm-table thead th.sorted-asc .sort-icon,
-.adm-table thead th.sorted-desc .sort-icon{ color: var(--adm-red-bright); }
+.adm-table thead th.sortable-th:hover .sort-icon i{ color: var(--adm-text-muted); }
+.adm-table thead th.sorted-asc .sort-icon-up,
+.adm-table thead th.sorted-desc .sort-icon-down{ color: var(--adm-red-bright); }
 
 /* -- Disabled pagination button (includes/shared/pagination_helpers.php) -- */
 .adm-pagination .page-btn.disabled{ opacity: .4; pointer-events: none; }

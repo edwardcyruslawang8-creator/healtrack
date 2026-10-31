@@ -5,11 +5,13 @@
  * ---------------------------------------------------------------------
  * Called by assets/js/stock-projection.js whenever the "Projected
  * Stock Decline" card's dropdown selection or forecast-period select
- * changes — returns one real inventory item's full detail (summary
- * indicators, chart data, stock status) via
+ * changes — on admin/facility_analytics.php, subadmin/predictive_analytics.php,
+ * AND pharmacist/analytics_reports.php (system-wide inventory, not
+ * owned by one role). Returns one real inventory item's full detail
+ * (summary indicators, chart data, stock status) via
  * includes/shared/predictive_analytics_core.php's own
- * hc_stock_projection_detail(), the SAME function the page's own
- * default render calls, so the numbers never drift between the two.
+ * hc_stock_projection_detail(), the SAME function each page's own
+ * default render calls, so the numbers never drift between them.
  *
  * Resolved by real doc id (?id=), not name — two or more real
  * inventory docs can share the exact same display name (a real,
@@ -27,7 +29,7 @@ require_once __DIR__ . '/../includes/shared/predictive_analytics_core.php'; // h
 
 header('Content-Type: application/json');
 
-if (!in_array($_SESSION['role'] ?? null, ['admin', 'subadmin'], true)) {
+if (!in_array($_SESSION['role'] ?? null, ['admin', 'subadmin', 'pharmacist'], true)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Not authorized.']);
     exit;
