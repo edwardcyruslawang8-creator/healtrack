@@ -41,12 +41,22 @@ function initSortableTables() {
             if (th.hasAttribute('data-no-sort')) return;
 
             th.classList.add('sortable-th');
-            const iconSpan = document.createElement('i');
-            iconSpan.className = 'bi bi-arrow-down-up sort-icon';
+            // Two separate, always-visible arrows (▲ ascending stacked
+            // above ▼ descending) instead of one combined glyph that only
+            // swapped to a single up/down arrow after the first click —
+            // up = ascending and down = descending should read at a
+            // glance, not only once a column is already active.
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'sort-icon';
+            const upIcon = document.createElement('i');
+            upIcon.className = 'bi bi-caret-up-fill sort-icon-up';
+            const downIcon = document.createElement('i');
+            downIcon.className = 'bi bi-caret-down-fill sort-icon-down';
+            iconSpan.appendChild(upIcon);
+            iconSpan.appendChild(downIcon);
             th.appendChild(iconSpan);
-            // A plain icon alone wasn't obvious enough at a glance — a
-            // native hover tooltip spells out exactly what clicking does
-            // and what state the column is currently in.
+            // A hover tooltip spells out exactly what clicking does and
+            // what state the column is currently in, on top of the icon.
             th.setAttribute('title', 'Click to sort');
 
             th.addEventListener('click', function () {
