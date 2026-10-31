@@ -12,45 +12,41 @@
  * includes/analytics_reports_firestore.php's header comment for why that
  * shape is duplicated per-page rather than shared).
  *
- * PARTIALLY connected to real Firestore data. This pass makes real: the
- * stat cards (Total/In Stock/Low Stock/Out of Stock/Expiring Soon
- * Items), the Inventory Status Overview donut, the Inventory by
- * Category donut (Medicines vs. Vaccines — the only two "categories"
- * that actually exist as a type split), the Top 5 Lowest Stock Items
- * table, and Items Expiring Soon — all read from the real "medicines"
- * collection (same source as includes/medicine_vaccine_inventory_firestore.php,
- * now that its documents carry currentStock/expiryDate fields).
+ * CONNECTED to real Firestore data. The stat cards (Total/In Stock/Low
+ * Stock/Out of Stock/Expiring Soon Items), the Inventory Status
+ * Overview donut, the Inventory by Category donut (Medicines vs.
+ * Vaccines — the only two "categories" that actually exist as a type
+ * split), and the Top 5 Lowest Stock Items table all read from the
+ * real "medicines" collection (same source as
+ * includes/medicine_vaccine_inventory_firestore.php).
  *
- * The filter toolbar (category / form / status) is now real — "form" is
- * a real field on every "medicines" document (Tablet/Capsule/Syrup/
+ * The filter toolbar (category / form / status) is real — "form" is a
+ * real field on every "medicines" document (Tablet/Capsule/Syrup/
  * Injection/etc.); "category" maps to the real "type" field
  * (medicine/vaccine — the only two that actually exist, so the
- * Category filter only ever offers those two now); "status"
- * maps to the real "status" field plus the same real Expiring-Soon
- * (≤30 days) check the stat cards already use. The date-range dropdown
- * (Today/This Week/This Month/Custom Range) filters by each item's real
- * "lastUpdated" field — inventory has no per-day transaction record
- * (see the Stock Movement Summary note below), so "items updated in
- * this period" is the one real, honest date signal this collection
- * actually has. Every table on this page also has real click-to-sort
- * columns (assets/js/sortable-table.js) — inventory is system-wide, not
- * scoped per facility (see below), so this collection isn't filtered by
- * this sub-admin's own facility the way patients/consultations/stock
- * requests are.
+ * Category filter only ever offers those two now); "status" maps to
+ * the real "status" field plus the same real Expiring-Soon (≤30 days)
+ * check the stat cards already use. The date-range dropdown (Today/
+ * This Week/This Month/Custom Range) filters by each item's real
+ * "lastUpdated" field. Every table on this page also has real
+ * click-to-sort columns (assets/js/sortable-table.js) — inventory is
+ * system-wide, not scoped per facility (see below), so this collection
+ * isn't filtered by this sub-admin's own facility the way patients/
+ * consultations/stock requests are.
  *
- * STILL FRONT-END ONLY, deliberately: Stock Movement Summary
- * (opening/received/issued/closing quantities) — there's no
- * stock-transaction ledger anywhere in this app, only a current
- * snapshot of currentStock, so "received this period" / "issued this
- * period" can't be derived from what exists. Building a transaction
- * log is a separate undertaking left for later, same scope line drawn
- * elsewhere this session.
+ * Stock Movement Summary (Opening/Received/Issued/Closing) and the
+ * Inventory Expiry Monitor (real per-batch expiry, replacing the old
+ * per-medicine-item expiryDate check) are now both real too — see
+ * includes/shared/inventory_movement_monitor.php's own header comment
+ * for exactly what each figure is computed from (and, for Received/
+ * Issued, what's honestly left uncounted rather than guessed at).
  * =====================================================================
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../shared/query_helpers.php';
 require_once __DIR__ . '/../shared/date_range_filter.php';
+require_once __DIR__ . '/../shared/inventory_movement_monitor.php'; // hc_compute_stock_movement_summary(), hc_compute_inventory_expiry_monitor()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -204,37 +200,34 @@ $stockStatusMeta = [
 ];
 
 // ---------------------------------------------------------------------
-// Stock Movement Summary — STILL PLACEHOLDER. There's no stock-
-// transaction ledger anywhere in this app (only a current-snapshot
-// currentStock field), so opening/received/issued/closing quantities
-// can't be derived from real data — see header comment.
+// Stock Movement Summary — real now. Default window is the last 30
+// real days; the card's own date-range filter (7/30/90/custom) re-
+// fetches via api/get-stock-movement.php, same real
+// hc_compute_stock_movement_summary() either way — see that function's
+// own header comment for exactly what's real vs. algebraically derived
+// (never fabricated) in Opening/Received/Issued/Closing.
 // ---------------------------------------------------------------------
-$stockMovementSummary = [
-    ['category' => 'Medicines', 'items' => 316, 'opening' => 15420, 'received' => 2450, 'issued' => 3210, 'closing' => 14660],
-    ['category' => 'Vaccines',  'items' => 146, 'opening' => 6280,  'received' => 1120, 'issued' => 1350, 'closing' => 6050],
-];
-$stockMovementTotal = [
-    'items'    => array_sum(array_column($stockMovementSummary, 'items')),
-    'opening'  => array_sum(array_column($stockMovementSummary, 'opening')),
-    'received' => array_sum(array_column($stockMovementSummary, 'received')),
-    'issued'   => array_sum(array_column($stockMovementSummary, 'issued')),
-    'closing'  => array_sum(array_column($stockMovementSummary, 'closing')),
-];
+$irMovementDefaultDays = 30;
+$irMovementStart = date('Y-m-d', strtotime("-{$irMovementDefaultDays} days"));
+$irMovementEnd = date('Y-m-d');
+$irStockMovement = hc_compute_stock_movement_summary($irMovementStart, $irMovementEnd);
+$stockMovementSummary = $irStockMovement['byCategory'];
+$stockMovementTotal = $irStockMovement['total'];
 
 // ---------------------------------------------------------------------
-// Items Expiring Soon (Next 30 Days) — real, sorted soonest first.
+// Inventory Expiry Monitor (real per-batch expiry — see
+// hc_compute_inventory_expiry_monitor()'s own header comment for why
+// this is per real medicine_batches BATCH, not just each medicine's own
+// single expiryDate field). The card shows only the first 5 "relevant"
+// (expired or expiring within 30 days) rows; the full real list (every
+// batch, every status, including "ok"/no-expiry ones) backs its own
+// "View All Items" modal.
 // ---------------------------------------------------------------------
-$expiringItems = array_filter($allInventoryItems, fn ($m) => $m['expiryDateRaw'] !== null);
-usort($expiringItems, fn ($a, $b) => strtotime($a['expiryDateRaw']) <=> strtotime($b['expiryDateRaw']));
-
-$itemsExpiringSoon = array_map(function ($m) {
-    $daysLeft = (int) ceil((strtotime($m['expiryDateRaw']) - time()) / 86400);
-    return [
-        'name' => $m['name'],
-        'category' => $m['type'] === 'vaccine' ? 'Vaccine' : 'Medicine',
-        'batchNo' => '—', // no batch-tracking field exists yet
-        'expiryDate' => date('F j, Y', strtotime($m['expiryDateRaw'])),
-        'daysLeft' => $daysLeft,
-        'currentStock' => $m['currentStock'],
-    ];
-}, array_slice(array_values($expiringItems), 0, 5));
+$irExpiryMonitor = hc_compute_inventory_expiry_monitor();
+$irExpiryAllItems = $irExpiryMonitor['items'];
+$irExpiryExpiredCount = $irExpiryMonitor['expiredCount'];
+$irExpiryExpiringSoonCount = $irExpiryMonitor['expiringSoonCount'];
+$irExpiryTop5 = array_slice(array_values(array_filter(
+    $irExpiryAllItems,
+    fn ($r) => in_array($r['status'], ['expired', 'today', 'expiring_soon'], true)
+)), 0, 5);

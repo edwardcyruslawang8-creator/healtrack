@@ -1,0 +1,280 @@
+/* =============================================================
+   INVENTORY REPORTS — Stock Movement Summary & Inventory Expiry
+   Monitor cards ("ir-" prefixed)
+   ---------------------------------------------------------------
+   Loaded alongside assets/css/admin-dashboard.css (sidebar/topbar,
+   "adm-" prefixed atoms) and assets/css/analytics_reports.css
+   (breadcrumb/tabs/filter-toolbar, "arp-" prefixed) on
+   subadmin/inventory_reports.php. Everything here is specific to the
+   two redesigned cards at the bottom of that page.
+   ============================================================= */
+
+/* -- 60/40 layout for this specific pair (not the shared
+      .adm-grid-70-30's 70/30) -- */
+.ir-grid-60-40{
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
+  align-items: stretch;
+  margin-bottom: 20px;
+}
+.ir-grid-60-40 > *{ min-width: 0; }
+.ir-movement-card, .ir-expiry-card{ display: flex; flex-direction: column; }
+
+.ir-card-header{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* -- Stock Movement Summary -- */
+.ir-header-controls{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ir-range-select{
+  width: auto;
+  background-color: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 7px 30px 7px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+}
+.ir-custom-range{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ir-custom-range input[type="date"]{
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--adm-text);
+}
+.ir-custom-range span{ color: var(--adm-text-soft); font-size: 12px; }
+.ir-apply-btn{
+  background: var(--adm-red-bright);
+  color: #fff;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.ir-apply-btn:hover{ background: var(--adm-red-bright-hover); color: #fff; }
+
+.ir-movement-summary{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+}
+.ir-stat{
+  background: var(--adm-bg);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ir-stat-value{ font-size: 19px; font-weight: 700; color: var(--adm-text); }
+.ir-stat-label{ font-size: 11.5px; color: var(--adm-text-muted); font-weight: 500; }
+
+.ir-movement-table thead th{ padding-top: 10px; padding-bottom: 10px; }
+.ir-movement-table td{ padding-top: 11px; padding-bottom: 11px; }
+.ir-movement-total-row{
+  font-weight: 700;
+  background: var(--adm-bg);
+}
+.ir-movement-total-row td{ border-top: 2px solid var(--adm-border); }
+
+.ir-card-actions{
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--adm-border);
+}
+.ir-viewall-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-red-bright);
+  white-space: nowrap;
+}
+.ir-viewall-btn:hover{ background: var(--adm-hover-bg); border-color: var(--adm-red-bright); }
+
+/* -- Inventory Expiry Monitor -- */
+.ir-expiry-badges{ display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
+.ir-expiry-badge{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 13px;
+  border-radius: 50px;
+}
+.ir-expiry-badge-expired{ background: #FCE4E4; color: #D93025; }
+.ir-expiry-badge-soon{ background: #FDECDD; color: #E8710A; }
+
+.ir-expiry-filters{
+  display: inline-flex;
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+  margin-bottom: 14px;
+}
+.ir-expiry-filter-btn{
+  border: none;
+  background: transparent;
+  padding: 6px 13px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--adm-text-muted);
+  border-radius: 7px;
+  white-space: nowrap;
+}
+.ir-expiry-filter-btn.active{ background: var(--adm-red-bright); color: #fff; }
+
+.ir-expiry-list{ display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.ir-expiry-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--adm-bg);
+  border-radius: 10px;
+  padding: 11px 14px;
+}
+.ir-expiry-row-main{
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.ir-expiry-row-name{
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--adm-text);
+  /* Long medicine names wrap naturally instead of forcing the row
+     wider or clipping — never truncated with an ellipsis. */
+  overflow-wrap: anywhere;
+}
+.ir-expiry-row-meta{ font-size: 11.5px; color: var(--adm-text-muted); }
+.ir-expiry-row-side{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.ir-expiry-status-badge{
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+.ir-expiry-status-expired{ background: #FCE4E4; color: #D93025; }
+.ir-expiry-status-today{ background: var(--adm-red-bright); color: #fff; }
+.ir-expiry-status-expiring_soon{ background: #FDECDD; color: #E8710A; }
+.ir-expiry-status-ok{ background: #E4F7EA; color: #1E8E3E; }
+.ir-expiry-status-no_expiry{ background: #EEF0F3; color: var(--adm-text-muted); }
+.ir-expiry-row-qty{ font-size: 11.5px; color: var(--adm-text-muted); font-weight: 600; }
+
+.ir-empty{
+  text-align: center;
+  color: var(--adm-text-muted);
+  font-size: 12.5px;
+  padding: 30px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.ir-empty i{ font-size: 22px; color: #1E8E3E; }
+
+/* -- Shared modal styling (View Stock Movements / View All Items) -- */
+.ir-modal-content{ border-radius: var(--adm-radius-lg); border: none; }
+.ir-modal-note{ font-size: 12px; color: var(--adm-text-muted); margin-bottom: 14px; }
+.ir-modal-toolbar{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.ir-modal-search{ position: relative; flex: 1; min-width: 180px; }
+.ir-modal-search i{
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--adm-text-soft); font-size: 13px;
+}
+.ir-modal-search input{
+  width: 100%;
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 8px 12px 8px 32px;
+  font-size: 13px;
+  color: var(--adm-text);
+}
+.ir-sort-select{
+  width: auto;
+  background-color: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 7px 30px 7px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+}
+.ir-modal-table{ font-size: 12.5px; }
+.ir-modal-empty{ text-align: center; color: var(--adm-text-muted); font-size: 12.5px; padding: 24px 0; }
+.ir-modal-pagination{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 14px;
+}
+.ir-page-btn{
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--adm-text);
+}
+.ir-page-btn:disabled{ opacity: .4; }
+.ir-page-info{ font-size: 12px; color: var(--adm-text-muted); }
+
+.ir-movement-type-badge{
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 50px;
+}
+.ir-movement-type-received{ background: #E4F7EA; color: #1E8E3E; }
+.ir-movement-type-issued{ background: #FDECDD; color: #E8710A; }
+
+@media (max-width: 1199.98px){
+  .ir-grid-60-40{ grid-template-columns: 1fr; }
+}
+@media (max-width: 575.98px){
+  .ir-movement-summary{ grid-template-columns: 1fr; }
+  .ir-header-controls{ width: 100%; }
+  .ir-range-select{ flex: 1; }
+  .ir-expiry-row{ flex-direction: column; align-items: flex-start; }
+  .ir-expiry-row-side{ align-items: flex-start; flex-direction: row; gap: 10px; }
+  .ir-modal-toolbar{ flex-direction: column; align-items: stretch; }
+}

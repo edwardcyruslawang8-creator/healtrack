@@ -16,13 +16,12 @@
  * analytics_reports.php ("arp-" prefixed, assets/css/analytics_reports.css
  * — the section-intro/filter-toolbar classes were promoted there from
  * subadmin/patient_reports.php's page-specific stylesheet so every
- * report sub-tab can share them). This page adds NO page-specific
- * stylesheet of its own — everything here is built from those three
- * already-shared files plus a couple of inline style overrides (noted
- * where used) — see subadmin/patient_reports.php's header comment for
- * why a separate per-page stylesheet was avoided this time.
+ * report sub-tab can share them). The Stock Movement Summary / Inventory
+ * Expiry Monitor cards are custom enough (date-range filter, summary
+ * tiles, a vertical expiry list, 2 modals) to need their own real
+ * stylesheet — assets/css/inventory_reports.css, "ir-" prefixed.
  *
- * PARTIALLY connected to real Firestore data — see
+ * CONNECTED to real Firestore data — see
  * includes/subadmin/inventory_reports_firestore.php's header comment for exactly
  * which stat cards/charts/tables are real vs. still placeholder (Stock
  * Movement Summary only). The filter toolbar (date range / category /
@@ -53,7 +52,7 @@ require_once __DIR__ . '/../includes/subadmin/inventory_reports_firestore.php';
 // $inventoryStatCards, $inventoryStatusOverview, $inventoryStatusOverviewTotal,
 // $inventoryByCategory, $inventoryByCategoryTotal, $lowestStockItems,
 // $stockStatusMeta, $stockMovementSummary, $stockMovementTotal,
-// $itemsExpiringSoon
+// $irExpiryAllItems, $irExpiryTop5, $irExpiryExpiredCount, $irExpiryExpiringSoonCount
 
 // Sidebar nav — same Sub-Admin nav list as subadmin/dashboard.php.
 // Analytics & Reports stays active — this page is one of its tabs.
@@ -124,6 +123,7 @@ $adminNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/subadmin_dashboard.css') ?>">
 <!-- Analytics & Reports styles, reused here for the breadcrumb/tabs/section-intro/filter-toolbar/footer notice -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/analytics_reports.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/inventory_reports.css') ?>">
 <style>
 /* Top 5 Items with Lowest Stock lives in the narrowest (3rd-of-3)
    .sad-row-3 column (~370-400px in practice). .adm-table's normal
@@ -418,92 +418,199 @@ $adminNavItems = [
 
     </div>
 
-    <!-- ============ STOCK MOVEMENT SUMMARY + ITEMS EXPIRING SOON ============
-         .adm-grid-70-30 gives these two tables balanced-looking columns
-         (rather than a strict 50/50 split) — the same layout class
-         Overview's own bottom row uses. -->
-    <div class="adm-grid-70-30">
+    <!-- ============ STOCK MOVEMENT SUMMARY + INVENTORY EXPIRY MONITOR ============
+         .ir-grid-60-40 — a 60/40 split for this specific pair (not the
+         shared .adm-grid-70-30's 70/30), stacking to 1 column on mobile
+         the same way that class already does. -->
+    <div class="ir-grid-60-40">
 
-        <div class="adm-card">
-            <div class="adm-card-header"><h2>Stock Movement Summary</h2></div>
-            <!-- min-width overridden inline (same reasoning as the Top 5
-                 Lowest Stock table above): .adm-table's default 640px
-                 min-width doesn't fit the 30% column here without forcing
-                 a horizontal scrollbar, even though 6 short columns fit
-                 fine narrower than that once cells can wrap. -->
+        <!-- ===== Stock Movement Summary ===== -->
+        <div class="adm-card ir-movement-card">
+            <div class="adm-card-header ir-card-header">
+                <h2>Stock Movement Summary</h2>
+                <div class="ir-header-controls">
+                    <select class="form-select ir-range-select" id="irMovementRange" aria-label="Date range">
+                        <option value="7">Last 7 Days</option>
+                        <option value="30" selected>Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                    <div class="ir-custom-range" id="irMovementCustomRange" hidden>
+                        <input type="date" id="irMovementStartDate" aria-label="Start date">
+                        <span>&ndash;</span>
+                        <input type="date" id="irMovementEndDate" aria-label="End date">
+                        <button type="button" class="ir-apply-btn" id="irMovementApplyRange">Apply</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ir-movement-summary">
+                <div class="ir-stat"><span class="ir-stat-value" id="irMovementTotalReceived"><?= number_format($stockMovementTotal['received']) ?></span><span class="ir-stat-label">Total Received</span></div>
+                <div class="ir-stat"><span class="ir-stat-value" id="irMovementTotalIssued"><?= number_format($stockMovementTotal['issued']) ?></span><span class="ir-stat-label">Total Issued</span></div>
+                <div class="ir-stat"><span class="ir-stat-value" id="irMovementClosingStock"><?= number_format($stockMovementTotal['closing']) ?></span><span class="ir-stat-label">Closing Stock</span></div>
+            </div>
+
             <div class="adm-table-wrap">
-                <table class="adm-table" style="min-width:0;" data-sortable="true">
+                <table class="adm-table ir-movement-table" style="min-width:0;">
                     <thead>
                         <tr>
                             <th>Category</th>
-                            <th>Items</th>
                             <th>Opening Stock</th>
                             <th>Received</th>
                             <th>Issued</th>
                             <th>Closing Stock</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="irMovementTableBody">
                         <?php foreach ($stockMovementSummary as $row): ?>
                         <tr>
                             <td><?= htmlspecialchars($row['category']) ?></td>
-                            <td><?= number_format($row['items']) ?></td>
                             <td><?= number_format($row['opening']) ?></td>
                             <td><?= number_format($row['received']) ?></td>
                             <td><?= number_format($row['issued']) ?></td>
                             <td><?= number_format($row['closing']) ?></td>
                         </tr>
                         <?php endforeach; ?>
-                        <tr class="fw-bold" data-no-sort>
+                    </tbody>
+                    <tfoot>
+                        <tr class="ir-movement-total-row">
                             <td>Total</td>
-                            <td><?= number_format($stockMovementTotal['items']) ?></td>
-                            <td><?= number_format($stockMovementTotal['opening']) ?></td>
-                            <td><?= number_format($stockMovementTotal['received']) ?></td>
-                            <td><?= number_format($stockMovementTotal['issued']) ?></td>
-                            <td><?= number_format($stockMovementTotal['closing']) ?></td>
+                            <td id="irMovementFootOpening"><?= number_format($stockMovementTotal['opening']) ?></td>
+                            <td id="irMovementFootReceived"><?= number_format($stockMovementTotal['received']) ?></td>
+                            <td id="irMovementFootIssued"><?= number_format($stockMovementTotal['issued']) ?></td>
+                            <td id="irMovementFootClosing"><?= number_format($stockMovementTotal['closing']) ?></td>
                         </tr>
-                    </tbody>
+                    </tfoot>
                 </table>
+            </div>
+
+            <div class="ir-card-actions">
+                <button type="button" class="ir-viewall-btn" data-bs-toggle="modal" data-bs-target="#irMovementsModal"><i class="bi bi-list-ul"></i> View Stock Movements</button>
             </div>
         </div>
 
-        <div class="adm-card">
-            <div class="adm-card-header"><h2>Items Expiring Soon (Next 30 Days)</h2></div>
-            <!-- min-width overridden inline — same reasoning as the two
-                 tables above. -->
-            <div class="adm-table-wrap">
-                <table class="adm-table" style="min-width:0;" data-sortable="true">
-                    <thead>
-                        <tr>
-                            <th>Item Name</th>
-                            <th>Category</th>
-                            <th>Batch No.</th>
-                            <th>Expiry Date</th>
-                            <th>Days Left</th>
-                            <th>Stock</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($itemsExpiringSoon)): ?>
-                        <tr data-no-sort>
-                            <td colspan="6" class="adm-table-empty">No items expiring in the next 30 days.</td>
-                        </tr>
-                        <?php endif; ?>
-                        <?php foreach ($itemsExpiringSoon as $item): ?>
-                        <tr>
-                            <td><?= htmlspecialchars($item['name']) ?></td>
-                            <td><?= htmlspecialchars($item['category']) ?></td>
-                            <td><?= htmlspecialchars($item['batchNo']) ?></td>
-                            <td><?= htmlspecialchars($item['expiryDate']) ?></td>
-                            <td><?= (int) $item['daysLeft'] ?></td>
-                            <td><?= (int) $item['currentStock'] ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+        <!-- ===== Inventory Expiry Monitor ===== -->
+        <div class="adm-card ir-expiry-card">
+            <div class="adm-card-header ir-card-header">
+                <h2>Inventory Expiry Monitor</h2>
+            </div>
+            <div class="ir-expiry-badges">
+                <span class="ir-expiry-badge ir-expiry-badge-expired"><i class="bi bi-exclamation-octagon-fill"></i> <?= (int) $irExpiryExpiredCount ?> Expired</span>
+                <span class="ir-expiry-badge ir-expiry-badge-soon"><i class="bi bi-clock-history"></i> <?= (int) $irExpiryExpiringSoonCount ?> Expiring Soon</span>
+            </div>
+            <div class="ir-expiry-filters" id="irExpiryFilterSeg" role="tablist" aria-label="Filter">
+                <button type="button" class="ir-expiry-filter-btn active" data-filter="relevant">All</button>
+                <button type="button" class="ir-expiry-filter-btn" data-filter="expired">Expired</button>
+                <button type="button" class="ir-expiry-filter-btn" data-filter="expiring_soon">Next 30 Days</button>
+            </div>
+
+            <div class="ir-expiry-list" id="irExpiryList">
+                <?php foreach ($irExpiryTop5 as $r): ?>
+                <div class="ir-expiry-row">
+                    <div class="ir-expiry-row-main">
+                        <span class="ir-expiry-row-name"><?= htmlspecialchars($r['name']) ?></span>
+                        <span class="ir-expiry-row-meta"><?= htmlspecialchars($r['category']) ?> &middot; Batch: <?= htmlspecialchars($r['batchNo']) ?></span>
+                    </div>
+                    <div class="ir-expiry-row-side">
+                        <span class="ir-expiry-status-badge ir-expiry-status-<?= htmlspecialchars($r['status']) ?>">
+                            <?php if ($r['status'] === 'expired'): ?>Expired <?= abs((int) $r['daysFromToday']) ?>d ago
+                            <?php elseif ($r['status'] === 'today'): ?>Expires Today
+                            <?php else: ?><?= (int) $r['daysFromToday'] ?>d left
+                            <?php endif; ?>
+                        </span>
+                        <span class="ir-expiry-row-qty"><?= number_format($r['quantity']) ?> <?= htmlspecialchars($r['unit']) ?></span>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+                <?php if ($irExpiryTop5 === []): ?>
+                <div class="ir-empty"><i class="bi bi-check-circle-fill"></i><p>No expired or soon-to-expire batches right now.</p></div>
+                <?php endif; ?>
+            </div>
+
+            <div class="ir-card-actions">
+                <button type="button" class="ir-viewall-btn" data-bs-toggle="modal" data-bs-target="#irExpiryAllModal"><i class="bi bi-table"></i> View All Items</button>
             </div>
         </div>
 
+    </div>
+
+    <!-- ===== View Stock Movements modal ===== -->
+    <div class="modal fade" id="irMovementsModal" tabindex="-1" aria-labelledby="irMovementsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content ir-modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="irMovementsModalLabel">Stock Movement Transactions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="ir-modal-note">Every real stock receipt and dispense recorded in the date range currently selected above.</p>
+                    <div class="adm-table-wrap">
+                        <table class="adm-table ir-modal-table" style="min-width:0;">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Item</th>
+                                    <th>Category</th>
+                                    <th>Quantity</th>
+                                    <th>Detail</th>
+                                </tr>
+                            </thead>
+                            <tbody id="irMovementsModalTableBody"></tbody>
+                        </table>
+                        <p class="ir-modal-empty" id="irMovementsModalEmpty" style="display:none;">No real stock movements recorded in this date range.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== View All Items (Expiry Monitor) modal ===== -->
+    <div class="modal fade" id="irExpiryAllModal" tabindex="-1" aria-labelledby="irExpiryAllModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content ir-modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="irExpiryAllModalLabel">Complete Inventory Expiry Report</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="ir-modal-toolbar">
+                        <div class="ir-modal-search">
+                            <i class="bi bi-search"></i>
+                            <input type="text" id="irExpiryAllSearch" placeholder="Search item name...">
+                        </div>
+                        <div class="ir-expiry-filters" id="irExpiryAllFilterSeg" role="tablist" aria-label="Filter">
+                            <button type="button" class="ir-expiry-filter-btn active" data-filter="all">All</button>
+                            <button type="button" class="ir-expiry-filter-btn" data-filter="expired">Expired</button>
+                            <button type="button" class="ir-expiry-filter-btn" data-filter="expiring_soon">Next 30 Days</button>
+                        </div>
+                        <select class="form-select ir-sort-select" id="irExpiryAllSort" aria-label="Sort">
+                            <option value="urgency" selected>Most Urgent First</option>
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="expiry-asc">Expiry Date (Soonest)</option>
+                            <option value="qty-desc">Quantity (Highest)</option>
+                        </select>
+                    </div>
+                    <div class="adm-table-wrap">
+                        <table class="adm-table ir-modal-table" style="min-width:0;">
+                            <thead>
+                                <tr>
+                                    <th>Item Name</th>
+                                    <th>Category</th>
+                                    <th>Batch No.</th>
+                                    <th>Expiry Date</th>
+                                    <th>Quantity</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="irExpiryAllTableBody"></tbody>
+                        </table>
+                        <p class="ir-modal-empty" id="irExpiryAllEmpty" style="display:none;">No items match your search.</p>
+                    </div>
+                    <div class="ir-modal-pagination" id="irExpiryAllPagination"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- ============ FOOTER NOTICE ============ -->
@@ -540,6 +647,12 @@ $adminNavItems = [
             'values' => array_column($inventoryByCategory, 'value'),
             'colors' => array_column($inventoryByCategory, 'color'),
         ],
+        // Stock Movement Summary's date-range filter + "View Stock
+        // Movements" modal, and the Inventory Expiry Monitor's inline
+        // filters + "View All Items" modal — see
+        // assets/js/inventory_reports.js's own header comment.
+        'stockMovementApiUrl' => BASE_URL . '/api/get-stock-movement.php',
+        'expiryAllItems' => $irExpiryAllItems,
     ]) ?>;
 </script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
