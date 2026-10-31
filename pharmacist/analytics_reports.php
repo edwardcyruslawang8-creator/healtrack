@@ -44,7 +44,7 @@ require_once __DIR__ . '/../includes/pharmacist/analytics_reports_pharmacist_fir
 // $trendLabels, $trendCounts, $requestsByStatus, $requestsByStatusTotal,
 // $inventoryStatusSummary, $inventoryStatusTotal, $topMedicinesDispensed, $topMedicinesDispensedMax,
 // $stockMovementSummary, $stockMovementTotal, $irExpiryAllItems, $irExpiryTop5,
-// $irExpiryExpiredCount, $irExpiryExpiringSoonCount
+// $irExpiryExpiredCount, $irExpiryExpiringSoonCount, $pt2ItemList, $pt2DefaultDetail
 // hc_pharmacist_unread_notification_count() (sidebar/topbar badge) already
 // comes from config/constants.php, required above.
 
@@ -96,6 +96,7 @@ $staffNavItems = [
 <!-- Analytics & Reports page styles (KPI cards, ranked list, footer notice) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/analytics_reports.css') ?>">
 <link rel="stylesheet" href="<?= asset_url('/assets/css/inventory_reports.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/facility_analytics.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -226,6 +227,63 @@ $staffNavItems = [
     $predictiveOverviewLinkHref = null; // no dedicated full predictive page for this role yet
     require __DIR__ . '/../includes/admin/predictive_overview_card.php';
     ?>
+
+    <!-- ============ PROJECTED STOCK DECLINE ============
+         Same full, interactive per-item card as admin/facility_analytics.php's
+         and subadmin/predictive_analytics.php's own Predictive &
+         Prescriptive tab — searchable dropdown over every real item,
+         7/14/30-day period, real summary indicators, chart,
+         recommendation. assets/css/facility_analytics.css ("an-"/"psd-"
+         prefixed) and assets/js/stock-projection.js are the exact same
+         files those two pages load. -->
+    <div class="an-card psd-card">
+        <div class="an-card-header psd-header">
+            <div class="psd-header-title">
+                <h3>Projected Stock Decline</h3>
+                <p class="pn-note">System-wide stock pace — inventory has no per-facility field in this app's schema.</p>
+            </div>
+            <?php if ($pt2ItemList !== []): ?>
+            <div class="psd-header-controls">
+                <div class="psd-dropdown" id="phmPSDDropdown">
+                    <button type="button" class="psd-dropdown-btn" id="phmPSDDropdownBtn" aria-haspopup="listbox" aria-expanded="false">
+                        <span id="phmPSDDropdownLabel">—</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                    <div class="psd-dropdown-panel" id="phmPSDDropdownPanel" hidden>
+                        <div class="psd-dropdown-search">
+                            <i class="bi bi-search"></i>
+                            <input type="text" id="phmPSDDropdownSearch" placeholder="Search medicine or vaccine..." autocomplete="off">
+                        </div>
+                        <div class="opf-seg psd-dropdown-seg" id="phmPSDDropdownSeg" role="tablist" aria-label="Filter by category">
+                            <button type="button" class="opf-seg-btn active" data-category="all">All</button>
+                            <button type="button" class="opf-seg-btn" data-category="medicine">Medicines</button>
+                            <button type="button" class="opf-seg-btn" data-category="vaccine">Vaccines</button>
+                        </div>
+                        <ul class="psd-dropdown-list" id="phmPSDDropdownList" role="listbox"></ul>
+                    </div>
+                </div>
+                <select class="form-select psd-period-select" id="phmPSDPeriod" aria-label="Forecast period">
+                    <option value="7">7 Days</option>
+                    <option value="14">14 Days</option>
+                    <option value="30" selected>30 Days</option>
+                </select>
+                <button type="button" class="psd-refresh-btn" id="phmPSDRefresh" aria-label="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php if ($pt2DefaultDetail === null): ?>
+        <div class="pn-empty"><i class="bi bi-info-circle-fill"></i><p>No medicines or vaccines on record yet.</p></div>
+        <?php else: ?>
+        <div id="phmPSDSharedNameNote"></div>
+        <div class="psd-summary" id="phmPSDSummary"></div>
+        <div class="an-forecast-legend" id="phmPSDLegend">
+            <span><span class="dot dashed" style="color:#D93025;"></span> Projected stock</span>
+            <span><span class="dot dashed" style="color:#E8710A;"></span> Reorder level</span>
+        </div>
+        <div class="an-trend-canvas-box"><canvas id="phmT2StockProjectionChart"></canvas></div>
+        <div class="psd-recommendation" id="phmPSDRecommendation"></div>
+        <?php endif; ?>
+    </div>
 
     <!-- ============ TREND + REQUEST STATUS + INVENTORY STATUS ============ -->
     <div class="sad-row-3">
@@ -607,10 +665,19 @@ $staffNavItems = [
     ]) ?>;
 </script>
 <script src="<?= asset_url('/assets/js/inventory_movement_cards.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/stock-projection.js') ?>"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         if (typeof window.initInventoryMovementCards === 'function') {
             window.initInventoryMovementCards(window.INVENTORY_MOVEMENT_DATA);
+        }
+        if (window.HCStockProjection) {
+            window.HCStockProjection.init('phm', {
+                items: <?= json_encode($pt2ItemList) ?>,
+                defaultDetail: <?= json_encode($pt2DefaultDetail) ?>,
+                apiUrl: '<?= BASE_URL ?>/api/get-stock-projection.php',
+                inventoryUrl: '<?= BASE_URL ?>/pharmacist/medicine_vaccine_inventory.php',
+            });
         }
     });
 </script>
