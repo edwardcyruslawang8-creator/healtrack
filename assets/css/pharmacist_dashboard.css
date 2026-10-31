@@ -309,3 +309,53 @@
 @media (max-width: 575.98px){
   .phm-stats-row{ grid-template-columns: 1fr; }
 }
+
+/* =============================================================
+   ANALYTICS & REPORTS — Predictive & Prescriptive Analytics card
+   ============================================================= */
+/* Four equal tiles in one row on desktop (2 × 2 on tablets, stacked on
+   phones); grid stretch keeps every tile the same height. */
+.adm-mini-stats-row.phm-predictive-stats{ grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.phm-predictive-stats .adm-mini-stat{ align-items: flex-start; height: 100%; min-width: 0; }
+.phm-predictive-stat-body{ display: flex; flex-direction: column; min-width: 0; }
+.phm-predictive-stats .adm-mini-stat-label{ line-height: 1.35; }
+@media (max-width: 1199.98px){
+  .adm-mini-stats-row.phm-predictive-stats{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 575.98px){
+  .adm-mini-stats-row.phm-predictive-stats{ grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Projected Stock Decline: same heading style as the other card headings,
+   controls under the title, and the item dropdown opening straight down
+   from its own left edge (it used to anchor right and spill under the sidebar). */
+.phm-psd-header{ display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin: 22px 0 14px; }
+.phm-psd-header .psd-header-title h3{ font-size: 15px; font-weight: 700; color: var(--adm-text); margin: 0 0 4px; }
+.phm-psd-header .pn-note{ font-size: 11.5px; color: var(--adm-text-soft); margin: 0; }
+.phm-psd-header .psd-dropdown-panel{
+  left: 0;
+  right: auto;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  z-index: 30;
+}
+.phm-psd-header .psd-dropdown-search i{ pointer-events: none; }
+@media (max-width: 575.98px){
+  .phm-psd-header .psd-header-controls{ width: 100%; }
+  .phm-psd-header .psd-dropdown{ flex: 1 1 100%; }
+  .phm-psd-header .psd-dropdown-panel{ width: 100%; }
+}
+
+/* Analytics & Reports top KPI row: 4 equal cards across the full width
+   (the shared .arp-kpi-row is a 5-column grid, which left a gap here). */
+.arp-kpi-row.phm-kpi-row{ grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; align-items: stretch; margin-bottom: 22px; }
+.phm-kpi-row > .arp-kpi-card{ margin-bottom: 0; height: 100%; min-height: 118px; padding: 20px 22px; gap: 16px; }
+.phm-kpi-row .arp-kpi-label{ line-height: 1.35; }
+.phm-kpi-row .arp-kpi-trend{ align-items: flex-start; line-height: 1.35; }
+.phm-kpi-row .arp-kpi-trend i{ flex-shrink: 0; }
+@media (max-width: 1199.98px){
+  .arp-kpi-row.phm-kpi-row{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 575.98px){
+  .arp-kpi-row.phm-kpi-row{ grid-template-columns: minmax(0, 1fr); }
+}
