@@ -111,8 +111,36 @@
    card (the shared 190px fixed box could overflow a narrow card and get
    clipped), centered in the space above the legend. */
 .phm-row-4 .adm-donut-wrap{ padding: 4px 0 8px; }
-.phm-row-4 .adm-donut-canvas-box{ width: min(210px, 100%); height: auto; aspect-ratio: 1 / 1; }
 .phm-row-4 .phm-donut-legend{ margin-top: auto; padding-top: 14px; }
+
+/* Stock Status + Stock Request Status doughnuts: same square, responsive
+   box on both cards, so the ring stays perfectly round and centered. */
+.adm-donut-canvas-box.phm-donut-box{ width: min(200px, 100%); height: auto; aspect-ratio: 1 / 1; }
+.phm-donut-box .adm-donut-center{ gap: 2px; }
+.phm-donut-box .adm-donut-total{ font-size: 32px; }
+
+/* Hover tooltip, positioned by JS just outside the hovered slice. */
+.phm-donut-tooltip{
+  position: absolute;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(17, 24, 39, .92);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .18);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .12s ease;
+}
+.phm-donut-tooltip.is-visible{ opacity: 1; visibility: visible; }
+.phm-donut-tooltip-dot{ width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 
 /* Low Stock Medicines: even column widths. */
 .phm-low-stock-table{ table-layout: fixed; width: 100%; }

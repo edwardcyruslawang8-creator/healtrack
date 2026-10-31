@@ -264,8 +264,12 @@ $staffNavItems = [
         <div class="adm-card phm-chart-card">
             <div class="phm-card-header"><h2>Stock Status</h2></div>
             <div class="adm-donut-wrap">
-                <div class="adm-donut-canvas-box">
-                    <canvas id="stockStatusChart"></canvas>
+                <div class="adm-donut-canvas-box phm-donut-box">
+                    <canvas id="stockStatusChart" aria-label="Stock status: <?= number_format($stockStatusTotal) ?> items" role="img"></canvas>
+                    <div class="adm-donut-center">
+                        <span class="adm-donut-total"><?= number_format($stockStatusTotal) ?></span>
+                        <span class="adm-donut-total-label">Items</span>
+                    </div>
                 </div>
             </div>
             <div class="phm-donut-legend">
@@ -310,8 +314,12 @@ $staffNavItems = [
         <div class="adm-card phm-chart-card">
             <div class="phm-card-header"><h2>Stock Request Status</h2></div>
             <div class="adm-donut-wrap">
-                <div class="adm-donut-canvas-box">
-                    <canvas id="stockRequestStatusChart"></canvas>
+                <div class="adm-donut-canvas-box phm-donut-box">
+                    <canvas id="stockRequestStatusChart" aria-label="Stock request status: <?= number_format($stockRequestStatusTotal) ?> requests" role="img"></canvas>
+                    <div class="adm-donut-center">
+                        <span class="adm-donut-total"><?= number_format($stockRequestStatusTotal) ?></span>
+                        <span class="adm-donut-total-label">Requests</span>
+                    </div>
                 </div>
             </div>
             <div class="phm-donut-legend">
@@ -319,7 +327,7 @@ $staffNavItems = [
                 <div class="phm-legend-row">
                     <span class="phm-legend-dot" style="background:<?= htmlspecialchars($s['color']) ?>;"></span>
                     <span class="phm-legend-label"><?= htmlspecialchars($s['label']) ?></span>
-                    <span class="phm-legend-value"><?= (int) $s['pct'] ?>% (<?= number_format($s['value']) ?>)</span>
+                    <span class="phm-legend-value"><?= number_format($s['value']) ?> (<?= rtrim(rtrim(number_format($s['pct'], 1), '0'), '.') ?>%)</span>
                 </div>
                 <?php endforeach; ?>
                 <div class="phm-legend-total">

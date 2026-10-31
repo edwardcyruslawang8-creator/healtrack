@@ -161,11 +161,10 @@ $medicinesByCategory = [
 // ---------------------------------------------------------------------
 // Stock Status — doughnut chart
 // ---------------------------------------------------------------------
-$stockStatusTotal = 386;
 $stockStatus = [
-    ['label' => 'In Stock',    'value' => 312, 'pct' => 80.8, 'color' => '#1E8E3E'],
-    ['label' => 'Low Stock',   'value' => 55,  'pct' => 14.2, 'color' => '#E8710A'],
-    ['label' => 'Out of Stock','value' => 19,  'pct' => 5.0,  'color' => '#D93025'],
+    ['label' => 'In Stock',    'value' => 312, 'color' => '#1E8E3E'],
+    ['label' => 'Low Stock',   'value' => 55,  'color' => '#E8710A'],
+    ['label' => 'Out of Stock','value' => 19,  'color' => '#D93025'],
 ];
 
 // ---------------------------------------------------------------------
@@ -182,12 +181,26 @@ $expiringSoon = [
 // ---------------------------------------------------------------------
 // Stock Request Status — doughnut chart
 // ---------------------------------------------------------------------
-$stockRequestStatusTotal = 48;
 $stockRequestStatus = [
-    ['label' => 'Approved', 'value' => 30, 'pct' => 63, 'color' => '#1E8E3E'],
-    ['label' => 'Pending',  'value' => 12, 'pct' => 25, 'color' => '#E8710A'],
-    ['label' => 'Rejected', 'value' => 6,  'pct' => 12, 'color' => '#D93025'],
+    ['label' => 'Approved', 'value' => 30, 'color' => '#1E8E3E'],
+    ['label' => 'Pending',  'value' => 12, 'color' => '#E8710A'],
+    ['label' => 'Rejected', 'value' => 6,  'color' => '#D93025'],
 ];
+
+// Totals and legend percentages are derived from the same values the
+// doughnuts draw, so the legend can never disagree with the chart.
+$hc_with_pct = function (array $rows): array {
+    $total = array_sum(array_column($rows, 'value'));
+    foreach ($rows as &$row) {
+        $row['pct'] = $total > 0 ? round($row['value'] / $total * 100, 1) : 0;
+    }
+    unset($row);
+    return $rows;
+};
+$stockStatus = $hc_with_pct($stockStatus);
+$stockRequestStatus = $hc_with_pct($stockRequestStatus);
+$stockStatusTotal = (int) array_sum(array_column($stockStatus, 'value'));
+$stockRequestStatusTotal = (int) array_sum(array_column($stockRequestStatus, 'value'));
 
 // ---------------------------------------------------------------------
 // Today's Stock Requests
