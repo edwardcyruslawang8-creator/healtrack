@@ -175,6 +175,80 @@ $adminNavItems = [
   .prp-filter-bar .dropdown{ flex: 1 1 45%; }
   .prp-filter-select{ width: 100%; justify-content: center; }
 }
+
+/* New Patient Registrations card — duplicate of assets/css/patient_reports.css's
+   "npr-" rules (see that file's top comment for why this file duplicates it). */
+.npr-card-header{ align-items: flex-start; }
+.npr-header-title h2{ margin: 0 0 2px; }
+.npr-subtitle{ font-size: 12.5px; color: var(--adm-text-muted); margin: 0; }
+
+.npr-toolbar{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 14px 0 16px;
+}
+.npr-search{ position: relative; flex: 1 1 200px; min-width: 160px; }
+.npr-search i{
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--adm-text-soft); font-size: 13px;
+}
+.npr-search input{
+  width: 100%;
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 8px 12px 8px 32px;
+  font-size: 13px;
+  color: var(--adm-text);
+}
+.npr-search input:focus{ outline: none; border-color: var(--adm-red-bright); }
+.npr-filter-select{
+  width: auto;
+  flex: 0 0 auto;
+  background-color: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 7px 30px 7px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+}
+
+.npr-table thead th{ background: var(--adm-bg); }
+.npr-table .npr-col-age{ width: 70px; }
+.npr-table td:nth-child(2){ text-align: center; }
+.npr-table .npr-col-gender{ width: 90px; }
+.npr-table .npr-col-date{ width: 130px; }
+.npr-table .npr-col-actions{ width: 56px; text-align: center; }
+.npr-name-cell{
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  max-width: 220px;
+}
+.npr-table tbody td{ padding-top: 12px; padding-bottom: 12px; }
+
+.npr-action-btn{
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--adm-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+}
+.npr-action-btn:hover{ background: var(--adm-hover-bg); color: var(--adm-text); }
+
+.npr-empty{ text-align: center; padding: 28px 14px; color: var(--adm-text-soft); font-size: 13px; }
+
+@media (max-width: 767.98px){
+  .npr-toolbar{ flex-direction: column; align-items: stretch; }
+  .npr-filter-select{ width: 100%; }
+}
 </style>
 </head>
 <body class="adm-body">
@@ -456,54 +530,82 @@ $adminNavItems = [
          lay out without forcing .adm-table's horizontal scrollbar. -->
     <div class="adm-grid-70-30">
 
-        <div class="adm-card">
-            <div class="adm-card-header">
-                <h2>New Patient Registrations</h2>
-                <a href="patient_management.php" class="adm-card-footer-link" style="margin-top:0;">View All</a>
+        <div class="adm-card npr-card" id="nprCard">
+            <div class="adm-card-header npr-card-header">
+                <div class="npr-header-title">
+                    <h2>New Patient Registrations</h2>
+                    <p class="npr-subtitle">Recently registered patients.</p>
+                </div>
+                <a href="patient_management.php" class="adm-card-footer-link" style="margin-top:0;">View All <i class="bi bi-arrow-right"></i></a>
             </div>
+
+            <div class="npr-toolbar">
+                <div class="npr-search">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="nprSearch" placeholder="Search by name..." autocomplete="off">
+                </div>
+                <select class="form-select npr-filter-select" id="nprBarangay" aria-label="Filter by barangay">
+                    <option value="">All Barangays</option>
+                    <?php foreach ($seenBarangays as $b): ?>
+                    <option value="<?= htmlspecialchars($b) ?>"><?= htmlspecialchars($b) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <select class="form-select npr-filter-select" id="nprDateRange" aria-label="Date registered">
+                    <option value="" selected>All Time</option>
+                    <option value="7">Last 7 Days</option>
+                    <option value="30">Last 30 Days</option>
+                    <option value="90">Last 90 Days</option>
+                </select>
+            </div>
+
             <!-- min-width overridden inline so this table can never force
                  a horizontal scrollbar, even on a narrow viewport where
                  the 70% column shrinks below .adm-table's default 640px
                  min-width — cells wrap instead. -->
             <div class="adm-table-wrap">
-                <table class="adm-table" style="min-width:0;" data-sortable="true">
+                <table class="adm-table npr-table" style="min-width:0;">
                     <thead>
                         <tr>
-                            <th>Patient Name</th>
-                            <th>Age</th>
-                            <th>Gender</th>
-                            <th>Barangay</th>
-                            <th>Date Registered</th>
+                            <th class="sortable-th npr-col-name" data-sort="name">Patient Name<span class="sort-icon"><i class="bi bi-caret-up-fill sort-icon-up"></i><i class="bi bi-caret-down-fill sort-icon-down"></i></span></th>
+                            <th class="sortable-th npr-col-age" data-sort="age">Age<span class="sort-icon"><i class="bi bi-caret-up-fill sort-icon-up"></i><i class="bi bi-caret-down-fill sort-icon-down"></i></span></th>
+                            <th class="sortable-th npr-col-gender" data-sort="gender">Gender<span class="sort-icon"><i class="bi bi-caret-up-fill sort-icon-up"></i><i class="bi bi-caret-down-fill sort-icon-down"></i></span></th>
+                            <th class="sortable-th npr-col-barangay" data-sort="barangay">Barangay<span class="sort-icon"><i class="bi bi-caret-up-fill sort-icon-up"></i><i class="bi bi-caret-down-fill sort-icon-down"></i></span></th>
+                            <th class="sortable-th sorted-desc npr-col-date" data-sort="dateRegistered">Date Registered<span class="sort-icon"><i class="bi bi-caret-up-fill sort-icon-up"></i><i class="bi bi-caret-down-fill sort-icon-down"></i></span></th>
+                            <th class="npr-col-actions">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <?php if (empty($newPatientRegistrations)): ?>
-                        <tr data-no-sort>
-                            <td colspan="5" class="adm-table-empty">No new registrations for this period.</td>
-                        </tr>
-                        <?php endif; ?>
+                    <tbody id="nprTableBody">
                         <?php foreach ($newPatientRegistrations as $p): ?>
                         <tr>
-                            <td><?= htmlspecialchars($p['name']) ?></td>
+                            <td class="npr-name-cell"><?= htmlspecialchars($p['name']) ?></td>
                             <td><?= (int) $p['age'] ?></td>
                             <td><?= htmlspecialchars($p['gender']) ?></td>
                             <td><?= htmlspecialchars($p['barangay']) ?></td>
                             <td><?= htmlspecialchars($p['dateRegistered']) ?></td>
+                            <td class="npr-col-actions">
+                                <div class="dropdown">
+                                    <button class="npr-action-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Actions"><i class="bi bi-three-dots-vertical"></i></button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" href="patient_profile.php?id=<?= urlencode($p['id']) ?>"><i class="bi bi-eye me-2"></i>View Details</a></li>
+                                    </ul>
+                                </div>
+                            </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                <p class="npr-empty" id="nprEmpty" style="display:<?= $newPatientRegistrations === [] ? '' : 'none' ?>;">No patients match your search.</p>
             </div>
 
             <div class="adm-table-footer">
-                <span class="adm-showing-text">
+                <span class="adm-showing-text" id="nprShowingText">
                     <?php if ($registrationsTotal > 0): $shownFrom = ($registrationsCurrentPage - 1) * 5 + 1; $shownTo = $shownFrom + count($newPatientRegistrations) - 1; ?>
-                    Showing <?= $shownFrom ?> to <?= $shownTo ?> of <?= number_format($registrationsTotal) ?> entries
+                    Showing <?= $shownFrom ?> to <?= $shownTo ?> of <?= number_format($registrationsTotal) ?> patients
                     <?php else: ?>
                     No entries to show
                     <?php endif; ?>
                 </span>
-                <?= hc_render_pagination_nav('New patient registrations pages', 'regPage', $registrationsCurrentPage, $registrationsTotalPages) ?>
+                <div class="adm-pagination" id="nprPagination" aria-label="New patient registrations pages"></div>
             </div>
         </div>
 
@@ -542,6 +644,8 @@ $adminNavItems = [
 
 </main>
 
+<?php require_once __DIR__ . '/../includes/shared/patient_consent_request_modal.php'; ?>
+
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
@@ -569,11 +673,24 @@ $adminNavItems = [
             'colors' => array_column($patientsByGenderReport, 'color'),
         ],
     ]) ?>;
+    // "New Patient Registrations" card — its own independent search/
+    // filter/sort/pagination (assets/js/new-patient-registrations.js),
+    // not part of window.PATIENT_REPORTS_DATA above since it's unrelated
+    // to this page's own Chart.js doughnuts.
+    window.NPR_API_URL = '<?= BASE_URL ?>/api/get-patient-registrations.php';
+    window.NPR_INITIAL = <?= json_encode([
+        'items' => $newPatientRegistrations,
+        'total' => $registrationsTotal,
+        'page' => $registrationsCurrentPage,
+        'totalPages' => $registrationsTotalPages,
+    ]) ?>;
 </script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/sortable-table.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/patient_reports.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/new-patient-registrations.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/patient-consent-gate.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-report-nav.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-tab-nav.js') ?>"></script>
 </body>

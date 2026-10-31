@@ -91,11 +91,86 @@
 @media (max-width: 991.98px){ .prp-stats-row-6{ grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 575.98px){ .prp-stats-row-6{ grid-template-columns: 1fr; } }
 
-/* Bottom row (New Patient Registrations / Top 5 Diagnoses) and the Top 5
-   Diagnoses ranking itself now reuse admin-dashboard.css's
-   .adm-grid-70-30 and subadmin_dashboard.css's .sad-condition-list —
-   the same widgets Overview uses — so there are no page-specific rules
-   left for either here. */
+/* Top 5 Diagnoses ranking reuses admin-dashboard.css's .adm-grid-70-30
+   and subadmin_dashboard.css's .sad-condition-list — the same widgets
+   Overview uses — so there are no page-specific rules left for it
+   here. New Patient Registrations ("npr-" prefixed) is its own real
+   card below: own header subtitle, its own search/filter toolbar, a
+   light-gray table header, fixed column widths/alignment for the
+   short columns, and a 3-dot Actions menu. Keep in sync with the
+   duplicate copy in this page's own inline <style> block (see that
+   block's own comment for why it's duplicated at all). */
+.npr-card-header{ align-items: flex-start; }
+.npr-header-title h2{ margin: 0 0 2px; }
+.npr-subtitle{ font-size: 12.5px; color: var(--adm-text-muted); margin: 0; }
+
+.npr-toolbar{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 14px 0 16px;
+}
+.npr-search{ position: relative; flex: 1 1 200px; min-width: 160px; }
+.npr-search i{
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--adm-text-soft); font-size: 13px;
+}
+.npr-search input{
+  width: 100%;
+  background: var(--adm-bg);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 8px 12px 8px 32px;
+  font-size: 13px;
+  color: var(--adm-text);
+}
+.npr-search input:focus{ outline: none; border-color: var(--adm-red-bright); }
+.npr-filter-select{
+  width: auto;
+  flex: 0 0 auto;
+  background-color: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 7px 30px 7px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--adm-text);
+}
+
+.npr-table thead th{ background: var(--adm-bg); }
+.npr-table .npr-col-age{ width: 70px; }
+.npr-table td:nth-child(2){ text-align: center; }
+.npr-table .npr-col-gender{ width: 90px; }
+.npr-table .npr-col-date{ width: 130px; }
+.npr-table .npr-col-actions{ width: 56px; text-align: center; }
+.npr-name-cell{
+  font-weight: 600;
+  overflow-wrap: anywhere; /* long names wrap without affecting other columns */
+  max-width: 220px;
+}
+.npr-table tbody td{ padding-top: 12px; padding-bottom: 12px; }
+
+.npr-action-btn{
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--adm-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+}
+.npr-action-btn:hover{ background: var(--adm-hover-bg); color: var(--adm-text); }
+
+.npr-empty{ text-align: center; padding: 28px 14px; color: var(--adm-text-soft); font-size: 13px; }
+
+@media (max-width: 767.98px){
+  .npr-toolbar{ flex-direction: column; align-items: stretch; }
+  .npr-filter-select{ width: 100%; }
+}
 
 /* =============================================================
    RESPONSIVE

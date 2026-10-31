@@ -27,10 +27,12 @@
  * gender / barangay) is now real — see includes/shared/date_range_filter.php
  * and includes/shared/simple_filter_dropdown.php — filtering is applied
  * BEFORE every stat/chart/list below is computed, so a filter selection
- * changes the whole page consistently. New Patient Registrations now has
- * real pagination too (includes/shared/pagination_helpers.php) instead
- * of always showing just the first 5 regardless of which page-btn was
- * clicked.
+ * changes the whole page consistently. New Patient Registrations is the
+ * one exception: it's its own self-contained search tool (name search +
+ * Barangay + Date Registered filters, real sort, real pagination — see
+ * includes/shared/patient_registrations_query.php), deliberately NOT
+ * scoped by this page-wide toolbar, refreshed via
+ * api/get-patient-registrations.php without a full page reload.
  *
  * Top 5 Diagnoses is CONNECTED now too — real free-text "diagnosis"
  * field on this facility's own "medical_records" docs (no coded
@@ -201,27 +203,22 @@ foreach (array_slice($barangayCounts, 0, 5, true) as $label => $value) {
 $patientsByBarangayMax = max(array_column($patientsByBarangay, 'value') ?: [1]);
 
 // ---------------------------------------------------------------------
-// New Patient Registrations — real, newest first, with real pagination
-// (includes/shared/pagination_helpers.php) over the filtered set.
+// New Patient Registrations — real, own independent search/Barangay/
+// date filter + sort + pagination (includes/shared/patient_registrations_query.php),
+// NOT scoped by this page's own page-wide filter toolbar above — this
+// card is a self-contained "find a specific patient" tool, same spirit
+// as subadmin/patient_management.php's own independent search, not a
+// sub-view of whatever the page-wide filters happen to be set to.
+// api/get-patient-registrations.php calls this SAME function for the
+// card's own AJAX search/filter/sort/pagination.
 // ---------------------------------------------------------------------
-$sortedByRegistration = $allReportPatients;
-usort($sortedByRegistration, fn ($a, $b) => strcmp($b['dateRegistered'] ?? '', $a['dateRegistered'] ?? ''));
+require_once __DIR__ . '/../shared/patient_registrations_query.php';
 
-$registrationsPaged = hc_paginate($sortedByRegistration, 'regPage', 5);
-$newPatientRegistrations = [];
-foreach ($registrationsPaged['items'] as $p) {
-    $newPatientRegistrations[] = [
-        'id' => 'PAT-' . strtoupper(substr(md5($p['name'] . $p['dateRegistered']), 0, 8)),
-        'name' => $p['name'] ?? '(no name)',
-        'age' => (int) ($p['age'] ?? 0),
-        'gender' => $p['gender'] ?? '—',
-        'barangay' => $p['barangay'] ?? '—',
-        'dateRegistered' => isset($p['dateRegistered']) ? date('M j, Y', strtotime($p['dateRegistered'])) : '—',
-    ];
-}
-$registrationsTotal = $registrationsPaged['total'];
-$registrationsCurrentPage = $registrationsPaged['page'];
-$registrationsTotalPages = $registrationsPaged['totalPages'];
+$nprDefault = hc_query_patient_registrations($facilityName, []); // default: no search/filter, newest-first, page 1
+$newPatientRegistrations = $nprDefault['items'];
+$registrationsTotal = $nprDefault['total'];
+$registrationsCurrentPage = $nprDefault['page'];
+$registrationsTotalPages = $nprDefault['totalPages'];
 
 // ---------------------------------------------------------------------
 // Top 5 Diagnoses (All Patients) — real, free-text "diagnosis" field on
