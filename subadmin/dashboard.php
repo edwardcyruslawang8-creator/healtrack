@@ -17,12 +17,9 @@
  * by Age Group, Patients by Gender, Active Medical Staff, Low Stock
  * Alerts, and Recent Stock Requests are all real now (see
  * includes/subadmin/subadmin_dashboard_firestore.php's header comment for exactly
- * which collections). Today's Consultations, Total Medical Records,
- * the Consultations Trend chart, Top 5 Health Conditions,
- * Consultations by Type, Lab/X-ray Summary, and Monthly Consultation
- * Comparison stay front-end only — there's no consultations/medical-
- * records/lab-result data model anywhere in this app, and building one
- * is out of scope for this pass.
+ * which collections), including the Lab & X-ray Requests trend and
+ * Laboratory & X-ray Summary cards (real lab_results/xray_results at
+ * this facility — full breakdown on lab_xray_reports.php).
  * =====================================================================
  */
 session_start();
@@ -341,6 +338,52 @@ $adminNavItems = [
         </div>
     </div>
 
+    <!-- ============ LABORATORY & X-RAY ============
+         Real lab_results/xray_results at this facility — full breakdown
+         on subadmin/lab_xray_reports.php (Analytics & Reports tab). -->
+    <div class="adm-grid-70-30 sad-labxray-row">
+
+        <div class="adm-card sad-chart-card" data-dashboard-card="labXrayTrend" data-range-param="labXrayRange">
+            <div class="sad-card-header">
+                <h2>Lab &amp; X-ray Requests</h2>
+                <?php $range = $labXrayTrendRangeState; $drBtnClass = 'sad-range-btn'; require __DIR__ . '/../includes/shared/dashboard_range_dropdown.php'; ?>
+            </div>
+            <div class="sad-canvas-box">
+                <canvas id="labXrayTrendChart"></canvas>
+            </div>
+            <div class="sad-chart-legend">
+                <span><span class="dot" style="background:#7C3AED;"></span> Laboratory</span>
+                <span><span class="dot" style="background:#1A73E8;"></span> X-ray</span>
+            </div>
+        </div>
+
+        <div class="adm-card sad-chart-card">
+            <div class="sad-card-header"><h2>Laboratory &amp; X-ray Summary</h2></div>
+            <div class="sad-labxray-list">
+                <?php foreach ($labXraySummary as $lx): ?>
+                <div class="sad-labxray-item">
+                    <div class="sad-labxray-head">
+                        <span class="sad-labxray-icon" style="background:<?= htmlspecialchars($lx['bg']) ?>; color:<?= htmlspecialchars($lx['color']) ?>;"><i class="bi <?= htmlspecialchars($lx['icon']) ?>"></i></span>
+                        <span class="sad-labxray-title"><?= htmlspecialchars($lx['label']) ?></span>
+                        <span class="sad-labxray-total"><?= number_format($lx['total']) ?> <small>total</small></span>
+                    </div>
+                    <div class="sad-labxray-stats">
+                        <span><strong class="text-success"><?= number_format($lx['completed']) ?></strong> Completed</span>
+                        <span><strong style="color:#B45309;"><?= number_format($lx['pending']) ?></strong> Pending</span>
+                        <span><strong><?= number_format($lx['thisMonth']) ?></strong> This Month</span>
+                    </div>
+                    <div class="sad-condition-bar-track" title="<?= $lx['completionPct'] ?>% completed">
+                        <div class="sad-condition-bar-fill" style="width:<?= $lx['completionPct'] ?>%; background:<?= htmlspecialchars($lx['color']) ?>;"></div>
+                    </div>
+                    <div class="sad-labxray-pct"><?= $lx['completionPct'] ?>% completed</div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <a href="lab_xray_reports.php" class="sad-stat-link">View Lab &amp; X-ray Reports <i class="bi bi-arrow-right"></i></a>
+        </div>
+
+    </div>
+
 </main>
 
 <!-- Bootstrap 5 JS Bundle -->
@@ -363,6 +406,7 @@ $adminNavItems = [
             'values' => array_column($patientsByGender, 'value'),
             'colors' => array_column($patientsByGender, 'color'),
         ],
+        'labXrayTrend' => $labXrayTrend,
     ]) ?>;
     window.HC_DASHBOARD_CARD_ENDPOINT = '../api/subadmin-dashboard-card.php';
 </script>

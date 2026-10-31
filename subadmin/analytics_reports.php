@@ -253,15 +253,7 @@ $adminNavItems = [
     </div>
 
     <!-- ============ ANALYTICS TABS ============ -->
-    <ul class="nav arp-tabs" role="tablist">
-        <?php foreach ($analyticsTabs as $tab): ?>
-        <li class="nav-item" role="presentation">
-            <a href="<?= htmlspecialchars($tab['href']) ?>" class="nav-link <?= !empty($tab['active']) ? 'active' : '' ?>" data-ajax-tab>
-                <?= htmlspecialchars($tab['label']) ?>
-            </a>
-        </li>
-        <?php endforeach; ?>
-    </ul>
+    <?php require __DIR__ . '/../includes/subadmin/_analytics_tabs.php'; ?>
 
     <!-- ============ KPI SUMMARY CARDS ============ -->
     <div class="arp-kpi-row">
@@ -287,11 +279,8 @@ $adminNavItems = [
          the exact same admin computation pipeline for this same facility)
          — full detail (all 4 categories, 6.3.1–6.3.4) lives on that tab;
          these 3 cards just surface the headline numbers here on Overview. -->
-    <div class="adm-card-header" style="margin-bottom:14px;">
-        <h2 style="font-size:16px; font-weight:700; color:var(--adm-text); margin:0;">Predictive Analytics</h2>
-        <a href="predictive_analytics.php" class="adm-card-footer-link" style="margin-top:0;">View Full Predictive &amp; Prescriptive Analytics <i class="bi bi-arrow-right"></i></a>
-    </div>
-    <div class="arp-kpi-row" style="margin-bottom:26px;">
+    <h2 class="arp-predictive-title">Predictive Analytics</h2>
+    <div class="arp-kpi-row arp-predictive-row">
         <div class="adm-card arp-kpi-card">
             <div class="arp-kpi-icon" style="background:#E8F0FE; color:#1A73E8;"><i class="bi bi-graph-up-arrow"></i></div>
             <div class="arp-kpi-text">

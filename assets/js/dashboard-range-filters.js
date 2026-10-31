@@ -111,7 +111,15 @@ document.addEventListener('DOMContentLoaded', function () {
             const chart = window.HC_DASHBOARD_CHARTS && window.HC_DASHBOARD_CHARTS[cardKey];
             if (chart) {
                 chart.data.labels = data.labels;
-                chart.data.datasets[0].data = data.values;
+                // Multi-line cards (subadmin's Lab & X-ray Requests) send
+                // one values array per dataset as "series".
+                if (Array.isArray(data.series)) {
+                    data.series.forEach(function (values, i) {
+                        if (chart.data.datasets[i]) chart.data.datasets[i].data = values;
+                    });
+                } else {
+                    chart.data.datasets[0].data = data.values;
+                }
                 chart.update();
             }
         }

@@ -34,7 +34,7 @@ if (($_SESSION['role'] ?? null) !== 'subadmin') {
 }
 
 $card = $_GET['card'] ?? '';
-if (!in_array($card, ['consultationsTrend', 'patientsByAge', 'healthConditions'], true)) {
+if (!in_array($card, ['consultationsTrend', 'patientsByAge', 'healthConditions', 'labXrayTrend'], true)) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Unknown card.']);
     exit;
@@ -63,6 +63,16 @@ switch ($card) {
             'rangeLabel' => $patientsByAgeRange,
             'labels' => $patientsByAge['labels'],
             'values' => $patientsByAge['values'],
+        ]);
+        break;
+
+    case 'labXrayTrend':
+        echo json_encode([
+            'success' => true,
+            'rangeLabel' => $labXrayTrendRange,
+            'labels' => $labXrayTrend['labels'],
+            'values' => $labXrayTrend['values'],
+            'series' => $labXrayTrend['series'],
         ]);
         break;
 
