@@ -43,15 +43,3 @@ if ($item === null || $item['type'] !== $requestedType || $item['archived']) {
 }
 
 $itemBatches = hc_get_batches_for_medicine($itemId, true);
-
-// Same real counts the main inventory page's own summary cards show
-// (pharmacist/medicine_vaccine_inventory.php) — kept here too so this
-// detail page's shell matches it exactly rather than dropping the row.
-$allInventory = array_merge(hc_get_inventory_items('medicine'), hc_get_inventory_items('vaccine'));
-$inventorySummary = [
-    'totalItems' => count($allInventory),
-    'inStock' => count(array_filter($allInventory, fn ($i) => $i['status'] === 'available')),
-    'lowStock' => count(array_filter($allInventory, fn ($i) => $i['status'] === 'low')),
-    'outOfStock' => count(array_filter($allInventory, fn ($i) => $i['status'] === 'unavailable')),
-    'overstocked' => count(array_filter($allInventory, fn ($i) => $i['status'] === 'overstocked')),
-];

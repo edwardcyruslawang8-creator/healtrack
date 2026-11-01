@@ -40,7 +40,7 @@ if (($_SESSION['role'] ?? null) !== 'pharmacist') {
 }
 
 require_once __DIR__ . '/../includes/pharmacist/manage_medicine_firestore.php';
-// $staffProfile, $dashboardDateLabel, $inventorySummary,
+// $staffProfile, $dashboardDateLabel,
 // $medicineStatusMeta, $medicineExpiryBadgeMeta,
 // $item, $itemBatches
 
@@ -191,50 +191,6 @@ $isVaccine = $item['type'] === 'vaccine';
                         <li><a class="dropdown-item" href="<?= BASE_URL ?>/api/logout.php"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                     </ul>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ============ INVENTORY SUMMARY CARDS ============ -->
-    <div class="mvi-summary-row">
-        <div class="adm-card mvi-summary-card">
-            <div class="mvi-summary-icon" style="background:#E8F0FE; color:#1A73E8;"><i class="bi bi-bag-plus-fill"></i></div>
-            <div class="mvi-summary-text">
-                <span class="mvi-summary-label">Total Items</span>
-                <span class="mvi-summary-value"><?= number_format($inventorySummary['totalItems']) ?></span>
-                <span class="mvi-summary-sub">All medicine &amp; vaccines</span>
-            </div>
-        </div>
-        <div class="adm-card mvi-summary-card">
-            <div class="mvi-summary-icon" style="background:#E4F7EA; color:#1E8E3E;"><i class="bi bi-check-circle-fill"></i></div>
-            <div class="mvi-summary-text">
-                <span class="mvi-summary-label">In Stock</span>
-                <span class="mvi-summary-value"><?= number_format($inventorySummary['inStock']) ?></span>
-                <span class="mvi-summary-sub">Items with sufficient stock</span>
-            </div>
-        </div>
-        <div class="adm-card mvi-summary-card">
-            <div class="mvi-summary-icon" style="background:#FDECDD; color:#E8710A;"><i class="bi bi-exclamation-circle-fill"></i></div>
-            <div class="mvi-summary-text">
-                <span class="mvi-summary-label">Low Stock</span>
-                <span class="mvi-summary-value"><?= number_format($inventorySummary['lowStock']) ?></span>
-                <span class="mvi-summary-sub">Items at or below minimum level</span>
-            </div>
-        </div>
-        <div class="adm-card mvi-summary-card">
-            <div class="mvi-summary-icon" style="background:#FCE4E4; color:#D93025;"><i class="bi bi-x-circle-fill"></i></div>
-            <div class="mvi-summary-text">
-                <span class="mvi-summary-label">Out of Stock</span>
-                <span class="mvi-summary-value"><?= number_format($inventorySummary['outOfStock']) ?></span>
-                <span class="mvi-summary-sub">Items out of stock</span>
-            </div>
-        </div>
-        <div class="adm-card mvi-summary-card">
-            <div class="mvi-summary-icon" style="background:#F1E8FD; color:#8B5CF6;"><i class="bi bi-box-seam-fill"></i></div>
-            <div class="mvi-summary-text">
-                <span class="mvi-summary-label">Overstocked</span>
-                <span class="mvi-summary-value"><?= number_format($inventorySummary['overstocked']) ?></span>
-                <span class="mvi-summary-sub">Items above maximum level</span>
             </div>
         </div>
     </div>
