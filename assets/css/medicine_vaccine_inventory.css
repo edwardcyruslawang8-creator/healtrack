@@ -403,6 +403,27 @@
 .mm-batch-table{ white-space: nowrap; }
 .mm-batch-table td, .mm-batch-table th{ padding-top: 12px; padding-bottom: 12px; }
 
+/* -- A medicine/vaccine can accumulate many real batches over time
+      (every Restock, same batch number or not); without a cap here the
+      page just kept growing taller with no end in sight. Capped at
+      roughly 6 rows' worth of height with its own vertical scrollbar
+      instead (.adm-table-wrap already scrolls horizontally on
+      overflow — admin-dashboard.css's own .adm-table-wrap{overflow-x}
+      — this adds the vertical half, scoped to just this card so it
+      doesn't affect .adm-table-wrap anywhere else in the app). The
+      header row stays pinned via position:sticky so column labels are
+      never scrolled out of view while scanning a long batch list. -- */
+.mm-batch-card .adm-table-wrap{
+  max-height: 400px;
+  overflow-y: auto;
+}
+.mm-batch-table thead th{
+  position: sticky;
+  top: 0;
+  background: var(--adm-bg);
+  z-index: 1;
+}
+
 .mm-dispense-btn{
   display: inline-flex;
   align-items: center;
