@@ -16,9 +16,15 @@
          blank, same as every pre-existing batch that predates this
          field), Quantity, and Expiry Date
          (hc_create_medicine_batch()).
-     On success, reloads the page (same convention as every other
-     mutating action here) so the Batch Inventory table reflects the
-     real new quantity immediately.
+     Also submits the item's own Dosage Information (pre-filled with
+     its current value by assets/js/manage_medicine.js) — restocking is
+     the one real pharmacist-accessible write on an EXISTING item, so
+     it doubles as where that field gets kept current. On success,
+     reloads the page (same convention as every other mutating action
+     here) so the Batch Inventory table reflects the real new quantity,
+     and the item's real recalculated Minimum Level/Reorder Level
+     (api/restock-medicine.php's own hc_auto_compute_thresholds() call),
+     immediately.
      ============================================================= -->
 <div class="modal fade am-modal" id="restockModal" tabindex="-1" aria-labelledby="restockModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -58,9 +64,15 @@
             </div>
           </div>
 
-          <div class="mb-0">
+          <div class="mb-3">
             <label class="am-form-label" for="rsQty">Quantity<span class="text-danger">*</span></label>
             <input type="number" class="form-control am-form-control" id="rsQty" min="1" step="1" placeholder="e.g. 50" required>
+            <div class="am-form-help">Minimum Level and Reorder Level will be recalculated automatically from the item's total stock after this restock.</div>
+          </div>
+
+          <div class="mb-0">
+            <label class="am-form-label" for="rsDosage">Dosage Information <span class="text-muted fw-normal">(Optional)</span></label>
+            <textarea class="form-control am-form-control" id="rsDosage" rows="2" placeholder="e.g. Adults: 500mg every 8 hours for 7 days"></textarea>
           </div>
         </div>
         <div class="modal-footer">

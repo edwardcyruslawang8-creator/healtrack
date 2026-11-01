@@ -3,14 +3,12 @@
  * =====================================================================
  * Restock Medicine / Vaccine (api/restock-medicine.php)
  * ---------------------------------------------------------------------
- * Called by assets/js/medicine_vaccine_inventory_pharmacist.js's Restock
- * modal, opened from inside pharmacist/medicine_vaccine_inventory.php's
- * Manage Medicine modal (includes/pharmacist/medicine_action_modals.php)
- * — a pharmacist receiving real stock, either more of an existing real
- * batch ("mode":"existing", a real medicine_batches/{batchId} that
- * already belongs to this item — hc_add_to_existing_batch()) or a brand
- * new one with its own batch number/expiry
- * ("mode":"new" — hc_create_medicine_batch()).
+ * Called by assets/js/manage_medicine.js's Restock modal, opened from
+ * pharmacist/manage_medicine.php — a pharmacist receiving real stock,
+ * either more of an existing real batch ("mode":"existing", a real
+ * medicine_batches/{batchId} that already belongs to this item —
+ * hc_add_to_existing_batch()) or a brand new one with its own batch
+ * number/expiry ("mode":"new" — hc_create_medicine_batch()).
  *
  * Deliberately separate from api/adjust-medicine-stock.php (subadmin-
  * only, a free-form +/- override that can also REMOVE stock) — this
@@ -19,6 +17,20 @@
  * api/create-medicine.php's own header comment already gives for why
  * registering new stock is a different operation from editing existing
  * master data.
+ *
+ * Two more real fields get written here on every successful restock,
+ * per explicit request:
+ *   - minLevel/reorderLevel are recalculated from the item's own real
+ *     total stock AFTER this restock (hc_auto_compute_thresholds()) —
+ *     these two thresholds now scale with how much is actually on
+ *     hand, rather than staying pinned to whatever a sub-admin set
+ *     once at creation.
+ *   - "dosage" (optional) is updated from the Restock form's own
+ *     Dosage Information field — restocking is the one real pharmacist-
+ *     accessible write on an EXISTING item, so it doubles as the place
+ *     to keep that field current rather than leaving it permanently
+ *     stuck at whatever was typed (or left blank) when the item was
+ *     first added.
  * =====================================================================
  */
 
@@ -47,6 +59,7 @@ $body = json_decode(file_get_contents('php://input'), true) ?? [];
 $id = trim((string) ($body['id'] ?? ''));
 $mode = trim((string) ($body['mode'] ?? ''));
 $quantity = $body['quantity'] ?? null;
+$dosage = trim((string) ($body['dosage'] ?? ''));
 
 if ($id === '') {
     http_response_code(422);
@@ -130,8 +143,30 @@ if ($mode === 'existing') {
     write_audit_log('created', 'Medicine & Vaccine Inventory', 'Restocked "' . $name . '" with a new batch (' . $quantity . ' ' . $unit . '(s)).');
 }
 
+// hc_create_medicine_batch()/hc_add_to_existing_batch() already
+// recomputed currentStock via hc_recompute_medicine_rollup() — this is
+// a SEPARATE follow-up write, not a second rollup, so it doesn't touch
+// that shared function (used by every other stock-changing path too,
+// most of which have no reason to auto-recalculate thresholds).
 $updatedDoc = $firestore->getDocument('medicines', $id);
 $newStock = (int) ($updatedDoc['currentStock'] ?? 0);
-$status = (string) ($updatedDoc['status'] ?? 'unavailable');
+$maxLevel = (int) ($updatedDoc['maxLevel'] ?? 0);
+$thresholds = hc_auto_compute_thresholds($newStock);
 
-echo json_encode(['success' => true, 'id' => $id, 'currentStock' => $newStock, 'status' => $status]);
+$firestore->setDocument('medicines', $id, array_merge($updatedDoc, [
+    'minLevel' => $thresholds['minLevel'],
+    'reorderLevel' => $thresholds['reorderLevel'],
+    'status' => hc_inventory_status_for_stock($newStock, $thresholds['minLevel'], $maxLevel),
+    'dosage' => $dosage !== '' ? $dosage : null,
+]));
+
+write_audit_log('updated', 'Medicine & Vaccine Inventory', 'Recalculated thresholds for "' . $name . '" after restock (Minimum Level: ' . $thresholds['minLevel'] . ', Reorder Level: ' . $thresholds['reorderLevel'] . ').');
+
+echo json_encode([
+    'success' => true,
+    'id' => $id,
+    'currentStock' => $newStock,
+    'status' => hc_inventory_status_for_stock($newStock, $thresholds['minLevel'], $maxLevel),
+    'minLevel' => $thresholds['minLevel'],
+    'reorderLevel' => $thresholds['reorderLevel'],
+]);

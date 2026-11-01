@@ -164,9 +164,13 @@ document.addEventListener('DOMContentLoaded', function () {
     // -------------------------------------------------------------
     // Restock — adds real stock a pharmacist actually received, either
     // into an existing batch (window.MM_BATCHES — already on the
-    // page, no fetch) or as a brand new one. POSTs to
-    // api/restock-medicine.php, then reloads on success so the Batch
-    // Inventory table reflects the real new quantity.
+    // page, no fetch) or as a brand new one, plus an optional Dosage
+    // Information update (pre-filled from item.dosage). POSTs to
+    // api/restock-medicine.php, which also recalculates Minimum
+    // Level/Reorder Level from the item's new total stock
+    // (hc_auto_compute_thresholds()) — then reloads on success so the
+    // Batch Inventory table and info row reflect the real new
+    // quantity/thresholds.
     // -------------------------------------------------------------
     const restockBtn = document.getElementById('mmRestockBtn');
     const restockModalEl = document.getElementById('restockModal');
@@ -198,6 +202,7 @@ document.addEventListener('DOMContentLoaded', function () {
             rsErrorBox.classList.add('d-none');
             document.getElementById('rsItemId').value = item.id;
             document.getElementById('rsItemName').textContent = item.name;
+            document.getElementById('rsDosage').value = item.dosage || '';
 
             rsBatchSelect.innerHTML = '';
             if (batches.length === 0) {
@@ -231,7 +236,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            const payload = { id: item.id, mode: isExisting ? 'existing' : 'new', quantity: quantity };
+            const payload = {
+                id: item.id,
+                mode: isExisting ? 'existing' : 'new',
+                quantity: quantity,
+                dosage: document.getElementById('rsDosage').value.trim(),
+            };
             if (isExisting) {
                 if (!rsBatchSelect.value) {
                     rsErrorBox.textContent = 'Please select which batch this stock belongs to.';

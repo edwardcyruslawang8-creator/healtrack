@@ -378,6 +378,7 @@ window.MM_ITEM = <?= json_encode([
     'unit' => $item['unit'],
     'currentStock' => $item['currentStock'],
     'expiryStatus' => $item['expiryStatus'],
+    'dosage' => $item['dosage'],
 ]) ?>;
 window.MM_BATCHES = <?= json_encode(array_map(fn ($b) => [
     'id' => $b['id'],

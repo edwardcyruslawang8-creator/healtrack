@@ -284,6 +284,35 @@ if (!function_exists('hc_inventory_status_for_stock')) {
     }
 }
 
+if (!function_exists('hc_auto_compute_thresholds')) {
+    /**
+     * Minimum Level / Reorder Level recalculated from an item's own
+     * real total stock — used by api/restock-medicine.php right after
+     * a pharmacist adds real stock, per explicit request: these two
+     * thresholds should scale with however much of the item is
+     * actually on hand now, rather than staying fixed at whatever a
+     * sub-admin set once when the item was first created. Minimum
+     * Level is a 20% hard safety floor (below this, hc_inventory_status_for_stock()
+     * flags "Low Stock"); Reorder Level is a 50% early-warning
+     * threshold ABOVE that floor (the point a batch's own
+     * hc_batch_status() in includes/firestore/medicine_batches.php
+     * starts flagging "Low Stock" for that one batch) — always kept at
+     * least one unit above Minimum Level so the two never collapse
+     * into the same number. Only ever called with $currentStock > 0
+     * (a restock always adds a positive quantity), so there's no 0-stock
+     * case to special-case here.
+     *
+     * @return array{minLevel: int, reorderLevel: int}
+     */
+    function hc_auto_compute_thresholds(int $currentStock): array
+    {
+        $minLevel = max(1, (int) round($currentStock * 0.20));
+        $reorderLevel = max($minLevel + 1, (int) round($currentStock * 0.50));
+
+        return ['minLevel' => $minLevel, 'reorderLevel' => $reorderLevel];
+    }
+}
+
 // ---------------------------------------------------------------------
 // Category-filter helpers — shared by admin/facility_analytics.php's
 // Medicine/Vaccine Inventory cards (their own real category dropdown,
