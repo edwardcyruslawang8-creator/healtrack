@@ -256,7 +256,6 @@ $isVaccine = $item['type'] === 'vaccine';
             </div>
         </div>
         <div class="mm-header-actions">
-            <button type="button" id="mmHistoryBtn" class="mvi-manage-header-btn" aria-label="View activity log"><i class="bi bi-clock-history"></i> History</button>
             <div class="mm-search">
                 <i class="bi bi-search"></i>
                 <input type="text" id="mmBatchSearch" placeholder="Search batch number..." autocomplete="off">

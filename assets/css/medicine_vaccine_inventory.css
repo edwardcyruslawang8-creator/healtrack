@@ -231,27 +231,6 @@
 .mvi-more-btn{ color: var(--adm-text-muted); }
 .mvi-page-ellipsis{ pointer-events: none; color: var(--adm-text-soft); }
 
-/* -- pharmacist/manage_medicine.php's own "History" header button
-      (inside .mm-header-actions below) — same outlined brand-red look
-      .mvi-manage-btn (the list table's own trigger link) and the main
-      inventory table's other labeled buttons already use, just sized
-      down. -- */
-.mvi-manage-header-btn{
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
-  border-radius: 7px;
-  border: 1px solid var(--adm-red-bright);
-  background: var(--adm-card);
-  color: var(--adm-red-bright);
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-  transition: background .15s ease, color .15s ease;
-}
-.mvi-manage-header-btn:hover{ background: var(--adm-red-bright); color: #fff; }
-
 /* -- pharmacist/manage_medicine.php's own "expired" note, right under
       the item header when its real expiry has already passed — same
       note the old modal showed, now on the detail page itself. -- */

@@ -12,13 +12,12 @@
 
    Reuses the SAME real modals/endpoints the old #mviManageModal used
    (#dispenseNoRxModal/api/dispense-without-prescription.php,
-   #stockHistoryModal/api/get-medicine-stock-history.php,
-   #restockModal/api/restock-medicine.php — all still rendered by
+   #restockModal/api/restock-medicine.php — both still rendered by
    includes/pharmacist/medicine_action_modals.php, required by this
    page too) — only how they're triggered changed, not what they do.
    Archive reloads via api/archive-medicine.php and a plain
    HCDialog.confirm(), same pattern as the list page's own row-level
-   Archive button.
+   Archive button. No History trigger here — removed per request.
    ============================================================= */
 document.addEventListener('DOMContentLoaded', function () {
     const item = window.MM_ITEM;
@@ -161,68 +160,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
         });
     });
-
-    // -------------------------------------------------------------
-    // History — the same real Activity Log #stockHistoryModal already
-    // shows (api/get-medicine-stock-history.php); its own "Current
-    // Batches" mini-table is skipped here since this whole page
-    // already IS that same batch list in full.
-    // -------------------------------------------------------------
-    const historyBtn = document.getElementById('mmHistoryBtn');
-    const stockHistoryModalEl = document.getElementById('stockHistoryModal');
-    if (historyBtn && stockHistoryModalEl) {
-        const stockHistoryModal = new bootstrap.Modal(stockHistoryModalEl);
-        const shLoading = document.getElementById('shLoading');
-        const shEmpty = document.getElementById('shEmpty');
-        const shList = document.getElementById('shList');
-        const shBatchesEmpty = document.getElementById('shBatchesEmpty');
-        const shBatchesTable = document.getElementById('shBatchesTable');
-
-        historyBtn.addEventListener('click', function () {
-            document.getElementById('shItemName').textContent = item.name;
-            shLoading.classList.remove('d-none');
-            shEmpty.classList.add('d-none');
-            shList.classList.add('d-none');
-            shList.innerHTML = '';
-            shBatchesEmpty.classList.add('d-none');
-            shBatchesTable.classList.add('d-none'); // this page already shows every batch of its own, in full
-            stockHistoryModal.show();
-
-            fetch('../api/get-medicine-stock-history.php?name=' + encodeURIComponent(item.name) + '&id=' + encodeURIComponent(item.id))
-                .then(function (res) { return res.json(); })
-                .then(function (data) {
-                    shLoading.classList.add('d-none');
-                    if (!data.success) throw new Error(data.error || 'Could not load activity log.');
-                    if (!data.history.length) {
-                        shEmpty.textContent = 'No recorded history for this item yet.';
-                        shEmpty.classList.remove('d-none');
-                        return;
-                    }
-                    data.history.forEach(function (entry) {
-                        const li = document.createElement('li');
-                        li.className = 'am-history-item';
-                        const when = entry.timestamp
-                            ? new Date(entry.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
-                            : '';
-                        const detailsEl = document.createElement('div');
-                        detailsEl.className = 'am-history-details';
-                        detailsEl.textContent = entry.details;
-                        const metaEl = document.createElement('div');
-                        metaEl.className = 'am-history-meta';
-                        metaEl.textContent = entry.actorName + ' — ' + when;
-                        li.appendChild(detailsEl);
-                        li.appendChild(metaEl);
-                        shList.appendChild(li);
-                    });
-                    shList.classList.remove('d-none');
-                })
-                .catch(function (err) {
-                    shLoading.classList.add('d-none');
-                    shEmpty.textContent = err.message;
-                    shEmpty.classList.remove('d-none');
-                });
-        });
-    }
 
     // -------------------------------------------------------------
     // Restock — adds real stock a pharmacist actually received, either
