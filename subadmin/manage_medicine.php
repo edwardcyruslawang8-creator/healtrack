@@ -324,8 +324,6 @@ $isVaccine = $item['type'] === 'vaccine';
                         <th>Batch Number</th>
                         <th>Dosage Information</th>
                         <th>Current Stock</th>
-                        <th>Minimum Level</th>
-                        <th>Reorder Level</th>
                         <th>Expiry Date</th>
                         <th>Status</th>
                         <th>Action</th>
@@ -337,8 +335,6 @@ $isVaccine = $item['type'] === 'vaccine';
                         <td class="mvi-strong"><?= htmlspecialchars($batch['displayBatchNumber']) ?></td>
                         <td><?= $item['dosage'] !== '' ? htmlspecialchars($item['dosage']) : 'Not Recorded' ?></td>
                         <td><?= number_format($batch['quantity']) ?> <?= htmlspecialchars($item['unit']) ?></td>
-                        <td><?= number_format($batch['minLevel']) ?></td>
-                        <td><?= number_format($batch['reorderLevel']) ?></td>
                         <td><?= htmlspecialchars($batch['expiryDate']) ?></td>
                         <td><span class="mvi-badge" style="background:<?= htmlspecialchars($batch['status']['bg']) ?>; color:<?= htmlspecialchars($batch['status']['color']) ?>;"><?= htmlspecialchars($batch['status']['label']) ?></span></td>
                         <td>
