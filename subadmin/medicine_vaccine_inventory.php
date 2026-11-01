@@ -21,20 +21,24 @@
  *
  * A simplified overview table — same redesign
  * pharmacist/medicine_vaccine_inventory.php already got. Each row's
- * "Manage Medicine" is a real link to subadmin/manage_medicine.php's
- * own detail page now (not a modal) — Edit, Delete, Restock, Dispense
- * viewing, and the real Batch Inventory table all live there; Archive
- * stays here too as its own row-level button. Sub-admin keeps Edit
- * (api/update-medicine.php) and Delete (api/delete-medicine.php),
- * unlike pharmacist's own detail page — both endpoints already
- * accepted the subadmin role. "+ Add Medicine"/"+ Add Vaccine" stay
- * off this page entirely — creating brand-new items is still
- * pharmacist-only (api/create-medicine.php). "Adjust Stock" stays
- * deliberately absent for sub-admin (pharmacist/medicine_vaccine_inventory.php's
- * own detail page doesn't offer it either now — Restock replaced it
- * for adding real stock); api/adjust-medicine-stock.php still
- * technically accepts subadmin too, it just has no UI entry point
- * anywhere for this role.
+ * "Manage Medicine" is the one real action left here — a real link to
+ * subadmin/manage_medicine.php's own detail page (not a modal); Edit,
+ * Restock, Archive, and the real Batch Inventory table all live there
+ * now, no row-level Archive button on this table anymore either
+ * (removed per request, same as pharmacist's own table). Sub-admin
+ * keeps Edit (api/update-medicine.php) on that detail page, unlike
+ * pharmacist's own version of it — that endpoint already accepted the
+ * subadmin role. No Delete trigger anywhere (also removed per
+ * request) and no Dispense trigger either (dispensing stays a
+ * pharmacist-only clinical action — see subadmin/manage_medicine.php's
+ * own header comment). "+ Add Medicine"/"+ Add Vaccine" stay off this
+ * page entirely — creating brand-new items is still pharmacist-only
+ * (api/create-medicine.php). "Adjust Stock" stays deliberately absent
+ * for sub-admin (pharmacist/medicine_vaccine_inventory.php's own
+ * detail page doesn't offer it either now — Restock replaced it for
+ * adding real stock); api/adjust-medicine-stock.php still technically
+ * accepts subadmin too, it just has no UI entry point anywhere for
+ * this role.
  * =====================================================================
  */
 session_start();
@@ -375,20 +379,16 @@ $adminNavItems = [
 
 </main>
 
-<!-- No modal requires here anymore — Edit/Delete/Restock/Dispense/View
-     Stock History all moved to manage_medicine.php's own detail page
-     (its own requires). Archive is this list page's one remaining
-     row-level mutation, and needs no modal markup (HCDialog.confirm()
-     only) — assets/js/medicine_vaccine_inventory_pharmacist.js (below)
-     stays loaded for that. -->
+<!-- No modal requires here, and no assets/js/medicine_vaccine_inventory_pharmacist.js
+     either — Edit/Restock/Archive all moved to manage_medicine.php's
+     own detail page (its own requires/its own JS). This table's one
+     remaining row-level element is "Manage Medicine", a plain link
+     needing no JS of its own at all. -->
 
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
-<script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/quick-search.js') ?>"></script>
-<script src="<?= asset_url('/assets/js/medicine_vaccine_inventory_pharmacist.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/mvi-ajax-pagination.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>

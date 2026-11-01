@@ -50,7 +50,6 @@
                     <td>
                         <div class="adm-action-btns">
                             <a href="manage_medicine.php?id=<?= urlencode($vac['id']) ?>&amp;type=vaccine" class="mvi-manage-btn" aria-label="Manage this vaccine">Manage Vaccine</a>
-                            <button type="button" class="mvi-archive-btn mvi-archive" aria-label="Archive this vaccine"><i class="bi bi-archive"></i> Archive</button>
                         </div>
                     </td>
                 </tr>

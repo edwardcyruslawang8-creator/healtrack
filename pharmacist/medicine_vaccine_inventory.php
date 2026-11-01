@@ -20,30 +20,30 @@
  * working search/category/status filters and pagination.
  *
  * A simplified overview table — Current Stock/Minimum Level/Reorder
- * Level/Expiry Date columns live on the detail page instead (see
- * below), and the Status column shows the oldest (FEFO) real batch
- * number as a quick hint alongside the usual status badge
- * ($med['oldestBatchNumber'], mvi_attach_oldest_batch() in
- * includes/pharmacist/medicine_vaccine_inventory_pharmacist_firestore.php).
+ * Level/Expiry Date/Status columns live on the detail page instead
+ * (see below); the Batch Number column here shows the oldest (FEFO)
+ * real batch number as a quick hint
+ * ($med['oldestBatchNumber'], hc_attach_oldest_batch_numbers() in
+ * includes/firestore/medicine_batches.php).
  *
  * Each row's Actions column is a real link to
  * pharmacist/manage_medicine.php?id=...&type=medicine|vaccine — a
  * dedicated detail page (not a modal) with the full batch-level
- * management view: Dispense, Restock, Archive, and View Stock History/
- * Activity Log all live there now. A pharmacist still can't edit
+ * management view: Dispense, Restock, Archive, and the Batch
+ * Inventory table all live there now; that's the one real place to
+ * archive an item from, no row-level Archive button here anymore
+ * (removed per request). A pharmacist still can't edit
  * name/category/unit/minimum level/reorder level (api/update-medicine.php
  * is subadmin-only) and can't permanently delete an item
- * (api/delete-medicine.php, also subadmin-only). Archive is ALSO
- * available directly from this table's own Actions column (a separate
- * button next to "Manage Medicine"), for the common case of archiving
- * without needing the full detail page. "+ Add Medicine"/"+ Add
- * Vaccine" still write real NEW documents via api/create-medicine.php
+ * (api/delete-medicine.php, also subadmin-only). "+ Add Medicine"/"+
+ * Add Vaccine" still write real NEW documents via api/create-medicine.php
  * (unaffected — registering a new item is a different operation from
  * editing an existing one's data). subadmin/medicine_vaccine_inventory.php
- * keeps the older, fuller pencil+dropdown layout (Edit/Adjust Stock/
- * Dispense/View Stock History/Archive/Delete, all still modal-based) —
- * see assets/js/medicine_vaccine_inventory_pharmacist.js's own header
- * comment for how one file drives both.
+ * got this exact same redesign — its own table has no row-level
+ * trigger left at all now (not even Archive), so
+ * assets/js/medicine_vaccine_inventory_pharmacist.js is no longer
+ * loaded there; this page keeps loading it purely for "+ Add
+ * Medicine"/"+ Add Vaccine".
  * =====================================================================
  */
 session_start();
@@ -394,7 +394,6 @@ if (!function_exists('mvi_page_url')) {
                             <td>
                                 <div class="adm-action-btns">
                                     <a href="manage_medicine.php?id=<?= urlencode($med['id']) ?>&amp;type=medicine" class="mvi-manage-btn" aria-label="Manage this medicine">Manage Medicine</a>
-                                    <button type="button" class="mvi-archive-btn mvi-archive" aria-label="Archive this medicine"><i class="bi bi-archive"></i> Archive</button>
                                 </div>
                             </td>
                         </tr>
@@ -507,7 +506,6 @@ if (!function_exists('mvi_page_url')) {
                             <td>
                                 <div class="adm-action-btns">
                                     <a href="manage_medicine.php?id=<?= urlencode($vac['id']) ?>&amp;type=vaccine" class="mvi-manage-btn" aria-label="Manage this vaccine">Manage Vaccine</a>
-                                    <button type="button" class="mvi-archive-btn mvi-archive" aria-label="Archive this vaccine"><i class="bi bi-archive"></i> Archive</button>
                                 </div>
                             </td>
                         </tr>

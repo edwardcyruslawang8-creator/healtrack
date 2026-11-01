@@ -15,11 +15,12 @@
  * Status columns are gone, replaced by the item's oldest (FEFO) real
  * batch number ($med['oldestBatchNumber'], hc_attach_oldest_batch_numbers()
  * in includes/shared/medicine_vaccine_inventory_shared.php). "Manage
- * Medicine" is a real link to subadmin/manage_medicine.php's own
- * detail page now (not a modal trigger) — Edit/Delete/Restock/View
- * Stock History all live there; the three-dot dropdown that used to
- * hold them is gone from this table. Archive stays here too, as its
- * own row-level button, same as pharmacist's table.
+ * Medicine" is the one real action left on this table now — a real
+ * link to subadmin/manage_medicine.php's own detail page (not a modal
+ * trigger). Edit/Restock/Archive all live there instead; the three-dot
+ * dropdown that used to hold Archive/Delete/View Details/View Stock
+ * History is gone from this table entirely, no row-level Archive
+ * button here anymore either (removed per request).
  *
  * Expects $medicines and $medicineExpiryBadgeMeta to already be set
  * (by includes/subadmin/medicine_vaccine_inventory_firestore.php).
@@ -67,7 +68,6 @@
                     <td>
                         <div class="adm-action-btns">
                             <a href="manage_medicine.php?id=<?= urlencode($med['id']) ?>&amp;type=medicine" class="mvi-manage-btn" aria-label="Manage this medicine">Manage Medicine</a>
-                            <button type="button" class="mvi-archive-btn mvi-archive" aria-label="Archive this medicine"><i class="bi bi-archive"></i> Archive</button>
                         </div>
                     </td>
                 </tr>
