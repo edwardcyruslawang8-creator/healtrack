@@ -52,6 +52,7 @@ $name = trim((string) ($body['name'] ?? ''));
 $category = trim((string) ($body['category'] ?? ''));
 $unit = trim((string) ($body['unit'] ?? ''));
 $desc = trim((string) ($body['desc'] ?? ''));
+$dosage = trim((string) ($body['dosage'] ?? ''));
 $currentStock = $body['currentStock'] ?? null;
 $minLevel = $body['minLevel'] ?? null;
 $reorderLevel = $body['reorderLevel'] ?? null;
@@ -102,6 +103,7 @@ $newId = $firestore->addDocument('medicines', [
     'unit' => $unit,
     'form' => $unit, // see this file's header comment
     'desc' => $desc !== '' ? $desc : null,
+    'dosage' => $dosage !== '' ? $dosage : null,
     'currentStock' => $currentStock,
     'minLevel' => $minLevel,
     'reorderLevel' => $reorderLevel,

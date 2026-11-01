@@ -312,6 +312,97 @@
   color: var(--adm-text-muted);
 }
 
+/* -- Main table's Status cell — the status badge stays the primary
+      signal, with the real expiry badge (if any) and the oldest (FEFO)
+      real batch number as small secondary lines underneath, so a
+      pharmacist can tell which batch needs attention without opening
+      Manage Medicine first. Current Stock/Minimum Level/Reorder
+      Level/Expiry Date columns were removed from this table entirely —
+      that detail now lives in Manage Medicine's own Batch Management
+      table, this is deliberately a simplified overview. -- */
+.mvi-oldest-batch{
+  display: block;
+  width: fit-content;
+  margin-top: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--adm-text-muted);
+}
+.mvi-oldest-batch i{ font-size: 10px; margin-right: 3px; }
+
+/* -- Archive button, Actions column — sits next to "Manage Medicine"/
+      "Manage Vaccine" as its own real action (previously a header icon
+      inside the Manage modal only), outlined in a neutral gray rather
+      than the brand red .mvi-manage-btn uses, so the destructive-ish
+      action doesn't visually compete with the primary one. -- */
+.mvi-archive-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--adm-border);
+  background: var(--adm-card);
+  color: var(--adm-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.mvi-archive-btn:hover{ background: var(--adm-hover-bg); color: var(--adm-red-bright); border-color: var(--adm-red-bright); }
+
+/* -- #mviManageModal — wider now (modal-lg) to fit Section A's info
+      grid and Section B's Batch Management table without either
+      feeling cramped. -- */
+.mvi-manage-modal .modal-dialog{ max-width: 720px; }
+
+.mvi-manage-section-title{ font-size: 13px; font-weight: 700; color: var(--adm-text); margin: 20px 0 10px; }
+.mvi-manage-section-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 20px 0 10px;
+}
+.mvi-manage-section-header .mvi-manage-section-title{ margin: 0; }
+
+/* Section A's dl as a real 2-up grid on anything wider than mobile —
+   plain stacked dt/dd (am-detail-list's own default) read too tall for
+   six short fields side by side. */
+@media (min-width: 576px){
+  .mvi-manage-info-grid{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 24px;
+  }
+  .mvi-manage-info-grid .am-detail-row{ display: contents; }
+}
+
+.mvi-batch-table-wrap{ max-height: 320px; overflow-y: auto; border: 1px solid var(--adm-border); border-radius: 10px; }
+.mvi-batch-table{ margin-bottom: 0; white-space: nowrap; }
+.mvi-batch-table thead th{
+  position: sticky;
+  top: 0;
+  background: var(--adm-bg);
+  z-index: 1;
+}
+
+/* -- #restockModal's mode toggle (An existing batch / A new batch) —
+      a plain 2-up button group, maroon-filled once checked (same
+      .btn-check pattern Bootstrap itself documents), rather than two
+      radio inputs with visible circles that would read as more
+      "optional" than this mutually-exclusive choice actually is. -- */
+.mvi-mode-btn{
+  border: 1px solid var(--adm-border);
+  color: var(--adm-text);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.btn-check:checked + .mvi-mode-btn{
+  background: var(--adm-red-bright);
+  border-color: var(--adm-red-bright);
+  color: #fff;
+}
+
 /* -- Vaccines tab placeholder (own copy of patient_profile.css's
       .ppf-tab-placeholder, for the same reason as the breadcrumb) -- */
 .mvi-tab-placeholder{

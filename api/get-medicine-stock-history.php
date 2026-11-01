@@ -20,14 +20,21 @@
  * need a dedicated collection with a real itemId, which doesn't exist
  * yet.
  *
- * Also returns this item's real, currently-held batches
+ * Also returns this item's real batches
  * (includes/firestore/medicine_batches.php's hc_get_batches_for_medicine(),
  * soonest-expiry first) when a real ?id= is given — the Stock History
  * modal shows these above the activity log so "what's actually on the
  * shelf and when does each part expire" is answered directly instead
  * of needing to piece it together from the log entries below it.
+ * Currently-held batches only (quantity > 0) by default — "Current
+ * Batches" never showed an exhausted one. ?includeEmpty=1 also returns
+ * batches with 0 real stock left, each with its own 'status' correctly
+ * coming back as "Out of Stock" — pharmacist/medicine_vaccine_inventory.php's
+ * Manage Medicine modal passes this, since its Batch Management table
+ * is meant to show every real batch this medicine has ever had, not
+ * just what's currently on the shelf.
  *
- * Query params: ?name=<item name>&id=<item id, optional>. GET, no body.
+ * Query params: ?name=<item name>&id=<item id, optional>&includeEmpty=<1, optional>. GET, no body.
  * =====================================================================
  */
 
@@ -52,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 $name = trim((string) ($_GET['name'] ?? ''));
 $id = trim((string) ($_GET['id'] ?? ''));
+$includeEmpty = ($_GET['includeEmpty'] ?? '') === '1';
 
 if ($name === '') {
     http_response_code(422);
@@ -59,7 +67,7 @@ if ($name === '') {
     exit;
 }
 
-$batches = $id !== '' ? hc_get_batches_for_medicine($id) : [];
+$batches = $id !== '' ? hc_get_batches_for_medicine($id, $includeEmpty) : [];
 
 $needle = '"' . $name . '"';
 $history = [];

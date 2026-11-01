@@ -126,6 +126,7 @@ if (!function_exists('hc_query_inventory_items')) {
                 'unit' => $f['unit'] ?? '—',
                 'form' => $f['form'] ?? '—',
                 'desc' => $f['desc'] ?? '',
+                'dosage' => $f['dosage'] ?? '',
                 'currentStock' => (int) ($f['currentStock'] ?? 0),
                 'minLevel' => (int) ($f['minLevel'] ?? 0),
                 'reorderLevel' => (int) ($f['reorderLevel'] ?? 0),

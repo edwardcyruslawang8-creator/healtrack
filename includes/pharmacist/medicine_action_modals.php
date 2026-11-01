@@ -3,36 +3,33 @@
      -------------------------------------------------------------
      Triggered by each row's own "Manage Medicine"/"Manage Vaccine"
      button on pharmacist/medicine_vaccine_inventory.php — a
-     pharmacist's ONE real entry point for an existing item, deliberately
-     more limited than subadmin's pencil+dropdown below: every field is
-     shown (same data-med-* attributes the old View Details modal read,
-     no network request) but NONE are editable here — a pharmacist
-     can't change name/category/unit/expiry date/current stock/minimum
-     level/reorder level (api/update-medicine.php and
-     api/adjust-medicine-stock.php both refuse the pharmacist role
-     server-side now, not just a hidden button) and can't permanently
-     delete an item (api/delete-medicine.php, also subadmin-only).
-     What's left: Dispense (No Prescription) as the one real mutating
-     action from here (hands off to #dispenseNoRxModal below, same
-     endpoint subadmin's dropdown uses), and View Stock History/Archive
-     as two icon buttons in this modal's own header, upper-right, next
-     to Close — secondary/occasional actions, not what a pharmacist
-     usually opens this for. Each hands off to its own
-     modal/confirmation with the row's data carried along (inline
-     <script> in pharmacist/medicine_vaccine_inventory.php), same
-     hand-off pattern subadmin/user_management.php's "Manage User"
-     modal already established. Not used on
-     subadmin/medicine_vaccine_inventory.php, which keeps the fuller
-     pencil+dropdown layout below.
+     pharmacist's detailed inventory-management view for an existing
+     item: Section A (medicine information, from the row's own
+     data-med-* attributes — no network request) and Section B (a live
+     Batch Management table, fetched on open from
+     api/get-medicine-stock-history.php, the same batches+per-batch
+     status includes/firestore/medicine_batches.php's
+     hc_get_batches_for_medicine() now computes — see that function's
+     own header comment). A pharmacist still can't rename/recategorize
+     this item or change its configured thresholds (api/update-medicine.php
+     is subadmin-only) and can't permanently delete it
+     (api/delete-medicine.php, also subadmin-only) — what IS real here:
+     Restock (#restockModal below, api/restock-medicine.php — adds real
+     stock a pharmacist actually received, either into an existing
+     batch or as a brand new one) and Dispense (No Prescription) as the
+     footer's one real mutating action, plus View Stock History as an
+     icon button in the header next to Close. Archive moved out of this
+     modal onto the row itself (a separate button next to "Manage
+     Medicine" on the main table, per the main table's own simplified-
+     overview redesign) rather than staying duplicated here too.
      ============================================================= -->
-<div class="modal fade am-modal" id="mviManageModal" tabindex="-1" aria-labelledby="mviManageModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
+<div class="modal fade am-modal mvi-manage-modal" id="mviManageModal" tabindex="-1" aria-labelledby="mviManageModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="mviManageModalLabel">Manage Medicine</h5>
         <div class="mvi-manage-header-actions">
           <button type="button" class="mvi-manage-header-btn" id="mmHistoryTrigger"><i class="bi bi-clock-history"></i> History</button>
-          <button type="button" class="mvi-manage-header-btn" id="mmArchiveTrigger"><i class="bi bi-archive"></i> Archive</button>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
       </div>
@@ -48,15 +45,15 @@
           </div>
         </div>
 
-        <dl class="am-detail-list">
+        <!-- ===== Section A: Medicine Information ===== -->
+        <h6 class="mvi-manage-section-title">Medicine Information</h6>
+        <dl class="am-detail-list mvi-manage-info-grid">
+          <div class="am-detail-row"><dt>Medicine Name</dt><dd id="mmNameDetail"></dd></div>
           <div class="am-detail-row"><dt>Category</dt><dd id="mmCategory"></dd></div>
           <div class="am-detail-row"><dt>Unit</dt><dd id="mmUnit"></dd></div>
-          <div class="am-detail-row"><dt>Current Stock</dt><dd id="mmStock"></dd></div>
-          <div class="am-detail-row"><dt>Minimum Level</dt><dd id="mmMinLevel"></dd></div>
-          <div class="am-detail-row"><dt>Reorder Level</dt><dd id="mmReorderLevel"></dd></div>
-          <div class="am-detail-row" id="mmMaxLevelRow"><dt>Maximum Level</dt><dd id="mmMaxLevel"></dd></div>
-          <div class="am-detail-row"><dt>Expiry Date</dt><dd id="mmExpiry"></dd></div>
+          <div class="am-detail-row"><dt>Total Current Stock</dt><dd id="mmStock"></dd></div>
           <div class="am-detail-row" id="mmDescRow"><dt>Description</dt><dd id="mmDesc"></dd></div>
+          <div class="am-detail-row"><dt>Dosage Information</dt><dd id="mmDosage"></dd></div>
         </dl>
 
         <!-- Only shown once the row's own data-med-expiry-status is
@@ -65,11 +62,108 @@
              server-side too), so the Dispense button below is disabled
              rather than left clickable just to fail after. -->
         <p class="mvi-manage-expired-note d-none" id="mmExpiredNote"><i class="bi bi-exclamation-circle"></i> This item has expired and can no longer be dispensed.</p>
+
+        <!-- ===== Section B: Batch Management (FEFO — soonest-expiring first) ===== -->
+        <div class="mvi-manage-section-header">
+          <h6 class="mvi-manage-section-title mb-0">Batch Management</h6>
+          <button type="button" class="mvi-manage-header-btn" id="mmRestockTrigger"><i class="bi bi-plus-lg"></i> Restock</button>
+        </div>
+        <div id="mmBatchesEmpty" class="am-form-help d-none">No stock currently on hand.</div>
+        <div id="mmBatchesLoading" class="am-form-help">Loading batches…</div>
+        <div class="adm-table-wrap mvi-batch-table-wrap d-none" id="mmBatchesWrap">
+          <table class="table table-sm am-detail-items-table mvi-batch-table">
+            <thead>
+              <tr>
+                <th>Batch Number</th>
+                <th>Expiry Date</th>
+                <th>Status</th>
+                <th>Current Stock</th>
+                <th>Maximum Stock Level</th>
+                <th>Reorder Level</th>
+              </tr>
+            </thead>
+            <tbody id="mmBatchesBody"></tbody>
+          </table>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="am-btn-cancel" data-bs-dismiss="modal">Close</button>
         <button type="button" class="mvi-manage-dispense-btn" id="mmDispenseTrigger"><i class="bi bi-capsule"></i> Dispense (No Prescription)</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- =============================================================
+     RESTOCK MODAL (pharmacist only)
+     -------------------------------------------------------------
+     Opened from #mviManageModal's own "Restock" button (hands off the
+     same way #mviManageModal's History/Dispense triggers already do —
+     hide this modal first, then show that one, avoiding a double
+     backdrop). Two real modes mirroring api/restock-medicine.php's own
+     "mode" field:
+       - "An existing batch": picks one of this item's own CURRENTLY-
+         HELD batches (populated from the same batch list
+         #mviManageModal's own table just rendered — no second fetch)
+         and adds quantity to it (hc_add_to_existing_batch()).
+       - "A new batch": a real new batch with its own Batch Number
+         (optional — api/restock-medicine.php falls back to a short
+         label derived from the new batch's own real doc id if left
+         blank, same as every pre-existing batch that predates this
+         field), Quantity, and Expiry Date
+         (hc_create_medicine_batch()).
+     On success, re-fetches #mviManageModal's own batch list (not a
+     full page reload) so the just-restocked batch's new quantity shows
+     immediately while that modal stays open.
+     ============================================================= -->
+<div class="modal fade am-modal" id="restockModal" tabindex="-1" aria-labelledby="restockModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="restockForm" novalidate>
+        <input type="hidden" id="rsItemId" value="">
+        <div class="modal-header">
+          <h5 class="modal-title" id="restockModalLabel">Restock — <span id="rsItemName"></span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="restockError" class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
+
+          <div class="mb-3">
+            <label class="am-form-label d-block mb-2">This stock is...</label>
+            <div class="btn-group w-100" role="group" aria-label="Restock mode">
+              <input type="radio" class="btn-check" name="rsMode" id="rsModeExisting" value="existing" autocomplete="off" checked>
+              <label class="btn mvi-mode-btn" for="rsModeExisting">An existing batch</label>
+              <input type="radio" class="btn-check" name="rsMode" id="rsModeNew" value="new" autocomplete="off">
+              <label class="btn mvi-mode-btn" for="rsModeNew">A new batch</label>
+            </div>
+          </div>
+
+          <div class="mb-3" id="rsExistingWrap">
+            <label class="am-form-label" for="rsBatchSelect">Batch<span class="text-danger">*</span></label>
+            <select class="form-select am-form-control" id="rsBatchSelect"></select>
+          </div>
+
+          <div class="mb-3 d-none" id="rsNewWrap">
+            <label class="am-form-label" for="rsBatchNumber">Batch Number <span class="text-muted fw-normal">(Optional)</span></label>
+            <input type="text" class="form-control am-form-control" id="rsBatchNumber" placeholder="e.g. BATCH-2026-045">
+            <div class="row mt-3">
+              <div class="col-md-6">
+                <label class="am-form-label" for="rsNewExpiry">Expiry Date<span class="text-danger">*</span></label>
+                <input type="date" class="form-control am-form-control" id="rsNewExpiry" min="<?= date('Y-m-d') ?>">
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-0">
+            <label class="am-form-label" for="rsQty">Quantity<span class="text-danger">*</span></label>
+            <input type="number" class="form-control am-form-control" id="rsQty" min="1" step="1" placeholder="e.g. 50" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="am-btn-cancel" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="am-btn-submit" id="rsSubmitBtn"><i class="bi bi-box-seam"></i> <span id="rsSubmitLabel">Restock</span></button>
+        </div>
+      </form>
     </div>
   </div>
 </div>

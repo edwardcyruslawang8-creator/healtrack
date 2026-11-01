@@ -24,7 +24,29 @@
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/medicines.php';
+require_once __DIR__ . '/../firestore/medicine_batches.php'; // hc_get_batches_for_medicine() — oldest (FEFO) batch number per row
 require_once __DIR__ . '/../shared/fuzzy_search.php'; // hc_fuzzy_match()
+
+if (!function_exists('mvi_attach_oldest_batch')) {
+    /**
+     * Attaches 'oldestBatchNumber' (FEFO — soonest-expiring real batch,
+     * same order hc_get_batches_for_medicine() already sorts in) to
+     * each item in $items, so the main table's Status column can show
+     * which real batch needs attention first without a pharmacist
+     * opening Manage Medicine first. Only ever called on an already-
+     * paginated page slice (8 items), not the full filtered list — each
+     * item needs its own medicine_batches query, so this stays cheap.
+     */
+    function mvi_attach_oldest_batch(array $items): array
+    {
+        foreach ($items as &$item) {
+            $batches = hc_get_batches_for_medicine($item['id']);
+            $item['oldestBatchNumber'] = $batches[0]['displayBatchNumber'] ?? null;
+        }
+
+        return $items;
+    }
+}
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -85,7 +107,7 @@ $medicinesPerPage = 8;
 $medicinesCurrentPage = max(1, (int) ($_GET['page'] ?? 1));
 $medicinesTotalPages = max(1, (int) ceil($medicinesTotal / $medicinesPerPage));
 $medicinesCurrentPage = min($medicinesCurrentPage, $medicinesTotalPages);
-$medicines = array_slice($filteredMedicines, ($medicinesCurrentPage - 1) * $medicinesPerPage, $medicinesPerPage);
+$medicines = mvi_attach_oldest_batch(array_slice($filteredMedicines, ($medicinesCurrentPage - 1) * $medicinesPerPage, $medicinesPerPage));
 
 $medicinePaginationWindow = [];
 if ($medicinesTotalPages <= 6) {
@@ -126,7 +148,7 @@ $vaccinesPerPage = 8;
 $vaccinesCurrentPage = max(1, (int) ($_GET['vpage'] ?? 1));
 $vaccinesTotalPages = max(1, (int) ceil($vaccinesTotal / $vaccinesPerPage));
 $vaccinesCurrentPage = min($vaccinesCurrentPage, $vaccinesTotalPages);
-$vaccines = array_slice($filteredVaccines, ($vaccinesCurrentPage - 1) * $vaccinesPerPage, $vaccinesPerPage);
+$vaccines = mvi_attach_oldest_batch(array_slice($filteredVaccines, ($vaccinesCurrentPage - 1) * $vaccinesPerPage, $vaccinesPerPage));
 
 $vaccinePaginationWindow = [];
 if ($vaccinesTotalPages <= 6) {

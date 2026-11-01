@@ -73,6 +73,7 @@ $name = trim((string) ($body['name'] ?? ''));
 $category = trim((string) ($body['category'] ?? ''));
 $unit = trim((string) ($body['unit'] ?? ''));
 $desc = trim((string) ($body['desc'] ?? ''));
+$dosage = trim((string) ($body['dosage'] ?? ''));
 $minLevel = $body['minLevel'] ?? null;
 $reorderLevel = $body['reorderLevel'] ?? null;
 // Optional — blank/omitted means "no ceiling set" (0), same convention
@@ -120,6 +121,7 @@ $updated = array_merge($existing, [
     'unit' => $unit,
     'form' => $unit, // see this file's header comment
     'desc' => $desc !== '' ? $desc : null,
+    'dosage' => $dosage !== '' ? $dosage : null,
     'minLevel' => $minLevel,
     'reorderLevel' => $reorderLevel,
     'maxLevel' => $maxLevel,

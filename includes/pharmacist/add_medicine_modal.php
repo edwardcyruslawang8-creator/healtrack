@@ -96,9 +96,14 @@
             </div>
           </div>
 
-          <div class="mb-0">
+          <div class="mb-3">
             <label class="am-form-label" for="amDesc">Description <span class="text-muted fw-normal">(Optional)</span></label>
             <textarea class="form-control am-form-control" id="amDesc" rows="2" placeholder="Brief note about this item"></textarea>
+          </div>
+
+          <div class="mb-0">
+            <label class="am-form-label" for="amDosage">Dosage Information <span class="text-muted fw-normal">(Optional)</span></label>
+            <textarea class="form-control am-form-control" id="amDosage" rows="2" placeholder="e.g. Adults: 500mg every 8 hours for 7 days"></textarea>
           </div>
         </div>
         <div class="modal-footer">

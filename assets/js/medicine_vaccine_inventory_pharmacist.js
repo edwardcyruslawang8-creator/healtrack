@@ -130,6 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('amReorderLevel').value = d.medReorderLevel;
             document.getElementById('amMaxLevel').value = (d.medMaxLevel && d.medMaxLevel !== '0') ? d.medMaxLevel : '';
             document.getElementById('amDesc').value = d.medDesc || '';
+            document.getElementById('amDosage').value = d.medDosage || '';
 
             submitBtn.disabled = false;
             submitBtn.innerHTML = submitBtnDefaultHtml;
@@ -180,6 +181,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 reorderLevel: document.getElementById('amReorderLevel').value,
                 maxLevel: document.getElementById('amMaxLevel').value,
                 desc: document.getElementById('amDesc').value.trim(),
+                dosage: document.getElementById('amDosage').value.trim(),
             };
             if (isEdit) payload.id = idInput.value;
 
@@ -637,22 +639,70 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // -------------------------------------------------------------
     // Manage Medicine / Manage Vaccine — pharmacist/medicine_vaccine_inventory.php's
-    // single real entry point (#mviManageModal), deliberately more
-    // limited than subadmin's pencil+dropdown above: only Dispense,
-    // View Stock History, and Archive are offered (mviActions.* —
-    // reused directly, not a second copy of any of that logic). No
-    // Edit/Adjust Stock/Delete trigger exists here at all — those
-    // endpoints refuse the pharmacist role server-side now regardless
-    // (api/update-medicine.php, api/adjust-medicine-stock.php,
-    // api/delete-medicine.php), so there would be nothing for a button
-    // here to actually do. This block only does anything on a page
-    // that actually renders #mviManageModal (pharmacist's); subadmin's
-    // page has no such element, so this is a no-op there.
+    // detailed inventory-management view (#mviManageModal): Section A
+    // (medicine info, straight from the row's own dataset) and Section
+    // B (a live Batch Management table, fetched fresh on every open
+    // from api/get-medicine-stock-history.php — same endpoint/data
+    // #stockHistoryModal's own batch list already uses, now carrying
+    // each batch's own displayBatchNumber/status/reorderLevel/maxLevel
+    // too — includes/firestore/medicine_batches.php's
+    // hc_get_batches_for_medicine()). Dispense and View Stock History
+    // reuse mviActions.* directly, not a second copy of either. Archive
+    // now lives on the row itself (a separate button next to "Manage
+    // Medicine"), not in this modal. This block only does anything on
+    // a page that actually renders #mviManageModal (pharmacist's);
+    // subadmin's page has no such element, so this is a no-op there.
     // -------------------------------------------------------------
     const manageModalEl = document.getElementById('mviManageModal');
     if (manageModalEl && typeof bootstrap !== 'undefined') {
         const manageModal = new bootstrap.Modal(manageModalEl);
         let currentRowData = null;
+        let currentBatches = []; // last-fetched batch list — #restockModal's "existing batch" dropdown reuses this, no second fetch
+
+        const mmBatchesLoading = document.getElementById('mmBatchesLoading');
+        const mmBatchesEmpty = document.getElementById('mmBatchesEmpty');
+        const mmBatchesWrap = document.getElementById('mmBatchesWrap');
+        const mmBatchesBody = document.getElementById('mmBatchesBody');
+
+        function loadBatches(d) {
+            currentBatches = [];
+            mmBatchesLoading.classList.remove('d-none');
+            mmBatchesEmpty.classList.add('d-none');
+            mmBatchesWrap.classList.add('d-none');
+            mmBatchesBody.innerHTML = '';
+
+            fetch('../api/get-medicine-stock-history.php?name=' + encodeURIComponent(d.medName) + '&id=' + encodeURIComponent(d.medId) + '&includeEmpty=1')
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    mmBatchesLoading.classList.add('d-none');
+                    if (!data.success) throw new Error(data.error || 'Could not load batches.');
+
+                    currentBatches = data.batches || [];
+                    if (currentBatches.length === 0) {
+                        mmBatchesEmpty.classList.remove('d-none');
+                        return;
+                    }
+                    currentBatches.forEach(function (batch) {
+                        const tr = document.createElement('tr');
+                        const statusBadge = '<span class="mvi-badge" style="background:' + batch.status.bg + '; color:' + batch.status.color + ';">' + batch.status.label + '</span>';
+                        tr.innerHTML =
+                            '<td>' + batch.displayBatchNumber + '</td>' +
+                            '<td>' + batch.expiryDate + '</td>' +
+                            '<td>' + statusBadge + '</td>' +
+                            '<td>' + batch.quantity + ' ' + d.medUnit + '</td>' +
+                            '<td>' + (batch.maxLevel > 0 ? batch.maxLevel : 'No ceiling set') + '</td>' +
+                            '<td>' + batch.reorderLevel + '</td>';
+                        mmBatchesBody.appendChild(tr);
+                    });
+                    mmBatchesWrap.classList.remove('d-none');
+                })
+                .catch(function (err) {
+                    mmBatchesLoading.classList.add('d-none');
+                    mmBatchesEmpty.textContent = err.message;
+                    mmBatchesEmpty.classList.remove('d-none');
+                });
+        }
+        mviActions.getCurrentBatches = function () { return currentBatches; };
 
         manageModalEl.addEventListener('show.bs.modal', function (event) {
             const trigger = event.relatedTarget;
@@ -669,19 +719,11 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('mmThumbIcon').className = 'bi ' + (d.medIcon || 'bi-capsule');
 
             document.getElementById('mmName').textContent = d.medName;
+            document.getElementById('mmNameDetail').textContent = d.medName;
             document.getElementById('mmCategory').textContent = d.medCategory;
             document.getElementById('mmUnit').textContent = d.medUnit;
-            document.getElementById('mmStock').textContent = d.medStock;
-            document.getElementById('mmMinLevel').textContent = d.medMinLevel;
-            document.getElementById('mmReorderLevel').textContent = d.medReorderLevel;
-            const mmMaxLevelRow = document.getElementById('mmMaxLevelRow');
-            if (d.medMaxLevel && d.medMaxLevel !== '0') {
-                document.getElementById('mmMaxLevel').textContent = d.medMaxLevel;
-                mmMaxLevelRow.classList.remove('d-none');
-            } else {
-                mmMaxLevelRow.classList.add('d-none');
-            }
-            document.getElementById('mmExpiry').textContent = d.medExpiryDisplay || d.medExpiry;
+            document.getElementById('mmStock').textContent = d.medStock + ' ' + d.medUnit;
+            document.getElementById('mmDosage').textContent = d.medDosage || 'Not Recorded';
 
             const statusBadge = document.getElementById('mmStatusBadge');
             statusBadge.textContent = d.medStatusLabel || '';
@@ -713,17 +755,15 @@ document.addEventListener('DOMContentLoaded', function () {
             const isExpired = d.medExpiryStatus === 'expired';
             document.getElementById('mmDispenseTrigger').disabled = isExpired;
             document.getElementById('mmExpiredNote').classList.toggle('d-none', !isExpired);
+
+            loadBatches(d);
         });
 
         // Hides this modal, then hands off to the chosen action once
         // it's fully hidden — same reasoning
         // subadmin/user_management.php's own handOffTo() gives:
         // Bootstrap stacks a second modal.show() fine, but waiting
-        // avoids a double backdrop. Archive has no second modal of its
-        // own (just HCDialog.confirm()), but still waits for the same
-        // reason — a confirm() dialog popping up the instant this
-        // modal starts closing would look like it's fighting the close
-        // animation.
+        // avoids a double backdrop.
         function handOffTo(openFn) {
             if (!openFn || !currentRowData) return;
             const data = currentRowData;
@@ -737,11 +777,148 @@ document.addEventListener('DOMContentLoaded', function () {
         const historyTrigger = document.getElementById('mmHistoryTrigger');
         if (historyTrigger) historyTrigger.addEventListener('click', function () { handOffTo(mviActions.openHistory); });
 
-        const archiveTrigger = document.getElementById('mmArchiveTrigger');
-        if (archiveTrigger) archiveTrigger.addEventListener('click', function () { handOffTo(mviActions.performArchive); });
-
         const dispenseTrigger = document.getElementById('mmDispenseTrigger');
         if (dispenseTrigger) dispenseTrigger.addEventListener('click', function () { handOffTo(mviActions.openDispense); });
+
+        // Restock stacks ON TOP of #mviManageModal instead of replacing
+        // it (Bootstrap supports a second modal.show() over the first
+        // fine) — a pharmacist restocking almost always wants to see
+        // the updated batch table right after, so this modal is left
+        // open underneath rather than hidden-then-reshown.
+        const restockTrigger = document.getElementById('mmRestockTrigger');
+        if (restockTrigger) {
+            restockTrigger.addEventListener('click', function () {
+                if (mviActions.openRestock && currentRowData) mviActions.openRestock(currentRowData);
+            });
+        }
+    }
+
+    // -------------------------------------------------------------
+    // Restock — adds real stock a pharmacist actually received, either
+    // into an existing batch (#mviManageModal's own last-fetched list,
+    // via mviActions.getCurrentBatches() — no second fetch) or as a
+    // brand new one. POSTs to api/restock-medicine.php, allowed for
+    // both pharmacist and subadmin (unlike the free-form Adjust Stock
+    // override, this endpoint only ever ADDS stock a real delivery
+    // brought in). On success, re-fetches #mviManageModal's own batch
+    // table in place (mviActions.reloadBatches()) rather than a full
+    // page reload, so that modal stays open with the just-restocked
+    // quantity visible immediately.
+    // -------------------------------------------------------------
+    const restockModalEl = document.getElementById('restockModal');
+    if (restockModalEl && typeof bootstrap !== 'undefined') {
+        const restockModal = new bootstrap.Modal(restockModalEl);
+        const restockForm = document.getElementById('restockForm');
+        const rsErrorBox = document.getElementById('restockError');
+        const rsSubmitBtn = document.getElementById('rsSubmitBtn');
+        const rsSubmitBtnDefaultHtml = rsSubmitBtn.innerHTML;
+        const rsItemIdInput = document.getElementById('rsItemId');
+        const rsBatchSelect = document.getElementById('rsBatchSelect');
+        const rsExistingWrap = document.getElementById('rsExistingWrap');
+        const rsNewWrap = document.getElementById('rsNewWrap');
+        const rsBatchNumberInput = document.getElementById('rsBatchNumber');
+        const rsNewExpiryInput = document.getElementById('rsNewExpiry');
+        const rsQtyInput = document.getElementById('rsQty');
+
+        function syncModeVisibility() {
+            const isExisting = document.getElementById('rsModeExisting').checked;
+            rsExistingWrap.classList.toggle('d-none', !isExisting);
+            rsNewWrap.classList.toggle('d-none', isExisting);
+            rsNewExpiryInput.required = !isExisting;
+        }
+        document.getElementById('rsModeExisting').addEventListener('change', syncModeVisibility);
+        document.getElementById('rsModeNew').addEventListener('change', syncModeVisibility);
+
+        function openRestockModal(d) {
+            restockForm.reset();
+            restockForm.classList.remove('was-validated');
+            rsErrorBox.classList.add('d-none');
+            rsItemIdInput.value = d.medId;
+            document.getElementById('rsItemName').textContent = d.medName;
+
+            const batches = mviActions.getCurrentBatches ? mviActions.getCurrentBatches() : [];
+            rsBatchSelect.innerHTML = '';
+            if (batches.length === 0) {
+                rsBatchSelect.innerHTML = '<option value="">No existing batches — add as a new batch instead</option>';
+                document.getElementById('rsModeNew').checked = true;
+            } else {
+                batches.forEach(function (batch) {
+                    const opt = document.createElement('option');
+                    opt.value = batch.id;
+                    opt.textContent = batch.displayBatchNumber + ' — expires ' + batch.expiryDate + ' — ' + batch.quantity + ' ' + d.medUnit + ' on hand';
+                    rsBatchSelect.appendChild(opt);
+                });
+                document.getElementById('rsModeExisting').checked = true;
+            }
+            syncModeVisibility();
+
+            rsSubmitBtn.disabled = false;
+            rsSubmitBtn.innerHTML = rsSubmitBtnDefaultHtml;
+            restockModal.show();
+        }
+        mviActions.openRestock = openRestockModal;
+
+        restockForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const isExisting = document.getElementById('rsModeExisting').checked;
+            const quantity = parseInt(rsQtyInput.value, 10);
+            if (!Number.isInteger(quantity) || quantity < 1) {
+                rsErrorBox.textContent = 'Please enter a valid quantity.';
+                rsErrorBox.classList.remove('d-none');
+                return;
+            }
+
+            const payload = { id: rsItemIdInput.value, mode: isExisting ? 'existing' : 'new', quantity: quantity };
+            if (isExisting) {
+                if (!rsBatchSelect.value) {
+                    rsErrorBox.textContent = 'Please select which batch this stock belongs to.';
+                    rsErrorBox.classList.remove('d-none');
+                    return;
+                }
+                payload.batchId = rsBatchSelect.value;
+            } else {
+                if (!rsNewExpiryInput.value) {
+                    rsErrorBox.textContent = 'Please enter the expiry date for this new batch.';
+                    rsErrorBox.classList.remove('d-none');
+                    return;
+                }
+                payload.batchNumber = rsBatchNumberInput.value.trim();
+                payload.expiryDate = rsNewExpiryInput.value;
+            }
+
+            rsErrorBox.classList.add('d-none');
+            rsSubmitBtn.disabled = true;
+            rsSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving…';
+
+            fetch('../api/restock-medicine.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            })
+                .then(function (res) {
+                    return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+                })
+                .then(function (result) {
+                    if (!result.ok || !result.data.success) {
+                        throw new Error(result.data.error || 'Something went wrong. Please try again.');
+                    }
+                    // Full reload, same as every other mutating action in
+                    // this file (Adjust Stock/Dispense/Archive/Delete/
+                    // Create/Update) — the main table's own row dataset
+                    // (current stock, status badge, oldest-batch label)
+                    // is a server-rendered rollup, not something this
+                    // modal can safely patch in place from here.
+                    window.location.reload();
+                })
+                .catch(function (err) {
+                    rsErrorBox.textContent = err.message;
+                    rsErrorBox.classList.remove('d-none');
+                    rsSubmitBtn.disabled = false;
+                    rsSubmitBtn.innerHTML = rsSubmitBtnDefaultHtml;
+                });
+        });
     }
 
     // Search validation (clicking "Search" with an empty box) now

@@ -88,6 +88,74 @@ if (!function_exists('hc_ensure_initial_batch')) {
     }
 }
 
+if (!function_exists('hc_batch_display_number')) {
+    /**
+     * The real "batchNumber" a pharmacist typed in at Restock time, or —
+     * for every batch that predates that field (every batch
+     * hc_ensure_initial_batch()/the old Adjust Stock/stock-request flows
+     * ever created) — a short, stable label derived from the batch's own
+     * real doc id, same convention
+     * includes/shared/inventory_movement_monitor.php already uses for
+     * the same reason: never invent a batch number that wasn't really
+     * recorded, just make the real id legible.
+     */
+    function hc_batch_display_number(array $batchFields, string $batchDocId): string
+    {
+        $typed = trim((string) ($batchFields['batchNumber'] ?? ''));
+
+        return $typed !== '' ? $typed : 'BATCH-' . strtoupper(substr($batchDocId, 0, 8));
+    }
+}
+
+if (!function_exists('hc_batch_status')) {
+    /**
+     * ONE real status per batch — unlike medicines/{id}'s own "status"
+     * (hc_inventory_status_for_stock(), which only ever reasons about
+     * stock level), a single batch can ALSO be individually expired or
+     * expiring soon regardless of what any other batch of the same
+     * medicine looks like, so the Manage Medicine modal's batch table
+     * needs one combined signal per row. Checked in order of real
+     * urgency — an empty batch is "Out of Stock" no matter its expiry;
+     * a batch that still has stock but is already past its own real
+     * expiry is "Expired" (api/dispense-without-prescription.php would
+     * refuse to draw from it) before a merely-low count is flagged;
+     * "Low Stock" uses $reorderLevel (the one stock threshold the
+     * Batch Management table actually shows a column for) rather
+     * than the medicine's separate minLevel, and is skipped entirely
+     * when $reorderLevel is 0 (no threshold configured to compare
+     * against) — same "0 means no ceiling/floor set" convention
+     * hc_inventory_status_for_stock() already uses for maxLevel.
+     *
+     * @return array{key: string, label: string, bg: string, color: string}
+     */
+    function hc_batch_status(int $quantity, string $expiryDateRaw, int $reorderLevel): array
+    {
+        $meta = [
+            'out_of_stock' => ['label' => 'Out of Stock', 'bg' => '#FCE4E4', 'color' => '#D93025'],
+            'expired'      => ['label' => 'Expired',       'bg' => '#FCE4E4', 'color' => '#D93025'],
+            'low_stock'    => ['label' => 'Low Stock',     'bg' => '#FDECDD', 'color' => '#E8710A'],
+            'expiring_soon'=> ['label' => 'Expiring Soon', 'bg' => '#FDF3DC', 'color' => '#B7791F'],
+            'in_stock'     => ['label' => 'In Stock',      'bg' => '#E4F7EA', 'color' => '#1E8E3E'],
+        ];
+
+        if ($quantity <= 0) {
+            return ['key' => 'out_of_stock'] + $meta['out_of_stock'];
+        }
+        $expiryState = hc_inventory_expiry_status($expiryDateRaw);
+        if ($expiryState === 'expired') {
+            return ['key' => 'expired'] + $meta['expired'];
+        }
+        if ($reorderLevel > 0 && $quantity <= $reorderLevel) {
+            return ['key' => 'low_stock'] + $meta['low_stock'];
+        }
+        if ($expiryState === 'soon') {
+            return ['key' => 'expiring_soon'] + $meta['expiring_soon'];
+        }
+
+        return ['key' => 'in_stock'] + $meta['in_stock'];
+    }
+}
+
 if (!function_exists('hc_get_batches_for_medicine')) {
     /**
      * Every real medicine_batches doc for $medicineId with real stock
@@ -97,7 +165,14 @@ if (!function_exists('hc_get_batches_for_medicine')) {
      * A batch with no real expiry recorded sorts last (unknown
      * urgency, not "expires immediately").
      *
-     * @return array<int, array{id: string, quantity: int, expiryDateRaw: string, expiryDate: string, receivedDate: string, source: string, sourceLabel: string}>
+     * Each batch also carries the parent medicine's own real
+     * reorderLevel/maxLevel thresholds (same value repeated on every
+     * row — they're configured per MEDICINE, not per batch) plus a
+     * per-batch 'status' (hc_batch_status()) and 'displayBatchNumber' —
+     * everything the Manage Medicine modal's Batch Management table
+     * (pharmacist/medicine_vaccine_inventory.php) needs in one call.
+     *
+     * @return array<int, array{id: string, batchNumber: string, displayBatchNumber: string, quantity: int, expiryDateRaw: string, expiryDate: string, receivedDate: string, source: string, sourceLabel: string, reorderLevel: int, maxLevel: int, status: array}>
      */
     function hc_get_batches_for_medicine(string $medicineId, bool $includeEmpty = false): array
     {
@@ -105,10 +180,15 @@ if (!function_exists('hc_get_batches_for_medicine')) {
 
         hc_ensure_initial_batch($medicineId);
 
+        $medicineDoc = $firestore->getDocument('medicines', $medicineId);
+        $reorderLevel = (int) ($medicineDoc['reorderLevel'] ?? 0);
+        $maxLevel = (int) ($medicineDoc['maxLevel'] ?? 0);
+
         $sourceLabels = [
             'initial' => 'Initial stock',
             'stock_request' => 'Stock request',
             'adjustment' => 'Manual adjustment',
+            'restock' => 'Restock',
         ];
 
         $batches = [];
@@ -124,12 +204,17 @@ if (!function_exists('hc_get_batches_for_medicine')) {
             $expiryRaw = (string) ($f['expiryDate'] ?? '');
             $batches[] = [
                 'id' => $doc['id'],
+                'batchNumber' => (string) ($f['batchNumber'] ?? ''),
+                'displayBatchNumber' => hc_batch_display_number($f, $doc['id']),
                 'quantity' => $qty,
                 'expiryDateRaw' => $expiryRaw,
                 'expiryDate' => $expiryRaw !== '' && strtotime($expiryRaw) !== false ? strtoupper(date('M d, Y', strtotime($expiryRaw))) : 'No expiry recorded',
                 'receivedDate' => isset($f['receivedDate']) && $f['receivedDate'] !== '' ? date('M j, Y', strtotime((string) $f['receivedDate'])) : '—',
                 'source' => (string) ($f['source'] ?? 'initial'),
                 'sourceLabel' => $sourceLabels[$f['source'] ?? 'initial'] ?? 'Stock added',
+                'reorderLevel' => $reorderLevel,
+                'maxLevel' => $maxLevel,
+                'status' => hc_batch_status($qty, $expiryRaw, $reorderLevel),
             ];
         }
 
@@ -199,7 +284,7 @@ if (!function_exists('hc_create_medicine_batch')) {
      *
      * @return string|null The new batch doc's id, or null on failure.
      */
-    function hc_create_medicine_batch(string $medicineId, int $quantity, string $expiryDate, string $source, ?string $sourceRequestId, string $createdBy): ?string
+    function hc_create_medicine_batch(string $medicineId, int $quantity, string $expiryDate, string $source, ?string $sourceRequestId, string $createdBy, string $batchNumber = ''): ?string
     {
         global $firestore;
 
@@ -209,6 +294,7 @@ if (!function_exists('hc_create_medicine_batch')) {
 
         $batchId = $firestore->addDocument('medicine_batches', [
             'medicineId' => $medicineId,
+            'batchNumber' => trim($batchNumber) !== '' ? trim($batchNumber) : null,
             'quantity' => $quantity,
             'originalQuantity' => $quantity,
             'expiryDate' => $expiryDate !== '' ? $expiryDate : null,
@@ -224,6 +310,51 @@ if (!function_exists('hc_create_medicine_batch')) {
         }
 
         return $batchId;
+    }
+}
+
+if (!function_exists('hc_add_to_existing_batch')) {
+    /**
+     * Restocking the SAME real batch (same batch number/expiry a
+     * pharmacist is already holding, just more of it arrived) rather
+     * than creating a brand-new batch doc — the other half of
+     * api/restock-medicine.php's "select a specific batch or add a new
+     * batch" choice. Adds $quantity to both the batch's own remaining
+     * 'quantity' AND its 'originalQuantity' (so a later restock of the
+     * same batch keeps the running total this batch has ever held
+     * accurate, the same two fields hc_create_medicine_batch() seeds
+     * together for a brand-new batch) and recomputes the medicine's own
+     * rollup immediately after, same as every other real stock change
+     * here.
+     */
+    function hc_add_to_existing_batch(string $batchId, int $quantity): bool
+    {
+        global $firestore;
+
+        if ($quantity <= 0) {
+            return false;
+        }
+
+        $batchDoc = $firestore->getDocument('medicine_batches', $batchId);
+        if ($batchDoc === null) {
+            return false;
+        }
+
+        $medicineId = (string) ($batchDoc['medicineId'] ?? '');
+        if ($medicineId === '') {
+            return false;
+        }
+
+        $saved = $firestore->setDocument('medicine_batches', $batchId, array_merge($batchDoc, [
+            'quantity' => (int) ($batchDoc['quantity'] ?? 0) + $quantity,
+            'originalQuantity' => (int) ($batchDoc['originalQuantity'] ?? 0) + $quantity,
+        ]));
+
+        if ($saved) {
+            hc_recompute_medicine_rollup($medicineId);
+        }
+
+        return $saved;
     }
 }
 
