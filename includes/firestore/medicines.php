@@ -94,6 +94,70 @@ if (!function_exists('hc_medicine_expiry_badge_meta')) {
     }
 }
 
+if (!function_exists('hc_map_medicine_doc_to_item')) {
+    /**
+     * @internal Shared by hc_query_inventory_items() below AND
+     * hc_get_inventory_item() — the one real medicines/{id} doc ->
+     * item-array mapping, so a single item fetched on its own
+     * (pharmacist/manage_medicine.php) comes back in EXACTLY the same
+     * shape as one found via the list/filter path, rather than two
+     * copies of this mapping drifting apart over time.
+     *
+     * @return array{id: string, name: string, category: string, unit: string, form: string, desc: string, dosage: string, currentStock: int, minLevel: int, reorderLevel: int, maxLevel: int, expiryDate: string, expiryDateRaw: string, expiryStatus: string, status: string, lastUpdatedRaw: string, lastUpdated: string, icon: string, colorMeta: array, type: string, archived: bool}
+     */
+    function hc_map_medicine_doc_to_item(string $id, array $f): array
+    {
+        $colorMeta = hc_medicine_color_meta();
+        $type = $f['type'] ?? 'medicine';
+
+        return [
+            'id' => $id,
+            'type' => $type,
+            'archived' => (bool) ($f['archived'] ?? false),
+            'name' => $f['name'] ?? '(unnamed)',
+            'category' => $f['category'] ?? 'Uncategorized',
+            'unit' => $f['unit'] ?? '—',
+            'form' => $f['form'] ?? '—',
+            'desc' => $f['desc'] ?? '',
+            'dosage' => $f['dosage'] ?? '',
+            'currentStock' => (int) ($f['currentStock'] ?? 0),
+            'minLevel' => (int) ($f['minLevel'] ?? 0),
+            'reorderLevel' => (int) ($f['reorderLevel'] ?? 0),
+            'maxLevel' => (int) ($f['maxLevel'] ?? 0),
+            'expiryDateRaw' => $f['expiryDate'] ?? '',
+            'expiryDate' => isset($f['expiryDate']) && $f['expiryDate'] !== '' ? strtoupper(date('M d, Y', strtotime($f['expiryDate']))) : '—',
+            'expiryStatus' => hc_inventory_expiry_status($f['expiryDate'] ?? ''),
+            'status' => $f['status'] ?? 'available',
+            'lastUpdatedRaw' => $f['lastUpdated'] ?? '',
+            'lastUpdated' => isset($f['lastUpdated']) && $f['lastUpdated'] !== '' ? date('M j, Y g:i A', strtotime($f['lastUpdated'])) : '—',
+            'icon' => $f['icon'] ?? ($type === 'vaccine' ? 'bi-droplet-half' : 'bi-capsule'),
+            'colorMeta' => $colorMeta[$f['color'] ?? ''] ?? ['bg' => '#EEF0F3', 'color' => '#6B7280'],
+        ];
+    }
+}
+
+if (!function_exists('hc_get_inventory_item')) {
+    /**
+     * One real medicines/{id} doc by its own real id, mapped through
+     * the exact same hc_map_medicine_doc_to_item() every list read
+     * uses — for pharmacist/manage_medicine.php's own detail page,
+     * which needs one item's full data without pulling (and filtering)
+     * the entire collection the way hc_get_inventory_items() does.
+     * Returns null for a missing doc, same as $firestore->getDocument().
+     */
+    function hc_get_inventory_item(string $id): ?array
+    {
+        global $firestore;
+
+        $doc = $firestore->getDocument('medicines', $id);
+        if ($doc === null) {
+            return null;
+        }
+
+        return hc_map_medicine_doc_to_item($id, $doc);
+    }
+}
+
 if (!function_exists('hc_query_inventory_items')) {
     /**
      * @internal Shared by hc_get_inventory_items()/hc_get_archived_inventory_items()
@@ -108,7 +172,6 @@ if (!function_exists('hc_query_inventory_items')) {
     {
         global $firestore;
 
-        $colorMeta = hc_medicine_color_meta();
         $items = [];
         foreach ($firestore->listDocuments('medicines') as $doc) {
             $f = $doc['fields'];
@@ -119,27 +182,7 @@ if (!function_exists('hc_query_inventory_items')) {
                 continue;
             }
 
-            $items[] = [
-                'id' => $doc['id'],
-                'name' => $f['name'] ?? '(unnamed)',
-                'category' => $f['category'] ?? 'Uncategorized',
-                'unit' => $f['unit'] ?? '—',
-                'form' => $f['form'] ?? '—',
-                'desc' => $f['desc'] ?? '',
-                'dosage' => $f['dosage'] ?? '',
-                'currentStock' => (int) ($f['currentStock'] ?? 0),
-                'minLevel' => (int) ($f['minLevel'] ?? 0),
-                'reorderLevel' => (int) ($f['reorderLevel'] ?? 0),
-                'maxLevel' => (int) ($f['maxLevel'] ?? 0),
-                'expiryDateRaw' => $f['expiryDate'] ?? '',
-                'expiryDate' => isset($f['expiryDate']) && $f['expiryDate'] !== '' ? strtoupper(date('M d, Y', strtotime($f['expiryDate']))) : '—',
-                'expiryStatus' => hc_inventory_expiry_status($f['expiryDate'] ?? ''),
-                'status' => $f['status'] ?? 'available',
-                'lastUpdatedRaw' => $f['lastUpdated'] ?? '',
-                'lastUpdated' => isset($f['lastUpdated']) && $f['lastUpdated'] !== '' ? date('M j, Y g:i A', strtotime($f['lastUpdated'])) : '—',
-                'icon' => $f['icon'] ?? ($type === 'vaccine' ? 'bi-droplet-half' : 'bi-capsule'),
-                'colorMeta' => $colorMeta[$f['color'] ?? ''] ?? ['bg' => '#EEF0F3', 'color' => '#6B7280'],
-            ];
+            $items[] = hc_map_medicine_doc_to_item($doc['id'], $f);
         }
 
         // FEFO — First Expiry, First Out: soonest-expiring stock surfaces

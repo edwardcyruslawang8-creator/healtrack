@@ -223,6 +223,7 @@
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
+  text-decoration: none; /* pharmacist's own row now links to manage_medicine.php rather than opening a modal */
   transition: background .15s ease, color .15s ease;
 }
 .mvi-manage-btn:hover{ background: var(--adm-red-bright); color: #fff; }
@@ -230,46 +231,11 @@
 .mvi-more-btn{ color: var(--adm-text-muted); }
 .mvi-page-ellipsis{ pointer-events: none; color: var(--adm-text-soft); }
 
-/* -- #mviManageModal is a little wider than the plain Bootstrap
-      default (~500px) — the title ("Manage Medicine"/"Manage Vaccine")
-      plus two labeled header buttons plus Close need the room so
-      nothing crowds or wraps. -- */
-#mviManageModal .modal-dialog{ max-width: 540px; }
-
-/* -- #mviManageModal (pharmacist-only "Manage Medicine"/"Manage
-      Vaccine") — the row's own thumb/name/badges repeated as a proper
-      header so this reads as that item's actual profile, same
-      "profile header" treatment subadmin/user_management.css's Manage
-      User modal uses (.usm-profile-header etc.), just medicine-colored
-      (.mvi-thumb's own bg/color are set inline per row, mmThumb reuses
-      that same inline-style convention — see assets/js/medicine_vaccine_inventory_pharmacist.js). -- */
-.mvi-manage-header{ display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
-.mvi-manage-thumb{
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  flex-shrink: 0;
-}
-.mvi-manage-identity{ min-width: 0; }
-.mvi-manage-name{ font-size: 16px; font-weight: 700; color: var(--adm-text); margin: 0 0 6px; }
-.mvi-manage-badges{ display: flex; flex-wrap: wrap; gap: 6px; }
-
-/* -- #mviManageModal's header buttons (View Stock History, Archive)
-      — grouped with the Close button so all three sit together in the
-      modal's upper-right corner (Bootstrap's own .modal-header is
-      already a space-between flex row, so this group as ONE flex
-      child naturally ends up opposite the title). Labeled, not
-      icon-only — "History"/"Archive" alone next to a plain X read as
-      unclear at a glance, unlike the X itself (a close button's
-      meaning doesn't need a label). Same outlined brand-red look
-      .mvi-manage-btn (the row's own trigger button) and the main
+/* -- pharmacist/manage_medicine.php's own "History" header button
+      (inside .mm-header-actions below) — same outlined brand-red look
+      .mvi-manage-btn (the list table's own trigger link) and the main
       inventory table's other labeled buttons already use, just sized
-      down to fit a modal header. -- */
-.mvi-manage-header-actions{ display: flex; align-items: center; gap: 8px; margin-left: auto; padding-left: 16px; }
+      down. -- */
 .mvi-manage-header-btn{
   display: inline-flex;
   align-items: center;
@@ -286,31 +252,10 @@
 }
 .mvi-manage-header-btn:hover{ background: var(--adm-red-bright); color: #fff; }
 
-.mvi-manage-expired-note{ margin: 14px 0 0; font-size: 12px; color: var(--adm-red-bright); display: flex; align-items: center; gap: 6px; }
-
-/* -- #mviManageModal's footer — Dispense is the one real mutating
-      action left for a pharmacist from this modal, styled as the
-      primary action (filled, brand red) next to the plain Close. -- */
-.mvi-manage-dispense-btn{
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 18px;
-  border: none;
-  border-radius: 10px;
-  background: var(--adm-red-bright);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  transition: background .15s ease;
-}
-.mvi-manage-dispense-btn:hover{ background: var(--adm-red-bright-hover); color: #fff; }
-.mvi-manage-dispense-btn:disabled{
-  opacity: .6;
-  cursor: not-allowed;
-  background: var(--adm-hover-bg);
-  color: var(--adm-text-muted);
-}
+/* -- pharmacist/manage_medicine.php's own "expired" note, right under
+      the item header when its real expiry has already passed — same
+      note the old modal showed, now on the detail page itself. -- */
+.mvi-manage-expired-note{ margin: 14px 0; font-size: 12px; color: var(--adm-red-bright); display: flex; align-items: center; gap: 6px; }
 
 /* -- Main table's Status cell — the status badge stays the primary
       signal, with the real expiry badge (if any) and the oldest (FEFO)
@@ -351,39 +296,121 @@
 }
 .mvi-archive-btn:hover{ background: var(--adm-hover-bg); color: var(--adm-red-bright); border-color: var(--adm-red-bright); }
 
-/* -- #mviManageModal — wider now (modal-lg) to fit Section A's info
-      grid and Section B's Batch Management table without either
-      feeling cramped. -- */
-.mvi-manage-modal .modal-dialog{ max-width: 720px; }
+/* =============================================================
+   MANAGE MEDICINE DETAIL PAGE (pharmacist/manage_medicine.php)
+   "mm-" prefixed. A dedicated page reached from the main table's own
+   "Manage Medicine"/"Manage Vaccine" link — not a modal — so these
+   rules style real page content rather than a Bootstrap modal.
+   ============================================================= */
 
-.mvi-manage-section-title{ font-size: 13px; font-weight: 700; color: var(--adm-text); margin: 20px 0 10px; }
-.mvi-manage-section-header{
+/* -- Item header: icon + name + subtitle on the left, the batch-number
+      search box and Restock button on the right, search immediately
+      LEFT of Restock. -- */
+.mm-header{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 20px 0 10px;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 18px 0 16px;
 }
-.mvi-manage-section-header .mvi-manage-section-title{ margin: 0; }
-
-/* Section A's dl as a real 2-up grid on anything wider than mobile —
-   plain stacked dt/dd (am-detail-list's own default) read too tall for
-   six short fields side by side. */
-@media (min-width: 576px){
-  .mvi-manage-info-grid{
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2px 24px;
-  }
-  .mvi-manage-info-grid .am-detail-row{ display: contents; }
+.mm-header-identity{ display: flex; align-items: center; gap: 14px; min-width: 0; }
+.mm-thumb{
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
 }
+.mm-name{ font-size: 20px; font-weight: 700; color: var(--adm-text); margin: 0; }
+.mm-subtitle{ font-size: 13px; color: var(--adm-text-muted); margin: 2px 0 0; }
 
-.mvi-batch-table-wrap{ max-height: 320px; overflow-y: auto; border: 1px solid var(--adm-border); border-radius: 10px; }
-.mvi-batch-table{ margin-bottom: 0; white-space: nowrap; }
-.mvi-batch-table thead th{
-  position: sticky;
-  top: 0;
-  background: var(--adm-bg);
-  z-index: 1;
+.mm-header-actions{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mm-search{ position: relative; }
+.mm-search i{
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--adm-text-soft); font-size: 13px;
+}
+.mm-search input{
+  width: 230px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 8px 12px 8px 32px;
+  font-size: 13px;
+  color: var(--adm-text);
+}
+.mm-search input:focus{ outline: none; border-color: var(--adm-red-bright); }
+.mm-restock-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border: 1px solid var(--adm-red-bright);
+  border-radius: 10px;
+  background: var(--adm-card);
+  color: var(--adm-red-bright);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background .15s ease, color .15s ease;
+}
+.mm-restock-btn:hover{ background: var(--adm-red-bright); color: #fff; }
+
+/* -- Info row: Category/Unit/Total Current Stock/Minimum Level/
+      Reorder Level, evenly spaced with faint dividers between —
+      a quick-glance summary above the real Batch Inventory detail. -- */
+.mm-info-row{
+  display: flex;
+  flex-wrap: wrap;
+  padding: 18px 24px;
+  margin-bottom: 16px;
+}
+.mm-info-cell{
+  flex: 1 1 160px;
+  padding: 0 20px;
+  border-left: 1px solid var(--adm-border);
+}
+.mm-info-cell:first-child{ border-left: none; padding-left: 0; }
+.mm-info-label{ display: block; font-size: 12px; color: var(--adm-text-muted); margin-bottom: 4px; }
+.mm-info-value{ font-size: 16px; font-weight: 700; color: var(--adm-text); }
+
+.mm-notes-row{ display: flex; flex-wrap: wrap; gap: 24px; padding: 16px 24px; margin-bottom: 16px; }
+.mm-notes-cell{ flex: 1 1 260px; min-width: 0; }
+.mm-notes-cell p{ margin: 4px 0 0; font-size: 13.5px; color: var(--adm-text); }
+
+/* -- Batch Inventory card. -- */
+.mm-batch-card{ padding: 20px 24px; }
+.mm-batch-title{ font-size: 15px; font-weight: 700; color: var(--adm-text); margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+.mm-batch-title i{ color: var(--adm-red-bright); }
+.mm-batch-table{ white-space: nowrap; }
+.mm-batch-table td, .mm-batch-table th{ padding-top: 12px; padding-bottom: 12px; }
+
+.mm-dispense-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 7px;
+  background: var(--adm-red-bright);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background .15s ease;
+}
+.mm-dispense-btn:hover{ background: var(--adm-red-bright-hover); color: #fff; }
+.mm-dispense-btn:disabled{ opacity: .6; cursor: not-allowed; background: var(--adm-hover-bg); color: var(--adm-text-muted); }
+
+@media (max-width: 767.98px){
+  .mm-header{ flex-direction: column; align-items: stretch; }
+  .mm-header-actions{ flex-direction: column; align-items: stretch; }
+  .mm-search input{ width: 100%; }
+  .mm-info-cell{ flex: 1 1 45%; border-left: none; padding-left: 0; margin-bottom: 10px; }
 }
 
 /* -- #restockModal's mode toggle (An existing batch / A new batch) —

@@ -19,22 +19,30 @@
  * header comment. Both tabs (Medicines AND Vaccines) are real, with
  * working search/category/status filters and pagination.
  *
- * Each row's Actions column is a single "Manage Medicine"/"Manage
- * Vaccine" button (#mviManageModal, includes/pharmacist/medicine_action_modals.php)
- * — a pharmacist can see every real field but can't edit
- * name/category/unit/expiry date/current stock/minimum level/reorder
- * level (api/update-medicine.php and api/adjust-medicine-stock.php are
- * subadmin-only now) and can't permanently delete an item
- * (api/delete-medicine.php, also subadmin-only). What's left for a
- * pharmacist from this modal: Dispense (No Prescription) as the main
- * action, and View Stock History/Archive as two icon buttons in the
- * modal's own header, upper-right, next to Close. "+ Add
- * Medicine"/"+ Add Vaccine" still write real NEW documents via
- * api/create-medicine.php (unaffected — registering a new item is a
- * different operation from editing an existing one's data).
- * subadmin/medicine_vaccine_inventory.php keeps the older, fuller
- * pencil+dropdown layout (Edit/Adjust Stock/Delete included) — see
- * assets/js/medicine_vaccine_inventory_pharmacist.js's own header
+ * A simplified overview table — Current Stock/Minimum Level/Reorder
+ * Level/Expiry Date columns live on the detail page instead (see
+ * below), and the Status column shows the oldest (FEFO) real batch
+ * number as a quick hint alongside the usual status badge
+ * ($med['oldestBatchNumber'], mvi_attach_oldest_batch() in
+ * includes/pharmacist/medicine_vaccine_inventory_pharmacist_firestore.php).
+ *
+ * Each row's Actions column is a real link to
+ * pharmacist/manage_medicine.php?id=...&type=medicine|vaccine — a
+ * dedicated detail page (not a modal) with the full batch-level
+ * management view: Dispense, Restock, Archive, and View Stock History/
+ * Activity Log all live there now. A pharmacist still can't edit
+ * name/category/unit/minimum level/reorder level (api/update-medicine.php
+ * is subadmin-only) and can't permanently delete an item
+ * (api/delete-medicine.php, also subadmin-only). Archive is ALSO
+ * available directly from this table's own Actions column (a separate
+ * button next to "Manage Medicine"), for the common case of archiving
+ * without needing the full detail page. "+ Add Medicine"/"+ Add
+ * Vaccine" still write real NEW documents via api/create-medicine.php
+ * (unaffected — registering a new item is a different operation from
+ * editing an existing one's data). subadmin/medicine_vaccine_inventory.php
+ * keeps the older, fuller pencil+dropdown layout (Edit/Adjust Stock/
+ * Dispense/View Stock History/Archive/Delete, all still modal-based) —
+ * see assets/js/medicine_vaccine_inventory_pharmacist.js's own header
  * comment for how one file drives both.
  * =====================================================================
  */
@@ -387,7 +395,7 @@ if (!function_exists('mvi_page_url')) {
                             <td class="mvi-updated-cell"><?= htmlspecialchars($med['lastUpdated']) ?></td>
                             <td>
                                 <div class="adm-action-btns">
-                                    <button type="button" class="mvi-manage-btn" data-bs-toggle="modal" data-bs-target="#mviManageModal" aria-label="Manage this medicine">Manage Medicine</button>
+                                    <a href="manage_medicine.php?id=<?= urlencode($med['id']) ?>&amp;type=medicine" class="mvi-manage-btn" aria-label="Manage this medicine">Manage Medicine</a>
                                     <button type="button" class="mvi-archive-btn mvi-archive" aria-label="Archive this medicine"><i class="bi bi-archive"></i> Archive</button>
                                 </div>
                             </td>
@@ -504,7 +512,7 @@ if (!function_exists('mvi_page_url')) {
                             <td class="mvi-updated-cell"><?= htmlspecialchars($vac['lastUpdated']) ?></td>
                             <td>
                                 <div class="adm-action-btns">
-                                    <button type="button" class="mvi-manage-btn" data-bs-toggle="modal" data-bs-target="#mviManageModal" aria-label="Manage this vaccine">Manage Vaccine</button>
+                                    <a href="manage_medicine.php?id=<?= urlencode($vac['id']) ?>&amp;type=vaccine" class="mvi-manage-btn" aria-label="Manage this vaccine">Manage Vaccine</a>
                                     <button type="button" class="mvi-archive-btn mvi-archive" aria-label="Archive this vaccine"><i class="bi bi-archive"></i> Archive</button>
                                 </div>
                             </td>
@@ -537,7 +545,6 @@ if (!function_exists('mvi_page_url')) {
 </main>
 
 <?php require __DIR__ . '/../includes/pharmacist/add_medicine_modal.php'; ?>
-<?php require __DIR__ . '/../includes/pharmacist/medicine_action_modals.php'; ?>
 
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

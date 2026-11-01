@@ -1,120 +1,24 @@
 <!-- =============================================================
-     MANAGE MEDICINE / MANAGE VACCINE MODAL (pharmacist only)
-     -------------------------------------------------------------
-     Triggered by each row's own "Manage Medicine"/"Manage Vaccine"
-     button on pharmacist/medicine_vaccine_inventory.php — a
-     pharmacist's detailed inventory-management view for an existing
-     item: Section A (medicine information, from the row's own
-     data-med-* attributes — no network request) and Section B (a live
-     Batch Management table, fetched on open from
-     api/get-medicine-stock-history.php, the same batches+per-batch
-     status includes/firestore/medicine_batches.php's
-     hc_get_batches_for_medicine() now computes — see that function's
-     own header comment). A pharmacist still can't rename/recategorize
-     this item or change its configured thresholds (api/update-medicine.php
-     is subadmin-only) and can't permanently delete it
-     (api/delete-medicine.php, also subadmin-only) — what IS real here:
-     Restock (#restockModal below, api/restock-medicine.php — adds real
-     stock a pharmacist actually received, either into an existing
-     batch or as a brand new one) and Dispense (No Prescription) as the
-     footer's one real mutating action, plus View Stock History as an
-     icon button in the header next to Close. Archive moved out of this
-     modal onto the row itself (a separate button next to "Manage
-     Medicine" on the main table, per the main table's own simplified-
-     overview redesign) rather than staying duplicated here too.
-     ============================================================= -->
-<div class="modal fade am-modal mvi-manage-modal" id="mviManageModal" tabindex="-1" aria-labelledby="mviManageModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="mviManageModalLabel">Manage Medicine</h5>
-        <div class="mvi-manage-header-actions">
-          <button type="button" class="mvi-manage-header-btn" id="mmHistoryTrigger"><i class="bi bi-clock-history"></i> History</button>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-      </div>
-      <div class="modal-body">
-        <div class="mvi-manage-header">
-          <span class="mvi-manage-thumb" id="mmThumb"><i class="bi bi-capsule" id="mmThumbIcon"></i></span>
-          <div class="mvi-manage-identity">
-            <h5 class="mvi-manage-name" id="mmName"></h5>
-            <div class="mvi-manage-badges">
-              <span class="mvi-badge" id="mmStatusBadge"></span>
-              <span class="mvi-badge mvi-expiry-badge d-none" id="mmExpiryBadge"></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- ===== Section A: Medicine Information ===== -->
-        <h6 class="mvi-manage-section-title">Medicine Information</h6>
-        <dl class="am-detail-list mvi-manage-info-grid">
-          <div class="am-detail-row"><dt>Medicine Name</dt><dd id="mmNameDetail"></dd></div>
-          <div class="am-detail-row"><dt>Category</dt><dd id="mmCategory"></dd></div>
-          <div class="am-detail-row"><dt>Unit</dt><dd id="mmUnit"></dd></div>
-          <div class="am-detail-row"><dt>Total Current Stock</dt><dd id="mmStock"></dd></div>
-          <div class="am-detail-row" id="mmDescRow"><dt>Description</dt><dd id="mmDesc"></dd></div>
-          <div class="am-detail-row"><dt>Dosage Information</dt><dd id="mmDosage"></dd></div>
-        </dl>
-
-        <!-- Only shown once the row's own data-med-expiry-status is
-             "expired" — an expired item can never be dispensed
-             (api/dispense-without-prescription.php re-checks this
-             server-side too), so the Dispense button below is disabled
-             rather than left clickable just to fail after. -->
-        <p class="mvi-manage-expired-note d-none" id="mmExpiredNote"><i class="bi bi-exclamation-circle"></i> This item has expired and can no longer be dispensed.</p>
-
-        <!-- ===== Section B: Batch Management (FEFO — soonest-expiring first) ===== -->
-        <div class="mvi-manage-section-header">
-          <h6 class="mvi-manage-section-title mb-0">Batch Management</h6>
-          <button type="button" class="mvi-manage-header-btn" id="mmRestockTrigger"><i class="bi bi-plus-lg"></i> Restock</button>
-        </div>
-        <div id="mmBatchesEmpty" class="am-form-help d-none">No stock currently on hand.</div>
-        <div id="mmBatchesLoading" class="am-form-help">Loading batches…</div>
-        <div class="adm-table-wrap mvi-batch-table-wrap d-none" id="mmBatchesWrap">
-          <table class="table table-sm am-detail-items-table mvi-batch-table">
-            <thead>
-              <tr>
-                <th>Batch Number</th>
-                <th>Expiry Date</th>
-                <th>Status</th>
-                <th>Current Stock</th>
-                <th>Maximum Stock Level</th>
-                <th>Reorder Level</th>
-              </tr>
-            </thead>
-            <tbody id="mmBatchesBody"></tbody>
-          </table>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="am-btn-cancel" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="mvi-manage-dispense-btn" id="mmDispenseTrigger"><i class="bi bi-capsule"></i> Dispense (No Prescription)</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- =============================================================
      RESTOCK MODAL (pharmacist only)
      -------------------------------------------------------------
-     Opened from #mviManageModal's own "Restock" button (hands off the
-     same way #mviManageModal's History/Dispense triggers already do —
-     hide this modal first, then show that one, avoiding a double
-     backdrop). Two real modes mirroring api/restock-medicine.php's own
-     "mode" field:
-       - "An existing batch": picks one of this item's own CURRENTLY-
-         HELD batches (populated from the same batch list
-         #mviManageModal's own table just rendered — no second fetch)
-         and adds quantity to it (hc_add_to_existing_batch()).
+     Opened from pharmacist/manage_medicine.php's own header "Restock"
+     button (assets/js/manage_medicine.js) — that page is the real
+     "Manage Medicine"/"Manage Vaccine" detail view now (a dedicated
+     page, not a modal over the list), server-rendering every real
+     batch for one item (window.MM_BATCHES) so this form's "existing
+     batch" dropdown needs no extra fetch. Two real modes mirroring
+     api/restock-medicine.php's own "mode" field:
+       - "An existing batch": picks one of this item's own real
+         batches and adds quantity to it (hc_add_to_existing_batch()).
        - "A new batch": a real new batch with its own Batch Number
          (optional — api/restock-medicine.php falls back to a short
          label derived from the new batch's own real doc id if left
          blank, same as every pre-existing batch that predates this
          field), Quantity, and Expiry Date
          (hc_create_medicine_batch()).
-     On success, re-fetches #mviManageModal's own batch list (not a
-     full page reload) so the just-restocked batch's new quantity shows
-     immediately while that modal stays open.
+     On success, reloads the page (same convention as every other
+     mutating action here) so the Batch Inventory table reflects the
+     real new quantity immediately.
      ============================================================= -->
 <div class="modal fade am-modal" id="restockModal" tabindex="-1" aria-labelledby="restockModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -174,7 +78,8 @@
      Companions to add_medicine_modal.php's Add/Edit form, triggered by
      each row's three-dot menu ("View Details"/"Adjust Stock") on
      subadmin/medicine_vaccine_inventory.php (pharmacist's own
-     equivalent read-only view lives inside #mviManageModal above now).
+     equivalent read-only view is pharmacist/manage_medicine.php's own
+     detail page now, not a modal).
        - View Details: populated purely from the clicked row's
          data-med-* attributes (assets/js/medicine_vaccine_inventory_pharmacist.js)
          — no network request, since the page already rendered every
