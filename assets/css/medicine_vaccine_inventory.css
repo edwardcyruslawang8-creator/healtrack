@@ -339,14 +339,10 @@
 }
 .mm-restock-btn:hover{ background: var(--adm-red-bright); color: #fff; }
 
-/* -- subadmin/manage_medicine.php's own extra header actions (Edit,
-      Delete) — pharmacist's page doesn't render these at all. Edit
-      reuses the same small outlined-brand-red look every other header-
-      icon-button in this file uses; Delete gets its own neutral-gray-
-      by-default/red-on-hover treatment, matching .mvi-archive-btn's
-      "destructive-ish but not shouting" treatment rather than a loud
-      permanent red (it's two clicks from actually deleting anything —
-      HCDialog.confirm() still gates the real action). -- */
+/* -- subadmin/manage_medicine.php's own extra header action (Edit) —
+      pharmacist's page doesn't render this at all. Same small
+      outlined-brand-red look every other header-icon-button in this
+      file uses. -- */
 .mvi-manage-header-btn{
   display: inline-flex;
   align-items: center;
@@ -362,11 +358,6 @@
   transition: background .15s ease, color .15s ease, border-color .15s ease;
 }
 .mvi-manage-header-btn:hover{ background: var(--adm-red-bright); color: #fff; }
-.mvi-manage-header-btn-danger{
-  border-color: var(--adm-border);
-  color: var(--adm-text-muted);
-}
-.mvi-manage-header-btn-danger:hover{ background: #FCE4E4; color: #D93025; border-color: #D93025; }
 
 /* -- Info row: Category/Unit/Total Current Stock/Minimum Level/
       Reorder Level, evenly spaced with faint dividers between —

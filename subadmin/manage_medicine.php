@@ -10,21 +10,22 @@
  * Same real batch data and layout as pharmacist/manage_medicine.php
  * (includes/subadmin/manage_medicine_firestore.php — see that file's
  * own header comment), with a sub-admin's own sidebar/topbar shell and
- * two extra header actions pharmacist's page doesn't have: Edit
+ * one extra header action pharmacist's page doesn't have: Edit
  * (api/update-medicine.php, this item's own catalog info/thresholds —
  * reuses includes/pharmacist/add_medicine_modal.php's shared form,
  * wired fresh in assets/js/manage_medicine.js since this page doesn't
  * load the list-page JS that form's own edit wiring normally lives
- * in) and Delete (api/delete-medicine.php, permanent — redirects back
- * to the list on success). Both already accepted the subadmin role
- * server-side before this page existed.
+ * in), which already accepted the subadmin role server-side before
+ * this page existed. No Delete trigger here — removed per request
+ * (api/delete-medicine.php itself is untouched, still subadmin-
+ * allowed; there's just no UI entry point to it anymore).
  *
  * Deliberately NOT included here: Dispense. Dispensing medicine
  * directly to a patient (bypassing a prescription) stays a pharmacist-
  * only clinical action — a sub-admin's capabilities on this page are
- * administrative (Restock received stock, Edit/Delete catalog data,
- * Archive), not clinical. Each batch row's Action column reflects
- * this: Archive only, no Dispense button.
+ * administrative (Restock received stock, Edit catalog data, Archive),
+ * not clinical. Each batch row's Action column reflects this: Archive
+ * only, no Dispense button.
  * =====================================================================
  */
 session_start();
@@ -261,7 +262,6 @@ $isVaccine = $item['type'] === 'vaccine';
         </div>
         <div class="mm-header-actions">
             <button type="button" id="mmEditBtn" class="mvi-manage-header-btn"><i class="bi bi-pencil"></i> Edit</button>
-            <button type="button" id="mmDeleteBtn" class="mvi-manage-header-btn mvi-manage-header-btn-danger"><i class="bi bi-trash"></i> Delete</button>
             <div class="mm-search">
                 <i class="bi bi-search"></i>
                 <input type="text" id="mmBatchSearch" placeholder="Search batch number..." autocomplete="off">
@@ -361,9 +361,9 @@ require __DIR__ . '/../includes/pharmacist/medicine_action_modals.php';
 ?>
 
 <!-- This page's own real item + batch list, for assets/js/manage_medicine.js
-     (Edit/Delete/Archive/Restock wiring, and the batch-number search
-     filter) — server-rendered, no AJAX fetch needed for data this page
-     already has. -->
+     (Edit/Archive/Restock wiring, and the batch-number search filter) —
+     server-rendered, no AJAX fetch needed for data this page already
+     has. -->
 <script>
 window.MM_ITEM = <?= json_encode([
     'id' => $item['id'],

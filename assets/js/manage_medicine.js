@@ -20,10 +20,10 @@
        .mm-item-dispense), Archive (.mm-item-archive), Restock
        (#mmRestockBtn).
      - subadmin: Archive, Restock, PLUS Edit (#mmEditBtn,
-       #addMedicineModal) and Delete (#mmDeleteBtn) — no Dispense
-       trigger is ever rendered there (dispensing stays a pharmacist-
-       only clinical action; see subadmin/manage_medicine.php's own
-       header comment).
+       #addMedicineModal) — no Dispense trigger is ever rendered there
+       (dispensing stays a pharmacist-only clinical action; see
+       subadmin/manage_medicine.php's own header comment), and no
+       Delete trigger either (removed per request).
      - admin: none of the above — read-only monitoring. Only the
        batch-number search filter below does anything on that page.
 
@@ -411,32 +411,4 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // -------------------------------------------------------------
-    // Delete (sub-admin only — #mmDeleteBtn only exists on
-    // subadmin/manage_medicine.php) — permanent, unlike Archive.
-    // HCDialog.confirm() + POST to api/delete-medicine.php, then back
-    // to the list on success (this item no longer exists to show a
-    // detail page for).
-    // -------------------------------------------------------------
-    const deleteBtn = document.getElementById('mmDeleteBtn');
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', async function () {
-            const confirmed = await HCDialog.confirm('Delete "' + item.name + '"? This cannot be undone.');
-            if (!confirmed) return;
-
-            fetch('../api/delete-medicine.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: item.id }),
-            })
-                .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
-                .then(function (result) {
-                    if (!result.ok || !result.data.success) throw new Error(result.data.error || 'Something went wrong. Please try again.');
-                    window.location.href = 'medicine_vaccine_inventory.php';
-                })
-                .catch(function (err) {
-                    HCDialog.alert(err.message);
-                });
-        });
-    }
 });
