@@ -4,7 +4,9 @@
  * Vaccines Table + Pagination — Partial (Admin, read-only)
  * ---------------------------------------------------------------------
  * Same idea as includes/admin/_mvi_medicines_table_readonly.php — see
- * that file's own header comment.
+ * that file's own header comment (simplified-overview columns, one
+ * real "Manage Medicine" link to admin/manage_medicine.php's own
+ * read-only detail page).
  * =====================================================================
  */
 ?>
@@ -16,21 +18,18 @@
                     <th>Vaccine Name</th>
                     <th>Category</th>
                     <th>Unit</th>
-                    <th>Current Stock</th>
-                    <th>Minimum Level</th>
-                    <th>Reorder Level</th>
-                    <th>Expiry Date</th>
-                    <th>Status</th>
+                    <th>Batch Number</th>
                     <th>Last Updated</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($vaccines)): ?>
                 <tr>
-                    <td colspan="9" class="adm-table-empty">No vaccines recorded yet.</td>
+                    <td colspan="6" class="adm-table-empty">No vaccines recorded yet.</td>
                 </tr>
                 <?php endif; ?>
-                <?php foreach ($vaccines as $vac): $cat = $vaccineCategoryMeta[$vac['category']] ?? ['icon' => 'bi-droplet-half', 'bg' => '#EEF0F3', 'color' => '#6B7280']; $status = $medicineStatusMeta[$vac['status']] ?? $medicineStatusMeta['in_stock']; $expiryBadge = $medicineExpiryBadgeMeta[$vac['expiryStatus']] ?? null; ?>
+                <?php foreach ($vaccines as $vac): $cat = $vaccineCategoryMeta[$vac['category']] ?? ['icon' => 'bi-droplet-half', 'bg' => '#EEF0F3', 'color' => '#6B7280']; $expiryBadge = $medicineExpiryBadgeMeta[$vac['expiryStatus']] ?? null; ?>
                 <tr>
                     <td>
                         <div class="mvi-name-cell">
@@ -42,17 +41,16 @@
                     </td>
                     <td><?= htmlspecialchars($vac['category']) ?></td>
                     <td><?= htmlspecialchars($vac['unit']) ?></td>
-                    <td class="<?= $vac['currentStock'] === 0 ? 'mvi-zero-stock' : '' ?>"><?= number_format($vac['currentStock']) ?></td>
-                    <td><?= number_format($vac['minLevel']) ?></td>
-                    <td><?= number_format($vac['reorderLevel']) ?></td>
-                    <td class="<?= $vac['expiryStatus'] === 'expired' ? 'mvi-expiry-warning' : '' ?>">
-                        <?= htmlspecialchars($vac['expiryDate']) ?>
+                    <td>
                         <?php if ($expiryBadge): ?>
                         <span class="mvi-badge mvi-expiry-badge" style="background:<?= htmlspecialchars($expiryBadge['bg']) ?>; color:<?= htmlspecialchars($expiryBadge['color']) ?>;"><?= htmlspecialchars($expiryBadge['label']) ?></span>
                         <?php endif; ?>
+                        <span class="mvi-oldest-batch"><i class="bi bi-box-seam"></i> <?= $vac['oldestBatchNumber'] ? htmlspecialchars($vac['oldestBatchNumber']) : 'No batch recorded' ?></span>
                     </td>
-                    <td><span class="mvi-badge" style="background:<?= htmlspecialchars($status['bg']) ?>; color:<?= htmlspecialchars($status['color']) ?>;"><?= htmlspecialchars($status['label']) ?></span></td>
                     <td class="mvi-updated-cell"><?= htmlspecialchars($vac['lastUpdated']) ?></td>
+                    <td>
+                        <a href="manage_medicine.php?id=<?= urlencode($vac['id']) ?>&amp;type=vaccine" class="mvi-manage-btn" aria-label="View this vaccine">Manage Vaccine</a>
+                    </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>

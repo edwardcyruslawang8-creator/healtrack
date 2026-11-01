@@ -18,6 +18,11 @@
  * The full-page Search button/filters below cover the same real data
  * without needing that endpoint widened — same scope line drawn for
  * admin/patient_management.php.
+ *
+ * Each row's own "Manage Medicine" link goes to admin/manage_medicine.php
+ * — a real detail page showing that item's full real Batch Inventory
+ * (every batch, FEFO-ordered), but still purely for monitoring: no
+ * Restock/Dispense/Archive/Edit/Delete trigger exists there either.
  * =====================================================================
  */
 session_start();

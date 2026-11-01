@@ -19,21 +19,22 @@
  * both tables, kept in separate querystring namespaces so filtering one
  * tab doesn't reset the other.
  *
- * Each row's Edit button and three-dot menu's View Details/Delete are
- * real too — same shared modals and JS as
- * pharmacist/medicine_vaccine_inventory.php
- * (includes/pharmacist/add_medicine_modal.php,
- * includes/pharmacist/medicine_action_modals.php,
- * assets/js/medicine_vaccine_inventory_pharmacist.js, all reused
- * as-is), now that api/update-medicine.php and api/delete-medicine.php
- * both accept subadmin as well as pharmacist. The "+ Add Medicine"/"+
- * Add Vaccine" buttons stay removed — creating brand-new items is
- * still pharmacist-only (api/create-medicine.php). "Adjust Stock" was
- * deliberately removed from this page's three-dot menu (subadmin-only
- * decision — pharmacist/medicine_vaccine_inventory.php keeps it);
- * api/adjust-medicine-stock.php still technically accepts subadmin
- * too, it just has no UI entry point here anymore. View Stock History
- * and Archive are still not wired up.
+ * A simplified overview table — same redesign
+ * pharmacist/medicine_vaccine_inventory.php already got. Each row's
+ * "Manage Medicine" is a real link to subadmin/manage_medicine.php's
+ * own detail page now (not a modal) — Edit, Delete, Restock, Dispense
+ * viewing, and the real Batch Inventory table all live there; Archive
+ * stays here too as its own row-level button. Sub-admin keeps Edit
+ * (api/update-medicine.php) and Delete (api/delete-medicine.php),
+ * unlike pharmacist's own detail page — both endpoints already
+ * accepted the subadmin role. "+ Add Medicine"/"+ Add Vaccine" stay
+ * off this page entirely — creating brand-new items is still
+ * pharmacist-only (api/create-medicine.php). "Adjust Stock" stays
+ * deliberately absent for sub-admin (pharmacist/medicine_vaccine_inventory.php's
+ * own detail page doesn't offer it either now — Restock replaced it
+ * for adding real stock); api/adjust-medicine-stock.php still
+ * technically accepts subadmin too, it just has no UI entry point
+ * anywhere for this role.
  * =====================================================================
  */
 session_start();
@@ -374,8 +375,12 @@ $adminNavItems = [
 
 </main>
 
-<?php require __DIR__ . '/../includes/pharmacist/add_medicine_modal.php'; ?>
-<?php require __DIR__ . '/../includes/pharmacist/medicine_action_modals.php'; ?>
+<!-- No modal requires here anymore — Edit/Delete/Restock/Dispense/View
+     Stock History all moved to manage_medicine.php's own detail page
+     (its own requires). Archive is this list page's one remaining
+     row-level mutation, and needs no modal markup (HCDialog.confirm()
+     only) — assets/js/medicine_vaccine_inventory_pharmacist.js (below)
+     stays loaded for that. -->
 
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

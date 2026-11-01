@@ -339,6 +339,35 @@
 }
 .mm-restock-btn:hover{ background: var(--adm-red-bright); color: #fff; }
 
+/* -- subadmin/manage_medicine.php's own extra header actions (Edit,
+      Delete) — pharmacist's page doesn't render these at all. Edit
+      reuses the same small outlined-brand-red look every other header-
+      icon-button in this file uses; Delete gets its own neutral-gray-
+      by-default/red-on-hover treatment, matching .mvi-archive-btn's
+      "destructive-ish but not shouting" treatment rather than a loud
+      permanent red (it's two clicks from actually deleting anything —
+      HCDialog.confirm() still gates the real action). -- */
+.mvi-manage-header-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--adm-red-bright);
+  background: var(--adm-card);
+  color: var(--adm-red-bright);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.mvi-manage-header-btn:hover{ background: var(--adm-red-bright); color: #fff; }
+.mvi-manage-header-btn-danger{
+  border-color: var(--adm-border);
+  color: var(--adm-text-muted);
+}
+.mvi-manage-header-btn-danger:hover{ background: #FCE4E4; color: #D93025; border-color: #D93025; }
+
 /* -- Info row: Category/Unit/Total Current Stock/Minimum Level/
       Reorder Level, evenly spaced with faint dividers between —
       a quick-glance summary above the real Batch Inventory detail. -- */

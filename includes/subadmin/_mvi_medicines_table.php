@@ -10,8 +10,19 @@
  * handler) — so paging never has to duplicate this table's markup, and
  * the two can never drift out of sync with each other.
  *
- * Expects $medicines, $medicineCategoryMeta, and $medicineStatusMeta to
- * already be set (by includes/subadmin/medicine_vaccine_inventory_firestore.php).
+ * A simplified overview, same redesign pharmacist/medicine_vaccine_inventory.php
+ * already got — Current Stock/Minimum Level/Reorder Level/Expiry Date/
+ * Status columns are gone, replaced by the item's oldest (FEFO) real
+ * batch number ($med['oldestBatchNumber'], hc_attach_oldest_batch_numbers()
+ * in includes/shared/medicine_vaccine_inventory_shared.php). "Manage
+ * Medicine" is a real link to subadmin/manage_medicine.php's own
+ * detail page now (not a modal trigger) — Edit/Delete/Restock/View
+ * Stock History all live there; the three-dot dropdown that used to
+ * hold them is gone from this table. Archive stays here too, as its
+ * own row-level button, same as pharmacist's table.
+ *
+ * Expects $medicines and $medicineExpiryBadgeMeta to already be set
+ * (by includes/subadmin/medicine_vaccine_inventory_firestore.php).
  * =====================================================================
  */
 ?>
@@ -23,11 +34,7 @@
                     <th>Medicine Name</th>
                     <th>Category</th>
                     <th>Unit</th>
-                    <th>Current Stock</th>
-                    <th>Minimum Level</th>
-                    <th>Reorder Level</th>
-                    <th>Expiry Date</th>
-                    <th>Status</th>
+                    <th>Batch Number</th>
                     <th>Last Updated</th>
                     <th>Actions</th>
                 </tr>
@@ -35,26 +42,11 @@
             <tbody>
                 <?php if (empty($medicines)): ?>
                 <tr>
-                    <td colspan="10" class="adm-table-empty">No medicines recorded yet.</td>
+                    <td colspan="6" class="adm-table-empty">No medicines recorded yet.</td>
                 </tr>
                 <?php endif; ?>
-                <?php foreach ($medicines as $med): $cat = $medicineCategoryMeta[$med['category']] ?? ['icon' => 'bi-capsule', 'bg' => '#EEF0F3', 'color' => '#6B7280']; $status = $medicineStatusMeta[$med['status']] ?? $medicineStatusMeta['in_stock']; $expiryBadge = $medicineExpiryBadgeMeta[$med['expiryStatus']] ?? null; ?>
-                <tr
-                    data-med-id="<?= htmlspecialchars($med['id']) ?>"
-                    data-med-type="medicine"
-                    data-med-name="<?= htmlspecialchars($med['name']) ?>"
-                    data-med-category="<?= htmlspecialchars($med['category']) ?>"
-                    data-med-form="<?= htmlspecialchars($med['form']) ?>"
-                    data-med-unit="<?= htmlspecialchars($med['unit']) ?>"
-                    data-med-expiry="<?= htmlspecialchars($med['expiryDateRaw']) ?>"
-                    data-med-expiry-display="<?= htmlspecialchars($med['expiryDate']) ?>"
-                    data-med-stock="<?= (int) $med['currentStock'] ?>"
-                    data-med-min-level="<?= (int) $med['minLevel'] ?>"
-                    data-med-reorder-level="<?= (int) $med['reorderLevel'] ?>"
-                    data-med-max-level="<?= (int) $med['maxLevel'] ?>"
-                    data-med-desc="<?= htmlspecialchars($med['desc']) ?>"
-                    data-med-status-label="<?= htmlspecialchars($status['label']) ?>"
-                >
+                <?php foreach ($medicines as $med): $cat = $medicineCategoryMeta[$med['category']] ?? ['icon' => 'bi-capsule', 'bg' => '#EEF0F3', 'color' => '#6B7280']; $expiryBadge = $medicineExpiryBadgeMeta[$med['expiryStatus']] ?? null; ?>
+                <tr data-med-id="<?= htmlspecialchars($med['id']) ?>" data-med-name="<?= htmlspecialchars($med['name']) ?>">
                     <td>
                         <div class="mvi-name-cell">
                             <span class="mvi-thumb" style="background:<?= htmlspecialchars($cat['bg']) ?>; color:<?= htmlspecialchars($cat['color']) ?>;">
@@ -65,32 +57,17 @@
                     </td>
                     <td><?= htmlspecialchars($med['category']) ?></td>
                     <td><?= htmlspecialchars($med['unit']) ?></td>
-                    <td class="<?= $med['currentStock'] === 0 ? 'mvi-zero-stock' : '' ?>"><?= number_format($med['currentStock']) ?></td>
-                    <td><?= number_format($med['minLevel']) ?></td>
-                    <td><?= number_format($med['reorderLevel']) ?></td>
-                    <td class="<?= $med['expiryStatus'] === 'expired' ? 'mvi-expiry-warning' : '' ?>">
-                        <?= htmlspecialchars($med['expiryDate']) ?>
+                    <td>
                         <?php if ($expiryBadge): ?>
                         <span class="mvi-badge mvi-expiry-badge" style="background:<?= htmlspecialchars($expiryBadge['bg']) ?>; color:<?= htmlspecialchars($expiryBadge['color']) ?>;"><?= htmlspecialchars($expiryBadge['label']) ?></span>
                         <?php endif; ?>
+                        <span class="mvi-oldest-batch"><i class="bi bi-box-seam"></i> <?= $med['oldestBatchNumber'] ? htmlspecialchars($med['oldestBatchNumber']) : 'No batch recorded' ?></span>
                     </td>
-                    <td><span class="mvi-badge" style="background:<?= htmlspecialchars($status['bg']) ?>; color:<?= htmlspecialchars($status['color']) ?>;"><?= htmlspecialchars($status['label']) ?></span></td>
                     <td class="mvi-updated-cell"><?= htmlspecialchars($med['lastUpdated']) ?></td>
                     <td>
                         <div class="adm-action-btns">
-                            <button type="button" class="mvi-manage-btn edit">Manage Medicine</button>
-                            <div class="dropdown">
-                                <button type="button" class="adm-action-btn mvi-more-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions">
-                                    <i class="bi bi-three-dots-vertical"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item mvi-view-details" href="#"><i class="bi bi-eye me-2"></i>View Details</a></li>
-                                    <li><a class="dropdown-item mvi-stock-history" href="#"><i class="bi bi-clock-history me-2"></i>View Stock History</a></li>
-                                    <li><a class="dropdown-item mvi-archive" href="#"><i class="bi bi-archive me-2"></i>Archive</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item text-danger mvi-delete" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
-                                </ul>
-                            </div>
+                            <a href="manage_medicine.php?id=<?= urlencode($med['id']) ?>&amp;type=medicine" class="mvi-manage-btn" aria-label="Manage this medicine">Manage Medicine</a>
+                            <button type="button" class="mvi-archive-btn mvi-archive" aria-label="Archive this medicine"><i class="bi bi-archive"></i> Archive</button>
                         </div>
                     </td>
                 </tr>

@@ -3,11 +3,16 @@
  * =====================================================================
  * Medicines Table + Pagination — Partial (Admin, read-only)
  * ---------------------------------------------------------------------
- * Same real $medicines data as includes/subadmin/_mvi_medicines_table.php,
- * minus the Actions column — a System Administrator has no write
- * access to this collection (api/update-medicine.php/api/delete-medicine.php
- * are pharmacist/subadmin-only), so no Edit/Delete/etc. buttons that
- * would just 403 are shown here.
+ * Same simplified-overview redesign includes/subadmin/_mvi_medicines_table.php
+ * got — Current Stock/Minimum Level/Reorder Level/Expiry Date/Status
+ * columns are gone, replaced by the item's oldest (FEFO) real batch
+ * number ($med['oldestBatchNumber']). Actions holds ONE real link now
+ * — "Manage Medicine", to admin/manage_medicine.php's own read-only
+ * detail page (the real Batch Inventory table, no Edit/Delete/Restock/
+ * Archive/Dispense trigger anywhere on it either) — a System
+ * Administrator still has no write access to this collection
+ * (api/update-medicine.php/api/delete-medicine.php are pharmacist/
+ * subadmin-only), so nothing that would just 403 is shown here.
  * =====================================================================
  */
 ?>
@@ -19,21 +24,18 @@
                     <th>Medicine Name</th>
                     <th>Category</th>
                     <th>Unit</th>
-                    <th>Current Stock</th>
-                    <th>Minimum Level</th>
-                    <th>Reorder Level</th>
-                    <th>Expiry Date</th>
-                    <th>Status</th>
+                    <th>Batch Number</th>
                     <th>Last Updated</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($medicines)): ?>
                 <tr>
-                    <td colspan="9" class="adm-table-empty">No medicines recorded yet.</td>
+                    <td colspan="6" class="adm-table-empty">No medicines recorded yet.</td>
                 </tr>
                 <?php endif; ?>
-                <?php foreach ($medicines as $med): $cat = $medicineCategoryMeta[$med['category']] ?? ['icon' => 'bi-capsule', 'bg' => '#EEF0F3', 'color' => '#6B7280']; $status = $medicineStatusMeta[$med['status']] ?? $medicineStatusMeta['in_stock']; $expiryBadge = $medicineExpiryBadgeMeta[$med['expiryStatus']] ?? null; ?>
+                <?php foreach ($medicines as $med): $cat = $medicineCategoryMeta[$med['category']] ?? ['icon' => 'bi-capsule', 'bg' => '#EEF0F3', 'color' => '#6B7280']; $expiryBadge = $medicineExpiryBadgeMeta[$med['expiryStatus']] ?? null; ?>
                 <tr>
                     <td>
                         <div class="mvi-name-cell">
@@ -45,17 +47,16 @@
                     </td>
                     <td><?= htmlspecialchars($med['category']) ?></td>
                     <td><?= htmlspecialchars($med['unit']) ?></td>
-                    <td class="<?= $med['currentStock'] === 0 ? 'mvi-zero-stock' : '' ?>"><?= number_format($med['currentStock']) ?></td>
-                    <td><?= number_format($med['minLevel']) ?></td>
-                    <td><?= number_format($med['reorderLevel']) ?></td>
-                    <td class="<?= $med['expiryStatus'] === 'expired' ? 'mvi-expiry-warning' : '' ?>">
-                        <?= htmlspecialchars($med['expiryDate']) ?>
+                    <td>
                         <?php if ($expiryBadge): ?>
                         <span class="mvi-badge mvi-expiry-badge" style="background:<?= htmlspecialchars($expiryBadge['bg']) ?>; color:<?= htmlspecialchars($expiryBadge['color']) ?>;"><?= htmlspecialchars($expiryBadge['label']) ?></span>
                         <?php endif; ?>
+                        <span class="mvi-oldest-batch"><i class="bi bi-box-seam"></i> <?= $med['oldestBatchNumber'] ? htmlspecialchars($med['oldestBatchNumber']) : 'No batch recorded' ?></span>
                     </td>
-                    <td><span class="mvi-badge" style="background:<?= htmlspecialchars($status['bg']) ?>; color:<?= htmlspecialchars($status['color']) ?>;"><?= htmlspecialchars($status['label']) ?></span></td>
                     <td class="mvi-updated-cell"><?= htmlspecialchars($med['lastUpdated']) ?></td>
+                    <td>
+                        <a href="manage_medicine.php?id=<?= urlencode($med['id']) ?>&amp;type=medicine" class="mvi-manage-btn" aria-label="View this medicine">Manage Medicine</a>
+                    </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
