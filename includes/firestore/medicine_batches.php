@@ -414,26 +414,3 @@ if (!function_exists('hc_decrement_medicine_stock_fefo')) {
         return true;
     }
 }
-
-if (!function_exists('hc_attach_oldest_batch_numbers')) {
-    /**
-     * Attaches 'oldestBatchNumber' (FEFO — soonest-expiring real batch,
-     * same order hc_get_batches_for_medicine() already sorts in) to each
-     * item in $items — shared by pharmacist/medicine_vaccine_inventory.php's
-     * own data file and includes/shared/medicine_vaccine_inventory_shared.php
-     * (subadmin + admin's shared list computation) so every role's main
-     * table can show which real batch needs attention first without
-     * opening Manage Medicine. Only ever called on an already-paginated
-     * page slice (8 items), not a full filtered list — each item needs
-     * its own medicine_batches query, so this stays cheap.
-     */
-    function hc_attach_oldest_batch_numbers(array $items): array
-    {
-        foreach ($items as &$item) {
-            $batches = hc_get_batches_for_medicine($item['id']);
-            $item['oldestBatchNumber'] = $batches[0]['displayBatchNumber'] ?? null;
-        }
-
-        return $items;
-    }
-}

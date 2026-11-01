@@ -157,6 +157,21 @@
 /* -- Medicines table -- */
 .mvi-table-card{ margin-bottom: 18px; }
 
+/* -- Actions column — shrinks to fit its own content (a single
+      "Manage Medicine"/"Manage Vaccine" button/link now that Archive
+      was removed from every one of these tables) instead of stretching
+      to an even 1/Nth share of the table's width, which used to leave
+      the button stranded at the cell's left edge with a wide empty gap
+      after it. "width:1%" is the standard table-layout trick for "this
+      column only ever needs as much room as its content" — the other
+      columns (Medicine Name especially) absorb the space this one no
+      longer claims. -- */
+.mvi-table th:last-child,
+.mvi-table td:last-child{
+  width: 1%;
+  white-space: nowrap;
+}
+
 .mvi-name-cell{ display: flex; align-items: center; gap: 10px; }
 .mvi-thumb{
   width: 36px;

@@ -332,7 +332,6 @@ if (!function_exists('mvi_page_url')) {
                             <th>Medicine Name</th>
                             <th>Category</th>
                             <th>Unit</th>
-                            <th>Batch Number</th>
                             <th>Last Updated</th>
                             <th>Actions</th>
                         </tr>
@@ -340,10 +339,10 @@ if (!function_exists('mvi_page_url')) {
                     <tbody>
                         <?php if (empty($medicines)): ?>
                         <tr>
-                            <td colspan="6" class="adm-table-empty">No medicines recorded yet.</td>
+                            <td colspan="5" class="adm-table-empty">No medicines recorded yet.</td>
                         </tr>
                         <?php endif; ?>
-                        <?php foreach ($medicines as $med): $expiryBadge = $medicineExpiryBadgeMeta[$med['expiryStatus']] ?? null; ?>
+                        <?php foreach ($medicines as $med): ?>
                         <tr
                             data-med-id="<?= htmlspecialchars($med['id']) ?>"
                             data-med-type="medicine"
@@ -354,9 +353,6 @@ if (!function_exists('mvi_page_url')) {
                             data-med-expiry="<?= htmlspecialchars($med['expiryDateRaw']) ?>"
                             data-med-expiry-display="<?= htmlspecialchars($med['expiryDate']) ?>"
                             data-med-expiry-status="<?= htmlspecialchars($med['expiryStatus']) ?>"
-                            data-med-expiry-badge-label="<?= $expiryBadge ? htmlspecialchars($expiryBadge['label']) : '' ?>"
-                            data-med-expiry-badge-bg="<?= $expiryBadge ? htmlspecialchars($expiryBadge['bg']) : '' ?>"
-                            data-med-expiry-badge-color="<?= $expiryBadge ? htmlspecialchars($expiryBadge['color']) : '' ?>"
                             data-med-stock="<?= (int) $med['currentStock'] ?>"
                             data-med-min-level="<?= (int) $med['minLevel'] ?>"
                             data-med-reorder-level="<?= (int) $med['reorderLevel'] ?>"
@@ -377,19 +373,6 @@ if (!function_exists('mvi_page_url')) {
                             </td>
                             <td><?= htmlspecialchars($med['category']) ?></td>
                             <td><?= htmlspecialchars($med['unit']) ?></td>
-                            <td>
-                                <?php if ($expiryBadge): ?>
-                                <span class="mvi-badge mvi-expiry-badge" style="background:<?= htmlspecialchars($expiryBadge['bg']) ?>; color:<?= htmlspecialchars($expiryBadge['color']) ?>;"><?= htmlspecialchars($expiryBadge['label']) ?></span>
-                                <?php endif; ?>
-                                <!-- FEFO — the oldest (soonest-expiring) real batch on hand,
-                                     so a pharmacist can tell which batch needs attention
-                                     without opening Manage Medicine first (see
-                                     includes/pharmacist/medicine_vaccine_inventory_pharmacist_firestore.php's
-                                     mvi_attach_oldest_batch()). Status badge removed per
-                                     request — real per-item/per-batch status still lives on
-                                     pharmacist/manage_medicine.php's own detail page. -->
-                                <span class="mvi-oldest-batch"><i class="bi bi-box-seam"></i> <?= $med['oldestBatchNumber'] ? htmlspecialchars($med['oldestBatchNumber']) : 'No batch recorded' ?></span>
-                            </td>
                             <td class="mvi-updated-cell"><?= htmlspecialchars($med['lastUpdated']) ?></td>
                             <td>
                                 <div class="adm-action-btns">
@@ -451,7 +434,6 @@ if (!function_exists('mvi_page_url')) {
                             <th>Vaccine Name</th>
                             <th>Category</th>
                             <th>Unit</th>
-                            <th>Batch Number</th>
                             <th>Last Updated</th>
                             <th>Actions</th>
                         </tr>
@@ -459,10 +441,10 @@ if (!function_exists('mvi_page_url')) {
                     <tbody>
                         <?php if (empty($vaccines)): ?>
                         <tr>
-                            <td colspan="6" class="adm-table-empty">No vaccines recorded yet.</td>
+                            <td colspan="5" class="adm-table-empty">No vaccines recorded yet.</td>
                         </tr>
                         <?php endif; ?>
-                        <?php foreach ($vaccines as $vac): $expiryBadge = $medicineExpiryBadgeMeta[$vac['expiryStatus']] ?? null; ?>
+                        <?php foreach ($vaccines as $vac): ?>
                         <tr
                             data-med-id="<?= htmlspecialchars($vac['id']) ?>"
                             data-med-type="vaccine"
@@ -473,9 +455,6 @@ if (!function_exists('mvi_page_url')) {
                             data-med-expiry="<?= htmlspecialchars($vac['expiryDateRaw']) ?>"
                             data-med-expiry-display="<?= htmlspecialchars($vac['expiryDate']) ?>"
                             data-med-expiry-status="<?= htmlspecialchars($vac['expiryStatus']) ?>"
-                            data-med-expiry-badge-label="<?= $expiryBadge ? htmlspecialchars($expiryBadge['label']) : '' ?>"
-                            data-med-expiry-badge-bg="<?= $expiryBadge ? htmlspecialchars($expiryBadge['bg']) : '' ?>"
-                            data-med-expiry-badge-color="<?= $expiryBadge ? htmlspecialchars($expiryBadge['color']) : '' ?>"
                             data-med-stock="<?= (int) $vac['currentStock'] ?>"
                             data-med-min-level="<?= (int) $vac['minLevel'] ?>"
                             data-med-reorder-level="<?= (int) $vac['reorderLevel'] ?>"
@@ -496,12 +475,6 @@ if (!function_exists('mvi_page_url')) {
                             </td>
                             <td><?= htmlspecialchars($vac['category']) ?></td>
                             <td><?= htmlspecialchars($vac['unit']) ?></td>
-                            <td>
-                                <?php if ($expiryBadge): ?>
-                                <span class="mvi-badge mvi-expiry-badge" style="background:<?= htmlspecialchars($expiryBadge['bg']) ?>; color:<?= htmlspecialchars($expiryBadge['color']) ?>;"><?= htmlspecialchars($expiryBadge['label']) ?></span>
-                                <?php endif; ?>
-                                <span class="mvi-oldest-batch"><i class="bi bi-box-seam"></i> <?= $vac['oldestBatchNumber'] ? htmlspecialchars($vac['oldestBatchNumber']) : 'No batch recorded' ?></span>
-                            </td>
                             <td class="mvi-updated-cell"><?= htmlspecialchars($vac['lastUpdated']) ?></td>
                             <td>
                                 <div class="adm-action-btns">

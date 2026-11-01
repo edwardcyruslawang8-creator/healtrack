@@ -12,18 +12,17 @@
  *
  * A simplified overview, same redesign pharmacist/medicine_vaccine_inventory.php
  * already got — Current Stock/Minimum Level/Reorder Level/Expiry Date/
- * Status columns are gone, replaced by the item's oldest (FEFO) real
- * batch number ($med['oldestBatchNumber'], hc_attach_oldest_batch_numbers()
- * in includes/shared/medicine_vaccine_inventory_shared.php). "Manage
- * Medicine" is the one real action left on this table now — a real
- * link to subadmin/manage_medicine.php's own detail page (not a modal
+ * Status/Batch Number columns are all gone (per request), leaving
+ * Medicine Name/Category/Unit/Last Updated. "Manage Medicine" is the
+ * one real action left on this table now — a real link to
+ * subadmin/manage_medicine.php's own detail page (not a modal
  * trigger). Edit/Restock/Archive all live there instead; the three-dot
  * dropdown that used to hold Archive/Delete/View Details/View Stock
  * History is gone from this table entirely, no row-level Archive
- * button here anymore either (removed per request).
+ * button here anymore either.
  *
- * Expects $medicines and $medicineExpiryBadgeMeta to already be set
- * (by includes/subadmin/medicine_vaccine_inventory_firestore.php).
+ * Expects $medicines to already be set (by
+ * includes/subadmin/medicine_vaccine_inventory_firestore.php).
  * =====================================================================
  */
 ?>
@@ -35,7 +34,6 @@
                     <th>Medicine Name</th>
                     <th>Category</th>
                     <th>Unit</th>
-                    <th>Batch Number</th>
                     <th>Last Updated</th>
                     <th>Actions</th>
                 </tr>
@@ -43,10 +41,10 @@
             <tbody>
                 <?php if (empty($medicines)): ?>
                 <tr>
-                    <td colspan="6" class="adm-table-empty">No medicines recorded yet.</td>
+                    <td colspan="5" class="adm-table-empty">No medicines recorded yet.</td>
                 </tr>
                 <?php endif; ?>
-                <?php foreach ($medicines as $med): $cat = $medicineCategoryMeta[$med['category']] ?? ['icon' => 'bi-capsule', 'bg' => '#EEF0F3', 'color' => '#6B7280']; $expiryBadge = $medicineExpiryBadgeMeta[$med['expiryStatus']] ?? null; ?>
+                <?php foreach ($medicines as $med): $cat = $medicineCategoryMeta[$med['category']] ?? ['icon' => 'bi-capsule', 'bg' => '#EEF0F3', 'color' => '#6B7280']; ?>
                 <tr data-med-id="<?= htmlspecialchars($med['id']) ?>" data-med-name="<?= htmlspecialchars($med['name']) ?>">
                     <td>
                         <div class="mvi-name-cell">
@@ -58,12 +56,6 @@
                     </td>
                     <td><?= htmlspecialchars($med['category']) ?></td>
                     <td><?= htmlspecialchars($med['unit']) ?></td>
-                    <td>
-                        <?php if ($expiryBadge): ?>
-                        <span class="mvi-badge mvi-expiry-badge" style="background:<?= htmlspecialchars($expiryBadge['bg']) ?>; color:<?= htmlspecialchars($expiryBadge['color']) ?>;"><?= htmlspecialchars($expiryBadge['label']) ?></span>
-                        <?php endif; ?>
-                        <span class="mvi-oldest-batch"><i class="bi bi-box-seam"></i> <?= $med['oldestBatchNumber'] ? htmlspecialchars($med['oldestBatchNumber']) : 'No batch recorded' ?></span>
-                    </td>
                     <td class="mvi-updated-cell"><?= htmlspecialchars($med['lastUpdated']) ?></td>
                     <td>
                         <div class="adm-action-btns">

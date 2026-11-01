@@ -24,7 +24,6 @@
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/medicines.php';
-require_once __DIR__ . '/../firestore/medicine_batches.php'; // hc_attach_oldest_batch_numbers() — oldest (FEFO) batch number per row
 require_once __DIR__ . '/../shared/fuzzy_search.php'; // hc_fuzzy_match()
 
 $myUid = $_SESSION['uid'] ?? '';
@@ -86,7 +85,7 @@ $medicinesPerPage = 8;
 $medicinesCurrentPage = max(1, (int) ($_GET['page'] ?? 1));
 $medicinesTotalPages = max(1, (int) ceil($medicinesTotal / $medicinesPerPage));
 $medicinesCurrentPage = min($medicinesCurrentPage, $medicinesTotalPages);
-$medicines = hc_attach_oldest_batch_numbers(array_slice($filteredMedicines, ($medicinesCurrentPage - 1) * $medicinesPerPage, $medicinesPerPage));
+$medicines = array_slice($filteredMedicines, ($medicinesCurrentPage - 1) * $medicinesPerPage, $medicinesPerPage);
 
 $medicinePaginationWindow = [];
 if ($medicinesTotalPages <= 6) {
@@ -127,7 +126,7 @@ $vaccinesPerPage = 8;
 $vaccinesCurrentPage = max(1, (int) ($_GET['vpage'] ?? 1));
 $vaccinesTotalPages = max(1, (int) ceil($vaccinesTotal / $vaccinesPerPage));
 $vaccinesCurrentPage = min($vaccinesCurrentPage, $vaccinesTotalPages);
-$vaccines = hc_attach_oldest_batch_numbers(array_slice($filteredVaccines, ($vaccinesCurrentPage - 1) * $vaccinesPerPage, $vaccinesPerPage));
+$vaccines = array_slice($filteredVaccines, ($vaccinesCurrentPage - 1) * $vaccinesPerPage, $vaccinesPerPage);
 
 $vaccinePaginationWindow = [];
 if ($vaccinesTotalPages <= 6) {

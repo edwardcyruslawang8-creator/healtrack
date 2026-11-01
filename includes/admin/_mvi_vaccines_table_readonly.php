@@ -18,7 +18,6 @@
                     <th>Vaccine Name</th>
                     <th>Category</th>
                     <th>Unit</th>
-                    <th>Batch Number</th>
                     <th>Last Updated</th>
                     <th>Actions</th>
                 </tr>
@@ -26,10 +25,10 @@
             <tbody>
                 <?php if (empty($vaccines)): ?>
                 <tr>
-                    <td colspan="6" class="adm-table-empty">No vaccines recorded yet.</td>
+                    <td colspan="5" class="adm-table-empty">No vaccines recorded yet.</td>
                 </tr>
                 <?php endif; ?>
-                <?php foreach ($vaccines as $vac): $cat = $vaccineCategoryMeta[$vac['category']] ?? ['icon' => 'bi-droplet-half', 'bg' => '#EEF0F3', 'color' => '#6B7280']; $expiryBadge = $medicineExpiryBadgeMeta[$vac['expiryStatus']] ?? null; ?>
+                <?php foreach ($vaccines as $vac): $cat = $vaccineCategoryMeta[$vac['category']] ?? ['icon' => 'bi-droplet-half', 'bg' => '#EEF0F3', 'color' => '#6B7280']; ?>
                 <tr>
                     <td>
                         <div class="mvi-name-cell">
@@ -41,15 +40,11 @@
                     </td>
                     <td><?= htmlspecialchars($vac['category']) ?></td>
                     <td><?= htmlspecialchars($vac['unit']) ?></td>
-                    <td>
-                        <?php if ($expiryBadge): ?>
-                        <span class="mvi-badge mvi-expiry-badge" style="background:<?= htmlspecialchars($expiryBadge['bg']) ?>; color:<?= htmlspecialchars($expiryBadge['color']) ?>;"><?= htmlspecialchars($expiryBadge['label']) ?></span>
-                        <?php endif; ?>
-                        <span class="mvi-oldest-batch"><i class="bi bi-box-seam"></i> <?= $vac['oldestBatchNumber'] ? htmlspecialchars($vac['oldestBatchNumber']) : 'No batch recorded' ?></span>
-                    </td>
                     <td class="mvi-updated-cell"><?= htmlspecialchars($vac['lastUpdated']) ?></td>
                     <td>
-                        <a href="manage_medicine.php?id=<?= urlencode($vac['id']) ?>&amp;type=vaccine" class="mvi-manage-btn" aria-label="View this vaccine">Manage Vaccine</a>
+                        <div class="adm-action-btns">
+                            <a href="manage_medicine.php?id=<?= urlencode($vac['id']) ?>&amp;type=vaccine" class="mvi-manage-btn" aria-label="View this vaccine">Manage Vaccine</a>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; ?>

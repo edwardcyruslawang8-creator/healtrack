@@ -24,7 +24,6 @@
 
 require_once __DIR__ . '/fuzzy_search.php'; // hc_fuzzy_match()
 require_once __DIR__ . '/../firestore/medicines.php'; // hc_inventory_expiry_status(), hc_medicine_expiry_badge_meta()
-require_once __DIR__ . '/../firestore/medicine_batches.php'; // hc_attach_oldest_batch_numbers() — oldest (FEFO) batch number per row
 
 if (!function_exists('hc_compute_medicine_vaccine_inventory')) {
     function hc_compute_medicine_vaccine_inventory(): array
@@ -188,7 +187,7 @@ if (!function_exists('hc_compute_medicine_vaccine_inventory')) {
         $result['medicinesPerPage'] = $medicinesPerPage;
         $result['medicinesCurrentPage'] = $medicinesCurrentPage;
         $result['medicinesTotalPages'] = $medicinesTotalPages;
-        $result['medicines'] = hc_attach_oldest_batch_numbers(array_slice($filteredMedicines, ($medicinesCurrentPage - 1) * $medicinesPerPage, $medicinesPerPage));
+        $result['medicines'] = array_slice($filteredMedicines, ($medicinesCurrentPage - 1) * $medicinesPerPage, $medicinesPerPage);
 
         $medicinePaginationWindow = [];
         if ($medicinesTotalPages <= 6) {
@@ -236,7 +235,7 @@ if (!function_exists('hc_compute_medicine_vaccine_inventory')) {
         $result['vaccinesPerPage'] = $vaccinesPerPage;
         $result['vaccinesCurrentPage'] = $vaccinesCurrentPage;
         $result['vaccinesTotalPages'] = $vaccinesTotalPages;
-        $result['vaccines'] = hc_attach_oldest_batch_numbers(array_slice($filteredVaccines, ($vaccinesCurrentPage - 1) * $vaccinesPerPage, $vaccinesPerPage));
+        $result['vaccines'] = array_slice($filteredVaccines, ($vaccinesCurrentPage - 1) * $vaccinesPerPage, $vaccinesPerPage);
 
         $vaccinePaginationWindow = [];
         if ($vaccinesTotalPages <= 6) {
