@@ -21,6 +21,18 @@
  * is set equal to $unit rather than collected as its own form input —
  * see includes/pharmacist/add_medicine_modal.php's header comment for
  * why that field was removed from the Add/Edit form.
+ *
+ * currentStock/minLevel/reorderLevel/maxLevel/expiryDate/dosage are
+ * ALL optional now (the Add form itself hides every one of them — see
+ * add_medicine_modal.php's own header comment) — a newly-created item
+ * is a catalog entry with 0 real stock and no thresholds, 'status'
+ * correctly comes back "Out of Stock" for it, and a pharmacist adds
+ * its real first batch (with a real expiry date) through Restock on
+ * pharmacist/manage_medicine.php afterward, which also auto-computes
+ * Minimum/Reorder Level from whatever quantity results. Still accepts
+ * real values for all of these if sent (defensive — nothing besides
+ * that hidden-field form posts here, but this endpoint doesn't assume
+ * that stays true forever), just doesn't require them.
  * =====================================================================
  */
 
@@ -53,14 +65,17 @@ $category = trim((string) ($body['category'] ?? ''));
 $unit = trim((string) ($body['unit'] ?? ''));
 $desc = trim((string) ($body['desc'] ?? ''));
 $dosage = trim((string) ($body['dosage'] ?? ''));
-$currentStock = $body['currentStock'] ?? null;
-$minLevel = $body['minLevel'] ?? null;
-$reorderLevel = $body['reorderLevel'] ?? null;
-// Optional — blank/omitted means "no ceiling set" (0), same convention
-// as every other optional numeric field here (see hc_inventory_status_for_stock()'s
-// own header comment for why 0 never flags 'overstocked').
+// All optional now — blank/omitted/non-numeric defaults to 0 (no
+// stock, no threshold set), same "0 means unset" convention
+// hc_inventory_status_for_stock() already uses for maxLevel.
+$currentStock = $body['currentStock'] ?? '';
+$currentStock = is_numeric($currentStock) ? $currentStock : 0;
+$minLevel = $body['minLevel'] ?? '';
+$minLevel = is_numeric($minLevel) ? $minLevel : 0;
+$reorderLevel = $body['reorderLevel'] ?? '';
+$reorderLevel = is_numeric($reorderLevel) ? $reorderLevel : 0;
 $maxLevel = $body['maxLevel'] ?? '';
-$maxLevel = ($maxLevel === '' || $maxLevel === null) ? 0 : $maxLevel;
+$maxLevel = is_numeric($maxLevel) ? $maxLevel : 0;
 $expiryDate = trim((string) ($body['expiryDate'] ?? ''));
 
 if (!in_array($type, ['medicine', 'vaccine'], true)) {
@@ -68,8 +83,7 @@ if (!in_array($type, ['medicine', 'vaccine'], true)) {
     echo json_encode(['success' => false, 'error' => 'Invalid item type.']);
     exit;
 }
-if ($name === '' || $category === '' || $unit === '' || $expiryDate === ''
-    || !is_numeric($currentStock) || !is_numeric($minLevel) || !is_numeric($reorderLevel) || !is_numeric($maxLevel)) {
+if ($name === '' || $category === '' || $unit === '') {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Please fill out every required field.']);
     exit;
@@ -79,15 +93,17 @@ if ((float) $currentStock < 0 || (float) $minLevel < 0 || (float) $reorderLevel 
     echo json_encode(['success' => false, 'error' => 'Stock levels cannot be negative.']);
     exit;
 }
-if (strtotime($expiryDate) === false) {
-    http_response_code(422);
-    echo json_encode(['success' => false, 'error' => 'Please enter a valid expiry date.']);
-    exit;
-}
-if (strtotime($expiryDate) < strtotime(date('Y-m-d'))) {
-    http_response_code(422);
-    echo json_encode(['success' => false, 'error' => 'Expiry date cannot be in the past.']);
-    exit;
+if ($expiryDate !== '') {
+    if (strtotime($expiryDate) === false) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => 'Please enter a valid expiry date.']);
+        exit;
+    }
+    if (strtotime($expiryDate) < strtotime(date('Y-m-d'))) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => 'Expiry date cannot be in the past.']);
+        exit;
+    }
 }
 
 $currentStock = (int) $currentStock;
@@ -108,7 +124,7 @@ $newId = $firestore->addDocument('medicines', [
     'minLevel' => $minLevel,
     'reorderLevel' => $reorderLevel,
     'maxLevel' => $maxLevel,
-    'expiryDate' => date('Y-m-d', strtotime($expiryDate)),
+    'expiryDate' => $expiryDate !== '' ? date('Y-m-d', strtotime($expiryDate)) : null,
     'status' => $status,
     'icon' => $type === 'vaccine' ? 'bi-droplet-half' : 'bi-capsule',
     'color' => $type === 'vaccine' ? 'cyan' : 'blue',
@@ -125,8 +141,12 @@ if ($newId === null) {
 // This item's real first batch — see includes/firestore/medicine_batches.php's
 // header comment for why stock is tracked per-batch, not as one shared
 // number, the moment a second delivery with a different expiry date
-// shows up later (a stock request release, Adjust Stock, ...).
-if ($currentStock > 0) {
+// shows up later (a stock request release, Restock, ...). The Add form
+// no longer collects currentStock/expiryDate at all, so this is now
+// effectively a no-op on every real submission — real stock always
+// enters via Restock instead — but stays defensive rather than
+// assuming that forever.
+if ($currentStock > 0 && $expiryDate !== '') {
     hc_create_medicine_batch($newId, $currentStock, date('Y-m-d', strtotime($expiryDate)), 'initial', null, $_SESSION['name'] ?? 'System');
 }
 

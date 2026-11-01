@@ -7,15 +7,36 @@
      one shared form for all four, since medicines and vaccines are
      the same real "medicines" Firestore collection, split only by a
      "type" field (see includes/firestore/medicines.php's header
-     comment), and editing an existing item needs the exact same
-     fields as creating one. assets/js/medicine_vaccine_inventory_pharmacist.js
-     sets the hidden #amFormType/#amFormId fields and adjusts
-     labels/title based on which button was clicked, then POSTs to
+     comment). assets/js/medicine_vaccine_inventory_pharmacist.js sets
+     the hidden #amFormType/#amFormId fields and adjusts labels/title
+     based on which button was clicked, then POSTs to
      api/create-medicine.php (Add, #amFormId empty) or
      api/update-medicine.php (Edit, #amFormId set to the item's real
      doc id). "Status" (In Stock/Low Stock/Out of Stock) isn't a form
      field either way — it's computed server-side from Current Stock
      vs Minimum Level.
+
+     ADDING a new item now only collects its catalog info — Name/
+     Category/Unit/Description. Expiry Date, Current Stock, Minimum
+     Level, Reorder Level, Maximum Level, and Dosage Information are
+     all hidden in this mode (per explicit request) — a brand-new item
+     is created with 0 real stock and no thresholds, then a pharmacist
+     adds its real first batch (with its own real expiry date and
+     Dosage Information) through Restock on pharmacist/manage_medicine.php,
+     which also auto-computes Minimum/Reorder Level from whatever
+     quantity results (includes/firestore/medicines.php's
+     hc_auto_compute_thresholds()) — one real place real stock enters
+     the system, instead of two.
+
+     EDITING an existing item still shows Minimum Level/Reorder Level/
+     Maximum Level/Dosage Information (a sub-admin's own capability,
+     unaffected by the above) — just not Expiry Date/Current Stock,
+     which were already a read-only rollup-over-batches summary instead
+     (#amStockExpiryReadonlyNote) since more than one batch with a
+     different expiry can exist per item. See
+     assets/js/medicine_vaccine_inventory_pharmacist.js's
+     openModalAs()/openModalForEdit() for exactly which rows toggle
+     per mode.
 
      No separate "Form" (Tablet/Capsule/Syrup/...) field — it asked for
      the same thing "Unit" already does (their own example placeholders
@@ -76,19 +97,21 @@
           <!-- Edit-mode-only read-only summary, replacing the row above. -->
           <div class="am-form-help d-none" id="amStockExpiryReadonlyNote"></div>
 
-          <div class="row">
+          <!-- Edit-only — see this file's own header comment. -->
+          <div class="row" id="amThresholdsRow">
             <div class="col-md-6 mb-3">
               <label class="am-form-label" for="amMinLevel">Minimum Level<span class="text-danger">*</span></label>
-              <input type="number" class="form-control am-form-control" id="amMinLevel" min="0" step="1" placeholder="0" required>
+              <input type="number" class="form-control am-form-control" id="amMinLevel" min="0" step="1" placeholder="0">
               <div class="am-form-help">Stock at or below this is flagged "Low Stock".</div>
             </div>
             <div class="col-md-6 mb-3">
               <label class="am-form-label" for="amReorderLevel">Reorder Level<span class="text-danger">*</span></label>
-              <input type="number" class="form-control am-form-control" id="amReorderLevel" min="0" step="1" placeholder="0" required>
+              <input type="number" class="form-control am-form-control" id="amReorderLevel" min="0" step="1" placeholder="0">
             </div>
           </div>
 
-          <div class="row">
+          <!-- Edit-only — see this file's own header comment. -->
+          <div class="row" id="amMaxLevelRow">
             <div class="col-md-6 mb-3">
               <label class="am-form-label" for="amMaxLevel">Maximum Level <span class="text-muted fw-normal">(Optional)</span></label>
               <input type="number" class="form-control am-form-control" id="amMaxLevel" min="0" step="1" placeholder="0">
@@ -101,7 +124,8 @@
             <textarea class="form-control am-form-control" id="amDesc" rows="2" placeholder="Brief note about this item"></textarea>
           </div>
 
-          <div class="mb-0">
+          <!-- Edit-only — see this file's own header comment. -->
+          <div class="mb-0" id="amDosageRow">
             <label class="am-form-label" for="amDosage">Dosage Information <span class="text-muted fw-normal">(Optional)</span></label>
             <textarea class="form-control am-form-control" id="amDosage" rows="2" placeholder="e.g. Adults: 500mg every 8 hours for 7 days"></textarea>
           </div>

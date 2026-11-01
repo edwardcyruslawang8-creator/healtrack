@@ -59,6 +59,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const stockInput = document.getElementById('amCurrentStock');
         const stockExpiryRow = document.getElementById('amStockExpiryRow');
         const stockExpiryReadonlyNote = document.getElementById('amStockExpiryReadonlyNote');
+        const thresholdsRow = document.getElementById('amThresholdsRow');
+        const minLevelInput = document.getElementById('amMinLevel');
+        const reorderLevelInput = document.getElementById('amReorderLevel');
+        const maxLevelRow = document.getElementById('amMaxLevelRow');
+        const dosageRow = document.getElementById('amDosageRow');
         const todayIso = expiryInput.min; // set server-side to today (see add_medicine_modal.php)
 
         var openModalAs = function (type) {
@@ -68,12 +73,25 @@ document.addEventListener('DOMContentLoaded', function () {
             typeInput.value = type;
             idInput.value = '';
             expiryInput.min = todayIso;
-            // Adding a brand-new item: it has no batches yet, so this IS
-            // its real first batch — collected here same as always.
-            stockExpiryRow.classList.remove('d-none');
-            expiryInput.required = true;
-            stockInput.required = true;
+            // Adding a brand-new item now only collects its catalog info
+            // (Name/Category/Unit/Description) — Expiry Date/Current
+            // Stock/Minimum Level/Reorder Level/Maximum Level/Dosage
+            // Information are all hidden here (per explicit request —
+            // see add_medicine_modal.php's own header comment). The item
+            // is created with 0 real stock; its real first batch (with a
+            // real expiry date) and Dosage Information are added
+            // afterward via Restock on pharmacist/manage_medicine.php,
+            // which also auto-computes Minimum/Reorder Level from
+            // whatever quantity results.
+            stockExpiryRow.classList.add('d-none');
+            expiryInput.required = false;
+            stockInput.required = false;
             stockExpiryReadonlyNote.classList.add('d-none');
+            thresholdsRow.classList.add('d-none');
+            minLevelInput.required = false;
+            reorderLevelInput.required = false;
+            maxLevelRow.classList.add('d-none');
+            dosageRow.classList.add('d-none');
 
             if (type === 'vaccine') {
                 modalTitle.textContent = 'Add Vaccine';
@@ -119,10 +137,18 @@ document.addEventListener('DOMContentLoaded', function () {
             stockInput.required = false;
             stockExpiryReadonlyNote.textContent = 'Current Stock: ' + d.medStock + ' ' + d.medUnit + ' — Expiry: ' + (d.medExpiryDisplay || d.medExpiry) + '. Managed via Adjust Stock or stock requests, not editable here.';
             stockExpiryReadonlyNote.classList.remove('d-none');
-            document.getElementById('amMinLevel').value = d.medMinLevel;
-            document.getElementById('amReorderLevel').value = d.medReorderLevel;
+            // Minimum/Reorder/Maximum Level and Dosage Information stay
+            // real, editable fields here (a sub-admin's own capability,
+            // unaffected by the Add form's simplification above).
+            thresholdsRow.classList.remove('d-none');
+            minLevelInput.required = true;
+            reorderLevelInput.required = true;
+            minLevelInput.value = d.medMinLevel;
+            reorderLevelInput.value = d.medReorderLevel;
+            maxLevelRow.classList.remove('d-none');
             document.getElementById('amMaxLevel').value = (d.medMaxLevel && d.medMaxLevel !== '0') ? d.medMaxLevel : '';
             document.getElementById('amDesc').value = d.medDesc || '';
+            dosageRow.classList.remove('d-none');
             document.getElementById('amDosage').value = d.medDosage || '';
 
             submitBtn.disabled = false;
