@@ -128,7 +128,7 @@ require_once __DIR__ . '/includes/shared/sidebar.php';
         <div class="panel">
             <div class="card-header-bar">
                 <h2 class="section-title"><i class="bi bi-megaphone-fill"></i> Latest Announcements</h2>
-                <a href="announcements.php" class="view-all">View All <i class="bi bi-chevron-right"></i></a>
+                <a href="<?= BASE_URL ?>/patient/announcements.php" class="view-all">View All <i class="bi bi-chevron-right"></i></a>
             </div>
             <div>
                 <?php foreach ($announcements as $a): ?>
