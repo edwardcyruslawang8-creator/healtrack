@@ -132,55 +132,59 @@ if ($expiryDate !== '') {
     }
 }
 
-// Optional first stock from the Add form's "Initial Stock" section —
-// received exactly like a "new batch" Restock (api/restock-medicine.php):
+// Required first stock from the Add form's "Initial Stock" section —
+// every new item must be added with real starting stock now (by
+// explicit request — no more "add with 0 stock, restock later" path).
+// Received exactly like a "new batch" Restock (api/restock-medicine.php):
 // a required batch number + future expiry, and a quantity in boxes
 // (converted with THIS item's per-box count) or in the dispensing unit
 // itself. Fully validated here, BEFORE the item is created, so a bad
 // batch never leaves a half-created item behind.
-$initialStock = null;
-if (is_array($body['initialStock'] ?? null)) {
-    $is = $body['initialStock'];
-    $isBatchNumber = trim((string) ($is['batchNumber'] ?? ''));
-    $isExpiry = trim((string) ($is['expiryDate'] ?? ''));
-    $isQuantity = $is['quantity'] ?? null;
-    $isInBoxes = ($is['quantityUnit'] ?? 'unit') === 'box';
-
-    if ($isBatchNumber === '' || strlen($isBatchNumber) > 50) {
-        http_response_code(422);
-        echo json_encode(['success' => false, 'error' => 'Please enter the batch number for the initial stock.']);
-        exit;
-    }
-    if ($isExpiry === '' || strtotime($isExpiry) === false || strtotime($isExpiry) < strtotime(date('Y-m-d'))) {
-        http_response_code(422);
-        echo json_encode(['success' => false, 'error' => 'Please enter a valid expiry date (not in the past) for the initial stock.']);
-        exit;
-    }
-    if (!is_int($isQuantity) && !(is_string($isQuantity) && ctype_digit($isQuantity)) || (int) $isQuantity <= 0) {
-        http_response_code(422);
-        echo json_encode(['success' => false, 'error' => 'Please enter an initial quantity greater than 0.']);
-        exit;
-    }
-    $isQuantity = (int) $isQuantity;
-    if ($isInBoxes) {
-        if (!hc_unit_allows_boxes($unit)) {
-            http_response_code(422);
-            echo json_encode(['success' => false, 'error' => $unit . ' stock is received per ' . strtolower($unit) . ', not in boxes.']);
-            exit;
-        }
-        if ($piecesPerBox <= 0) {
-            http_response_code(422);
-            echo json_encode(['success' => false, 'error' => 'Please enter how many ' . strtolower(rtrim($unit, 's')) . 's come in one box to receive the initial stock in boxes.']);
-            exit;
-        }
-    }
-    $initialStock = [
-        'batchNumber' => $isBatchNumber,
-        'expiryDate' => date('Y-m-d', strtotime($isExpiry)),
-        'quantity' => $isInBoxes ? $isQuantity * $piecesPerBox : $isQuantity,
-        'boxes' => $isInBoxes ? $isQuantity : null,
-    ];
+if (!is_array($body['initialStock'] ?? null)) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please provide the initial stock — batch number, expiry date, and quantity received.']);
+    exit;
 }
+$is = $body['initialStock'];
+$isBatchNumber = trim((string) ($is['batchNumber'] ?? ''));
+$isExpiry = trim((string) ($is['expiryDate'] ?? ''));
+$isQuantity = $is['quantity'] ?? null;
+$isInBoxes = ($is['quantityUnit'] ?? 'unit') === 'box';
+
+if ($isBatchNumber === '' || strlen($isBatchNumber) > 50) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please enter the batch number for the initial stock.']);
+    exit;
+}
+if ($isExpiry === '' || strtotime($isExpiry) === false || strtotime($isExpiry) < strtotime(date('Y-m-d'))) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please enter a valid expiry date (not in the past) for the initial stock.']);
+    exit;
+}
+if (!is_int($isQuantity) && !(is_string($isQuantity) && ctype_digit($isQuantity)) || (int) $isQuantity <= 0) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please enter an initial quantity greater than 0.']);
+    exit;
+}
+$isQuantity = (int) $isQuantity;
+if ($isInBoxes) {
+    if (!hc_unit_allows_boxes($unit)) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => $unit . ' stock is received per ' . strtolower($unit) . ', not in boxes.']);
+        exit;
+    }
+    if ($piecesPerBox <= 0) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => 'Please enter how many ' . strtolower(rtrim($unit, 's')) . 's come in one box to receive the initial stock in boxes.']);
+        exit;
+    }
+}
+$initialStock = [
+    'batchNumber' => $isBatchNumber,
+    'expiryDate' => date('Y-m-d', strtotime($isExpiry)),
+    'quantity' => $isInBoxes ? $isQuantity * $piecesPerBox : $isQuantity,
+    'boxes' => $isInBoxes ? $isQuantity : null,
+];
 
 $currentStock = (int) $currentStock;
 $minLevel = (int) $minLevel;

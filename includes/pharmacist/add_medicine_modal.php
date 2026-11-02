@@ -107,26 +107,27 @@
                "new batch" Restock (includes/pharmacist/medicine_action_modals.php's
                #restockModal) — batch number + expiry + quantity in boxes
                or pieces, converted with the per-box count above.
-               Optional: leave Quantity blank to add the item with no
-               stock and Restock it later. api/create-medicine.php
+               Required (by explicit request — every new item must be
+               added with real starting stock, no "add with 0 stock,
+               restock later" path any more). api/create-medicine.php
                creates the batch and computes Minimum/Reorder Level the
                same way api/restock-medicine.php does. -->
           <div class="am-initial-stock d-none" id="amInitialStockSection">
-            <div class="am-initial-stock-title">Initial Stock <span class="text-muted fw-normal">(Optional)</span></div>
+            <div class="am-initial-stock-title">Initial Stock</div>
             <div class="row">
               <div class="col-md-6 mb-3">
-                <label class="am-form-label" for="amIsBatchNumber">Batch Number<span class="text-danger d-none am-is-req">*</span></label>
-                <input type="text" class="form-control am-form-control" id="amIsBatchNumber" placeholder="e.g. BATCH-2026-045" maxlength="50">
+                <label class="am-form-label" for="amIsBatchNumber">Batch Number<span class="text-danger">*</span></label>
+                <input type="text" class="form-control am-form-control" id="amIsBatchNumber" placeholder="e.g. BATCH-2026-045" maxlength="50" required>
               </div>
               <div class="col-md-6 mb-3">
-                <label class="am-form-label" for="amIsExpiry">Expiry Date<span class="text-danger d-none am-is-req">*</span></label>
-                <input type="date" class="form-control am-form-control" id="amIsExpiry" min="<?= date('Y-m-d') ?>">
+                <label class="am-form-label" for="amIsExpiry">Expiry Date<span class="text-danger">*</span></label>
+                <input type="date" class="form-control am-form-control" id="amIsExpiry" min="<?= date('Y-m-d') ?>" required>
               </div>
             </div>
             <div class="mb-3">
-              <label class="am-form-label" for="amIsQty">Quantity Received</label>
+              <label class="am-form-label" for="amIsQty">Quantity Received<span class="text-danger">*</span></label>
               <div class="rs-qty-row">
-                <input type="number" class="form-control am-form-control" id="amIsQty" min="1" step="1" placeholder="Leave blank to add without stock">
+                <input type="number" class="form-control am-form-control" id="amIsQty" min="1" step="1" placeholder="e.g. 100" required>
                 <select class="form-select am-form-control d-none" id="amIsQtyUnit" aria-label="Quantity unit">
                   <option value="box">Boxes</option>
                   <option value="unit" id="amIsQtyUnitOption">Pieces</option>
@@ -258,8 +259,10 @@
 
     // Add only — Initial Stock, same receiving rules as Restock: boxes
     // (converted with THIS form's per-box count) or loose pieces, never
-    // boxes for inhalers/vials/ampules/doses. Batch Number and Expiry
-    // become required as soon as a quantity is entered.
+    // boxes for inhalers/vials/ampules/doses. Quantity/Batch Number/
+    // Expiry all carry the HTML required attribute directly now (see
+    // this file's markup) — no more conditional toggling based on
+    // whether a quantity was typed.
     const isQty = document.getElementById('amIsQty');
     const isQtyUnit = document.getElementById('amIsQtyUnit');
     const isQtyUnitLabel = document.getElementById('amIsQtyUnitLabel');
@@ -286,11 +289,6 @@
             isQtyUnit.value = rule === 'box' ? 'box' : 'unit';
             lastBoxRule = rule;
         }
-
-        const hasQty = isQty.value.trim() !== '';
-        document.getElementById('amIsBatchNumber').required = hasQty;
-        document.getElementById('amIsExpiry').required = hasQty;
-        document.querySelectorAll('#amInitialStockSection .am-is-req').forEach(function (s) { s.classList.toggle('d-none', !hasQty); });
 
         const qty = parseInt(isQty.value, 10);
         const perBox = parseInt(ppbInput.value, 10);
