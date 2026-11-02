@@ -25,6 +25,14 @@
    api/dispense-pharmacy-order.php, same principle as every other
    client-side check in this app.
    ============================================================= */
+
+/** "500 Tablets", "1 Bottle" — same rule as includes/firestore/medicines.php's hc_qty_unit(). */
+function qtyUnit(quantity, unit) {
+    const n = Number(quantity) || 0;
+    const label = n === 1 || !unit || /s$/i.test(unit) ? unit : (/(x|ch|sh)$/i.test(unit) ? unit + 'es' : unit + 's');
+    return n.toLocaleString() + ' ' + label;
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     const modalEl = document.getElementById('rxqDetailModal');
     if (!modalEl || typeof bootstrap === 'undefined') return;
@@ -52,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function () {
         items.forEach(function (item) {
             const opt = document.createElement('option');
             opt.value = item.id;
-            opt.textContent = item.name + ' (' + item.currentStock + ' ' + item.unit + ' in stock)';
+            opt.textContent = item.name + ' (' + qtyUnit(item.currentStock, item.unit) + ' in stock)';
             opt.dataset.stock = item.currentStock;
             opt.dataset.unit = item.unit;
             itemSelect.appendChild(opt);
@@ -68,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function () {
             stockNote.textContent = 'Stock will not be adjusted for this dispense.';
             qtyInput.required = false;
         } else {
-            stockNote.textContent = selected.dataset.stock + ' ' + selected.dataset.unit + ' currently in stock.';
+            stockNote.textContent = qtyUnit(selected.dataset.stock, selected.dataset.unit) + ' currently in stock.';
             qtyInput.required = true;
         }
     }
@@ -87,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             const stockAvailable = parseInt(selected.dataset.stock, 10);
             if (quantity > stockAvailable) {
-                HCDialog.alert('Only ' + stockAvailable + ' ' + selected.dataset.unit + ' in stock — cannot dispense ' + quantity + '.');
+                HCDialog.alert('Only ' + qtyUnit(stockAvailable, selected.dataset.unit) + ' in stock — cannot dispense ' + qtyUnit(quantity, selected.dataset.unit) + '.');
                 return;
             }
         }

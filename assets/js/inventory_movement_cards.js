@@ -12,6 +12,14 @@
    see each page's own inline <script> for exactly how those are
    built).
    ============================================================= */
+
+/** "500 Tablets", "1 Bottle" — same rule as includes/firestore/medicines.php's hc_qty_unit(). */
+function qtyUnit(quantity, unit) {
+    const n = Number(quantity) || 0;
+    const label = n === 1 || !unit || /s$/i.test(unit) ? unit : (/(x|ch|sh)$/i.test(unit) ? unit + 'es' : unit + 's');
+    return n.toLocaleString() + ' ' + label;
+}
+
 function initInventoryMovementCards(data) {
     if (!data) return;
     initStockMovementCard(data);
@@ -122,7 +130,7 @@ function initStockMovementCard(data) {
                             '<td><span class="ir-movement-type-badge ir-movement-type-' + t.type + '">' + (t.type === 'received' ? 'Received' : 'Issued') + '</span></td>' +
                             '<td>' + escapeHtmlIR(t.itemName) + '</td>' +
                             '<td>' + escapeHtmlIR(t.category) + '</td>' +
-                            '<td>' + t.quantity.toLocaleString() + ' ' + escapeHtmlIR(t.unit) + '</td>' +
+                            '<td>' + escapeHtmlIR(qtyUnit(t.quantity, t.unit)) + '</td>' +
                             '<td>' + escapeHtmlIR(t.detail) + '</td>';
                         movementsTableBody.appendChild(tr);
                     });
@@ -173,7 +181,7 @@ function initExpiryMonitorCard(data) {
                 '</div>' +
                 '<div class="ir-expiry-row-side">' +
                     '<span class="ir-expiry-status-badge ir-expiry-status-' + r.status + '">' + expiryStatusLabel(r) + '</span>' +
-                    '<span class="ir-expiry-row-qty">' + r.quantity.toLocaleString() + ' ' + escapeHtmlIR(r.unit) + '</span>' +
+                    '<span class="ir-expiry-row-qty">' + escapeHtmlIR(qtyUnit(r.quantity, r.unit)) + '</span>' +
                 '</div>';
             list.appendChild(row);
         });
@@ -247,7 +255,7 @@ function initExpiryMonitorCard(data) {
                     '<td>' + escapeHtmlIR(r.category) + '</td>' +
                     '<td>' + escapeHtmlIR(r.batchNo) + '</td>' +
                     '<td>' + escapeHtmlIR(r.expiryDate) + '</td>' +
-                    '<td>' + r.quantity.toLocaleString() + ' ' + escapeHtmlIR(r.unit) + '</td>' +
+                    '<td>' + escapeHtmlIR(qtyUnit(r.quantity, r.unit)) + '</td>' +
                     '<td><span class="ir-expiry-status-badge ir-expiry-status-' + r.status + '">' + expiryStatusLabel(r) + '</span></td>';
                 if (modalTableBody) modalTableBody.appendChild(tr);
             });

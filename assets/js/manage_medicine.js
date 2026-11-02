@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('dnrItemType').value = item.type;
                 document.getElementById('dnrItemName').textContent = item.name;
                 document.getElementById('dnrCurrentStock').textContent = item.currentStock;
-                document.getElementById('dnrUnit').textContent = item.unit;
+                document.getElementById('dnrUnit').textContent = unitPlural(item.unit, item.currentStock);
                 // Always the dispensing unit — individual tablets/capsules
                 // for box-stocked items, never boxes.
                 document.getElementById('dnrQtyUnit').textContent = unitPlural(item.unit, 2);
@@ -275,23 +275,59 @@ document.addEventListener('DOMContentLoaded', function () {
         const rsQtyUnitSelect = document.getElementById('rsQtyUnit');
         const rsQtyUnitLabel = document.getElementById('rsQtyUnitLabel');
         const rsQtyPreview = document.getElementById('rsQtyPreview');
-        const piecesPerBox = item.piecesPerBox || 0;
+        const rsPpbWrap = document.getElementById('rsPpbWrap');
+        const rsPpbInput = document.getElementById('rsPiecesPerBox');
+        const rsPpbChangeBtn = document.getElementById('rsPpbChangeBtn');
+        const rsPpbHelp = document.getElementById('rsPpbHelp');
+        // This medicine's OWN configured count per box (0 = not set yet)
+        // — never a fixed number. Inhalers/vials/ampules/doses are never
+        // received in boxes; bottles/sachets/custom units may be, as boxes
+        // of whole bottles/sachets (same rule as
+        // includes/firestore/medicines.php's hc_unit_allows_boxes()).
+        const configuredPiecesPerBox = item.piecesPerBox || 0;
+        const unitKey = (item.unit || '').trim().toLowerCase().replace(/s$/, '');
+        const allowsBoxes = ['inhaler', 'vial', 'ampule', 'dose'].indexOf(unitKey) === -1;
+        const requiresBoxes = unitKey === 'tablet' || unitKey === 'capsule';
 
-        // Box-stocked items take whole boxes or loose pieces; everything
-        // else is entered straight in its dispensing unit. Only a
-        // preview here — api/restock-medicine.php does the real
-        // boxes -> pieces conversion from the item's own stored value.
+        function inBoxes() {
+            return allowsBoxes && rsQtyUnitSelect.value === 'box';
+        }
+
+        // Preview only — api/restock-medicine.php does the real boxes ->
+        // pieces conversion (and saves a new/corrected per-box count).
         function syncQtyPreview() {
             const qty = parseInt(rsQtyInput.value, 10);
-            const inBoxes = piecesPerBox > 0 && rsQtyUnitSelect.value === 'box';
-            rsQtyPreview.classList.toggle('d-none', !(inBoxes && qty > 0));
-            if (inBoxes && qty > 0) {
-                const pieces = qty * piecesPerBox;
-                rsQtyPreview.textContent = '= ' + pieces.toLocaleString() + ' ' + unitPlural(item.unit, pieces).toLowerCase() + ' added to stock';
+            const perBox = parseInt(rsPpbInput.value, 10);
+            rsPpbWrap.classList.toggle('d-none', !inBoxes());
+            const show = inBoxes() && qty > 0 && perBox > 0;
+            rsQtyPreview.classList.toggle('d-none', !show);
+            if (show) {
+                const pieces = qty * perBox;
+                rsQtyPreview.textContent = qty.toLocaleString() + ' ' + unitPlural('box', qty).toLowerCase() + ' × ' + perBox.toLocaleString() + ' ' +
+                    unitPlural(item.unit, perBox).toLowerCase() + ' = ' + pieces.toLocaleString() + ' ' + unitPlural(item.unit, pieces).toLowerCase() + ' added to stock';
             }
         }
         rsQtyInput.addEventListener('input', syncQtyPreview);
         rsQtyUnitSelect.addEventListener('change', syncQtyPreview);
+        rsPpbInput.addEventListener('input', syncQtyPreview);
+
+        function resetPiecesPerBoxField() {
+            const label = unitPlural(item.unit, 2) + ' per Box';
+            document.getElementById('rsPpbLabel').textContent = label;
+            rsPpbInput.value = configuredPiecesPerBox > 0 ? configuredPiecesPerBox : '';
+            rsPpbInput.readOnly = configuredPiecesPerBox > 0;
+            rsPpbChangeBtn.classList.toggle('d-none', configuredPiecesPerBox === 0);
+            rsPpbHelp.textContent = configuredPiecesPerBox > 0
+                ? 'Configured for ' + item.name + '. Use Change only if this product\'s box holds a different amount.'
+                : 'Not set for ' + item.name + ' yet — enter the count printed on its box. It will be saved, so you won\'t need to enter it again.';
+        }
+        rsPpbChangeBtn.addEventListener('click', function () {
+            rsPpbInput.readOnly = false;
+            rsPpbChangeBtn.classList.add('d-none');
+            rsPpbHelp.textContent = 'The new count will be saved to ' + item.name + ' and used for every future restock.';
+            rsPpbInput.focus();
+            rsPpbInput.select();
+        });
 
         function syncModeVisibility() {
             const isExisting = document.getElementById('rsModeExisting').checked;
@@ -319,18 +355,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 batches.forEach(function (batch) {
                     const opt = document.createElement('option');
                     opt.value = batch.id;
-                    opt.textContent = batch.displayBatchNumber + ' — expires ' + batch.expiryDate + ' — ' + batch.quantity + ' ' + item.unit + ' on hand';
+                    opt.textContent = batch.displayBatchNumber + ' — expires ' + batch.expiryDate + ' — ' + batch.quantity.toLocaleString() + ' ' + unitPlural(item.unit, batch.quantity) + ' on hand';
                     rsBatchSelect.appendChild(opt);
                 });
                 document.getElementById('rsModeExisting').checked = true;
             }
             syncModeVisibility();
 
-            rsQtyUnitSelect.classList.toggle('d-none', piecesPerBox === 0);
-            rsQtyUnitLabel.classList.toggle('d-none', piecesPerBox > 0);
+            // Boxes or loose pieces for anything that can come boxed;
+            // bottles/inhalers are entered in their own unit only.
+            rsQtyUnitSelect.classList.toggle('d-none', !allowsBoxes);
+            rsQtyUnitLabel.classList.toggle('d-none', allowsBoxes);
             rsQtyUnitLabel.textContent = unitPlural(item.unit, 2);
             document.getElementById('rsQtyUnitOption').textContent = unitPlural(item.unit, 2);
-            rsQtyUnitSelect.value = piecesPerBox > 0 ? 'box' : 'unit';
+            rsQtyUnitSelect.value = allowsBoxes && (configuredPiecesPerBox > 0 || requiresBoxes) ? 'box' : 'unit';
+            resetPiecesPerBoxField();
             syncQtyPreview();
 
             rsSubmitBtn.disabled = false;
@@ -354,9 +393,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 id: item.id,
                 mode: isExisting ? 'existing' : 'new',
                 quantity: quantity,
-                quantityUnit: piecesPerBox > 0 ? rsQtyUnitSelect.value : 'unit',
+                quantityUnit: inBoxes() ? 'box' : 'unit',
                 dosage: document.getElementById('rsDosage').value.trim(),
             };
+            if (inBoxes()) {
+                const perBox = parseInt(rsPpbInput.value, 10);
+                if (!Number.isInteger(perBox) || perBox < 1) {
+                    rsErrorBox.textContent = 'Please enter how many ' + unitPlural(item.unit, 2).toLowerCase() + ' come in one box.';
+                    rsErrorBox.classList.remove('d-none');
+                    rsPpbInput.focus();
+                    return;
+                }
+                payload.piecesPerBox = perBox;
+            }
             if (isExisting) {
                 if (!rsBatchSelect.value) {
                     rsErrorBox.textContent = 'Please select which batch this stock belongs to.';
@@ -470,7 +519,7 @@ document.addEventListener('DOMContentLoaded', function () {
             editModal.show();
         });
 
-        editForm.addEventListener('submit', function (e) {
+        editForm.addEventListener('submit', async function (e) {
             e.preventDefault();
             e.stopPropagation();
 
@@ -479,7 +528,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
+            // Stock on hand stays counted in the old unit — make a unit
+            // change on a stocked item a deliberate choice
+            // (api/update-medicine.php refuses it without confirmUnitChange).
+            const newUnit = document.getElementById('amUnit').value.trim();
+            const unitChanged = newUnit.toLowerCase() !== (item.unit || '').toLowerCase();
+            if (unitChanged && item.currentStock > 0) {
+                const confirmed = await HCDialog.confirm(
+                    'Change the dispensing unit from ' + item.unit + ' to ' + newUnit + '? The ' + item.currentStock + ' ' +
+                    unitPlural(item.unit, item.currentStock).toLowerCase() + ' already in stock will NOT be converted — only do this to correct a wrong unit.'
+                );
+                if (!confirmed) return;
+            }
+
             const payload = {
+                confirmUnitChange: unitChanged,
                 id: item.id,
                 type: item.type,
                 name: document.getElementById('amName').value.trim(),

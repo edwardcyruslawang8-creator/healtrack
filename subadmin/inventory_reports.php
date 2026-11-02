@@ -510,7 +510,7 @@ $adminNavItems = [
                             <?php else: ?><?= (int) $r['daysFromToday'] ?>d left
                             <?php endif; ?>
                         </span>
-                        <span class="ir-expiry-row-qty"><?= number_format($r['quantity']) ?> <?= htmlspecialchars($r['unit']) ?></span>
+                        <span class="ir-expiry-row-qty"><?= htmlspecialchars(hc_qty_unit($r['quantity'], $r['unit'])) ?></span>
                     </div>
                 </div>
                 <?php endforeach; ?>

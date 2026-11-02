@@ -77,6 +77,18 @@
               </select>
               <span class="rs-qty-unit-label" id="rsQtyUnitLabel"></span>
             </div>
+            <!-- Restocking in Boxes: this medicine's OWN per-box count —
+                 shown locked when already configured (Change to correct
+                 it), required when it isn't; a new value is saved to the
+                 medicine by api/restock-medicine.php. -->
+            <div class="rs-ppb-wrap d-none" id="rsPpbWrap">
+              <label class="am-form-label" for="rsPiecesPerBox"><span id="rsPpbLabel">Tablets per Box</span><span class="text-danger">*</span></label>
+              <div class="rs-qty-row">
+                <input type="number" class="form-control am-form-control" id="rsPiecesPerBox" min="1" step="1" placeholder="e.g. 50">
+                <button type="button" class="am-btn-cancel rs-ppb-change d-none" id="rsPpbChangeBtn">Change</button>
+              </div>
+              <div class="am-form-help" id="rsPpbHelp"></div>
+            </div>
             <div class="am-form-help rs-qty-preview d-none" id="rsQtyPreview"></div>
             <div class="am-form-help">Minimum Level and Reorder Level will be recalculated automatically from the item's total stock after this restock.</div>
           </div>

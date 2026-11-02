@@ -87,6 +87,22 @@ if ($rawPiecesPerBox !== '' && !ctype_digit($rawPiecesPerBox)) {
     exit;
 }
 $piecesPerBox = (int) $rawPiecesPerBox;
+$unitError = hc_dispensing_unit_error($unit);
+if ($unitError !== null) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => $unitError]);
+    exit;
+}
+// Tablets/capsules come boxed and their count per box differs by
+// product — required, never assumed. Bottles/inhalers never convert.
+if ($piecesPerBox <= 0 && hc_unit_requires_pieces_per_box($unit)) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please enter how many ' . strtolower(rtrim($unit, 's')) . 's come in one box.']);
+    exit;
+}
+if (!hc_unit_allows_boxes($unit)) {
+    $piecesPerBox = 0;
+}
 
 if (!in_array($type, ['medicine', 'vaccine'], true)) {
     http_response_code(422);
@@ -114,6 +130,56 @@ if ($expiryDate !== '') {
         echo json_encode(['success' => false, 'error' => 'Expiry date cannot be in the past.']);
         exit;
     }
+}
+
+// Optional first stock from the Add form's "Initial Stock" section —
+// received exactly like a "new batch" Restock (api/restock-medicine.php):
+// a required batch number + future expiry, and a quantity in boxes
+// (converted with THIS item's per-box count) or in the dispensing unit
+// itself. Fully validated here, BEFORE the item is created, so a bad
+// batch never leaves a half-created item behind.
+$initialStock = null;
+if (is_array($body['initialStock'] ?? null)) {
+    $is = $body['initialStock'];
+    $isBatchNumber = trim((string) ($is['batchNumber'] ?? ''));
+    $isExpiry = trim((string) ($is['expiryDate'] ?? ''));
+    $isQuantity = $is['quantity'] ?? null;
+    $isInBoxes = ($is['quantityUnit'] ?? 'unit') === 'box';
+
+    if ($isBatchNumber === '' || strlen($isBatchNumber) > 50) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => 'Please enter the batch number for the initial stock.']);
+        exit;
+    }
+    if ($isExpiry === '' || strtotime($isExpiry) === false || strtotime($isExpiry) < strtotime(date('Y-m-d'))) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => 'Please enter a valid expiry date (not in the past) for the initial stock.']);
+        exit;
+    }
+    if (!is_int($isQuantity) && !(is_string($isQuantity) && ctype_digit($isQuantity)) || (int) $isQuantity <= 0) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => 'Please enter an initial quantity greater than 0.']);
+        exit;
+    }
+    $isQuantity = (int) $isQuantity;
+    if ($isInBoxes) {
+        if (!hc_unit_allows_boxes($unit)) {
+            http_response_code(422);
+            echo json_encode(['success' => false, 'error' => $unit . ' stock is received per ' . strtolower($unit) . ', not in boxes.']);
+            exit;
+        }
+        if ($piecesPerBox <= 0) {
+            http_response_code(422);
+            echo json_encode(['success' => false, 'error' => 'Please enter how many ' . strtolower(rtrim($unit, 's')) . 's come in one box to receive the initial stock in boxes.']);
+            exit;
+        }
+    }
+    $initialStock = [
+        'batchNumber' => $isBatchNumber,
+        'expiryDate' => date('Y-m-d', strtotime($isExpiry)),
+        'quantity' => $isInBoxes ? $isQuantity * $piecesPerBox : $isQuantity,
+        'boxes' => $isInBoxes ? $isQuantity : null,
+    ];
 }
 
 $currentStock = (int) $currentStock;
@@ -161,6 +227,29 @@ if ($currentStock > 0 && $expiryDate !== '') {
     hc_create_medicine_batch($newId, $currentStock, date('Y-m-d', strtotime($expiryDate)), 'initial', null, $_SESSION['name'] ?? 'System');
 }
 
-write_audit_log('created', 'Medicine & Vaccine Inventory', 'Added new ' . $type . ' "' . $name . '" (' . $currentStock . ' ' . $unit . ' in stock).');
+// The Add form's Initial Stock: its own first batch (source "restock",
+// so Stock Movement counts it as received, like any real restock), then
+// Minimum/Reorder Level computed from the resulting stock exactly as
+// api/restock-medicine.php does.
+if ($initialStock !== null) {
+    $batchId = hc_create_medicine_batch($newId, $initialStock['quantity'], $initialStock['expiryDate'], 'restock', null, $_SESSION['name'] ?? 'System', $initialStock['batchNumber']);
+    if ($batchId === null) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'The item was added, but its initial stock could not be saved. Please add it with Restock.']);
+        exit;
+    }
+    $createdDoc = $firestore->getDocument('medicines', $newId) ?? [];
+    $currentStock = (int) ($createdDoc['currentStock'] ?? 0);
+    $thresholds = hc_auto_compute_thresholds(max(1, $currentStock));
+    $status = hc_inventory_status_for_stock($currentStock, $thresholds['minLevel'], $maxLevel);
+    $firestore->setDocument('medicines', $newId, array_merge($createdDoc, [
+        'minLevel' => $thresholds['minLevel'],
+        'reorderLevel' => $thresholds['reorderLevel'],
+        'status' => $status,
+    ]));
+}
+
+write_audit_log('created', 'Medicine & Vaccine Inventory', 'Added new ' . $type . ' "' . $name . '" (' . hc_qty_unit($currentStock, $unit) . ' in stock'
+    . ($initialStock !== null ? ', batch ' . $initialStock['batchNumber'] . ($initialStock['boxes'] !== null ? ' — ' . $initialStock['boxes'] . ' box(es) of ' . $piecesPerBox : '') : '') . ').');
 
 echo json_encode(['success' => true, 'item' => ['id' => $newId, 'name' => $name, 'status' => $status]]);

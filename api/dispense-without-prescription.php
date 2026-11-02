@@ -103,7 +103,7 @@ if ($patientDoc === null) {
 $oldStock = (int) ($medicineDoc['currentStock'] ?? 0);
 if ($quantity > $oldStock) {
     http_response_code(422);
-    echo json_encode(['success' => false, 'error' => 'Only ' . $oldStock . ' ' . ($medicineDoc['unit'] ?? 'unit') . '(s) in stock — cannot dispense ' . $quantity . '.']);
+    echo json_encode(['success' => false, 'error' => 'Only ' . hc_qty_unit((int) $oldStock, (string) ($medicineDoc['unit'] ?? 'unit')) . ' in stock — cannot dispense ' . hc_qty_unit((int) $quantity, (string) ($medicineDoc['unit'] ?? 'unit')) . '.']);
     exit;
 }
 

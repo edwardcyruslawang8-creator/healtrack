@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Units a line can be requested in — the matched inventory item's own
     // (window.NSR_ITEM_UNITS, new_stock_request_modal.php: Box first for
     // box-stocked items), or a general list for a name not in inventory.
-    const GENERIC_UNITS = ['Box', 'Bottle', 'Tablet', 'Capsule', 'Vial', 'Dose', 'Inhaler', 'Sachet', 'Piece'];
+    const GENERIC_UNITS = ['Box', 'Tablet', 'Capsule', 'Bottle', 'Inhaler', 'Vial', 'Ampule', 'Sachet', 'Dose', 'Piece'];
 
     function unitsForName(name) {
         const known = (window.NSR_ITEM_UNITS || {})[(name || '').trim().toLowerCase()];

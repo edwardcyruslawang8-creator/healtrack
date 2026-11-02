@@ -286,6 +286,58 @@ if (!function_exists('hc_unit_plural')) {
     }
 }
 
+if (!function_exists('hc_unit_allows_boxes')) {
+    /**
+     * Whether $unit can have box packaging at all. Inhalers, vials,
+     * ampules and vaccine doses are received and counted individually —
+     * no per-box conversion. Bottles, sachets and custom units may
+     * optionally be received in boxes of whole bottles/sachets (bulk
+     * receiving); they're still counted and dispensed per bottle/sachet,
+     * never broken into pieces. Mirrored by add_medicine_modal.php's and
+     * manage_medicine.js's own copies of this rule.
+     */
+    function hc_unit_allows_boxes(string $unit): bool
+    {
+        return !in_array(strtolower(rtrim(trim($unit), 's')), ['inhaler', 'vial', 'ampule', 'dose'], true);
+    }
+}
+
+if (!function_exists('hc_dispensing_unit_error')) {
+    /**
+     * Validation for a submitted dispensing unit — one of Add Medicine's
+     * listed units (Tablet, Capsule, Bottle, Inhaler, Vial, Ampule,
+     * Sachet, Dose) or an "Other" unit typed in (Tube, Pack, Nebule...).
+     * Returns an error message, or null when it's fine.
+     */
+    function hc_dispensing_unit_error(string $unit): ?string
+    {
+        if ($unit === '') {
+            return 'Please select a dispensing unit.';
+        }
+        if (strlen($unit) > 30 || !preg_match('/^[A-Za-z][A-Za-z \-]*$/', $unit)) {
+            return 'The dispensing unit should be a short name made of letters only (e.g. Tube, Pack).';
+        }
+
+        return null;
+    }
+}
+
+if (!function_exists('hc_unit_requires_pieces_per_box')) {
+    /** Tablets/capsules always come boxed — their per-box count must be configured, never assumed. */
+    function hc_unit_requires_pieces_per_box(string $unit): bool
+    {
+        return in_array(strtolower(rtrim(trim($unit), 's')), ['tablet', 'capsule'], true);
+    }
+}
+
+if (!function_exists('hc_qty_unit')) {
+    /** A quantity with its unit, pluralized: "500 Tablets", "1 Bottle", "18 Bottles". */
+    function hc_qty_unit(int $quantity, string $unit): string
+    {
+        return number_format($quantity) . ' ' . hc_unit_plural($unit, $quantity);
+    }
+}
+
 if (!function_exists('hc_box_breakdown')) {
     /**
      * $quantity (in the dispensing unit) as whole boxes plus loose
@@ -324,7 +376,7 @@ if (!function_exists('hc_reorder_quantity_label')) {
      */
     function hc_reorder_quantity_label(int $quantity, string $unit, int $piecesPerBox): string
     {
-        $label = number_format($quantity) . ' ' . $unit;
+        $label = hc_qty_unit($quantity, $unit);
         if ($piecesPerBox > 0 && $quantity > 0) {
             $boxes = (int) ceil($quantity / $piecesPerBox);
             $label .= ' (' . number_format($boxes) . ' ' . hc_unit_plural('box', $boxes) . ')';
@@ -519,7 +571,7 @@ if (!function_exists('hc_get_low_stock_notifications')) {
             return [
                 'id' => crc32($item['id']),
                 'title' => $isOut ? 'Out of stock' : 'Low stock alert',
-                'description' => $item['name'] . ' — ' . number_format($item['currentStock']) . ' ' . $item['unit'] . ' remaining (reorder level: ' . number_format($item['reorderLevel']) . ').',
+                'description' => $item['name'] . ' — ' . hc_qty_unit($item['currentStock'], $item['unit']) . ' remaining (reorder level: ' . hc_qty_unit($item['reorderLevel'], $item['unit']) . ').',
                 'type' => 'Inventory',
                 'date' => $updatedAt !== false ? date('M j, Y', $updatedAt) : '—',
                 'time' => $updatedAt !== false ? date('g:i A', $updatedAt) : '',
@@ -556,7 +608,7 @@ if (!function_exists('hc_get_overstock_notifications')) {
             return [
                 'id' => crc32('overstock:' . $item['id']),
                 'title' => 'Overstock alert',
-                'description' => $item['name'] . ' — ' . number_format($item['currentStock']) . ' ' . $item['unit'] . ' on hand (maximum level: ' . number_format($item['maxLevel']) . ').',
+                'description' => $item['name'] . ' — ' . hc_qty_unit($item['currentStock'], $item['unit']) . ' on hand (maximum level: ' . hc_qty_unit($item['maxLevel'], $item['unit']) . ').',
                 'type' => 'Inventory',
                 'date' => $updatedAt !== false ? date('M j, Y', $updatedAt) : '—',
                 'time' => $updatedAt !== false ? date('g:i A', $updatedAt) : '',

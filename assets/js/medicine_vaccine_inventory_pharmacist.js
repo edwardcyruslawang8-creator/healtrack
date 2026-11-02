@@ -73,7 +73,9 @@ document.addEventListener('DOMContentLoaded', function () {
         minLevelInput.required = false;
         reorderLevelInput.required = false;
         maxLevelRow.classList.add('d-none');
-        dosageRow.classList.add('d-none');
+        // Dosage Information is collected here too now, alongside the
+        // optional Initial Stock — same fields a Restock asks for.
+        dosageRow.classList.remove('d-none');
 
         if (type === 'vaccine') {
             modalTitle.textContent = 'Add Vaccine';
@@ -83,6 +85,9 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('amCategory').value = 'Vaccine';
             document.getElementById('amUnit').value = 'Dose';
         } else {
+            // #amUnit is a hidden input (add_medicine_modal.php's unit
+            // dropdown) — form.reset() doesn't clear those.
+            document.getElementById('amUnit').value = '';
             modalTitle.textContent = 'Add Medicine';
             nameLabel.textContent = 'Medicine Name';
             nameInput.placeholder = 'e.g. Amoxicillin 500 mg Capsule';
@@ -116,7 +121,33 @@ document.addEventListener('DOMContentLoaded', function () {
             unit: document.getElementById('amUnit').value.trim(),
             piecesPerBox: document.getElementById('amPiecesPerBox').value,
             desc: document.getElementById('amDesc').value.trim(),
+            dosage: document.getElementById('amDosage').value.trim(),
         };
+
+        // Optional first stock — received like a "new batch" Restock
+        // (add_medicine_modal.php's #amInitialStockSection); the server
+        // converts boxes with this form's own per-box count.
+        const initialQty = document.getElementById('amIsQty').value.trim();
+        if (initialQty !== '') {
+            const qtyUnitSelect = document.getElementById('amIsQtyUnit');
+            const inBoxes = !qtyUnitSelect.classList.contains('d-none') && qtyUnitSelect.value === 'box';
+            if (!(parseInt(initialQty, 10) >= 1)) {
+                errorBox.textContent = 'Please enter a valid initial quantity, or leave it blank to add without stock.';
+                errorBox.classList.remove('d-none');
+                return;
+            }
+            if (inBoxes && !(parseInt(payload.piecesPerBox, 10) >= 1)) {
+                errorBox.textContent = 'Enter how many ' + payload.unit.toLowerCase() + 's come in one box, or receive the initial stock in ' + payload.unit.toLowerCase() + 's instead.';
+                errorBox.classList.remove('d-none');
+                return;
+            }
+            payload.initialStock = {
+                batchNumber: document.getElementById('amIsBatchNumber').value.trim(),
+                expiryDate: document.getElementById('amIsExpiry').value,
+                quantity: parseInt(initialQty, 10),
+                quantityUnit: inBoxes ? 'box' : 'unit',
+            };
+        }
 
         errorBox.classList.add('d-none');
         submitBtn.disabled = true;

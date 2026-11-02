@@ -247,16 +247,16 @@ $isVaccine = $item['type'] === 'vaccine';
         </div>
         <div class="mm-info-cell">
             <span class="mm-info-label">Total Current Stock</span>
-            <span class="mm-info-value"><?= number_format($item['currentStock']) ?> <?= htmlspecialchars($item['unit']) ?></span>
+            <span class="mm-info-value"><?= htmlspecialchars(hc_qty_unit($item['currentStock'], $item['unit'])) ?></span>
             <?php if (hc_box_breakdown($item['currentStock'], $item['piecesPerBox'], $item['unit']) !== ''): ?><span class="mm-info-sub"><?= htmlspecialchars(hc_box_breakdown($item['currentStock'], $item['piecesPerBox'], $item['unit'])) ?></span><?php endif; ?>
         </div>
         <div class="mm-info-cell">
             <span class="mm-info-label">Minimum Level</span>
-            <span class="mm-info-value"><?= number_format($item['minLevel']) ?> <?= htmlspecialchars($item['unit']) ?></span>
+            <span class="mm-info-value"><?= htmlspecialchars(hc_qty_unit($item['minLevel'], $item['unit'])) ?></span>
         </div>
         <div class="mm-info-cell">
             <span class="mm-info-label">Reorder Level</span>
-            <span class="mm-info-value"><?= number_format($item['reorderLevel']) ?> <?= htmlspecialchars($item['unit']) ?></span>
+            <span class="mm-info-value"><?= htmlspecialchars(hc_qty_unit($item['reorderLevel'], $item['unit'])) ?></span>
         </div>
     </div>
 
@@ -299,7 +299,7 @@ $isVaccine = $item['type'] === 'vaccine';
                     <tr data-batch-number="<?= htmlspecialchars(strtolower($batch['displayBatchNumber'])) ?>">
                         <td class="mvi-strong"><?= htmlspecialchars($batch['displayBatchNumber']) ?></td>
                         <td><?= $item['dosage'] !== '' ? htmlspecialchars($item['dosage']) : 'Not Recorded' ?></td>
-                        <td><?= number_format($batch['quantity']) ?> <?= htmlspecialchars($item['unit']) ?><?php if (hc_box_breakdown($batch['quantity'], $item['piecesPerBox'], $item['unit']) !== ''): ?><span class="mvi-unit-sub"><?= htmlspecialchars(hc_box_breakdown($batch['quantity'], $item['piecesPerBox'], $item['unit'])) ?></span><?php endif; ?></td>
+                        <td><?= htmlspecialchars(hc_qty_unit($batch['quantity'], $item['unit'])) ?><?php if (hc_box_breakdown($batch['quantity'], $item['piecesPerBox'], $item['unit']) !== ''): ?><span class="mvi-unit-sub"><?= htmlspecialchars(hc_box_breakdown($batch['quantity'], $item['piecesPerBox'], $item['unit'])) ?></span><?php endif; ?></td>
                         <td><?= htmlspecialchars($batch['expiryDate']) ?></td>
                         <td><span class="mvi-badge" style="background:<?= htmlspecialchars($batch['status']['bg']) ?>; color:<?= htmlspecialchars($batch['status']['color']) ?>;"><?= htmlspecialchars($batch['status']['label']) ?></span></td>
                     </tr>
