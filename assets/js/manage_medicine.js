@@ -37,6 +37,12 @@
    level Archive button. No History trigger here — removed per
    request.
    ============================================================= */
+/** "Tablet" -> "Tablets", "Box" -> "Boxes" for count != 1 — same rule as includes/firestore/medicines.php's hc_unit_plural(). */
+function unitPlural(unit, count) {
+    if (count === 1 || !unit || /s$/i.test(unit)) return unit;
+    return /(x|ch|sh)$/i.test(unit) ? unit + 'es' : unit + 's';
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     const item = window.MM_ITEM;
     const batches = window.MM_BATCHES || [];
@@ -81,6 +87,61 @@ document.addEventListener('DOMContentLoaded', function () {
         const dnrSubmitBtn = document.getElementById('dnrSubmitBtn');
         const dnrSubmitBtnDefaultHtml = dnrSubmitBtn.innerHTML;
 
+        // Patient picker — quick-search.js (SELECT mode) fills the hidden
+        // #dnrPatientId and fires "quick-search:select" when a real
+        // patient row is picked; this swaps the search field for a
+        // selected-patient card, and "Change" swaps it back.
+        const dnrPatientInput = document.getElementById('dnrPatientSearch');
+        const dnrPatientIdInput = document.getElementById('dnrPatientId');
+        const dnrPatientField = document.getElementById('dnrPatientSearchField');
+        const dnrSelectedCard = document.getElementById('dnrSelectedPatient');
+        const dnrPatientError = document.getElementById('dnrPatientError');
+
+        function dnrSetPatientError(show) {
+            dnrPatientError.classList.toggle('d-none', !show);
+            dnrPatientField.classList.toggle('is-invalid', show);
+        }
+
+        function dnrShowSelectedPatient(patient) {
+            document.getElementById('dnrSelectedName').textContent = patient.name;
+            // 'meta' arrives as server-built HTML ("28 years &bull; Female
+            // &bull; 0917...") — parsed inertly to plain text, then each
+            // part rendered as its own chip via textContent.
+            const metaText = new DOMParser().parseFromString(patient.meta || '', 'text/html').body.textContent;
+            const metaEl = document.getElementById('dnrSelectedMeta');
+            metaEl.innerHTML = '';
+            metaText.split('•').map(function (part) { return part.trim(); }).filter(Boolean).forEach(function (part) {
+                const chip = document.createElement('span');
+                chip.textContent = part;
+                metaEl.appendChild(chip);
+            });
+            dnrPatientField.classList.add('d-none');
+            dnrSelectedCard.classList.remove('d-none');
+            dnrSetPatientError(false);
+        }
+
+        // Back to an empty search field: dispatching "input" with an empty
+        // value lets quick-search.js clear the hidden id, hide its clear
+        // button and close any open dropdown through its own handler.
+        function dnrResetPatientPicker() {
+            dnrPatientInput.value = '';
+            dnrPatientInput.dispatchEvent(new Event('input', { bubbles: true }));
+            dnrPatientIdInput.value = '';
+            dnrSelectedCard.classList.add('d-none');
+            dnrPatientField.classList.remove('d-none');
+        }
+
+        dnrPatientInput.addEventListener('quick-search:select', function (e) {
+            if (e.detail && dnrPatientIdInput.value !== '') dnrShowSelectedPatient(e.detail);
+        });
+        dnrPatientInput.addEventListener('input', function () {
+            if (dnrPatientInput.value.trim() !== '') dnrSetPatientError(false);
+        });
+        document.getElementById('dnrChangePatientBtn').addEventListener('click', function () {
+            dnrResetPatientPicker();
+            dnrPatientInput.focus();
+        });
+
         document.querySelectorAll('.mm-item-dispense').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 if (item.expiryStatus === 'expired') {
@@ -89,12 +150,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 dnrForm.reset();
                 dnrErrorBox.classList.add('d-none');
+                dnrResetPatientPicker();
+                dnrSetPatientError(false);
                 document.getElementById('dnrItemId').value = item.id;
                 document.getElementById('dnrItemType').value = item.type;
-                document.getElementById('dnrPatientId').value = '';
                 document.getElementById('dnrItemName').textContent = item.name;
                 document.getElementById('dnrCurrentStock').textContent = item.currentStock;
                 document.getElementById('dnrUnit').textContent = item.unit;
+                // Always the dispensing unit — individual tablets/capsules
+                // for box-stocked items, never boxes.
+                document.getElementById('dnrQtyUnit').textContent = unitPlural(item.unit, 2);
                 document.getElementById('dnrQty').max = item.currentStock;
                 dnrSubmitBtn.disabled = false;
                 dnrSubmitBtn.innerHTML = dnrSubmitBtnDefaultHtml;
@@ -106,10 +171,13 @@ document.addEventListener('DOMContentLoaded', function () {
             e.preventDefault();
             e.stopPropagation();
 
-            const patientId = document.getElementById('dnrPatientId').value;
+            const patientId = dnrPatientIdInput.value;
             if (patientId === '') {
-                dnrErrorBox.textContent = 'Please search for and select a real patient.';
-                dnrErrorBox.classList.remove('d-none');
+                // Typed text that was never picked from the results isn't a
+                // registered patient — same message either way.
+                dnrErrorBox.classList.add('d-none');
+                dnrSetPatientError(true);
+                dnrPatientInput.focus();
                 return;
             }
             const quantity = parseInt(document.getElementById('dnrQty').value, 10);
@@ -204,12 +272,33 @@ document.addEventListener('DOMContentLoaded', function () {
         const rsBatchNumberInput = document.getElementById('rsBatchNumber');
         const rsNewExpiryInput = document.getElementById('rsNewExpiry');
         const rsQtyInput = document.getElementById('rsQty');
+        const rsQtyUnitSelect = document.getElementById('rsQtyUnit');
+        const rsQtyUnitLabel = document.getElementById('rsQtyUnitLabel');
+        const rsQtyPreview = document.getElementById('rsQtyPreview');
+        const piecesPerBox = item.piecesPerBox || 0;
+
+        // Box-stocked items take whole boxes or loose pieces; everything
+        // else is entered straight in its dispensing unit. Only a
+        // preview here — api/restock-medicine.php does the real
+        // boxes -> pieces conversion from the item's own stored value.
+        function syncQtyPreview() {
+            const qty = parseInt(rsQtyInput.value, 10);
+            const inBoxes = piecesPerBox > 0 && rsQtyUnitSelect.value === 'box';
+            rsQtyPreview.classList.toggle('d-none', !(inBoxes && qty > 0));
+            if (inBoxes && qty > 0) {
+                const pieces = qty * piecesPerBox;
+                rsQtyPreview.textContent = '= ' + pieces.toLocaleString() + ' ' + unitPlural(item.unit, pieces).toLowerCase() + ' added to stock';
+            }
+        }
+        rsQtyInput.addEventListener('input', syncQtyPreview);
+        rsQtyUnitSelect.addEventListener('change', syncQtyPreview);
 
         function syncModeVisibility() {
             const isExisting = document.getElementById('rsModeExisting').checked;
             rsExistingWrap.classList.toggle('d-none', !isExisting);
             rsNewWrap.classList.toggle('d-none', isExisting);
             rsNewExpiryInput.required = !isExisting;
+            rsBatchNumberInput.required = !isExisting;
         }
         document.getElementById('rsModeExisting').addEventListener('change', syncModeVisibility);
         document.getElementById('rsModeNew').addEventListener('change', syncModeVisibility);
@@ -237,6 +326,13 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             syncModeVisibility();
 
+            rsQtyUnitSelect.classList.toggle('d-none', piecesPerBox === 0);
+            rsQtyUnitLabel.classList.toggle('d-none', piecesPerBox > 0);
+            rsQtyUnitLabel.textContent = unitPlural(item.unit, 2);
+            document.getElementById('rsQtyUnitOption').textContent = unitPlural(item.unit, 2);
+            rsQtyUnitSelect.value = piecesPerBox > 0 ? 'box' : 'unit';
+            syncQtyPreview();
+
             rsSubmitBtn.disabled = false;
             rsSubmitBtn.innerHTML = rsSubmitBtnDefaultHtml;
             restockModal.show();
@@ -258,6 +354,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 id: item.id,
                 mode: isExisting ? 'existing' : 'new',
                 quantity: quantity,
+                quantityUnit: piecesPerBox > 0 ? rsQtyUnitSelect.value : 'unit',
                 dosage: document.getElementById('rsDosage').value.trim(),
             };
             if (isExisting) {
@@ -268,6 +365,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 payload.batchId = rsBatchSelect.value;
             } else {
+                if (rsBatchNumberInput.value.trim() === '') {
+                    rsErrorBox.textContent = 'Please enter the batch number for this new batch.';
+                    rsErrorBox.classList.remove('d-none');
+                    rsBatchNumberInput.focus();
+                    return;
+                }
                 if (!rsNewExpiryInput.value) {
                     rsErrorBox.textContent = 'Please enter the expiry date for this new batch.';
                     rsErrorBox.classList.remove('d-none');
@@ -338,6 +441,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('amName').value = item.name;
             document.getElementById('amCategory').value = item.category;
             document.getElementById('amUnit').value = item.unit;
+            document.getElementById('amPiecesPerBox').value = item.piecesPerBox > 0 ? item.piecesPerBox : '';
 
             // Current Stock/Expiry Date are a real rollup over this
             // item's own batches — not editable here (see
@@ -381,6 +485,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 name: document.getElementById('amName').value.trim(),
                 category: document.getElementById('amCategory').value.trim(),
                 unit: document.getElementById('amUnit').value.trim(),
+                piecesPerBox: document.getElementById('amPiecesPerBox').value,
                 minLevel: document.getElementById('amMinLevel').value,
                 reorderLevel: document.getElementById('amReorderLevel').value,
                 maxLevel: document.getElementById('amMaxLevel').value,

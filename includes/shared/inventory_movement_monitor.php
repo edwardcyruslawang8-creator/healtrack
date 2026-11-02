@@ -266,10 +266,29 @@ if (!function_exists('hc_compute_inventory_expiry_monitor')) {
         $vaccines = array_map(fn ($v) => $v + ['itemType' => 'vaccine'], hc_get_inventory_items('vaccine'));
         $allItems = array_merge($medicines, $vaccines);
 
+        // Every batch in ONE (cached) collection read, grouped by item,
+        // rather than hc_get_batches_for_medicine()'s 2-3 Firestore
+        // requests per item — that added up to ~20s once the inventory
+        // reached ~100 items. Only an item with stock but no batch doc
+        // yet falls back to it, so hc_ensure_initial_batch() still
+        // materializes that item's first batch.
+        global $firestore;
+        $batchesByItem = [];
+        foreach ($firestore->listDocuments('medicine_batches') as $doc) {
+            $f = $doc['fields'];
+            $batchesByItem[(string) ($f['medicineId'] ?? '')][] = [
+                'id' => $doc['id'],
+                'displayBatchNumber' => hc_batch_display_number($f, $doc['id']),
+                'quantity' => (int) ($f['quantity'] ?? 0),
+                'expiryDateRaw' => (string) ($f['expiryDate'] ?? ''),
+            ];
+        }
+
         $today = strtotime(date('Y-m-d'));
         $rows = [];
         foreach ($allItems as $item) {
-            foreach (hc_get_batches_for_medicine($item['id']) as $batch) {
+            $itemBatches = $batchesByItem[$item['id']] ?? ($item['currentStock'] > 0 ? hc_get_batches_for_medicine($item['id']) : []);
+            foreach ($itemBatches as $batch) {
                 if ($batch['quantity'] <= 0) {
                     continue;
                 }
@@ -289,22 +308,17 @@ if (!function_exists('hc_compute_inventory_expiry_monitor')) {
                     };
                 }
 
-                // The real Firestore batch doc id IS the batch's real,
-                // unique identifier — but shown raw (a 20-character
-                // random string) it reads as noise, not a batch number.
-                // "Not Recorded" for a batch id itself never fires today
-                // (hc_get_batches_for_medicine() always returns a real
-                // id), but the field stays honest if that ever changes.
-                // Shortened to an 8-char reference, uppercased — still
-                // the real id (just its leading chars), not an invented
-                // number, and still unique enough in practice for a
-                // facility's own real batch count.
+                // The batch number recorded at Restock time, or — for a
+                // batch that predates that field — a short reference
+                // derived from its real doc id (hc_batch_display_number()),
+                // so this list always shows the same label the Manage
+                // Medicine Batch Inventory table does.
                 $rows[] = [
                     'medicineId' => $item['id'],
                     'batchId' => $batch['id'],
                     'name' => $item['name'],
                     'category' => $item['itemType'] === 'vaccine' ? 'Vaccine' : 'Medicine',
-                    'batchNo' => $batch['id'] !== '' ? ('BATCH-' . strtoupper(substr($batch['id'], 0, 8))) : 'Not Recorded',
+                    'batchNo' => $batch['displayBatchNumber'],
                     'expiryDateRaw' => $expiryRaw,
                     'expiryDate' => $expiryTs !== false ? date('M j, Y', $expiryTs) : 'Not Recorded',
                     'quantity' => $batch['quantity'],

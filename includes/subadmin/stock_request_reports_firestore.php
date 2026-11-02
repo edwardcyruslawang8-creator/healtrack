@@ -190,7 +190,22 @@ foreach ($recentRequestsPaged['items'] as $r) {
         'requestedBy' => $r['pharmacistName'] ?? 'Unknown',
         'category' => ($r['type'] ?? 'medicine') === 'vaccine' ? 'Vaccines' : 'Medicines',
         'items' => ($items[0]['name'] ?? '(no items)') . (count($items) > 1 ? ' +' . (count($items) - 1) . ' more' : ''),
-        'qty' => array_sum(array_column($items, 'qty')),
+        // Totaled per unit ("5 Box + 20 Bottle") — lines in different
+        // units can't honestly add up to one number. Lines saved before
+        // request units existed have none and stay a plain count.
+        'qty' => (function (array $items): string {
+            $byUnit = [];
+            foreach ($items as $line) {
+                $unit = trim((string) ($line['unit'] ?? ''));
+                $byUnit[$unit] = ($byUnit[$unit] ?? 0) + (int) ($line['qty'] ?? 0);
+            }
+            $parts = [];
+            foreach ($byUnit as $unit => $total) {
+                $parts[] = number_format($total) . ($unit !== '' ? ' ' . $unit : '');
+            }
+
+            return $parts !== [] ? implode(' + ', $parts) : '0';
+        })($items),
         'dateRequested' => $requestedAt ? date('M j, Y', strtotime($requestedAt)) : '—',
         'status' => $r['status'] ?? 'pending',
     ];

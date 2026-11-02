@@ -47,7 +47,7 @@
                     <td><?= htmlspecialchars($r['requestedBy']) ?></td>
                     <td><?= htmlspecialchars($r['category']) ?></td>
                     <td><?= htmlspecialchars($r['items']) ?></td>
-                    <td><?= number_format($r['qty']) ?></td>
+                    <td><?= htmlspecialchars($r['qty']) ?></td>
                     <td><?= htmlspecialchars($r['dateRequested']) ?></td>
                     <td><span class="arp-badge" style="background:<?= htmlspecialchars($status['bg']) ?>; color:<?= htmlspecialchars($status['color']) ?>;"><?= htmlspecialchars($status['label']) ?></span></td>
                 </tr>

@@ -117,6 +117,8 @@ if (!function_exists('hc_map_medicine_doc_to_item')) {
             'name' => $f['name'] ?? '(unnamed)',
             'category' => $f['category'] ?? 'Uncategorized',
             'unit' => $f['unit'] ?? '—',
+            // See hc_box_breakdown() — 0 = not stocked by the box.
+            'piecesPerBox' => max(0, (int) ($f['piecesPerBox'] ?? 0)),
             'form' => $f['form'] ?? '—',
             'desc' => $f['desc'] ?? '',
             'dosage' => $f['dosage'] ?? '',
@@ -256,6 +258,105 @@ if (!function_exists('hc_find_inventory_item_by_name')) {
         }
 
         return null;
+    }
+}
+
+// ---------------------------------------------------------------------
+// Dispensing unit vs. box packaging. An item's "unit" is its DISPENSING
+// unit — the one thing currentStock, every batch quantity, min/reorder/
+// max levels and every dispense are counted in (Tablet, Capsule,
+// Bottle, Inhaler, Vial, Dose, Sachet, Nebule...). "piecesPerBox" is
+// optional packaging on top of that: how many of that unit come in one
+// box the item is delivered/ordered in (e.g. 100 tablets). It never
+// changes what stock is counted in — it only lets Restock accept whole
+// boxes and lets displays show the box equivalent. 0 = not stocked by
+// the box (a syrup counted per bottle, an inhaler, a vaccine vial...).
+// ---------------------------------------------------------------------
+
+if (!function_exists('hc_unit_plural')) {
+    /** "Tablet" -> "Tablets", "Box" -> "Boxes" for $count != 1 — lower-cased when $lower. */
+    function hc_unit_plural(string $unit, int $count, bool $lower = false): string
+    {
+        $label = $unit;
+        if ($count !== 1 && $unit !== '' && !preg_match('/s$/i', $unit)) {
+            $label = preg_match('/(x|ch|sh)$/i', $unit) ? $unit . 'es' : $unit . 's';
+        }
+
+        return $lower ? strtolower($label) : $label;
+    }
+}
+
+if (!function_exists('hc_box_breakdown')) {
+    /**
+     * $quantity (in the dispensing unit) as whole boxes plus loose
+     * pieces — "5 boxes", "4 boxes + 20 tablets", "under 1 box" — or ''
+     * when the item isn't stocked by the box.
+     */
+    function hc_box_breakdown(int $quantity, int $piecesPerBox, string $unit): string
+    {
+        if ($piecesPerBox <= 0 || $quantity <= 0) {
+            return '';
+        }
+        $boxes = intdiv($quantity, $piecesPerBox);
+        $loose = $quantity % $piecesPerBox;
+        if ($boxes === 0) {
+            return 'under 1 box';
+        }
+        $text = number_format($boxes) . ' ' . hc_unit_plural('box', $boxes);
+
+        return $loose > 0 ? $text . ' + ' . number_format($loose) . ' ' . hc_unit_plural($unit, $loose, true) : $text;
+    }
+}
+
+if (!function_exists('hc_packaging_label')) {
+    /** "Box of 100" for a box-stocked item, '' otherwise. */
+    function hc_packaging_label(int $piecesPerBox): string
+    {
+        return $piecesPerBox > 0 ? 'Box of ' . number_format($piecesPerBox) : '';
+    }
+}
+
+if (!function_exists('hc_reorder_quantity_label')) {
+    /**
+     * A suggested reorder amount in the dispensing unit, plus — for a
+     * box-stocked item, since that's how it's actually ordered — the
+     * whole boxes that covers: "1,150 Tablet (12 boxes)".
+     */
+    function hc_reorder_quantity_label(int $quantity, string $unit, int $piecesPerBox): string
+    {
+        $label = number_format($quantity) . ' ' . $unit;
+        if ($piecesPerBox > 0 && $quantity > 0) {
+            $boxes = (int) ceil($quantity / $piecesPerBox);
+            $label .= ' (' . number_format($boxes) . ' ' . hc_unit_plural('box', $boxes) . ')';
+        }
+
+        return $label;
+    }
+}
+
+if (!function_exists('hc_stock_request_line_unit')) {
+    /**
+     * The unit one stock request line is recorded in. For a name that
+     * matches a real inventory item it must be one of that item's own
+     * units — "Box" (box-stocked items only) or its dispensing unit —
+     * falling back to the first of those; for a free-text item not in
+     * inventory yet, whatever short unit name was sent (or "Unit").
+     */
+    function hc_stock_request_line_unit(?array $matchedItem, string $requestedUnit): string
+    {
+        $requestedUnit = trim(preg_replace('/[^A-Za-z ]/', '', $requestedUnit));
+        if ($matchedItem !== null) {
+            $allowed = array_values(array_filter([($matchedItem['piecesPerBox'] ?? 0) > 0 ? 'Box' : null, $matchedItem['unit']]));
+            foreach ($allowed as $unit) {
+                if (strcasecmp($unit, $requestedUnit) === 0) {
+                    return $unit;
+                }
+            }
+
+            return $allowed[0];
+        }
+
+        return $requestedUnit !== '' ? substr($requestedUnit, 0, 30) : 'Unit';
     }
 }
 

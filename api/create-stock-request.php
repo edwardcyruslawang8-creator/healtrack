@@ -78,7 +78,12 @@ foreach ($rawItems as $item) {
         continue; // skip incomplete/blank rows rather than reject the whole request
     }
     $matched = hc_find_inventory_item_by_name($type, $name);
-    $items[] = ['name' => $name, 'qty' => (int) $qty, 'itemId' => $matched['id'] ?? null];
+    $items[] = [
+        'name' => $name,
+        'qty' => (int) $qty,
+        'unit' => hc_stock_request_line_unit($matched, (string) ($item['unit'] ?? '')),
+        'itemId' => $matched['id'] ?? null,
+    ];
 }
 
 if (count($items) === 0) {

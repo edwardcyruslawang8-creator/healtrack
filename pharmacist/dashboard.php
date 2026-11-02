@@ -351,6 +351,11 @@ $staffNavItems = [
                         </tr>
                     </thead>
                     <tbody>
+                        <?php if (empty($todaysStockRequests)): ?>
+                        <tr>
+                            <td colspan="5" class="adm-table-empty">No stock requests submitted today.</td>
+                        </tr>
+                        <?php endif; ?>
                         <?php foreach ($todaysStockRequests as $row):
                             $status = $stockRequestMeta[$row['status']] ?? ['label' => ucfirst($row['status']), 'bg' => '#EEF0F3', 'color' => '#6B7280'];
                             $priority = $priorityMeta[$row['priority']] ?? ['bg' => '#EEF0F3', 'color' => '#6B7280'];
@@ -374,6 +379,9 @@ $staffNavItems = [
                 <a href="notifications.php" class="adm-card-footer-link" style="margin-top:0;">View All <i class="bi bi-arrow-right"></i></a>
             </div>
             <div class="phm-notif-list">
+                <?php if (empty($recentNotifications)): ?>
+                <div class="adm-table-empty">No notifications right now.</div>
+                <?php endif; ?>
                 <?php foreach ($recentNotifications as $n): ?>
                 <div class="phm-notif-row">
                     <div class="phm-notif-icon" style="background:<?= htmlspecialchars($n['iconBg']) ?>; color:<?= htmlspecialchars($n['iconColor']) ?>;">

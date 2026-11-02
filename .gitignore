@@ -28,6 +28,10 @@ storage/profile_photos/*
 storage/xray_results/*
 !storage/xray_results/.htaccess
 
+# --- Inventory snapshots written by scripts/seed-inventory-demo-data.php
+# before it replaces the medicines/medicine_batches collections.
+storage/inventory_backups/
+
 # --- Local Claude Code tool state (session scratch, local permissions) —
 # not part of the application.
 .claude/

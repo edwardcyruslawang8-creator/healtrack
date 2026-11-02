@@ -34,6 +34,7 @@
 session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
+require_once __DIR__ . '/../includes/firestore/medicines.php'; // hc_find_inventory_item_by_name(), hc_stock_request_line_unit()
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 
 header('Content-Type: application/json');
@@ -81,7 +82,11 @@ foreach ($rawItems as $item) {
     if ($name === '' || !is_numeric($qty) || (int) $qty <= 0) {
         continue;
     }
-    $items[] = ['name' => $name, 'qty' => (int) $qty];
+    $items[] = [
+        'name' => $name,
+        'qty' => (int) $qty,
+        'unit' => hc_stock_request_line_unit(hc_find_inventory_item_by_name(in_array($type, ['medicine', 'vaccine'], true) ? $type : 'medicine', $name), (string) ($item['unit'] ?? '')),
+    ];
 }
 if (count($items) === 0) {
     http_response_code(422);

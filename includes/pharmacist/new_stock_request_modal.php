@@ -37,6 +37,19 @@
      same generic form-modal look every other "Add" modal in this app
      uses.
      ============================================================= -->
+<!-- Each request line's unit options (assets/js/new-stock-request.js):
+     a box-stocked inventory item is requested in Boxes (or its loose
+     dispensing unit); anything else in its own dispensing unit (Bottle,
+     Inhaler, Vial...). Keyed by lower-cased name, matched as typed. -->
+<?php
+$nsrItemUnits = [];
+foreach (array_merge(hc_get_inventory_items('medicine'), hc_get_inventory_items('vaccine')) as $nsrItem) {
+    $nsrItemUnits[strtolower(trim($nsrItem['name']))] = array_values(array_filter([$nsrItem['piecesPerBox'] > 0 ? 'Box' : null, $nsrItem['unit']]));
+}
+?>
+<script>
+window.NSR_ITEM_UNITS = <?= json_encode((object) $nsrItemUnits, JSON_HEX_TAG | JSON_HEX_AMP) ?>;
+</script>
 <datalist id="nsrMedicineList">
     <?php foreach ($medicineNames as $name): ?>
     <option value="<?= htmlspecialchars($name) ?>">

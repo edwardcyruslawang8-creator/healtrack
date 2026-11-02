@@ -77,6 +77,16 @@ $reorderLevel = is_numeric($reorderLevel) ? $reorderLevel : 0;
 $maxLevel = $body['maxLevel'] ?? '';
 $maxLevel = is_numeric($maxLevel) ? $maxLevel : 0;
 $expiryDate = trim((string) ($body['expiryDate'] ?? ''));
+// Optional box packaging over the dispensing unit — see
+// includes/firestore/medicines.php's hc_box_breakdown(). Blank = 0.
+$rawPiecesPerBox = trim((string) ($body['piecesPerBox'] ?? ''));
+
+if ($rawPiecesPerBox !== '' && !ctype_digit($rawPiecesPerBox)) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Pieces per Box must be a whole number (or left blank).']);
+    exit;
+}
+$piecesPerBox = (int) $rawPiecesPerBox;
 
 if (!in_array($type, ['medicine', 'vaccine'], true)) {
     http_response_code(422);
@@ -118,6 +128,7 @@ $newId = $firestore->addDocument('medicines', [
     'category' => $category,
     'unit' => $unit,
     'form' => $unit, // see this file's header comment
+    'piecesPerBox' => $piecesPerBox,
     'desc' => $desc !== '' ? $desc : null,
     'dosage' => $dosage !== '' ? $dosage : null,
     'currentStock' => $currentStock,

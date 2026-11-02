@@ -149,6 +149,7 @@
 }
 .nsr-item-row .nsr-item-name{ flex: 1 1 auto; min-width: 0; }
 .nsr-item-row .nsr-item-qty{ flex: 0 0 90px; }
+.nsr-item-row .nsr-item-unit{ flex: 0 0 120px; }
 .nsr-item-row .nsr-remove-item-btn{
   flex: 0 0 auto;
   background: none;
@@ -205,3 +206,212 @@
   .srq-print-table th{ width: 160px; background: #f2f2f2; }
   .srq-print-items th{ background: #f2f2f2; width: auto; }
 }
+
+/* =============================================================
+   DISPENSE WITHOUT PRESCRIPTION — patient picker
+   (includes/pharmacist/medicine_action_modals.php #dispenseNoRxModal,
+   behavior in assets/js/manage_medicine.js + quick-search.js SELECT
+   mode). Scoped to this one modal (id selector) so it outranks
+   quick-search.css's shared rules here without changing that
+   component — or any other am-modal form — anywhere else. Maroon
+   (#690B0B) is HEALTrack's primary/focus color.
+   ============================================================= */
+#dispenseNoRxModal .modal-body > .mb-3{ margin-bottom: 18px !important; }
+#dispenseNoRxModal .am-form-control:focus{
+  border-color: #690B0B;
+  box-shadow: 0 0 0 3px rgba(105, 11, 11, 0.12);
+  background: #fff;
+}
+
+/* Search field: icon sits INSIDE the input, left-aligned. */
+#dispenseNoRxModal .dnr-patient-search{
+  display: block;
+  position: relative;
+}
+#dispenseNoRxModal .dnr-patient-search .dnr-search-icon{
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--adm-text-soft, #9AA0AC);
+  pointer-events: none;
+  z-index: 1;
+  transition: color .15s ease;
+}
+#dispenseNoRxModal .dnr-patient-search input{
+  height: 44px;
+  padding-left: 40px;
+  padding-right: 40px;
+}
+#dispenseNoRxModal .qs-wrapper.qs-active input,
+#dispenseNoRxModal .dnr-patient-search input:focus{
+  border-color: #690B0B !important;
+  box-shadow: 0 0 0 3px rgba(105, 11, 11, 0.12);
+  background: #fff;
+}
+#dispenseNoRxModal .qs-wrapper.qs-active .dnr-search-icon,
+#dispenseNoRxModal .dnr-patient-search input:focus ~ .dnr-search-icon,
+#dispenseNoRxModal .dnr-patient-search:focus-within .dnr-search-icon{
+  color: #690B0B;
+}
+#dispenseNoRxModal .dnr-patient-search.is-invalid input,
+#dispenseNoRxModal .dnr-patient-search.is-invalid input:focus{
+  border-color: #D93025 !important;
+  box-shadow: 0 0 0 3px rgba(217, 48, 37, 0.12);
+}
+#dispenseNoRxModal .dnr-patient-search.is-invalid .dnr-search-icon{ color: #D93025; }
+
+/* Results dropdown (position:fixed under the field, see quick-search.js). */
+#dispenseNoRxModal .qs-dropdown{
+  border-radius: 12px;
+  border-color: var(--adm-border, #E5E7EB);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
+}
+#dispenseNoRxModal .qs-header{
+  padding: 10px 16px 6px;
+  font-size: 11px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+#dispenseNoRxModal .qs-results-list{ max-height: 248px; }
+#dispenseNoRxModal .qs-dropdown .qs-result-row{
+  padding: 11px 16px;
+  gap: 14px;
+}
+#dispenseNoRxModal .qs-dropdown .qs-result-row:hover,
+#dispenseNoRxModal .qs-dropdown .qs-result-row:focus-visible{
+  background: #F9EEEE;
+  transform: none;
+  outline: none;
+}
+#dispenseNoRxModal .qs-result-body{ gap: 3px; }
+#dispenseNoRxModal .qs-result-name{ font-size: 13.5px; }
+#dispenseNoRxModal .qs-dropdown .qs-result-row:hover .qs-result-name,
+#dispenseNoRxModal .qs-dropdown .qs-result-row:focus-visible .qs-result-name{ color: #690B0B; }
+#dispenseNoRxModal .qs-result-meta{ font-size: 12px; }
+/* "Select" reads as a real (small, outlined) button, not link text. */
+#dispenseNoRxModal .qs-result-view{
+  padding: 5px 14px;
+  border: 1px solid #690B0B;
+  border-radius: 999px;
+  color: #690B0B;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color .12s ease, color .12s ease;
+}
+#dispenseNoRxModal .qs-dropdown .qs-result-row:hover .qs-result-view,
+#dispenseNoRxModal .qs-dropdown .qs-result-row:focus-visible .qs-result-view{
+  background: #690B0B;
+  color: #fff;
+  text-decoration: none;
+}
+
+/* Selected patient card — replaces the search field once picked. */
+#dispenseNoRxModal .dnr-selected-patient{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 14px;
+  min-height: 56px;
+  border: 1px solid #690B0B;
+  border-radius: 10px;
+  background: #FBF3F3;
+}
+#dispenseNoRxModal .dnr-selected-patient.d-none{ display: none; }
+#dispenseNoRxModal .dnr-selected-avatar{
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #690B0B;
+  color: #fff;
+  font-size: 16px;
+}
+#dispenseNoRxModal .dnr-selected-body{ flex: 1; min-width: 0; }
+#dispenseNoRxModal .dnr-selected-name{
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--adm-text, #1F2430);
+  overflow-wrap: anywhere;
+}
+#dispenseNoRxModal .dnr-selected-meta{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin-top: 4px;
+}
+#dispenseNoRxModal .dnr-selected-meta span{
+  font-size: 11.5px;
+  color: var(--adm-text-muted, #6B7280);
+  background: #fff;
+  border: 1px solid var(--adm-border, #E5E7EB);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+#dispenseNoRxModal .dnr-change-btn{
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid var(--adm-border, #E5E7EB);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--adm-text-muted, #6B7280);
+  font-size: 12px;
+  font-weight: 600;
+  transition: border-color .12s ease, color .12s ease;
+}
+#dispenseNoRxModal .dnr-change-btn:hover,
+#dispenseNoRxModal .dnr-change-btn:focus-visible{
+  border-color: #690B0B;
+  color: #690B0B;
+  outline: none;
+}
+
+/* Inline field error + the modal's general error alert. */
+#dispenseNoRxModal .dnr-field-error{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #D93025;
+}
+#dispenseNoRxModal .dnr-field-error.d-none{ display: none; }
+#dispenseNoRxModal #dispenseNoRxError{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  margin-bottom: 14px;
+}
+#dispenseNoRxModal #dispenseNoRxError.d-none{ display: none !important; }
+
+#dispenseNoRxModal .modal-footer{ justify-content: flex-end; }
+#dispenseNoRxModal .am-btn-submit{ background: #690B0B; }
+#dispenseNoRxModal .am-btn-submit:hover{ background: #4E0808; }
+
+@media (max-width: 575.98px){
+  #dispenseNoRxModal .modal-dialog{ margin: 12px; }
+  #dispenseNoRxModal .modal-header,
+  #dispenseNoRxModal .modal-body,
+  #dispenseNoRxModal .modal-footer{ padding-left: 16px; padding-right: 16px; }
+  #dispenseNoRxModal .modal-title{ font-size: 15.5px; }
+  #dispenseNoRxModal .qs-result-view{ padding: 4px 10px; }
+}
+
+/* Restock quantity + its unit (a Boxes/pieces picker for box-stocked
+   items, otherwise just the dispensing unit as a label). */
+.rs-qty-row{ display: flex; align-items: center; gap: 10px; }
+.rs-qty-row #rsQty{ flex: 1; min-width: 0; }
+.rs-qty-row #rsQtyUnit{ width: 140px; flex-shrink: 0; }
+.rs-qty-unit-label{ flex-shrink: 0; font-size: 13px; font-weight: 600; color: var(--adm-text-muted); }
+.rs-qty-preview{ font-weight: 600; color: var(--adm-text); }

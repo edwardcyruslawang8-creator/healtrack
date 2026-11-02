@@ -114,6 +114,7 @@ document.addEventListener('DOMContentLoaded', function () {
             name: nameInput.value.trim(),
             category: document.getElementById('amCategory').value.trim(),
             unit: document.getElementById('amUnit').value.trim(),
+            piecesPerBox: document.getElementById('amPiecesPerBox').value,
             desc: document.getElementById('amDesc').value.trim(),
         };
 

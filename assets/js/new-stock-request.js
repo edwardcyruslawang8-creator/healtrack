@@ -64,11 +64,37 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function addItemRow(selectedName, selectedQty) {
+    // Units a line can be requested in — the matched inventory item's own
+    // (window.NSR_ITEM_UNITS, new_stock_request_modal.php: Box first for
+    // box-stocked items), or a general list for a name not in inventory.
+    const GENERIC_UNITS = ['Box', 'Bottle', 'Tablet', 'Capsule', 'Vial', 'Dose', 'Inhaler', 'Sachet', 'Piece'];
+
+    function unitsForName(name) {
+        const known = (window.NSR_ITEM_UNITS || {})[(name || '').trim().toLowerCase()];
+        return known && known.length ? known : GENERIC_UNITS;
+    }
+
+    // selectedUnit = a saved line's own unit (Edit) — kept even if the
+    // item's units have changed since; otherwise the item's first unit.
+    function fillUnitSelect(select, name, selectedUnit) {
+        const units = unitsForName(name).slice();
+        if (selectedUnit && units.indexOf(selectedUnit) === -1) units.push(selectedUnit);
+        select.innerHTML = '';
+        units.forEach(function (unit) {
+            const opt = document.createElement('option');
+            opt.value = unit;
+            opt.textContent = unit;
+            select.appendChild(opt);
+        });
+        select.value = selectedUnit || units[0];
+    }
+
+    function addItemRow(selectedName, selectedQty, selectedUnit) {
         const row = document.createElement('div');
         row.className = 'nsr-item-row';
 
-        row.appendChild(buildNameInput(selectedName));
+        const nameInput = buildNameInput(selectedName);
+        row.appendChild(nameInput);
 
         const qtyInput = document.createElement('input');
         qtyInput.type = 'number';
@@ -79,6 +105,13 @@ document.addEventListener('DOMContentLoaded', function () {
         qtyInput.required = true;
         if (selectedQty != null) qtyInput.value = selectedQty;
         row.appendChild(qtyInput);
+
+        const unitSelect = document.createElement('select');
+        unitSelect.className = 'form-select am-form-control nsr-item-unit';
+        unitSelect.setAttribute('aria-label', 'Unit');
+        fillUnitSelect(unitSelect, selectedName, selectedUnit);
+        nameInput.addEventListener('change', function () { fillUnitSelect(unitSelect, nameInput.value, null); });
+        row.appendChild(unitSelect);
 
         const removeBtn = document.createElement('button');
         removeBtn.type = 'button';
@@ -99,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function resetRows(items) {
         rowsContainer.innerHTML = '';
         if (items && items.length > 0) {
-            items.forEach(function (item) { addItemRow(item.name, item.qty); });
+            items.forEach(function (item) { addItemRow(item.name, item.qty, item.unit || null); });
         } else {
             addItemRow(null, null);
         }
@@ -175,7 +208,8 @@ document.addEventListener('DOMContentLoaded', function () {
         rowsContainer.querySelectorAll('.nsr-item-row').forEach(function (row) {
             const name = row.querySelector('.nsr-item-name').value;
             const qty = row.querySelector('.nsr-item-qty').value;
-            if (name && qty) items.push({ name: name, qty: qty });
+            const unit = row.querySelector('.nsr-item-unit').value;
+            if (name && qty) items.push({ name: name, qty: qty, unit: unit });
         });
 
         if (!form.checkValidity() || items.length === 0) {

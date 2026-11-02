@@ -291,7 +291,7 @@ if (!function_exists('arc_page_url')) {
                                 </div>
                             </td>
                             <td><?= htmlspecialchars($med['category']) ?></td>
-                            <td><?= htmlspecialchars($med['unit']) ?></td>
+                            <td><?= htmlspecialchars($med['unit']) ?><?php if (($med['piecesPerBox'] ?? 0) > 0): ?><span class="mvi-unit-sub"><?= htmlspecialchars(hc_packaging_label($med['piecesPerBox'])) ?></span><?php endif; ?></td>
                             <td><?= number_format($med['currentStock']) ?></td>
                             <td class="mvi-expiry-cell <?= $med['expiryStatus'] === 'expired' ? 'mvi-expiry-warning' : '' ?>">
                                 <?= htmlspecialchars($med['expiryDate']) ?>
@@ -383,7 +383,7 @@ if (!function_exists('arc_page_url')) {
                                 </div>
                             </td>
                             <td><?= htmlspecialchars($vac['category']) ?></td>
-                            <td><?= htmlspecialchars($vac['unit']) ?></td>
+                            <td><?= htmlspecialchars($vac['unit']) ?><?php if (($vac['piecesPerBox'] ?? 0) > 0): ?><span class="mvi-unit-sub"><?= htmlspecialchars(hc_packaging_label($vac['piecesPerBox'])) ?></span><?php endif; ?></td>
                             <td><?= number_format($vac['currentStock']) ?></td>
                             <td class="mvi-expiry-cell <?= $vac['expiryStatus'] === 'expired' ? 'mvi-expiry-warning' : '' ?>">
                                 <?= htmlspecialchars($vac['expiryDate']) ?>

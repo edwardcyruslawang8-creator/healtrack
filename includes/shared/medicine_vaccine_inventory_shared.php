@@ -91,6 +91,7 @@ if (!function_exists('hc_compute_medicine_vaccine_inventory')) {
                 'category' => $category,
                 'form' => $fields['form'] ?? '—',
                 'unit' => $fields['unit'] ?? '—',
+                'piecesPerBox' => max(0, (int) ($fields['piecesPerBox'] ?? 0)),
                 'currentStock' => (int) ($fields['currentStock'] ?? 0),
                 'minLevel' => (int) ($fields['minLevel'] ?? 0),
                 'reorderLevel' => (int) ($fields['reorderLevel'] ?? 0),
