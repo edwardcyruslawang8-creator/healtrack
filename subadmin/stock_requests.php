@@ -17,10 +17,14 @@
  * "stock_requests" Firestore collection (see
  * includes/subadmin/stock_requests_firestore.php's header comment). The status/
  * pharmacist filters and search box now really filter the table.
- * Approve/Reject/Release Items are all real (three-dot menu ->
- * assets/js/stock_requests.js -> api/update-stock-request-status.php,
- * each only valid from one specific prior status, hidden/disabled
- * otherwise). "View Items"/"View Request" open a real read-only modal
+ * Approve/Reject are real (three-dot menu -> assets/js/stock_requests.js
+ * -> api/update-stock-request-status.php, each only valid from one
+ * specific prior status, hidden/disabled otherwise). "Release Items"
+ * (turning an approved request into real inventory batches) was
+ * removed entirely by request — an approved request has no further
+ * status change from this page; real stock is added separately via
+ * subadmin/medicine_vaccine_inventory.php. "View Items"/"View Request"
+ * open a real read-only modal
  * (includes/subadmin/stock_request_view_modal.php) showing the actual
  * item list — its footer's "Print" button (plus the three-dot menu's
  * own "Print Request", which doesn't require opening the modal first)
@@ -369,11 +373,6 @@ $adminNavItems = [
                                     <?php else: ?>
                                     <li><span class="dropdown-item disabled"><i class="bi bi-check-circle me-2"></i>Approve Request</span></li>
                                     <li><span class="dropdown-item disabled"><i class="bi bi-x-circle me-2"></i>Reject Request</span></li>
-                                    <?php endif; ?>
-                                    <?php if ($req['status'] === 'approved'): ?>
-                                    <li><a class="dropdown-item" href="#" data-request-release data-request-id="<?= htmlspecialchars($req['docId']) ?>"><i class="bi bi-box-arrow-up me-2"></i>Release Items</a></li>
-                                    <?php else: ?>
-                                    <li><span class="dropdown-item disabled"><i class="bi bi-box-arrow-up me-2"></i>Release Items</span></li>
                                     <?php endif; ?>
                                     <li><a class="dropdown-item srq-print-request" href="#"><i class="bi bi-printer me-2"></i>Print Request</a></li>
                                     <li><hr class="dropdown-divider"></li>
