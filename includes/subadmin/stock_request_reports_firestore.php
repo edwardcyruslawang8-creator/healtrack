@@ -32,12 +32,10 @@
  * and both tables on this page have real click-to-sort columns
  * (assets/js/sortable-table.js).
  *
- * STILL FRONT-END ONLY, deliberately: the Request Fulfillment Summary
- * table's partial/unfulfilled breakdown — the real data only has 4
- * flat statuses (pending/approved/released/rejected), no concept of a
- * request being "partially" fulfilled, so that finer-grained split
- * can't be derived without inventing a field that doesn't reflect
- * anything real.
+ * The Request Fulfillment Summary is real too, built from the 4 real
+ * statuses (pending/approved/released/rejected) per category. It has
+ * no "partially fulfilled" column: the data has no released quantity
+ * per line, so that split can't be derived without inventing a field.
  *
  * NOTE on $requestsByStatus: unlike the original placeholder (which
  * deliberately made Approved/Pending/Rejected/Fulfilled NOT sum to the
@@ -72,6 +70,7 @@ $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'We
 $analyticsTabs = [
     ['key' => 'overview',              'label' => 'Overview',              'href' => 'analytics_reports.php'],
     ['key' => 'patient_reports',       'label' => 'Patient Reports',       'href' => 'patient_reports.php'],
+    ['key' => 'medical_history_reports', 'label' => 'Medical History',       'href' => 'medical_history_reports.php'],
     ['key' => 'inventory_reports',     'label' => 'Inventory Reports',     'href' => 'inventory_reports.php'],
     ['key' => 'stock_request_reports', 'label' => 'Stock Request Reports', 'href' => 'stock_request_reports.php', 'active' => true],
     ['key' => 'consultation_reports',  'label' => 'Consultation Reports',  'href' => 'consultation_reports.php'],
@@ -215,19 +214,35 @@ $recentRequestsCurrentPage = $recentRequestsPaged['page'];
 $recentRequestsTotalPages = $recentRequestsPaged['totalPages'];
 
 // ---------------------------------------------------------------------
-// Request Fulfillment Summary — STILL PLACEHOLDER. The real data has
-// no partial/unfulfilled distinction (see header comment).
+// Request Fulfillment Summary — real, per category (Medicines/Vaccines,
+// the real "type" field), from the same filtered $allSrReports as every
+// other block on this page. Each request has exactly one real status,
+// so the four columns partition Total:
+//   Fulfilled        = 'released' (stock handed over)
+//   Awaiting Release = 'approved', not yet released
+//   Pending Review   = 'pending'
+//   Rejected         = 'rejected'
+// Fulfillment Rate = Fulfilled / Total. There is no "partially
+// fulfilled" column: a release doesn't record a released quantity per
+// line, so a partial release can't be told apart from a full one.
 // ---------------------------------------------------------------------
+$fulfillmentRow = function (string $category, array $requests): array {
+    $count = fn (string $status) => count(array_filter($requests, fn ($r) => ($r['status'] ?? 'pending') === $status));
+    $total = count($requests);
+    $fulfilled = $count('released');
+
+    return [
+        'category' => $category,
+        'total' => $total,
+        'fulfilled' => $fulfilled,
+        'awaitingRelease' => $count('approved'),
+        'pending' => $count('pending'),
+        'rejected' => $count('rejected'),
+        'rate' => $total > 0 ? round($fulfilled / $total * 100, 1) : 0,
+    ];
+};
 $fulfillmentSummary = [
-    ['category' => 'Medicines',        'total' => 78, 'fulfilled' => 50, 'partial' => 12, 'unfulfilled' => 16, 'rate' => 64.1],
-    ['category' => 'Vaccines',         'total' => 42, 'fulfilled' => 28, 'partial' => 6,  'unfulfilled' => 8,  'rate' => 66.7],
-    ['category' => 'Medical Supplies', 'total' => 17, 'fulfilled' => 8,  'partial' => 5,  'unfulfilled' => 4,  'rate' => 47.1],
-    ['category' => 'Other',            'total' => 8,  'fulfilled' => 1,  'partial' => 2,  'unfulfilled' => 5,  'rate' => 12.5],
+    $fulfillmentRow('Medicines', array_filter($allSrReports, fn ($r) => ($r['type'] ?? 'medicine') === 'medicine')),
+    $fulfillmentRow('Vaccines', array_filter($allSrReports, fn ($r) => ($r['type'] ?? '') === 'vaccine')),
 ];
-$fulfillmentTotal = [
-    'total'       => array_sum(array_column($fulfillmentSummary, 'total')),
-    'fulfilled'   => array_sum(array_column($fulfillmentSummary, 'fulfilled')),
-    'partial'     => array_sum(array_column($fulfillmentSummary, 'partial')),
-    'unfulfilled' => array_sum(array_column($fulfillmentSummary, 'unfulfilled')),
-    'rate'        => 59.3,
-];
+$fulfillmentTotal = $fulfillmentRow('Total', $allSrReports);

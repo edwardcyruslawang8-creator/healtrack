@@ -103,6 +103,9 @@ $adminNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/facility_analytics.css') ?>">
 <!-- Predictive Analytics styles (the 4 additional 6.3.1–6.3.4 categories on the Predictive tab below) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/predictive_analytics.css') ?>">
+<!-- Sub-Admin report styles, for the shared Medical History tab (includes/shared/_medical_history_summary_view.php) -->
+<link rel="stylesheet" href="<?= asset_url('/assets/css/subadmin_dashboard.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/analytics_reports.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -1319,6 +1322,22 @@ $adminNavItems = [
                 </div>
             </div>
 
+        <?php elseif ($tab['key'] === 'medical_history'): ?>
+
+            <?php
+            // Same report as the sub-admin's Medical History tab, for the
+            // facility this page is showing. Its filter links keep
+            // facility_id and add tab=medical_history so a reload reopens
+            // this tab; $_GET is restored afterward so the other tabs'
+            // links are unaffected.
+            require_once __DIR__ . '/../includes/admin/medical_history_summary_firestore.php';
+            $faGetBeforeMh = $_GET;
+            $_GET['tab'] = 'medical_history';
+            $mhExportReport = 'medical_history';
+            require __DIR__ . '/../includes/shared/_medical_history_summary_view.php';
+            $_GET = $faGetBeforeMh;
+            ?>
+
         <?php elseif ($tab['key'] === 'services'): ?>
 
             <div class="an-summary-tiles" style="margin-bottom:20px;">
@@ -1804,6 +1823,9 @@ $adminNavItems = [
 </script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/facility_analytics.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/sortable-table.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/medical_history_reports.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/report-export.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/live-clock.js') ?>"></script>
 </body>

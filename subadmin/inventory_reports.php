@@ -305,6 +305,7 @@ $adminNavItems = [
         <?php $sfdOptions = $statusFilterOptions; $sfdParam = 'status'; $sfdCurrent = $irStatusFilter; $sfdBtnClass = 'arp-filter-select'; include __DIR__ . '/../includes/shared/simple_filter_dropdown.php'; ?>
 
         <span class="arp-filter-spacer"></span>
+        <?php $reaReport = 'inventory'; include __DIR__ . '/../includes/shared/report_export_actions.php'; // Print / PDF / Excel ?>
     </div>
 
     <!-- ============ SUMMARY STAT CARDS ============
@@ -652,6 +653,7 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/sortable-table.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/inventory_movement_cards.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/inventory_reports.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/report-export.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-report-nav.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-tab-nav.js') ?>"></script>
 </body>

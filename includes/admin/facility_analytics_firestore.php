@@ -1049,6 +1049,7 @@ $analyticsTabs = [
     ['key' => 'predictive', 'icon' => 'bi-graph-up-arrow',   'label' => 'Predictive & Prescriptive'],
     ['key' => 'patients',  'icon' => 'bi-people-fill',       'label' => 'Patients'],
     ['key' => 'records',   'icon' => 'bi-file-earmark-text-fill', 'label' => 'Records'],
+    ['key' => 'medical_history', 'icon' => 'bi-journal-medical', 'label' => 'Medical History'],
     ['key' => 'services',  'icon' => 'bi-clipboard2-pulse-fill',  'label' => 'Services'],
     ['key' => 'staff',     'icon' => 'bi-person-badge-fill', 'label' => 'Staff'],
     ['key' => 'medicines', 'icon' => 'bi-capsule',           'label' => 'Medicines'],
@@ -1056,3 +1057,12 @@ $analyticsTabs = [
     ['key' => 'comparison', 'icon' => 'bi-bar-chart-steps',  'label' => 'Facility Comparison'],
     ['key' => 'reports',   'icon' => 'bi-bar-chart-fill',    'label' => 'Reports'],
 ];
+
+// ?tab=<key> opens that tab directly — the Medical History tab's own
+// filter links reload the page with it, so they land back on that tab.
+if (in_array($_GET['tab'] ?? '', array_column($analyticsTabs, 'key'), true)) {
+    foreach ($analyticsTabs as &$analyticsTab) {
+        $analyticsTab['active'] = $analyticsTab['key'] === $_GET['tab'];
+    }
+    unset($analyticsTab);
+}
