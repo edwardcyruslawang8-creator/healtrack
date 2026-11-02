@@ -1,0 +1,203 @@
+/* =============================================================
+   ANIMATED ROBOT MASCOT (single image + eyelid overlay)
+   ---------------------------------------------------------------
+   Deliberately simple, by direct request after several earlier
+   versions split the character into moving head/arm/hand pieces: the
+   arm/hand wave was removed entirely, so there is no longer any
+   reason to cut the robot apart at all. assets/images/robot-full.png
+   is the user's original complete reference image, trimmed to its
+   real content bounding box and otherwise COMPLETELY UNMODIFIED — no
+   erased regions, no separated parts. The only thing that ever
+   animates is two small circles overlaid on top of the eyes.
+   See includes/shared/chatbot_widget.php for the markup and
+   assets/js/robot-mascot.js for what drives each animation state.
+
+   WHY AN OVERLAY, NOT A CUT-OUT EYE IMAGE: the two eye dots and their
+   connecting bar are flat-colored, simple shapes on an otherwise
+   plain part of the face — two small burgundy circles, color-matched
+   and precisely sized/positioned from real pixel measurements (not
+   estimated), permanently cover the original dots (not just while
+   blinking — see .robot-eye's own comment for why), with no sliver of
+   the original dark pixel left visible at the edges, and leave the
+   connecting bar between them completely untouched since the circles
+   only cover the dot centers, not the straight segment between them.
+
+   ANIMATION STATES:
+     - Chatbot CLOSED: the FAB button's robot (data-robot-size="fab")
+       bounces (.is-bouncing — 5px, 2.5s, ease-in-out, infinite).
+     - Chatbot OPEN: the FAB's robot is hidden entirely (existing
+       assets/css/chatbot-widget.css rule). The panel header's robot
+       (data-robot-size="header") is completely stationary — blinking
+       is the ONLY animation it ever runs, in every state, including
+       while a message is sending or a response is arriving.
+     - Both instances blink independently, all the time, on their own
+       randomized 3-5s loop (assets/js/robot-mascot.js).
+     - Conversation-area avatars (welcome message, every reply bubble)
+       don't use this component at all — they're the older, separate
+       .chat-avatar-sm cropped-face background-image (assets/css/
+       chatbot-widget.css), with zero animation, never touched.
+   ============================================================= */
+
+.robot-mascot{
+  position: relative;
+  width: 100%;
+  /* robot-full.png's real trimmed size is 1152x1199 — locks the
+     container to the same proportions so the percentages below stay
+     accurate regardless of what size the mascot is actually
+     displayed at. */
+  aspect-ratio: 1152 / 1199;
+  display: block;
+
+  /* Eye-dot centers, as percentages of this box — located via an
+     automated pixel scan for the real eye color (burgundy, #8A0112,
+     not near-black as first assumed) with the thin connecting bar
+     filtered out by requiring a tall vertical run per column (the
+     round dot is ~85px tall, the bar only a few px). --robot-eye-size
+     is deliberately a bit larger than the measured ~85px/7.4% dot
+     diameter — not just a safety margin any more, but also for real
+     visibility: at the panel header's small 44-48px size, the literal
+     original dot size reads as barely-there once animated, so the
+     overlay (which fully and permanently replaces reliance on the
+     static dot — see below) is sized up for a blink that's actually
+     noticeable, while staying proportionate/natural, not cartoonish. */
+  --robot-eye-l-left: 34.5%;
+  --robot-eye-l-top: 32.7%;
+  --robot-eye-r-left: 61.9%;
+  --robot-eye-r-top: 28.9%;
+  --robot-eye-size: 9.5%;
+  --robot-eye-color: #8A0112;
+
+  --robot-bounce-distance: 5px;
+}
+
+/* FAB instance (#chatbotFabBtn) only: rendered noticeably larger and
+   intentionally overflowing the small circular button so the
+   character is clearly visible rather than a tiny icon. .chatbot-fab
+   already has overflow:visible (assets/css/chatbot-widget.css) so it
+   spills past the button edge. The default (smaller, fully-contained)
+   sizing stays in effect for the header avatar instance, which DOES
+   clip (overflow:hidden) since it sits inline next to text. */
+.robot-mascot[data-robot-size="fab"]{
+  width: 132%;
+  position: relative;
+  left: -16%;
+  top: -11%;
+}
+
+.robot-base{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* object-fit:contain is the real safety net against distortion: the
+     header-avatar override below used to force .robot-mascot into an
+     exact square (aspect-ratio:unset) while this img had no object-fit
+     at all, so it got stretched non-uniformly to fill that square —
+     confirmed from a real screenshot showing the header/welcome-message
+     avatars visibly squished. Fixed at the source (the container no
+     longer forces a mismatched aspect ratio — see that rule's own
+     comment), with this as backup so a sizing edge case anywhere can
+     never distort the character again. */
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Real eyes — two burgundy circles overlaid directly on top of (and
+   always fully covering) the original dots baked into robot-full.png.
+   Unlike an earlier version that only covered the dot with a
+   face-colored "eraser" circle while blinking (which could only ever
+   be an instant vanish/reappear — there's no original artwork to
+   reveal mid-blink, so there was no way to show a real half-closed
+   state), this element IS the eye, at all times, open or shut: opaque,
+   same burgundy as the original, permanently in place from page load.
+   The connecting bar between the eyes (part of the base image) is
+   never touched, and stays fully visible since these overlays only
+   ever cover the round dot areas, not the straight segment between
+   them. Blinking is done by animating THIS element's own height via
+   scaleY, so it genuinely passes through an open circle, a flattened
+   half-closed oval, and a thin closed line — real intermediate shapes,
+   not a cut between two fixed states. */
+.robot-eye{
+  position: absolute;
+  width: var(--robot-eye-size);
+  height: var(--robot-eye-size);
+  border-radius: 50%;
+  background: var(--robot-eye-color);
+  transform: translate(-50%, -50%) scaleY(1);
+  transform-origin: center;
+  z-index: 2;
+  pointer-events: none;
+}
+.robot-eye-l{ left: var(--robot-eye-l-left); top: var(--robot-eye-l-top); }
+.robot-eye-r{ left: var(--robot-eye-r-left); top: var(--robot-eye-r-top); animation-delay: .025s; }
+
+/* =============================================================
+   ANIMATIONS
+   ============================================================= */
+
+/* -- Bounce — FAB button only, while the chatbot is closed. Stops the
+      instant the panel opens and resumes cleanly when it closes again
+      — a plain class add/remove on an infinite keyframe, so there's
+      no timer/state to get out of sync. -- */
+.robot-mascot.is-bouncing{
+  animation: robot-bounce 2.5s ease-in-out infinite;
+}
+@keyframes robot-bounce{
+  0%, 100%{ transform: translateY(0); }
+  50%{ transform: translateY(calc(-1 * var(--robot-bounce-distance))); }
+}
+
+/* -- Blink — the only animation the header instance ever runs, in
+      every state. assets/js/robot-mascot.js adds .is-blinking for
+      exactly one play-through on a randomized 3-5s loop, so the FAB
+      and header instances blink independently, not in lockstep. A
+      real 5-stop sequence — open, half-closed (flattened oval),
+      fully closed (thin line), half-closed, open — not a 2-state
+      snap, over 220ms (within the requested 200-250ms range). -- */
+.is-blinking .robot-eye{
+  animation: robot-blink .22s ease-in-out 1;
+}
+@keyframes robot-blink{
+  0%, 100%{ transform: translate(-50%, -50%) scaleY(1); }    /* fully open */
+  25%, 75%{ transform: translate(-50%, -50%) scaleY(.45); }  /* half-closed */
+  50%{ transform: translate(-50%, -50%) scaleY(.08); }       /* fully closed — thin line */
+}
+
+/* =============================================================
+   ACCESSIBILITY — prefers-reduced-motion
+   ============================================================= */
+@media (prefers-reduced-motion: reduce){
+  .robot-mascot.is-bouncing,
+  .is-blinking .robot-eye{
+    animation: none;
+  }
+}
+
+/* =============================================================
+   CHATBOT HEADER AVATAR INTEGRATION
+   ---------------------------------------------------------------
+   assets/css/chatbot-widget.css's .chat-avatar-sm:not(.user-avatar)
+   renders every OTHER avatar in the widget (welcome message, every
+   reply bubble) as a cropped-face background-image of the old flat
+   mascot PNG — left untouched, out of scope here. This file is
+   loaded after chatbot-widget.css (see includes/shared/header.php),
+   so this override wins for just the one live header instance that
+   actually holds the robot markup.
+
+   Deliberately does NOT force .robot-mascot's width/height to 100%/
+   100% with aspect-ratio:unset any more — that forced it into an
+   exact square (48x48) regardless of the real image's true 1152:1199
+   proportions, stretching it visibly (confirmed from a live
+   screenshot). .robot-mascot's own default rule (width:100%, real
+   aspect-ratio, height auto-computed) is correct and left alone here;
+   at a 48px-wide avatar the computed height is ~50px, about 2px
+   taller than the circle — overflow:hidden below clips that sliver
+   evenly, imperceptible, instead of distorting the whole character. */
+.chat-avatar-sm.chat-avatar-robot{
+  background-image: none;
+  overflow: hidden;
+  position: relative;
+}

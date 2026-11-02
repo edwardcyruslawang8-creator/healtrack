@@ -168,15 +168,17 @@ document.addEventListener('DOMContentLoaded', function () {
         const row = document.createElement('div');
         row.className = 'chat-message-row' + (from === 'user' ? ' from-user' : '');
 
-        const avatar = document.createElement('div');
-        avatar.className = 'chat-avatar-sm' + (from === 'user' ? ' user-avatar' : '');
-        if (from === 'user') avatar.innerHTML = '<i class="bi bi-person-fill"></i>';
-
         const bubble = document.createElement('div');
         bubble.className = 'chat-bubble';
         renderBubbleContent(bubble, text);
 
-        row.appendChild(avatar);
+        // User messages no longer get an avatar (removed by request) —
+        // only the assistant's own replies still show the robot icon.
+        if (from !== 'user') {
+            const avatar = document.createElement('div');
+            avatar.className = 'chat-avatar-sm';
+            row.appendChild(avatar);
+        }
         row.appendChild(bubble);
 
         const blankArea = document.querySelector('.chat-blank-area');
@@ -262,12 +264,14 @@ document.addEventListener('DOMContentLoaded', function () {
     function appendAnimatedMessage(text, from, logId) {
         if (!conversation) return null;
 
+        // Only ever called with from='assistant' (see sendMessage()) —
+        // user replies never go through here, so unlike appendMessage()
+        // there's no user-avatar branch to remove here.
         const row = document.createElement('div');
-        row.className = 'chat-message-row' + (from === 'user' ? ' from-user' : '');
+        row.className = 'chat-message-row';
 
         const avatar = document.createElement('div');
-        avatar.className = 'chat-avatar-sm' + (from === 'user' ? ' user-avatar' : '');
-        if (from === 'user') avatar.innerHTML = '<i class="bi bi-person-fill"></i>';
+        avatar.className = 'chat-avatar-sm';
 
         const bubbleCol = document.createElement('div');
         bubbleCol.className = 'chat-bubble-col';

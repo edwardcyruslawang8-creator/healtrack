@@ -36,13 +36,24 @@ $hcWidgetContact = hc_get_homepage_settings();
 <div class="chatbot-fab-wrap" id="chatbotFabWrap">
     <div class="chatbot-idle-bubble" id="chatbotIdleBubble"></div>
     <button type="button" class="chatbot-fab" id="chatbotFabBtn" aria-label="Open chat with NSHC Assistant" aria-expanded="false">
-        <img src="<?= asset_url('/assets/images/chatbot-mascot.png') ?>" alt="" class="chatbot-mascot-img">
-        <!-- Two small overlay "eyelids", positioned over the mascot's own
-             eyes (assets/images/chatbot-mascot.png) and animated closed/open
-             — see assets/css/chatbot-widget.css's hc-eye-blink keyframes.
-             Real eye-blink, not a whole-image flicker. -->
-        <span class="chatbot-eye-blink chatbot-eye-blink-l" aria-hidden="true"></span>
-        <span class="chatbot-eye-blink chatbot-eye-blink-r" aria-hidden="true"></span>
+        <!-- Single, complete, UNMODIFIED robot image
+             (assets/images/robot-full.png — the user's own reference
+             image, only trimmed to its real content bounding box) plus
+             two small eyelid-overlay circles for blinking — see
+             assets/css/robot-mascot.css's header comment for why
+             there's no longer any separated head/arm/hand artwork
+             (earlier versions tried that for a wave animation that was
+             since removed entirely; nothing but the eyes moves now, so
+             cutting the character apart serves no purpose any more).
+             assets/js/robot-mascot.js adds .is-bouncing to this
+             instance while the chatbot is closed (removed the instant
+             it opens) and runs the independent blink loop on both
+             instances. -->
+        <div class="robot-mascot" data-robot data-robot-size="fab" aria-hidden="true">
+            <img src="<?= asset_url('/assets/images/robot-full.png') ?>" alt="" class="robot-base">
+            <span class="robot-eye robot-eye-l" aria-hidden="true"></span>
+            <span class="robot-eye robot-eye-r" aria-hidden="true"></span>
+        </div>
         <i class="bi bi-x-lg"></i>
     </button>
 </div>
@@ -51,7 +62,20 @@ $hcWidgetContact = hc_get_homepage_settings();
 <div class="chatbot-widget-panel" id="chatbotWidgetPanel" role="dialog" aria-modal="false" aria-label="Chat with NSHC Assistant">
 
     <div class="chatbot-widget-header">
-        <div class="chat-avatar-sm" aria-hidden="true"></div>
+        <!-- Same layered robot as the FAB button (not the cropped-face
+             background-image used by every other .chat-avatar-sm in this
+             file/assets/js/chatbot-widget.js's dynamically-rendered message
+             bubbles — those stay untouched, and stay fully static, same
+             as before). This instance never bounces, never waves, and
+             never reacts to the conversation — blinking is the only
+             animation it ever runs, in every state, by design. -->
+        <div class="chat-avatar-sm chat-avatar-robot" aria-hidden="true">
+            <div class="robot-mascot" data-robot data-robot-size="header">
+                <img src="<?= asset_url('/assets/images/robot-full.png') ?>" alt="" class="robot-base">
+                <span class="robot-eye robot-eye-l" aria-hidden="true"></span>
+                <span class="robot-eye robot-eye-r" aria-hidden="true"></span>
+            </div>
+        </div>
         <div class="chatbot-widget-header-text">
             <h2>NSHC Assistant</h2>
             <span class="chat-online-badge"><span class="dot-online"></span> Online</span>

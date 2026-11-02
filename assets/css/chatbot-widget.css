@@ -51,63 +51,39 @@
 }
 .chatbot-fab:hover{ transform: scale(1.06); }
 
-.chatbot-fab .chatbot-mascot-img{
+.chatbot-fab .robot-mascot{
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  display: block;
+}
+/* Shadow lives on the body only, not the whole .robot-mascot box — a
+   filter on the parent would re-cast a shadow on the CURRENT silhouette
+   of every child every frame, including the rotating arm, so the arm
+   got its own independent soft shadow swinging away from the body's.
+   Any small gap during the wave then reads as two separate floating
+   images each with their own shadow, not one character — exactly the
+   "looks like a cropped image moving" effect reported live. The arm/
+   head cutouts stay shadow-less; one shadow, cast by the body (which
+   never moves), reads as the whole character's shadow. */
+.chatbot-fab .robot-base{
   filter: drop-shadow(0 8px 14px rgba(0,0,0,.28));
 }
 .chatbot-fab i{ font-size: 24px; color: var(--maroon); transition: transform .2s ease; }
 .chatbot-fab i.bi-x-lg{ display: none; }
 
-/* -- Real eye-blink — two small circles positioned directly over the
-      mascot's own eyes (assets/images/chatbot-mascot.png), colored to
-      match its face so they read as eyelids sweeping shut, not a
-      floating dot. Positions are percentages of the 84x84 button,
-      calibrated against the actual rendered image (a temporary grid
-      overlay test page, not guesswork — there's no image-editing tool
-      here to sample exact pixel coordinates, so this is the next best
-      thing) — left eye ~ 37%/31%, right eye ~ 63%/30%. If the mascot
-      image ever changes, these two percentages need re-calibrating.
-      scaleY(0) at rest (invisible — eyes open), sweeps to scaleY(1)
-      (eyelid fully closed) and back, quickly, so it reads as a blink
-      rather than a fade. -- */
-.chatbot-eye-blink{
-  position: absolute;
-  width: 12%;
-  height: 12%;
-  border-radius: 50%;
-  background: #fffaf8;
-  transform: translate(-50%, -50%) scaleY(0);
-  transform-origin: center;
-  pointer-events: none;
-  animation: hc-eye-blink 4.2s ease-in-out infinite;
-}
-.chatbot-eye-blink-l{ left: 37%; top: 31%; }
-.chatbot-eye-blink-r{ left: 63%; top: 30%; animation-delay: .03s; } /* a hair after the left eye, like a real blink */
-
-@keyframes hc-eye-blink{
-  0%, 92%, 100% { transform: translate(-50%, -50%) scaleY(0); }
-  95%, 97%      { transform: translate(-50%, -50%) scaleY(1); }
-}
-
 /* Open state: shrink back to a plain, smaller circular "close" button
    (no mascot needed once the panel is already open) — same pink-tint
-   treatment the fab used before it became a floating transparent image. */
+   treatment the fab used before it became a floating transparent image.
+   The layered robot itself (assets/css/robot-mascot.css,
+   assets/js/robot-mascot.js) lives in #chatbotFabBtn — hidden here, not
+   removed, same as the old flat image was. */
 .chatbot-fab-wrap.is-open .chatbot-fab{
   width: 64px;
   height: 64px;
   background: var(--maroon-tint);
   box-shadow: 0 6px 20px rgba(0,0,0,.18);
 }
-.chatbot-fab-wrap.is-open .chatbot-fab .chatbot-mascot-img,
-.chatbot-fab-wrap.is-open .chatbot-fab .chatbot-eye-blink{ display: none; }
+.chatbot-fab-wrap.is-open .chatbot-fab .robot-mascot{ display: none; }
 .chatbot-fab-wrap.is-open .chatbot-fab i.bi-x-lg{ display: inline-block; }
-
-@media (prefers-reduced-motion: reduce){
-  .chatbot-eye-blink{ animation: none; }
-}
 
 /* -- Idle "cute phrase" speech bubble — only ever shown while the
       panel is closed (assets/js/chatbot-widget.js toggles it), cycling
@@ -183,6 +159,11 @@
   border-bottom: 1px solid var(--border-soft);
   flex-shrink: 0;
 }
+/* Back to 48px by explicit request, reverting a 72px size tried one
+   round earlier specifically to make the blink more legible — at
+   48px the closed-eye frame is under 1px tall (confirmed by
+   rendering real-size test frames) and will read as very subtle, a
+   real pixel-size constraint accepted here, not a bug. */
 .chatbot-widget-header .chat-avatar-sm{ width: 48px; height: 48px; }
 .chatbot-widget-header .chat-avatar-sm i{ font-size: 19px; }
 .chatbot-widget-header-text{ flex: 1; min-width: 0; }
@@ -261,24 +242,36 @@
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .chat-avatar-sm i{ font-size: 18px; color: var(--maroon); }
-/* The bot avatar (header, welcome message, every reply bubble) renders
-   the mascot as a CSS background-image, cropped/zoomed to just its
-   face — NOT the whole-body PNG shrunk small, which read as a blurry,
-   unrecognizable little photo rather than a clean icon. Crop region
-   calibrated against the actual image (a temporary grid overlay test,
-   not guesswork): roughly x 5%-95%, y 0%-90% of the original — the
-   head + headphones, cropping out the body/arms. Kept deliberately
-   LESS tight than it could be (a tighter crop was tried first and
-   looked soft/pixelated at this size — fine detail like the headphone
-   ring doesn't hold up under heavy magnification at ~40px, so a looser
-   crop + a slightly larger box above both reduce how much the image
-   needs to be magnified). background-size 111% = 1 / (crop span),
-   background-position 50% 0% centers horizontally (the crop is
-   symmetric) and keeps the top of the head flush with the circle's top. */
-.chat-avatar-sm:not(.user-avatar){
-  background-image: url("../images/chatbot-mascot.png");
-  background-size: 111% 111%;
-  background-position: 50% 0%;
+/* Conversation-area bot avatars (welcome message, every reply bubble —
+   NOT the header, which keeps its own separate animated .robot-mascot
+   component via .chat-avatar-robot in assets/css/robot-mascot.css).
+
+   Was a face-only circular crop/zoom of this same image (a deliberate
+   earlier design choice) — changed by direct request: the full,
+   complete, unmodified assets/images/robot-full.png, shown whole, not
+   zoomed into just the face. Sized up from 44px to 52px and switched
+   from a circle to a softly-rounded square specifically because a
+   circular 44px frame was clipping the character's shoulders/arm —
+   reported from a live screenshot showing what looked like "a floating
+   cropped head." background-size:contain guarantees the ENTIRE image
+   fits inside the box with no cropping possible, regardless of the
+   container's shape — the corner radius below only touches the box's
+   own corners, which fall on the image's own transparent margin, not
+   on the character's silhouette.
+
+   :not(.chat-avatar-robot) matters, not just :not(.user-avatar): the
+   header avatar also lacks .user-avatar, so without excluding it too
+   this rule's width/height/border-radius would win over the header's
+   own 48px/circle rule below purely by being later in this same file
+   at equal specificity — a real conflict caught before shipping it,
+   not guessed. */
+.chat-avatar-sm:not(.user-avatar):not(.chat-avatar-robot){
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  background-image: url("../images/robot-full.png");
+  background-size: contain;
+  background-position: center;
   background-repeat: no-repeat;
 }
 .chat-bubble{
@@ -306,8 +299,11 @@
 .chat-bubble .chat-link{ color: var(--maroon); text-decoration: underline; word-break: break-all; }
 .chat-bubble .chat-link:hover{ color: var(--maroon-dark); }
 .chat-message-row.from-user .chat-bubble .chat-link{ color: #fff; }
-.chat-avatar-sm.user-avatar{ background: var(--dark-bg); }
-.chat-avatar-sm.user-avatar i{ color: var(--text-dark); }
+/* .chat-avatar-sm.user-avatar rules removed with the user-message
+   avatar itself (assets/js/chatbot-widget.js's appendMessage()/
+   appendAnimatedMessage() no longer create one) — .from-user's
+   existing row-reverse + default justify-content already keeps the
+   bubble right-aligned on its own, nothing else needed. */
 
 /* -- Suggestion cards (compact variant for the panel's narrower width) -- */
 .suggestion-cards{
