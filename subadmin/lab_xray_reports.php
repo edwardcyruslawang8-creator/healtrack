@@ -41,7 +41,7 @@ require_once __DIR__ . '/../includes/subadmin/lab_xray_reports_firestore.php';
 // $topXrayExams, $topXrayExamsMax, $topOrderingPhysicians,
 // $topOrderingPhysiciansMax, $lxrStatusMeta, $recentLabXrayRequests,
 // $recentLabXrayTotal, $recentLabXrayCurrentPage, $recentLabXrayTotalPages,
-// $recentLabXrayPerPage
+// $recentLabXrayPerPage, $topRequestsByBarangay, $topRequestsByBarangayMax
 
 // Sidebar nav — same Sub-Admin nav list as subadmin/dashboard.php.
 // Analytics & Reports stays active — this page is one of its tabs.
@@ -382,6 +382,35 @@ $adminNavItems = [
             <?php endif; ?>
         </div>
         <?php endforeach; ?>
+    </div>
+
+    <!-- ============ REQUESTS BY BARANGAY ============ -->
+    <!-- Own full-width row rather than a 4th slot in .sad-row-3 above —
+         that grid is hard-fixed at 3 columns (assets/css/subadmin_dashboard.css),
+         so a 4th item would wrap onto its own row at only the first
+         column's width instead of spanning full width. Real counts,
+         joined via each request's patientId -> that patient's own real
+         barangay field (includes/subadmin/lab_xray_reports_firestore.php) —
+         neither lab_results nor xray_results carries a barangay of its
+         own. Same ranked-list styling as the three cards above. -->
+    <div class="adm-card sad-chart-card" style="margin-bottom:22px;">
+        <div class="sad-card-header"><h2>Requests by Barangay (Top 5)</h2></div>
+        <div class="arp-ranked-axis-label">Requests</div>
+        <?php if ($topRequestsByBarangay === []): ?>
+        <p class="adm-table-empty" style="padding:14px 0;">No requests on record yet.</p>
+        <?php else: ?>
+        <div class="sad-condition-list arp-ranked-list arp-ranked-list-stacked">
+            <?php foreach ($topRequestsByBarangay as $row): ?>
+            <div class="sad-condition-row">
+                <span class="sad-condition-label"><?= htmlspecialchars($row['label']) ?></span>
+                <div class="sad-condition-bar-track">
+                    <div class="sad-condition-bar-fill" style="width:<?= round($row['value'] / $topRequestsByBarangayMax * 100) ?>%;"></div>
+                </div>
+                <span class="sad-condition-value"><?= number_format($row['value']) ?></span>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- ============ RECENT REQUESTS ============ -->

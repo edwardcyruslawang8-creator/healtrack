@@ -222,6 +222,21 @@ $topXrayExamsMax = $topXrayExams !== [] ? max(array_column($topXrayExams, 'value
 $topOrderingPhysicians = lxr_top_counts($lxrRequests, 'orderedBy');
 $topOrderingPhysiciansMax = $topOrderingPhysicians !== [] ? max(array_column($topOrderingPhysicians, 'value')) : 1;
 
+// Requests by Barangay (Top 5) — real, joined via patientId -> this
+// facility's own real patients' barangay field, same join
+// subadmin/consultation_reports.php's own "Consultations by Barangay"
+// card already uses elsewhere in this app (neither lab_results nor
+// xray_results carries a barangay field of its own — every request
+// only knows its own patientId). $facilityPatients (from
+// predictive_analytics_firestore.php's require chain) already includes
+// 'barangay' per patient (includes/firestore/patients.php's own
+// hc_map_patient_summary_doc()), so no second patients fetch is needed
+// here the way consultation_reports.php did.
+$lxrPatientBarangayById = array_column($facilityPatients, 'barangay', 'id');
+$lxrRequestsWithBarangay = array_map(fn ($r) => $r + ['barangay' => $lxrPatientBarangayById[$r['patientId']] ?? ''], $lxrRequests);
+$topRequestsByBarangay = lxr_top_counts($lxrRequestsWithBarangay, 'barangay');
+$topRequestsByBarangayMax = $topRequestsByBarangay !== [] ? max(array_column($topRequestsByBarangay, 'value')) : 1;
+
 // ---------------------------------------------------------------------
 // Recent Requests — table, real click-to-sort + pagination, patient
 // names joined from this facility's own real patients.
