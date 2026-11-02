@@ -1053,6 +1053,21 @@
   color: var(--adm-text);
 }
 
+/* Smooth cross-fade for the Notifiable Diseases card (assets/js/
+   notifiable-diseases.js) whenever a filter changes — the date-range
+   select, the custom-range Apply button, or the Trends modal's
+   Weekly/Monthly toggle. .pnd-fade-target marks a container that
+   participates; .is-pnd-loading is added right when a fetch starts
+   (dims + lifts it slightly) and removed once the new content is
+   already in the DOM, so the swap reads as one smooth transition
+   instead of an instant snap to new numbers. */
+.pnd-fade-target{ transition: opacity .18s ease, transform .18s ease; }
+.pnd-fade-target.is-pnd-loading{ opacity: .35; transform: translateY(2px); }
+@media (prefers-reduced-motion: reduce){
+  .pnd-fade-target{ transition: none; }
+  .pnd-fade-target.is-pnd-loading{ transform: none; }
+}
+
 .opf-summary{
   display: grid;
   grid-template-columns: 1fr 1fr;

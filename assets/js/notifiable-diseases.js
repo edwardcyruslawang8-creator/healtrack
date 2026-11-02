@@ -69,6 +69,18 @@ window.HCNotifiableDiseases = (function () {
         let currentGranularity = 'week';
         let trendChart = null;
 
+        // Smooth cross-fade (assets/css/facility_analytics.css's
+        // .pnd-fade-target) whenever a filter changes: dim right when a
+        // fetch starts, swap the content in once it resolves, then let
+        // the CSS transition fade it back to full opacity — instead of
+        // the previous instant snap straight to new numbers.
+        const trendsCanvasBox = trendsCanvas ? trendsCanvas.closest('.an-trend-canvas-box') : null;
+        function setPndLoading(el, loading) {
+            if (!el) return;
+            el.classList.add('pnd-fade-target');
+            el.classList.toggle('is-pnd-loading', loading);
+        }
+
         // ---------------- summary + top5 ----------------
         function renderSummary(summary) {
             currentSummary = summary;
@@ -107,6 +119,8 @@ window.HCNotifiableDiseases = (function () {
 
         function fetchSummary(rangeParams) {
             currentRangeParams = rangeParams;
+            setPndLoading(summaryBox, true);
+            setPndLoading(top5List, true);
             fetch(apiUrl + '?facility_id=' + encodeURIComponent(facilityId) + '&action=summary&' + rangeParams, { credentials: 'same-origin' })
                 .then(function (res) { return res.json(); })
                 .then(function (json) {
@@ -115,6 +129,10 @@ window.HCNotifiableDiseases = (function () {
                 })
                 .catch(function () {
                     // A real network hiccup — leave whatever's already on screen.
+                })
+                .finally(function () {
+                    setPndLoading(summaryBox, false);
+                    setPndLoading(top5List, false);
                 });
         }
 
@@ -157,7 +175,15 @@ window.HCNotifiableDiseases = (function () {
                 return {
                     label: ds.label, data: ds.data,
                     borderColor: ds.color, backgroundColor: ds.color,
-                    borderWidth: 2, tension: 0.3,
+                    // tension:0 — straight segments between the real data
+                    // points, not a Bezier curve. With only a few sparse
+                    // weekly/monthly buckets, Chart.js's curve smoothing
+                    // can swing well past the actual min/max between
+                    // points (confirmed from a live screenshot: a line
+                    // peaking above the chart's own top gridline and
+                    // diving off the bottom) — actively misleading for
+                    // real case-count data, not just a cosmetic quirk.
+                    borderWidth: 2, tension: 0,
                     // Avoid unnecessary markers for zero-case buckets — the
                     // zero itself stays in the data (the line still dips to
                     // it), only its visible point dot is suppressed.
@@ -191,13 +217,17 @@ window.HCNotifiableDiseases = (function () {
 
         function fetchTrend(granularity) {
             currentGranularity = granularity;
+            setPndLoading(trendsCanvasBox, true);
             fetch(apiUrl + '?facility_id=' + encodeURIComponent(facilityId) + '&action=trend&granularity=' + encodeURIComponent(granularity) + '&' + currentRangeParams, { credentials: 'same-origin' })
                 .then(function (res) { return res.json(); })
                 .then(function (json) {
                     if (!json || !json.success) return;
                     renderTrend(json.trend);
                 })
-                .catch(function () {});
+                .catch(function () {})
+                .finally(function () {
+                    setPndLoading(trendsCanvasBox, false);
+                });
         }
 
         if (trendsModalEl) {
