@@ -89,10 +89,25 @@
       panel is closed (assets/js/chatbot-widget.js toggles it), cycling
       through assets/js/chatbot-widget.js's own CUTE_PHRASES list. -- */
 .chatbot-idle-bubble{
+  /* Centered on the MASCOT, not the 84px button box. The mascot is
+     shifted up and left out of the button (assets/css/robot-mascot.css,
+     [data-robot-size="fab"]: left -16%, top -11%, sized by
+     .chatbot-fab .robot-mascot above): measured, its drawn area spans
+     about -10% to 88% of the button's height — center 39% — and starts
+     ~11% of the button's width left of it. Pinning the bubble to the
+     button's bottom edge left it level with the mascot's feet.
+     top 0 + bottom 22% with auto vertical margins centers the bubble
+     in the band from 0 to 78%, whose middle is that same 39%.
+     margin-right clears the mascot's left overflow plus an 8px gap, so
+     the bubble's tail (the squared-off bottom-right corner) sits right
+     beside the mascot. */
   position: absolute;
   right: 100%;
-  bottom: 6px;
-  margin-right: 14px;
+  top: 0;
+  bottom: 22%;
+  height: max-content;
+  margin-block: auto;
+  margin-right: calc(11% + 8px);
   background: #fff;
   border: 1px solid var(--border-soft);
   border-radius: 14px 14px 4px 14px;
