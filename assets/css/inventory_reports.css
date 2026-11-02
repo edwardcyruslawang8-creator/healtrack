@@ -84,7 +84,15 @@
   font-weight: 700;
   background: var(--adm-bg);
 }
-.ir-movement-total-row td{ border-top: 2px solid var(--adm-border); }
+/* tfoot cells don't get .adm-table's tbody td padding/font — match them
+   so the Total row lines up under every column. */
+.ir-movement-total-row td{
+  padding: 11px 14px;
+  font-size: 13px;
+  color: var(--adm-text);
+  vertical-align: middle;
+  border-top: 2px solid var(--adm-border);
+}
 
 .ir-card-actions{
   display: flex;
