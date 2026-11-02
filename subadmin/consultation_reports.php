@@ -327,6 +327,7 @@ $adminNavItems = [
         <?php $sfdOptions = $barangayFilterOptions; $sfdParam = 'barangay'; $sfdCurrent = $crBarangayFilter; $sfdBtnClass = 'arp-filter-select'; include __DIR__ . '/../includes/shared/simple_filter_dropdown.php'; ?>
 
         <span class="arp-filter-spacer"></span>
+        <?php $reaReport = 'consultation'; include __DIR__ . '/../includes/shared/report_export_actions.php'; // Print / PDF / Excel ?>
     </div>
 
     <!-- ============ SUMMARY STAT CARDS ============
@@ -514,6 +515,7 @@ $adminNavItems = [
      comment for why "Consultations by Barangay" paging needs to win
      over that page-wide handler instead of triggering a full <main> swap. -->
 <script src="<?= asset_url('/assets/js/cr-barangay-pagination.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/report-export.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-report-nav.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-tab-nav.js') ?>"></script>
 </body>

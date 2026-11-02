@@ -72,6 +72,7 @@ $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'We
 $analyticsTabs = [
     ['key' => 'overview',              'label' => 'Overview',              'href' => 'analytics_reports.php'],
     ['key' => 'patient_reports',       'label' => 'Patient Reports',       'href' => 'patient_reports.php', 'active' => true],
+    ['key' => 'medical_history_reports', 'label' => 'Medical History',       'href' => 'medical_history_reports.php'],
     ['key' => 'inventory_reports',     'label' => 'Inventory Reports',     'href' => 'inventory_reports.php'],
     ['key' => 'stock_request_reports', 'label' => 'Stock Request Reports', 'href' => 'stock_request_reports.php'],
     ['key' => 'consultation_reports',  'label' => 'Consultation Reports',  'href' => 'consultation_reports.php'],

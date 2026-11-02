@@ -414,6 +414,7 @@ $adminNavItems = [
         <?php $sfdOptions = $barangayFilterOptions; $sfdParam = 'barangay'; $sfdCurrent = $prBarangayFilter; $sfdBtnClass = 'prp-filter-select'; include __DIR__ . '/../includes/shared/simple_filter_dropdown.php'; ?>
 
         <span class="prp-filter-spacer d-none d-lg-block"></span>
+        <?php $reaReport = 'patient'; include __DIR__ . '/../includes/shared/report_export_actions.php'; // Print / PDF / Excel ?>
     </div>
 
     <!-- ============ SUMMARY STAT CARDS ============
@@ -683,6 +684,7 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/patient_reports.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/new-patient-registrations.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/patient-consent-gate.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/report-export.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-report-nav.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-tab-nav.js') ?>"></script>
 </body>

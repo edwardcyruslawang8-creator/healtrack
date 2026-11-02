@@ -163,6 +163,12 @@ $adminNavItems = [
    .ir-compact-table). */
 .srr-compact-table th,
 .srr-compact-table td{ padding: 10px 8px; font-size: 12px; }
+/* Request Fulfillment Summary: the rate sits under the Fulfilled count
+   (not its own column) so all 6 columns fit the narrower card. */
+.adm-table.srr-fulfillment-table thead th{ white-space: normal; vertical-align: bottom; }
+.adm-table.srr-fulfillment-table thead th,
+.adm-table.srr-fulfillment-table tbody td{ padding-left: 6px; padding-right: 6px; }
+.srr-fulfillment-table .srr-rate{ font-weight: 500; color: var(--adm-text-muted); }
 .srr-compact-table .arp-badge{ padding: 3px 8px; font-size: 10px; }
 
 /* Dimmed while assets/js/srr-recent-pagination.js is fetching a new
@@ -327,6 +333,7 @@ $adminNavItems = [
         <?php $sfdOptions = $requestedByFilterOptions; $sfdParam = 'requestedBy'; $sfdCurrent = $srRequestedByFilter; $sfdBtnClass = 'arp-filter-select'; include __DIR__ . '/../includes/shared/simple_filter_dropdown.php'; ?>
 
         <span class="arp-filter-spacer"></span>
+        <?php $reaReport = 'stock_request'; include __DIR__ . '/../includes/shared/report_export_actions.php'; // Print / PDF / Excel ?>
     </div>
 
     <!-- ============ SUMMARY STAT CARDS ============
@@ -410,49 +417,37 @@ $adminNavItems = [
         <div class="adm-card">
             <div class="adm-card-header"><h2>Request Fulfillment Summary</h2></div>
             <div class="adm-table-wrap">
-                <table class="adm-table srr-compact-table" style="min-width:0;" data-sortable="true">
+                <table class="adm-table srr-compact-table srr-fulfillment-table" style="min-width:0;">
                     <thead>
                         <tr>
                             <th>Category</th>
                             <th>Total</th>
-                            <th>Fulfilled</th>
-                            <th>Partial</th>
-                            <th>Unfulfilled</th>
-                            <th data-no-sort>Fulfillment Rate</th>
+                            <th>Fulfilled (Rate)</th>
+                            <th title="Approved, not yet released">Approved</th>
+                            <th>Pending</th>
+                            <th>Rejected</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($fulfillmentSummary as $row): ?>
-                        <tr>
+                        <?php foreach (array_merge($fulfillmentSummary, [$fulfillmentTotal]) as $row): ?>
+                        <tr class="<?= $row === $fulfillmentTotal ? 'fw-bold' : '' ?>">
                             <td><?= htmlspecialchars($row['category']) ?></td>
                             <td><?= number_format($row['total']) ?></td>
-                            <td><?= number_format($row['fulfilled']) ?></td>
-                            <td><?= number_format($row['partial']) ?></td>
-                            <td><?= number_format($row['unfulfilled']) ?></td>
                             <td>
-                                <div class="small fw-semibold mb-1"><?= rtrim(rtrim(number_format($row['rate'], 1), '0'), '.') ?>%</div>
-                                <div class="progress" style="height:6px; background:var(--adm-bg);">
-                                    <div class="progress-bar bg-success rounded-pill" role="progressbar" style="width:<?= round($row['rate']) ?>%;" aria-valuenow="<?= round($row['rate']) ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="fw-semibold text-nowrap"><?= number_format($row['fulfilled']) ?> <span class="srr-rate">(<?= rtrim(rtrim(number_format($row['rate'], 1), '0'), '.') ?>%)</span></div>
+                                <div class="progress mt-1" style="height:6px; background:var(--adm-bg);">
+                                    <div class="progress-bar bg-success rounded-pill" role="progressbar" style="width:<?= round($row['rate']) ?>%;" aria-label="Fulfillment rate" aria-valuenow="<?= round($row['rate']) ?>" aria-valuemin="0" aria-valuemax="100"></div>
                                 </div>
                             </td>
+                            <td><?= number_format($row['awaitingRelease']) ?></td>
+                            <td><?= number_format($row['pending']) ?></td>
+                            <td><?= number_format($row['rejected']) ?></td>
                         </tr>
                         <?php endforeach; ?>
-                        <tr class="fw-bold" data-no-sort>
-                            <td>Total</td>
-                            <td><?= number_format($fulfillmentTotal['total']) ?></td>
-                            <td><?= number_format($fulfillmentTotal['fulfilled']) ?></td>
-                            <td><?= number_format($fulfillmentTotal['partial']) ?></td>
-                            <td><?= number_format($fulfillmentTotal['unfulfilled']) ?></td>
-                            <td>
-                                <div class="small fw-semibold mb-1"><?= rtrim(rtrim(number_format($fulfillmentTotal['rate'], 1), '0'), '.') ?>%</div>
-                                <div class="progress" style="height:6px; background:var(--adm-bg);">
-                                    <div class="progress-bar bg-success rounded-pill" role="progressbar" style="width:<?= round($fulfillmentTotal['rate']) ?>%;" aria-valuenow="<?= round($fulfillmentTotal['rate']) ?>" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
-                            </td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
+            <p class="mhr-footnote">Rate = released requests &divide; all requests. "Approved" = approved but not yet released. Partial releases aren't tracked, so a released request counts as fulfilled.</p>
         </div>
 
     </div>
@@ -503,6 +498,7 @@ $adminNavItems = [
      comment for why "Recent Stock Requests" paging needs to win over
      that page-wide handler instead of triggering a full <main> swap. -->
 <script src="<?= asset_url('/assets/js/srr-recent-pagination.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/report-export.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-report-nav.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-tab-nav.js') ?>"></script>
 </body>
