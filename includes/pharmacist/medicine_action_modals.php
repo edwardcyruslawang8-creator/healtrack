@@ -54,8 +54,8 @@
           </div>
 
           <div class="mb-3 d-none" id="rsNewWrap">
-            <label class="am-form-label" for="rsBatchNumber">Batch Number <span class="text-muted fw-normal">(Optional)</span></label>
-            <input type="text" class="form-control am-form-control" id="rsBatchNumber" placeholder="e.g. BATCH-2026-045">
+            <label class="am-form-label" for="rsBatchNumber">Batch Number<span class="text-danger">*</span></label>
+            <input type="text" class="form-control am-form-control" id="rsBatchNumber" placeholder="e.g. BATCH-2026-045" maxlength="50">
             <div class="row mt-3">
               <div class="col-md-6">
                 <label class="am-form-label" for="rsNewExpiry">Expiry Date<span class="text-danger">*</span></label>
@@ -66,7 +66,18 @@
 
           <div class="mb-3">
             <label class="am-form-label" for="rsQty">Quantity<span class="text-danger">*</span></label>
-            <input type="number" class="form-control am-form-control" id="rsQty" min="1" step="1" placeholder="e.g. 50" required>
+            <div class="rs-qty-row">
+              <input type="number" class="form-control am-form-control" id="rsQty" min="1" step="1" placeholder="e.g. 50" required>
+              <!-- Box-stocked items only (piecesPerBox > 0): enter whole
+                   boxes or loose pieces; api/restock-medicine.php converts
+                   boxes to the dispensing unit server-side. -->
+              <select class="form-select am-form-control d-none" id="rsQtyUnit" aria-label="Quantity unit">
+                <option value="box">Boxes</option>
+                <option value="unit" id="rsQtyUnitOption">Pieces</option>
+              </select>
+              <span class="rs-qty-unit-label" id="rsQtyUnitLabel"></span>
+            </div>
+            <div class="am-form-help rs-qty-preview d-none" id="rsQtyPreview"></div>
             <div class="am-form-help">Minimum Level and Reorder Level will be recalculated automatically from the item's total stock after this restock.</div>
           </div>
 
@@ -258,17 +269,31 @@
           <div id="dispenseNoRxError" class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
           <p class="am-form-help mb-3">For a patient who asks for this item directly. Current stock: <strong id="dnrCurrentStock">0</strong> <span id="dnrUnit"></span></p>
 
+          <!-- Patient picker: the search field (quick-search.js SELECT mode)
+               until a real patient is picked, then a "selected patient"
+               card in its place with a Change button that brings the
+               search back (assets/js/manage_medicine.js). -->
           <div class="mb-3">
             <label class="am-form-label" for="dnrPatientSearch">Patient<span class="text-danger">*</span></label>
-            <div class="qs-field">
-              <i class="bi bi-search"></i>
-              <input type="text" class="form-control am-form-control" id="dnrPatientSearch" placeholder="Search patient by name..." autocomplete="off"
+            <div class="qs-field dnr-patient-search" id="dnrPatientSearchField">
+              <i class="bi bi-search dnr-search-icon" aria-hidden="true"></i>
+              <input type="text" class="form-control am-form-control" id="dnrPatientSearch" placeholder="Search patient by name or contact no." autocomplete="off"
+                     aria-describedby="dnrPatientError"
                      data-quick-search="<?= BASE_URL ?>/api/quick-search-patients.php" data-quick-search-select="dnrPatientId">
             </div>
+            <div class="dnr-selected-patient d-none" id="dnrSelectedPatient">
+              <div class="dnr-selected-avatar"><i class="bi bi-person-fill"></i></div>
+              <div class="dnr-selected-body">
+                <div class="dnr-selected-name" id="dnrSelectedName"></div>
+                <div class="dnr-selected-meta" id="dnrSelectedMeta"></div>
+              </div>
+              <button type="button" class="dnr-change-btn" id="dnrChangePatientBtn" aria-label="Clear selected patient and search again"><i class="bi bi-arrow-repeat"></i> Change</button>
+            </div>
+            <div class="dnr-field-error d-none" id="dnrPatientError" role="alert"><i class="bi bi-exclamation-circle-fill"></i> <span>Please search for and select a registered patient.</span></div>
           </div>
 
           <div class="mb-3">
-            <label class="am-form-label" for="dnrQty">Quantity<span class="text-danger">*</span></label>
+            <label class="am-form-label" for="dnrQty">Quantity <span class="text-muted fw-normal">(<span id="dnrQtyUnit">units</span>)</span><span class="text-danger">*</span></label>
             <input type="number" class="form-control am-form-control" id="dnrQty" min="1" step="1" placeholder="e.g. 10" required>
           </div>
 

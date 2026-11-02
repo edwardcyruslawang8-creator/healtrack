@@ -372,7 +372,7 @@ if (!function_exists('mvi_page_url')) {
                                 </div>
                             </td>
                             <td><?= htmlspecialchars($med['category']) ?></td>
-                            <td><?= htmlspecialchars($med['unit']) ?></td>
+                            <td><?= htmlspecialchars($med['unit']) ?><?php if (($med['piecesPerBox'] ?? 0) > 0): ?><span class="mvi-unit-sub"><?= htmlspecialchars(hc_packaging_label($med['piecesPerBox'])) ?></span><?php endif; ?></td>
                             <td class="mvi-updated-cell"><?= htmlspecialchars($med['lastUpdated']) ?></td>
                             <td>
                                 <div class="adm-action-btns">
@@ -474,7 +474,7 @@ if (!function_exists('mvi_page_url')) {
                                 </div>
                             </td>
                             <td><?= htmlspecialchars($vac['category']) ?></td>
-                            <td><?= htmlspecialchars($vac['unit']) ?></td>
+                            <td><?= htmlspecialchars($vac['unit']) ?><?php if (($vac['piecesPerBox'] ?? 0) > 0): ?><span class="mvi-unit-sub"><?= htmlspecialchars(hc_packaging_label($vac['piecesPerBox'])) ?></span><?php endif; ?></td>
                             <td class="mvi-updated-cell"><?= htmlspecialchars($vac['lastUpdated']) ?></td>
                             <td>
                                 <div class="adm-action-btns">

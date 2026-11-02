@@ -105,6 +105,21 @@ if ($existing === null) {
     exit;
 }
 
+// Optional box packaging (includes/firestore/medicines.php's
+// hc_box_breakdown()) — blank = not stocked by the box. Only changes
+// how boxes convert from now on; stock is already counted in $unit.
+// Left as-is when a caller doesn't send it at all.
+$piecesPerBox = (int) ($existing['piecesPerBox'] ?? 0);
+if (array_key_exists('piecesPerBox', $body)) {
+    $rawPiecesPerBox = trim((string) $body['piecesPerBox']);
+    if ($rawPiecesPerBox !== '' && (!ctype_digit($rawPiecesPerBox))) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => 'Pieces per Box must be a whole number (or left blank).']);
+        exit;
+    }
+    $piecesPerBox = (int) $rawPiecesPerBox;
+}
+
 $minLevel = (int) $minLevel;
 $reorderLevel = (int) $reorderLevel;
 $maxLevel = (int) $maxLevel;
@@ -120,6 +135,7 @@ $updated = array_merge($existing, [
     'category' => $category,
     'unit' => $unit,
     'form' => $unit, // see this file's header comment
+    'piecesPerBox' => $piecesPerBox,
     'desc' => $desc !== '' ? $desc : null,
     'dosage' => $dosage !== '' ? $dosage : null,
     'minLevel' => $minLevel,

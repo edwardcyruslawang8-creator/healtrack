@@ -16,12 +16,13 @@
  * medicines/{id} category) — see their own section comments below —
  * with the same preset/Last Year/Custom Date range dropdown every
  * other role's dashboard already has
- * (includes/shared/dashboard_range_dropdown.php). Every other section
- * below is still a static stand-in: there's no per-pharmacist stock-
- * request/notification collection in this app yet
- * (subadmin/medicine_vaccine_inventory.php and
- * subadmin/stock_requests.php are facility-wide Sub-Admin views, not a
- * per-pharmacist model). $staffProfile IS real though — read from the
+ * (includes/shared/dashboard_range_dropdown.php). Every other section —
+ * the stat cards, Stock Status, Expiring Soon, Stock Request Status,
+ * Today's Stock Requests, Recent Notifications and Low Stock Medicines
+ * — reads real data too (medicines/medicine_batches, pharmacy_orders,
+ * this pharmacist's own stock_requests, and the same notification
+ * sources as pharmacist/notifications.php); see each section's own
+ * comment. $staffProfile is read from the
  * signed-in pharmacist's own Firestore users/{uid} document, same as
  * includes/medical_staff_dashboard_firestore.php.
  * =====================================================================
@@ -32,6 +33,9 @@ require_once __DIR__ . '/../firestore/pharmacy_orders.php'; // hc_get_all_pharma
 require_once __DIR__ . '/../firestore/medicines.php'; // hc_get_inventory_items()
 require_once __DIR__ . '/../shared/query_helpers.php'; // hc_resolve_dashboard_range(), hc_dashboard_trend_series(), hc_matches_date_range_key()
 require_once __DIR__ . '/../shared/inventory_match.php'; // hc_item_names_match()
+require_once __DIR__ . '/../shared/inventory_movement_monitor.php'; // hc_compute_inventory_expiry_monitor()
+require_once __DIR__ . '/../firestore/stock_requests.php'; // hc_get_all_stock_requests(), hc_stock_request_status_meta()
+require_once __DIR__ . '/../../config/constants.php'; // hc_pharmacist_unread_notification_count()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -48,14 +52,54 @@ $dashboardDateLabel = date('F j, Y');
 $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'West Super Health Center'];
 
 // ---------------------------------------------------------------------
-// Summary stat cards
+// Summary stat cards — all CONNECTED:
+//   - Prescriptions Dispensed Today: real pharmacy_orders dispensed
+//     today (both dispense flows stamp dispensedDate), with a real
+//     change vs. yesterday's count.
+//   - Total Medicine Items / Low Stock Alerts: the real inventory (the
+//     same non-archived items, and the same low + out-of-stock rule, as
+//     the Sub-Admin dashboard's own Low Stock Alerts card). There's no
+//     stored history to compare against, so they link to the inventory
+//     instead of showing a trend line.
+//   - Pending Stock Requests: this pharmacist's own requests still
+//     awaiting a decision — the same scope pharmacist/stock_requests.php
+//     shows.
+//   - Unread Notifications: the same count as the sidebar/topbar badge.
 // ---------------------------------------------------------------------
+$dashboardMedicineItems = hc_get_inventory_items('medicine');
+$dashboardInventoryItems = array_merge($dashboardMedicineItems, hc_get_inventory_items('vaccine'));
+$dashboardLowStockAlerts = count(array_filter($dashboardInventoryItems, fn ($i) => in_array($i['status'], ['low', 'unavailable'], true)));
+
+$dispensedTodayCount = 0;
+$dispensedYesterdayCount = 0;
+$yesterday = date('Y-m-d', strtotime('-1 day'));
+foreach (hc_get_all_pharmacy_order_docs() as $doc) {
+    if (($doc['fields']['status'] ?? '') !== 'dispensed') {
+        continue;
+    }
+    $dispensedDate = (string) ($doc['fields']['dispensedDate'] ?? '');
+    if ($dispensedDate === date('Y-m-d')) {
+        $dispensedTodayCount++;
+    } elseif ($dispensedDate === $yesterday) {
+        $dispensedYesterdayCount++;
+    }
+}
+if ($dispensedYesterdayCount > 0) {
+    $dispensedChangePct = (int) round(abs($dispensedTodayCount - $dispensedYesterdayCount) / $dispensedYesterdayCount * 100);
+    $dispensedSub = $dispensedChangePct . '% from yesterday';
+} else {
+    $dispensedSub = $dispensedTodayCount > 0 ? 'None dispensed yesterday' : 'Same as yesterday';
+}
+
+$myStockRequests = array_values(array_filter(hc_get_all_stock_requests(), fn ($r) => $myUid !== '' && $r['pharmacistUid'] === $myUid));
+$myPendingStockRequests = count(array_filter($myStockRequests, fn ($r) => $r['status'] === 'pending'));
+
 $statCards = [
-    ['icon' => 'bi-capsule',                  'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'label' => "Prescriptions Dispensed Today", 'value' => 42,   'sub' => '14% from yesterday',  'trend' => 'up'],
-    ['icon' => 'bi-boxes',                    'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E', 'label' => 'Total Medicine Items',          'value' => 386,  'sub' => '3% from last month',  'trend' => 'up'],
-    ['icon' => 'bi-exclamation-triangle-fill','iconBg' => '#EFE7FB', 'iconColor' => '#7C3AED', 'label' => 'Low Stock Alerts',               'value' => 9,    'sub' => '2 more than yesterday','trend' => 'up'],
-    ['icon' => 'bi-box-seam-fill',            'iconBg' => '#E8F0FE', 'iconColor' => '#1A73E8', 'label' => 'Pending Stock Requests',         'value' => 6,    'sub' => '1 fewer than yesterday','trend' => 'down'],
-    ['icon' => 'bi-bell-fill',                'iconBg' => '#FDECDD', 'iconColor' => '#E8710A', 'label' => 'Unread Notifications',           'value' => 5,    'link' => ['label' => 'View all notifications', 'href' => 'notifications.php']],
+    ['icon' => 'bi-capsule',                  'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'label' => "Prescriptions Dispensed Today", 'value' => $dispensedTodayCount, 'sub' => $dispensedSub, 'trend' => $dispensedTodayCount < $dispensedYesterdayCount ? 'down' : 'up'],
+    ['icon' => 'bi-boxes',                    'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E', 'label' => 'Total Medicine Items',          'value' => count($dashboardMedicineItems), 'link' => ['label' => 'View inventory', 'href' => 'medicine_vaccine_inventory.php']],
+    ['icon' => 'bi-exclamation-triangle-fill','iconBg' => '#EFE7FB', 'iconColor' => '#7C3AED', 'label' => 'Low Stock Alerts',               'value' => $dashboardLowStockAlerts, 'link' => ['label' => 'View inventory', 'href' => 'medicine_vaccine_inventory.php']],
+    ['icon' => 'bi-box-seam-fill',            'iconBg' => '#E8F0FE', 'iconColor' => '#1A73E8', 'label' => 'Pending Stock Requests',         'value' => $myPendingStockRequests, 'link' => ['label' => 'View stock requests', 'href' => 'stock_requests.php']],
+    ['icon' => 'bi-bell-fill',                'iconBg' => '#FDECDD', 'iconColor' => '#E8710A', 'label' => 'Unread Notifications',           'value' => hc_pharmacist_unread_notification_count(), 'link' => ['label' => 'View all notifications', 'href' => 'notifications.php']],
 ];
 
 // ---------------------------------------------------------------------
@@ -159,33 +203,47 @@ $medicinesByCategory = [
 ];
 
 // ---------------------------------------------------------------------
-// Stock Status — doughnut chart
+// Stock Status — doughnut chart. CONNECTED — every non-archived
+// medicine and vaccine by its real status; an overstocked item still
+// has stock on hand, so it counts as In Stock in this 3-slice chart.
 // ---------------------------------------------------------------------
+$stockStatusCounts = ['available' => 0, 'low' => 0, 'unavailable' => 0];
+foreach ($dashboardInventoryItems as $item) {
+    $stockStatusCounts[$item['status'] === 'overstocked' ? 'available' : $item['status']]++;
+}
 $stockStatus = [
-    ['label' => 'In Stock',    'value' => 312, 'color' => '#1E8E3E'],
-    ['label' => 'Low Stock',   'value' => 55,  'color' => '#E8710A'],
-    ['label' => 'Out of Stock','value' => 19,  'color' => '#D93025'],
+    ['label' => 'In Stock',    'value' => $stockStatusCounts['available'],   'color' => '#1E8E3E'],
+    ['label' => 'Low Stock',   'value' => $stockStatusCounts['low'],         'color' => '#E8710A'],
+    ['label' => 'Out of Stock','value' => $stockStatusCounts['unavailable'], 'color' => '#D93025'],
 ];
 
 // ---------------------------------------------------------------------
-// Expiring Soon medicines
+// Expiring Soon — CONNECTED to the real per-batch expiry monitor
+// (includes/shared/inventory_movement_monitor.php): the 5 batches with
+// stock left that expire soonest within the next 30 days, already in
+// that order. Already-expired batches aren't "expiring soon" — they're
+// flagged Expired on the inventory table instead.
 // ---------------------------------------------------------------------
-$expiringSoon = [
-    ['name' => 'Amoxicillin 500mg',      'when' => 'In 5 days',  'time' => 'Batch AX500-0125'],
-    ['name' => 'Cetirizine 10mg',        'when' => 'In 9 days',  'time' => 'Batch CT10-0225'],
-    ['name' => 'Metformin 500mg',        'when' => 'In 12 days', 'time' => 'Batch MF500-0325'],
-    ['name' => 'Salbutamol Inhaler',     'when' => 'In 18 days', 'time' => 'Batch SB-0425'],
-    ['name' => 'Paracetamol 500mg',      'when' => 'In 21 days', 'time' => 'Batch PC500-0525'],
-];
+$expiringSoonBatches = array_filter(hc_compute_inventory_expiry_monitor()['items'], fn ($r) => in_array($r['status'], ['today', 'expiring_soon'], true));
+$expiringSoon = array_map(fn ($r) => [
+    'name' => $r['name'],
+    'when' => $r['daysFromToday'] === 0 ? 'Today' : 'In ' . $r['daysFromToday'] . ' day' . ($r['daysFromToday'] === 1 ? '' : 's'),
+    'time' => 'Batch ' . $r['batchNo'],
+], array_slice(array_values($expiringSoonBatches), 0, 5));
 
 // ---------------------------------------------------------------------
-// Stock Request Status — doughnut chart
+// Stock Request Status — doughnut chart. CONNECTED — every one of this
+// pharmacist's own requests by its real status, in the same colors
+// hc_stock_request_status_meta() gives each status's badge.
 // ---------------------------------------------------------------------
-$stockRequestStatus = [
-    ['label' => 'Approved', 'value' => 30, 'color' => '#1E8E3E'],
-    ['label' => 'Pending',  'value' => 12, 'color' => '#E8710A'],
-    ['label' => 'Rejected', 'value' => 6,  'color' => '#D93025'],
-];
+$stockRequestStatus = [];
+foreach (['approved', 'pending', 'released', 'rejected'] as $statusKey) {
+    $stockRequestStatus[] = [
+        'label' => hc_stock_request_status_meta()[$statusKey]['label'],
+        'value' => count(array_filter($myStockRequests, fn ($r) => $r['status'] === $statusKey)),
+        'color' => hc_stock_request_status_meta()[$statusKey]['color'],
+    ];
+}
 
 // Totals and legend percentages are derived from the same values the
 // doughnuts draw, so the legend can never disagree with the chart.
@@ -203,43 +261,102 @@ $stockStatusTotal = (int) array_sum(array_column($stockStatus, 'value'));
 $stockRequestStatusTotal = (int) array_sum(array_column($stockRequestStatus, 'value'));
 
 // ---------------------------------------------------------------------
-// Today's Stock Requests
+// Today's Stock Requests — CONNECTED: this pharmacist's own requests
+// submitted today, newest first. stock_requests has no priority field,
+// so Priority is derived from the real Date Needed: a request still
+// open (pending/approved) that's needed within 3 days — or already
+// overdue — is High, everything else Normal.
 // ---------------------------------------------------------------------
-$todaysStockRequests = [
-    ['time' => '08:00 AM', 'item' => 'Paracetamol 500mg',   'requestedBy' => 'Dr. Ana Reyes',       'priority' => 'High',   'status' => 'approved'],
-    ['time' => '09:15 AM', 'item' => 'Amoxicillin 500mg',   'requestedBy' => 'Nurse Juan Dela Cruz','priority' => 'High',   'status' => 'in_progress'],
-    ['time' => '10:00 AM', 'item' => 'Cetirizine 10mg',     'requestedBy' => 'Dr. Ana Reyes',       'priority' => 'Normal', 'status' => 'pending'],
-    ['time' => '11:00 AM', 'item' => 'IV Fluids (D5W)',     'requestedBy' => 'Nurse Maria Santos',  'priority' => 'High',   'status' => 'pending'],
-    ['time' => '01:00 PM', 'item' => 'Insulin Vials',       'requestedBy' => 'Dr. Ana Reyes',       'priority' => 'Normal', 'status' => 'pending'],
-];
-$stockRequestMeta = [
-    'approved'    => ['label' => 'Approved',    'bg' => '#E4F7EA', 'color' => '#1E8E3E'],
-    'in_progress' => ['label' => 'In Progress', 'bg' => '#E8F0FE', 'color' => '#1A73E8'],
-    'pending'     => ['label' => 'Pending',     'bg' => '#FDECDD', 'color' => '#E8710A'],
-];
+$highPriorityCutoff = date('Y-m-d', strtotime('+3 days'));
+$todaysStockRequests = [];
+foreach ($myStockRequests as $r) {
+    if ($r['requestedAtRaw'] === '' || date('Y-m-d', strtotime($r['requestedAtRaw'])) !== date('Y-m-d')) {
+        continue;
+    }
+    $itemNames = array_values(array_filter(array_map(fn ($line) => (string) ($line['name'] ?? ''), $r['items'])));
+    $isOpen = in_array($r['status'], ['pending', 'approved'], true);
+    $todaysStockRequests[] = [
+        'time' => $r['requestTime'],
+        'item' => ($itemNames[0] ?? '—') . (count($itemNames) > 1 ? ' +' . (count($itemNames) - 1) . ' more' : ''),
+        'requestedBy' => $r['pharmacist'],
+        'priority' => $isOpen && $r['dateNeededRaw'] !== '' && $r['dateNeededRaw'] <= $highPriorityCutoff ? 'High' : 'Normal',
+        'status' => $r['status'],
+    ];
+}
+$stockRequestMeta = hc_stock_request_status_meta();
 $priorityMeta = [
     'High'   => ['bg' => '#FCE4E4', 'color' => '#D93025'],
     'Normal' => ['bg' => '#EEF0F3', 'color' => '#6B7280'],
 ];
 
 // ---------------------------------------------------------------------
-// Recent Notifications
+// Recent Notifications — CONNECTED: the same real sources (and the
+// same notification preferences) as pharmacist/notifications.php,
+// minus any this pharmacist has archived. One source at a time in
+// turn (unread first within each), so the 5 rows show a mix — low
+// stock, expiry, pending orders, stock request outcomes, reminders —
+// instead of 5 of whichever kind happens to have the most entries.
 // ---------------------------------------------------------------------
-$recentNotifications = [
-    ['icon' => 'bi-exclamation-triangle-fill', 'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'title' => 'Low stock alert',           'desc' => 'Amoxicillin 500mg is running low',      'timeAgo' => '15 minutes ago'],
-    ['icon' => 'bi-box-seam-fill',             'iconBg' => '#FDECDD', 'iconColor' => '#E8710A', 'title' => 'New stock request',         'desc' => 'Requested by Dr. Ana Reyes',            'timeAgo' => '45 minutes ago'],
-    ['icon' => 'bi-calendar2-x-fill',          'iconBg' => '#EFE7FB', 'iconColor' => '#7C3AED', 'title' => 'Medicine expiring soon',     'desc' => 'Cetirizine 10mg — Batch CT10-0225',     'timeAgo' => '2 hours ago'],
-    ['icon' => 'bi-check-circle-fill',         'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E', 'title' => 'Stock request approved',    'desc' => 'REQ-2026-00031 approved by Sub-Admin',  'timeAgo' => '3 hours ago'],
-    ['icon' => 'bi-capsule',                   'iconBg' => '#E8F0FE', 'iconColor' => '#1A73E8', 'title' => 'Prescription dispensed',    'desc' => 'Juan Dela Cruz — Amoxicillin 500mg',    'timeAgo' => '4 hours ago'],
-];
+require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
+require_once __DIR__ . '/../shared/phone_reminder.php'; // hc_get_phone_reminder_notification()
+require_once __DIR__ . '/../shared/email_verification_reminder.php'; // hc_my_email_verification_notification()
+require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
+
+$notificationSources = [];
+if (hc_notification_preference_enabled_for_doc($myDoc ?? [], 'system')) {
+    $inventoryEnabled = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'inventory');
+    $notificationSources = [
+        $inventoryEnabled ? hc_get_low_stock_notifications() : [],
+        $inventoryEnabled ? hc_get_medicine_expiry_notifications() : [],
+        $inventoryEnabled ? hc_get_pending_pharmacy_order_notifications() : [],
+        hc_get_decided_stock_request_notifications_for_pharmacist($myUid),
+        $inventoryEnabled ? hc_get_overstock_notifications() : [],
+        array_values(array_filter([
+            hc_get_2fa_reminder_notification($myUid, $myDoc ?? []),
+            hc_get_phone_reminder_notification($myUid, $myDoc ?? []),
+            hc_my_email_verification_notification(),
+        ])),
+    ];
+}
+
+$ntfReadIds = $_SESSION['ntfReadIds'] ?? [];
+$ntfDismissedIds = $_SESSION['ntfDismissedIds'] ?? [];
+foreach ($notificationSources as &$source) {
+    $source = array_values(array_filter($source, fn ($n) => !in_array($n['id'], $ntfDismissedIds, true)));
+    usort($source, fn ($a, $b) => in_array($a['id'], $ntfReadIds, true) <=> in_array($b['id'], $ntfReadIds, true));
+}
+unset($source);
+
+$recentNotifications = [];
+$longestSource = $notificationSources === [] ? 0 : max(array_map('count', $notificationSources));
+for ($i = 0; count($recentNotifications) < 5 && $i < $longestSource; $i++) {
+    foreach ($notificationSources as $source) {
+        if (isset($source[$i]) && count($recentNotifications) < 5) {
+            $n = $source[$i];
+            $recentNotifications[] = [
+                'icon' => $n['icon'],
+                'iconBg' => $n['iconBg'],
+                'iconColor' => $n['iconColor'],
+                'title' => $n['title'],
+                'desc' => $n['description'],
+                'timeAgo' => trim($n['date'] . ($n['time'] !== '' ? ' · ' . $n['time'] : '')),
+            ];
+        }
+    }
+}
 
 // ---------------------------------------------------------------------
-// Low Stock Medicines
+// Low Stock Medicines — CONNECTED: real medicines at Low Stock or Out of
+// Stock, out-of-stock first, then furthest below their own reorder
+// level. Top 5; "View All Medicines" links to the full inventory.
 // ---------------------------------------------------------------------
-$lowStockMedicines = [
-    ['id' => 'MED-000112', 'name' => 'Amoxicillin 500mg',  'category' => 'Antibiotic',    'currentStock' => 18,  'reorderLevel' => 50,  'expiryDate' => 'Jun 15, 2026'],
-    ['id' => 'MED-000098', 'name' => 'Cetirizine 10mg',     'category' => 'Antihistamine', 'currentStock' => 12,  'reorderLevel' => 40,  'expiryDate' => 'Jun 20, 2026'],
-    ['id' => 'MED-000145', 'name' => 'Metformin 500mg',     'category' => 'Antidiabetic',  'currentStock' => 22,  'reorderLevel' => 60,  'expiryDate' => 'Jul 2, 2026'],
-    ['id' => 'MED-000076', 'name' => 'Salbutamol Inhaler',  'category' => 'Bronchodilator','currentStock' => 5,   'reorderLevel' => 20,  'expiryDate' => 'Jul 8, 2026'],
-    ['id' => 'MED-000203', 'name' => 'Insulin Vials',       'category' => 'Antidiabetic',  'currentStock' => 8,   'reorderLevel' => 25,  'expiryDate' => 'May 30, 2026'],
-];
+$lowStockMedicineItems = array_values(array_filter($dashboardMedicineItems, fn ($m) => in_array($m['status'], ['low', 'unavailable'], true)));
+usort($lowStockMedicineItems, fn ($a, $b) => $a['currentStock'] / max(1, $a['reorderLevel']) <=> $b['currentStock'] / max(1, $b['reorderLevel']) ?: strcasecmp($a['name'], $b['name']));
+$lowStockMedicines = array_map(fn ($m) => [
+    'id' => $m['id'],
+    'name' => $m['name'],
+    'category' => $m['category'],
+    'currentStock' => $m['currentStock'],
+    'reorderLevel' => $m['reorderLevel'],
+    'expiryDate' => $m['expiryDateRaw'] !== '' ? date('M j, Y', strtotime($m['expiryDateRaw'])) : '—',
+], array_slice($lowStockMedicineItems, 0, 5));

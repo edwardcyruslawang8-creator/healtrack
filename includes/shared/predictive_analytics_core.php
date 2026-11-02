@@ -48,6 +48,7 @@
 
 require_once __DIR__ . '/forecast_helpers.php'; // hc_last_n_days(), hc_forecast_linear_fit(), hc_forecast_project()
 require_once __DIR__ . '/inventory_match.php'; // hc_normalize_text(), hc_item_names_match()
+require_once __DIR__ . '/../firestore/medicines.php'; // hc_reorder_quantity_label()
 
 // The 11 real Lipa City barangays this clinic covers — same list
 // includes/medical-staff/add_patient_modal.php:163 offers at patient
@@ -1047,7 +1048,7 @@ if (!function_exists('hc_medicine_vaccine_shortage')) {
                 'type' => $item['severity'],
                 'icon' => $item['itemType'] === 'vaccine' ? 'bi-droplet-half' : 'bi-capsule',
                 'title' => 'Reorder ' . $item['name'],
-                'body' => ucfirst($item['name']) . ' ' . $when . ' at the current order pace (~' . round($item['ratePerDay'] * 7, 1) . '/week). Current stock: ' . number_format($item['currentStock']) . '. Suggested reorder: ~' . number_format($item['suggestedReorderQty']) . ' ' . $item['unit'] . '.',
+                'body' => ucfirst($item['name']) . ' ' . $when . ' at the current order pace (~' . round($item['ratePerDay'] * 7, 1) . '/week). Current stock: ' . number_format($item['currentStock']) . '. Suggested reorder: ~' . hc_reorder_quantity_label($item['suggestedReorderQty'], $item['unit'], $item['piecesPerBox'] ?? 0) . '.',
             ];
         }
 
@@ -1196,7 +1197,7 @@ if (!function_exists('hc_inventory_replenishment')) {
                 'type' => 'critical',
                 'icon' => 'bi-clipboard2-x-fill',
                 'title' => 'No replenishment in the pipeline — ' . $item['name'],
-                'body' => 'Projected to run low ' . $target . ' with no pending or approved stock request currently covering it. Submit a request for ~' . number_format($item['suggestedReorderQty']) . ' ' . $item['unit'] . '.',
+                'body' => 'Projected to run low ' . $target . ' with no pending or approved stock request currently covering it. Submit a request for ~' . hc_reorder_quantity_label($item['suggestedReorderQty'], $item['unit'], $item['piecesPerBox'] ?? 0) . '.',
             ];
         }
 

@@ -9,7 +9,7 @@
      the clicked row's data-request-* attributes
      (assets/js/stock_requests.js) — no network request, since the page
      already rendered every field server-side. data-request-items is a
-     JSON-encoded array of {name, qty} the real "items" field on the
+     JSON-encoded array of {name, qty, unit} the real "items" field on the
      stock_requests/{id} doc carries.
 
      #srqPrintArea below is the actual real "Print Request" feature —

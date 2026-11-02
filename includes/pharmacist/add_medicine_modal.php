@@ -70,8 +70,18 @@
               <input type="text" class="form-control am-form-control" id="amCategory" placeholder="e.g. Antibiotic" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="am-form-label" for="amUnit">Unit<span class="text-danger">*</span></label>
-              <input type="text" class="form-control am-form-control" id="amUnit" placeholder="e.g. Tablet, Capsule, Dose, Bottle" required>
+              <label class="am-form-label" for="amUnit">Dispensing Unit<span class="text-danger">*</span></label>
+              <input type="text" class="form-control am-form-control" id="amUnit" placeholder="e.g. Tablet, Capsule, Bottle, Inhaler, Vial" required>
+              <div class="am-form-help">The unit stock is counted and dispensed in — a single tablet or capsule, or a whole bottle, inhaler or vial.</div>
+            </div>
+          </div>
+          <!-- Optional box packaging over the dispensing unit — see
+               includes/firestore/medicines.php's hc_box_breakdown(). -->
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="am-form-label" for="amPiecesPerBox">Pieces per Box <span class="text-muted fw-normal">(Optional)</span></label>
+              <input type="number" class="form-control am-form-control" id="amPiecesPerBox" min="0" step="1" placeholder="e.g. 100">
+              <div class="am-form-help">For items delivered in boxes (e.g. 1 box = 100 tablets). Leave blank for items counted per bottle, inhaler or vial.</div>
             </div>
           </div>
 

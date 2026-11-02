@@ -55,7 +55,7 @@
                         </div>
                     </td>
                     <td><?= htmlspecialchars($med['category']) ?></td>
-                    <td><?= htmlspecialchars($med['unit']) ?></td>
+                    <td><?= htmlspecialchars($med['unit']) ?><?php if (($med['piecesPerBox'] ?? 0) > 0): ?><span class="mvi-unit-sub"><?= htmlspecialchars(hc_packaging_label($med['piecesPerBox'])) ?></span><?php endif; ?></td>
                     <td class="mvi-updated-cell"><?= htmlspecialchars($med['lastUpdated']) ?></td>
                     <td>
                         <div class="adm-action-btns">

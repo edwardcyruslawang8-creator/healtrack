@@ -54,7 +54,8 @@ function fillItemsBody(tbody, items) {
         nameTd.textContent = item.name || '(unnamed)';
         const qtyTd = document.createElement('td');
         qtyTd.className = 'text-end';
-        qtyTd.textContent = item.qty != null ? item.qty : '—';
+        // Lines saved before request units existed carry no unit — just the count.
+        qtyTd.textContent = item.qty != null ? item.qty + (item.unit ? ' ' + item.unit : '') : '—';
         tr.appendChild(nameTd);
         tr.appendChild(qtyTd);
         tbody.appendChild(tr);
