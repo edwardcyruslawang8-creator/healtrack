@@ -28,7 +28,7 @@
 session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
-require_once __DIR__ . '/../includes/firestore/medicines.php'; // hc_inventory_status_for_stock(), hc_inventory_expiry_status()
+require_once __DIR__ . '/../includes/firestore/medicines.php'; // hc_qty_unit()
 require_once __DIR__ . '/../includes/firestore/medicine_batches.php'; // hc_decrement_medicine_stock_fefo()
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
@@ -82,14 +82,18 @@ if (($medicineDoc['type'] ?? 'medicine') !== $itemType) {
     echo json_encode(['success' => false, 'error' => 'This item is not a ' . $itemType . '.']);
     exit;
 }
-// An expired medicine/vaccine can never be dispensed — re-checked here
-// server-side (never trusted from the modal's own item list already
-// having excluded it), same hc_inventory_expiry_status() every other
-// real expiry check in this app already uses (the Inventory table's
-// own "Expired" badge, hc_get_medicine_expiry_notifications()).
-if (hc_inventory_expiry_status($medicineDoc['expiryDate'] ?? '') === 'expired') {
+// An item with no real non-expired stock left can never be dispensed —
+// re-checked here server-side (never trusted from the modal's own item
+// list already having excluded it). hc_medicine_has_dispensable_stock()
+// checks every real batch individually, not medicines/{id}'s own
+// expiryDate rollup field — that field is only the SOONEST expiry
+// among batches with stock, so it reads "expired" the moment that one
+// particular batch's date passes even while a separate, later batch
+// still has real usable stock (confirmed from a live report: one
+// expired batch wrongly blocked dispensing a second, valid one).
+if (!hc_medicine_has_dispensable_stock($itemId)) {
     http_response_code(422);
-    echo json_encode(['success' => false, 'error' => ($medicineDoc['name'] ?? 'This item') . ' has expired and can no longer be dispensed.']);
+    echo json_encode(['success' => false, 'error' => ($medicineDoc['name'] ?? 'This item') . ' has no non-expired stock left and can no longer be dispensed.']);
     exit;
 }
 

@@ -236,6 +236,35 @@ if (!function_exists('hc_get_batches_for_medicine')) {
     }
 }
 
+if (!function_exists('hc_medicine_has_dispensable_stock')) {
+    /**
+     * Whether $medicineId has at least one real batch that's both in
+     * stock AND not expired — the real "can this be dispensed at all"
+     * check, used instead of medicines/{id}'s own expiryDate/
+     * expiryStatus rollup fields wherever a dispense is actually being
+     * gated.
+     *
+     * Why the rollup fields are the wrong thing to gate on: that
+     * rollup is (by its own design, see hc_recompute_medicine_rollup())
+     * the SOONEST expiry among batches that still have stock — which,
+     * the moment that particular soonest batch's date has passed, read
+     * as "expired" even while a LATER, still-valid batch has real
+     * dispensable stock sitting right behind it. That's exactly the bug
+     * this function exists to fix — confirmed from a live screenshot:
+     * one expired batch blocked dispensing entirely, including a
+     * second, still-valid batch with real stock.
+     */
+    function hc_medicine_has_dispensable_stock(string $medicineId): bool
+    {
+        foreach (hc_get_batches_for_medicine($medicineId) as $batch) {
+            if ($batch['status']['key'] !== 'expired') {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 if (!function_exists('hc_recompute_medicine_rollup')) {
     /**
      * Recomputes medicines/{id}'s own currentStock (sum of every real
@@ -378,6 +407,14 @@ if (!function_exists('hc_decrement_medicine_stock_fefo')) {
      * "never leave stock negative" guarantee the old single-number
      * subtraction already gave, just correctly computed from real
      * batches now instead of one shared field.
+     *
+     * Expired batches are skipped entirely, not just deprioritized —
+     * hc_get_batches_for_medicine()'s own FEFO sort (soonest expiry
+     * first) means an already-expired batch sorts EARLIEST of all,
+     * so without this exclusion this function would draw down expired
+     * stock before any real, still-valid batch — a real patient-safety
+     * bug, caught while fixing a related gating issue, not something
+     * that was ever supposed to be possible.
      */
     function hc_decrement_medicine_stock_fefo(string $medicineId, int $quantity): bool
     {
@@ -387,7 +424,10 @@ if (!function_exists('hc_decrement_medicine_stock_fefo')) {
             return true;
         }
 
-        $batches = hc_get_batches_for_medicine($medicineId);
+        $batches = array_values(array_filter(
+            hc_get_batches_for_medicine($medicineId),
+            fn($b) => $b['status']['key'] !== 'expired'
+        ));
         $available = array_sum(array_column($batches, 'quantity'));
         if ($available < $quantity) {
             return false;

@@ -43,3 +43,17 @@ if ($item === null || $item['type'] !== $requestedType || $item['archived']) {
 }
 
 $itemBatches = hc_get_batches_for_medicine($itemId, true);
+
+// Whether to show the page-level "This item has expired and can no
+// longer be dispensed" note — real per-BATCH expiry (hc_batch_status()'s
+// own 'key'), not $item['expiryStatus'] (a single, largely vestigial
+// expiryDate field on the medicine doc itself, left over from before
+// multi-batch inventory existed — stale/misleading once an item has
+// more than one batch with different real expiry dates, confirmed from
+// a live screenshot: one expired batch made this note appear even
+// though a second, still-valid batch had real dispensable stock).
+// True only when there IS real stock somewhere but every batch holding
+// it is expired — an item with simply no stock yet (nothing expired)
+// correctly doesn't show an "expired" message at all.
+$batchesWithStock = array_filter($itemBatches, fn($b) => $b['quantity'] > 0);
+$itemAllStockExpired = $batchesWithStock !== [] && count(array_filter($batchesWithStock, fn($b) => $b['status']['key'] !== 'expired')) === 0;

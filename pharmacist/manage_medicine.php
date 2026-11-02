@@ -262,10 +262,12 @@ $isVaccine = $item['type'] === 'vaccine';
     </div>
     <?php endif; ?>
 
-    <!-- An expired item can never be dispensed
-         (api/dispense-without-prescription.php re-checks this
-         server-side too). -->
-    <?php if ($item['expiryStatus'] === 'expired'): ?>
+    <!-- Shown only when EVERY batch holding real stock is expired — a
+         real per-batch check now (includes/pharmacist/manage_medicine_firestore.php's
+         $itemAllStockExpired), not the item's own single, stale
+         expiryStatus field. api/dispense-without-prescription.php
+         re-checks the real batch's own expiry server-side too. -->
+    <?php if ($itemAllStockExpired): ?>
     <p class="mvi-manage-expired-note"><i class="bi bi-exclamation-circle"></i> This item has expired and can no longer be dispensed.</p>
     <?php endif; ?>
 
@@ -298,7 +300,17 @@ $isVaccine = $item['type'] === 'vaccine';
                         <td><span class="mvi-badge" style="background:<?= htmlspecialchars($batch['status']['bg']) ?>; color:<?= htmlspecialchars($batch['status']['color']) ?>;"><?= htmlspecialchars($batch['status']['label']) ?></span></td>
                         <td>
                             <div class="adm-action-btns">
-                                <button type="button" class="mm-dispense-btn mm-item-dispense" <?= $item['expiryStatus'] === 'expired' ? 'disabled' : '' ?>><i class="bi bi-capsule"></i> Dispense</button>
+                                <!-- Every row's Dispense button triggers the SAME item-level
+                                     FEFO dispense (assets/js/manage_medicine.js's own comment:
+                                     "there's no dispense from exactly this batch operation,
+                                     this item-level action is just repeated on every row for
+                                     convenience") — so every row shares the SAME enabled state
+                                     too ($itemAllStockExpired, same check the banner above
+                                     uses), not each row's own batch status. A per-row check
+                                     here would make a still-valid batch's button look
+                                     independently "dispensable" when clicking it actually
+                                     does the exact same thing as every other row's button. -->
+                                <button type="button" class="mm-dispense-btn mm-item-dispense" <?= $itemAllStockExpired ? 'disabled' : '' ?>><i class="bi bi-capsule"></i> Dispense</button>
                                 <button type="button" class="mvi-archive-btn mm-item-archive"><i class="bi bi-archive"></i> Archive</button>
                             </div>
                         </td>
