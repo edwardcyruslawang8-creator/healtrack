@@ -113,17 +113,28 @@
 }
 
 /* -- Dropdown panel — plain white, thin neutral border + soft shadow
-   (not colored) so it reads as a normal floating card. -- */
+   (not colored) so it reads as a normal floating card.
+
+   position:fixed, not absolute — top/left/width are set inline by
+   assets/js/quick-search.js (positionDropdown(), from the input's own
+   getBoundingClientRect()) rather than CSS, specifically so the panel
+   escapes any ancestor's overflow:hidden. index.php's hero search sits
+   inside .hero-panel, which needs overflow:hidden for its own rounded
+   corners — with position:absolute the dropdown was a normal
+   descendant of that box and got hard-clipped at the panel's bottom
+   edge the instant it tried to extend past it, confirmed from a live
+   screenshot (the panel cutting the result list off mid-row with a
+   stray scrollbar visible). Every other page using this component
+   (none of which have a clipping ancestor) renders identically either
+   way, so this is a safe default for all of them, not a hero-specific
+   special case. -- */
 .qs-dropdown{
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  right: 0;
+  position: fixed;
   background: #fff;
   border: 1px solid var(--adm-border, #E5E7EB);
   border-radius: 14px;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14);
-  z-index: 40;
+  z-index: 2000; /* comfortably above Bootstrap's own modal/backdrop z-indexes — quick-search can appear inside an open modal (e.g. the Dispense Without Prescription patient picker) and must float above it, not under it */
   overflow: hidden;
   animation: qsDropdownIn .14s ease-out;
 }

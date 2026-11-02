@@ -74,11 +74,26 @@ document.addEventListener('DOMContentLoaded', function () {
         clearBtn.style.display = 'none';
         wrapper.appendChild(clearBtn);
 
-        // Dropdown panel, positioned under the input.
+        // Dropdown panel, positioned under the input. position:fixed
+        // (assets/css/quick-search.css) so it escapes any ancestor's
+        // overflow:hidden (e.g. index.php's .hero-panel, which needs
+        // its own overflow:hidden for its rounded corners) — top/left/
+        // width are computed here from the wrapper's real on-screen
+        // position instead of being left to CSS, which is what
+        // position:fixed needs to still look "attached" to the input.
         const dropdown = document.createElement('div');
         dropdown.className = 'qs-dropdown';
         dropdown.hidden = true;
         wrapper.appendChild(dropdown);
+
+        function positionDropdown() {
+            const rect = wrapper.getBoundingClientRect();
+            dropdown.style.top = (rect.bottom + 8) + 'px';
+            dropdown.style.left = rect.left + 'px';
+            dropdown.style.width = rect.width + 'px';
+        }
+        window.addEventListener('resize', function () { if (!dropdown.hidden) positionDropdown(); });
+        window.addEventListener('scroll', function () { if (!dropdown.hidden) positionDropdown(); }, true);
 
         let debounceTimer = null;
         let abortController = null;
@@ -104,7 +119,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 dropdown.innerHTML =
                     '<div class="qs-header">Quick Search Results</div>' +
                     '<div class="qs-empty">No results for "' + escapeHtml(query) + '"</div>';
-                dropdown.hidden = false;
+                positionDropdown(); dropdown.hidden = false;
                 return;
             }
 
@@ -142,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             dropdown.innerHTML = html;
-            dropdown.hidden = false;
+            positionDropdown(); dropdown.hidden = false;
 
             if (selectTarget) {
                 dropdown.querySelectorAll('.qs-result-row[data-select-index]').forEach(function (row) {
@@ -217,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         input.addEventListener('focus', function () {
             if (input.value.trim() !== '' && dropdown.innerHTML !== '') {
-                dropdown.hidden = false;
+                positionDropdown(); dropdown.hidden = false;
                 wrapper.classList.add('qs-active');
             }
         });
