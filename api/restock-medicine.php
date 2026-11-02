@@ -88,22 +88,54 @@ $quantity = (int) $quantity;
 $name = $existing['name'] ?? '(unnamed)';
 $unit = $existing['unit'] ?? 'unit';
 
-// Box-stocked items can be restocked in whole boxes ("quantityUnit":
-// "box") — converted here, from the item's OWN stored piecesPerBox
-// (never a client-sent factor), into the dispensing unit every batch
-// quantity is counted in (includes/firestore/medicines.php's
-// hc_box_breakdown() comment). Anything else is already in $unit.
+// Restocking in whole boxes ("quantityUnit": "box") converts into the
+// dispensing unit every batch quantity is counted in
+// (includes/firestore/medicines.php's hc_box_breakdown() comment) using
+// THIS medicine's own per-box count — never a fixed number. The modal
+// shows the stored count; if the pharmacist enters one (first time, or
+// correcting it) it's sent as "piecesPerBox" and saved to the medicine
+// just before the stock is written ($savePiecesPerBox below), so it
+// never has to be entered again. Bottles/inhalers never convert.
 $piecesPerBox = (int) ($existing['piecesPerBox'] ?? 0);
+$piecesPerBoxChanged = false;
 $quantityUnit = (string) ($body['quantityUnit'] ?? 'unit');
 if ($quantityUnit === 'box') {
+    if (!hc_unit_allows_boxes($unit)) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => $name . ' is counted per ' . strtolower($unit) . ' — enter the number of ' . strtolower($unit) . 's received, not boxes.']);
+        exit;
+    }
+    $sentPiecesPerBox = trim((string) ($body['piecesPerBox'] ?? ''));
+    if ($sentPiecesPerBox !== '') {
+        if (!ctype_digit($sentPiecesPerBox) || (int) $sentPiecesPerBox <= 0) {
+            http_response_code(422);
+            echo json_encode(['success' => false, 'error' => 'Please enter how many ' . strtolower($unit) . 's come in one box (a whole number above 0).']);
+            exit;
+        }
+        $piecesPerBoxChanged = (int) $sentPiecesPerBox !== $piecesPerBox;
+        $piecesPerBox = (int) $sentPiecesPerBox;
+    }
     if ($piecesPerBox <= 0) {
         http_response_code(422);
-        echo json_encode(['success' => false, 'error' => 'This item has no Pieces per Box set — enter the quantity in ' . $unit . 's instead.']);
+        echo json_encode(['success' => false, 'error' => 'Please enter how many ' . strtolower($unit) . 's come in one box of ' . $name . '.']);
         exit;
     }
     $boxesReceived = $quantity;
     $quantity *= $piecesPerBox;
 }
+
+/** Persists a new/corrected per-box count — only once every check above and in each mode has passed. */
+$savePiecesPerBox = function () use ($firestore, $id, $existing, $piecesPerBox, $piecesPerBoxChanged, $name, $unit): bool {
+    if (!$piecesPerBoxChanged) {
+        return true;
+    }
+    $saved = $firestore->setDocument('medicines', $id, array_merge($existing, ['piecesPerBox' => $piecesPerBox, 'lastUpdated' => date('c')]));
+    if ($saved) {
+        write_audit_log('updated', 'Medicine & Vaccine Inventory', 'Set packaging for "' . $name . '": 1 box = ' . $piecesPerBox . ' ' . $unit . '(s).');
+    }
+
+    return $saved;
+};
 $quantityLabel = $quantity . ' ' . $unit . '(s)'
     . (isset($boxesReceived) ? ' — ' . $boxesReceived . ' box(es) of ' . $piecesPerBox : '');
 
@@ -121,6 +153,11 @@ if ($mode === 'existing') {
         exit;
     }
 
+    if (!$savePiecesPerBox()) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Could not save this medicine\'s packaging. Please try again.']);
+        exit;
+    }
     $ok = hc_add_to_existing_batch($batchId, $quantity);
     if (!$ok) {
         http_response_code(500);
@@ -159,6 +196,11 @@ if ($mode === 'existing') {
         exit;
     }
 
+    if (!$savePiecesPerBox()) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Could not save this medicine\'s packaging. Please try again.']);
+        exit;
+    }
     $newBatchId = hc_create_medicine_batch(
         $id,
         $quantity,

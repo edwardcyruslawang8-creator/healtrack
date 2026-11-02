@@ -25,6 +25,14 @@
    exists for an item (true for most real items today — see that
    function's own comment).
    ============================================================= */
+
+/** "500 Tablets", "1 Bottle" — same rule as includes/firestore/medicines.php's hc_qty_unit(). */
+function qtyUnit(quantity, unit) {
+    const n = Number(quantity) || 0;
+    const label = n === 1 || !unit || /s$/i.test(unit) ? unit : (/(x|ch|sh)$/i.test(unit) ? unit + 'es' : unit + 's');
+    return n.toLocaleString() + ' ' + label;
+}
+
 window.HCStockProjection = (function () {
     const STATUS_META = {
         healthy: { label: 'Healthy', icon: 'bi-check-circle-fill' },
@@ -215,8 +223,8 @@ window.HCStockProjection = (function () {
                     '<span></span>' +
                     '<span class="psd-status-badge psd-status-' + detail.stockStatus + '"><span class="dot"></span>' + meta.label + '</span>' +
                 '</div>' +
-                tile('Current Stock', detail.currentStock + ' ' + detail.unit) +
-                tile('Reorder Level', detail.minLevel + ' ' + detail.unit) +
+                tile('Current Stock', qtyUnit(detail.currentStock, detail.unit)) +
+                tile('Reorder Level', qtyUnit(detail.minLevel, detail.unit)) +
                 tile('Avg. Daily Consumption', avgText, detail.avgDailyConsumption === null) +
                 tile('Est. Days Remaining', daysText, detail.estimatedDaysRemaining === null);
         }

@@ -70,18 +70,71 @@
               <input type="text" class="form-control am-form-control" id="amCategory" placeholder="e.g. Antibiotic" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="am-form-label" for="amUnit">Dispensing Unit<span class="text-danger">*</span></label>
-              <input type="text" class="form-control am-form-control" id="amUnit" placeholder="e.g. Tablet, Capsule, Bottle, Inhaler, Vial" required>
-              <div class="am-form-help">The unit stock is counted and dispensed in — a single tablet or capsule, or a whole bottle, inhaler or vial.</div>
+              <label class="am-form-label" for="amUnitSelect">Dispensing Unit<span class="text-danger">*</span></label>
+              <!-- #amUnit (hidden) is the one value every script reads/
+                   writes (medicine_vaccine_inventory_pharmacist.js,
+                   manage_medicine.js); this dropdown + the "Other" box
+                   below set it — see this file's own script. -->
+              <select class="form-select am-form-control" id="amUnitSelect" required>
+                <option value="">Select unit</option>
+                <option value="Tablet">Tablet</option>
+                <option value="Capsule">Capsule</option>
+                <option value="Bottle">Bottle</option>
+                <option value="Inhaler">Inhaler</option>
+                <option value="Vial">Vial</option>
+                <option value="Ampule">Ampule</option>
+                <option value="Sachet">Sachet</option>
+                <option value="Dose" data-vaccine-only="1">Dose</option>
+                <option value="__other">Other</option>
+              </select>
+              <input type="hidden" id="amUnit" value="">
+              <input type="text" class="form-control am-form-control mt-2 d-none" id="amUnitOther" placeholder="Specify unit, e.g. Tube, Pack, Nebule" maxlength="30">
+              <div class="am-form-help">The unit stock is counted, monitored and dispensed in.</div>
+              <div class="am-form-help text-danger d-none" id="amUnitChangeWarning"></div>
             </div>
           </div>
           <!-- Optional box packaging over the dispensing unit — see
                includes/firestore/medicines.php's hc_box_breakdown(). -->
-          <div class="row">
+          <div class="row" id="amPiecesPerBoxRow">
             <div class="col-md-6 mb-3">
-              <label class="am-form-label" for="amPiecesPerBox">Pieces per Box <span class="text-muted fw-normal">(Optional)</span></label>
-              <input type="number" class="form-control am-form-control" id="amPiecesPerBox" min="0" step="1" placeholder="e.g. 100">
-              <div class="am-form-help">For items delivered in boxes (e.g. 1 box = 100 tablets). Leave blank for items counted per bottle, inhaler or vial.</div>
+              <label class="am-form-label" for="amPiecesPerBox"><span id="amPiecesPerBoxLabel">Tablets/Capsules per Box</span> <span class="text-muted fw-normal" id="amPiecesPerBoxOptional">(Optional)</span><span class="text-danger d-none" id="amPiecesPerBoxRequired">*</span></label>
+              <input type="number" class="form-control am-form-control" id="amPiecesPerBox" min="1" step="1" placeholder="e.g. 50">
+              <div class="am-form-help" id="amPiecesPerBoxHelp">How many come in one box of THIS product, as printed on its box — used to convert boxes received into individual pieces.</div>
+            </div>
+          </div>
+
+          <!-- Add only: the item's first stock, received exactly like a
+               "new batch" Restock (includes/pharmacist/medicine_action_modals.php's
+               #restockModal) — batch number + expiry + quantity in boxes
+               or pieces, converted with the per-box count above.
+               Optional: leave Quantity blank to add the item with no
+               stock and Restock it later. api/create-medicine.php
+               creates the batch and computes Minimum/Reorder Level the
+               same way api/restock-medicine.php does. -->
+          <div class="am-initial-stock d-none" id="amInitialStockSection">
+            <div class="am-initial-stock-title">Initial Stock <span class="text-muted fw-normal">(Optional)</span></div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="am-form-label" for="amIsBatchNumber">Batch Number<span class="text-danger d-none am-is-req">*</span></label>
+                <input type="text" class="form-control am-form-control" id="amIsBatchNumber" placeholder="e.g. BATCH-2026-045" maxlength="50">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="am-form-label" for="amIsExpiry">Expiry Date<span class="text-danger d-none am-is-req">*</span></label>
+                <input type="date" class="form-control am-form-control" id="amIsExpiry" min="<?= date('Y-m-d') ?>">
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="am-form-label" for="amIsQty">Quantity Received</label>
+              <div class="rs-qty-row">
+                <input type="number" class="form-control am-form-control" id="amIsQty" min="1" step="1" placeholder="Leave blank to add without stock">
+                <select class="form-select am-form-control d-none" id="amIsQtyUnit" aria-label="Quantity unit">
+                  <option value="box">Boxes</option>
+                  <option value="unit" id="amIsQtyUnitOption">Pieces</option>
+                </select>
+                <span class="rs-qty-unit-label" id="amIsQtyUnitLabel"></span>
+              </div>
+              <div class="am-form-help rs-qty-preview d-none" id="amIsPreview"></div>
+              <div class="am-form-help">Minimum Level and Reorder Level are calculated automatically from this stock, the same as a restock.</div>
             </div>
           </div>
 
@@ -148,3 +201,160 @@
     </div>
   </div>
 </div>
+
+<script>
+// Dispensing Unit dropdown + its packaging field — same rules as
+// includes/firestore/medicines.php's hc_unit_allows_boxes()/
+// hc_unit_requires_pieces_per_box(), which api/create-medicine.php and
+// api/update-medicine.php enforce again server-side:
+//   Tablet/Capsule  -> "Tablets/Capsules per Box", required
+//   Bottle/Sachet/Other -> "<unit>s per Box", optional (bulk receiving only)
+//   Inhaler/Vial/Ampule/Dose -> no packaging field at all
+// The dispensing unit itself is always what stock is counted and
+// dispensed in; packaging only converts boxes at Restock.
+(function () {
+    const modalEl = document.getElementById('addMedicineModal');
+    const unitSelect = document.getElementById('amUnitSelect');
+    const unitHidden = document.getElementById('amUnit');
+    const unitOther = document.getElementById('amUnitOther');
+    const ppbInput = document.getElementById('amPiecesPerBox');
+    const warning = document.getElementById('amUnitChangeWarning');
+    if (!modalEl || !unitSelect || !unitHidden || !ppbInput) return;
+
+    let originalUnit = '';
+
+    function plural(unit) {
+        return /s$/i.test(unit) ? unit : (/(x|ch|sh)$/i.test(unit) ? unit + 'es' : unit + 's');
+    }
+
+    function syncPackaging() {
+        const unit = unitHidden.value.trim();
+        const key = unit.toLowerCase().replace(/s$/, '');
+        const requiresBox = key === 'tablet' || key === 'capsule';
+        const noBoxes = unit === '' || ['inhaler', 'vial', 'ampule', 'dose'].indexOf(key) !== -1;
+
+        document.getElementById('amPiecesPerBoxRow').classList.toggle('d-none', noBoxes);
+        if (noBoxes) ppbInput.value = '';
+        ppbInput.required = requiresBox;
+        ppbInput.placeholder = requiresBox ? 'e.g. 100' : 'e.g. 12';
+        document.getElementById('amPiecesPerBoxRequired').classList.toggle('d-none', !requiresBox);
+        document.getElementById('amPiecesPerBoxOptional').classList.toggle('d-none', requiresBox);
+        document.getElementById('amPiecesPerBoxLabel').textContent = plural(unit || 'Piece') + ' per Box';
+        document.getElementById('amPiecesPerBoxHelp').textContent = requiresBox
+            ? 'How many ' + plural(key) + ' come in one box of THIS product, as printed on its box. Boxes received are converted into individual ' + plural(key) + '; stock is counted and dispensed per ' + key + '.'
+            : 'Only if ' + plural(key) + ' are received in boxes (bulk receiving). Stock is still counted and dispensed per ' + key + '.';
+
+        // Edit only: stock already on hand is counted in the old unit and
+        // is never converted — say so before it's saved.
+        const isEdit = document.getElementById('amFormId').value !== '';
+        const changed = isEdit && originalUnit !== '' && unit !== '' && unit.toLowerCase() !== originalUnit.toLowerCase();
+        warning.classList.toggle('d-none', !changed);
+        if (changed) {
+            warning.textContent = 'Existing stock was counted in ' + plural(originalUnit).toLowerCase() + ' and will NOT be converted — only change this to correct a wrong unit.';
+        }
+
+        syncInitialStock(noBoxes, requiresBox);
+    }
+
+    // Add only — Initial Stock, same receiving rules as Restock: boxes
+    // (converted with THIS form's per-box count) or loose pieces, never
+    // boxes for inhalers/vials/ampules/doses. Batch Number and Expiry
+    // become required as soon as a quantity is entered.
+    const isQty = document.getElementById('amIsQty');
+    const isQtyUnit = document.getElementById('amIsQtyUnit');
+    const isQtyUnitLabel = document.getElementById('amIsQtyUnitLabel');
+    const isPreview = document.getElementById('amIsPreview');
+    let lastBoxRule = null;
+
+    function syncInitialStock(noBoxes, requiresBox) {
+        const unit = unitHidden.value.trim();
+        if (noBoxes === undefined) {
+            const key = unit.toLowerCase().replace(/s$/, '');
+            noBoxes = unit === '' || ['inhaler', 'vial', 'ampule', 'dose'].indexOf(key) !== -1;
+            requiresBox = key === 'tablet' || key === 'capsule';
+        }
+        const unitLabel = plural(unit || 'Piece');
+        isQtyUnit.classList.toggle('d-none', noBoxes);
+        isQtyUnitLabel.classList.toggle('d-none', !noBoxes || unit === '');
+        isQtyUnitLabel.textContent = unitLabel;
+        document.getElementById('amIsQtyUnitOption').textContent = unitLabel;
+        // Default to Boxes for tablets/capsules, pieces otherwise — only
+        // when the unit's rule changes, so a manual choice isn't undone
+        // on every keystroke.
+        const rule = noBoxes ? 'none' : (requiresBox ? 'box' : 'unit');
+        if (rule !== lastBoxRule) {
+            isQtyUnit.value = rule === 'box' ? 'box' : 'unit';
+            lastBoxRule = rule;
+        }
+
+        const hasQty = isQty.value.trim() !== '';
+        document.getElementById('amIsBatchNumber').required = hasQty;
+        document.getElementById('amIsExpiry').required = hasQty;
+        document.querySelectorAll('#amInitialStockSection .am-is-req').forEach(function (s) { s.classList.toggle('d-none', !hasQty); });
+
+        const qty = parseInt(isQty.value, 10);
+        const perBox = parseInt(ppbInput.value, 10);
+        const inBoxes = !noBoxes && isQtyUnit.value === 'box';
+        let text = '';
+        if (qty > 0 && inBoxes) {
+            text = perBox > 0
+                ? qty.toLocaleString() + ' ' + (qty === 1 ? 'box' : 'boxes') + ' × ' + perBox.toLocaleString() + ' ' + plural(unit).toLowerCase() + ' = ' + (qty * perBox).toLocaleString() + ' ' + plural(unit).toLowerCase() + ' added to stock'
+                : 'Enter ' + plural(unit) + ' per Box above to convert boxes into ' + plural(unit).toLowerCase() + '.';
+        } else if (qty > 0 && unit !== '') {
+            text = qty.toLocaleString() + ' ' + (qty === 1 ? unit : plural(unit)).toLowerCase() + ' added to stock';
+        }
+        isPreview.textContent = text;
+        isPreview.classList.toggle('d-none', text === '');
+    }
+    isQty.addEventListener('input', function () { syncInitialStock(); });
+    isQtyUnit.addEventListener('change', function () { syncInitialStock(); });
+    ppbInput.addEventListener('input', function () { syncInitialStock(); });
+
+    // Dropdown/Other box -> hidden #amUnit (the value every script submits).
+    function applySelection() {
+        const isOther = unitSelect.value === '__other';
+        unitOther.classList.toggle('d-none', !isOther);
+        unitOther.required = isOther;
+        unitHidden.value = isOther ? unitOther.value.trim() : unitSelect.value;
+        syncPackaging();
+    }
+
+    unitSelect.addEventListener('change', function () {
+        // A different unit means a different package — never carry an old
+        // per-box count over into the new unit's conversion.
+        ppbInput.value = '';
+        if (unitSelect.value === '__other') unitOther.value = '';
+        applySelection();
+        if (unitSelect.value === '__other') unitOther.focus();
+    });
+    unitOther.addEventListener('input', applySelection);
+
+    // Hidden #amUnit -> dropdown, whenever the modal opens (Add resets it
+    // to blank, or "Dose" for a vaccine; Edit fills the item's own unit).
+    // A unit that isn't one of the listed options (e.g. "Nebule") shows
+    // as Other with that exact unit, so it's never silently replaced.
+    modalEl.addEventListener('show.bs.modal', function () {
+        const isVaccine = document.getElementById('amFormType').value === 'vaccine';
+        unitSelect.querySelectorAll('[data-vaccine-only]').forEach(function (opt) {
+            opt.hidden = !isVaccine;
+            opt.disabled = !isVaccine;
+        });
+        const current = unitHidden.value.trim();
+        const isEdit = document.getElementById('amFormId').value !== '';
+        originalUnit = isEdit ? current : '';
+        // Initial Stock is Add-only (an existing item's stock changes go
+        // through Restock); start each Add from a clean slate.
+        document.getElementById('amInitialStockSection').classList.toggle('d-none', isEdit);
+        if (!isEdit) {
+            ['amIsBatchNumber', 'amIsExpiry', 'amIsQty'].forEach(function (id) { document.getElementById(id).value = ''; });
+            lastBoxRule = null;
+        }
+        const match = Array.prototype.find.call(unitSelect.options, function (opt) {
+            return !opt.disabled && opt.value !== '__other' && opt.value !== '' && opt.value.toLowerCase() === current.toLowerCase();
+        });
+        unitSelect.value = current === '' ? '' : (match ? match.value : '__other');
+        unitOther.value = current !== '' && !match ? current : '';
+        applySelection();
+    });
+})();
+</script>

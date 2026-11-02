@@ -98,10 +98,28 @@ if ((float) $minLevel < 0 || (float) $reorderLevel < 0 || (float) $maxLevel < 0)
     exit;
 }
 
+$unitError = hc_dispensing_unit_error($unit);
+if ($unitError !== null) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => $unitError]);
+    exit;
+}
+
 $existing = $firestore->getDocument('medicines', $id);
 if ($existing === null) {
     http_response_code(404);
     echo json_encode(['success' => false, 'error' => 'This item no longer exists.']);
+    exit;
+}
+
+// Stock on hand is counted in the item's CURRENT unit and is never
+// converted — so a unit change on an item that still has stock must be
+// explicitly confirmed (assets/js/manage_medicine.js asks first),
+// never applied by accident.
+$existingUnit = (string) ($existing['unit'] ?? '');
+if (strcasecmp($existingUnit, $unit) !== 0 && (int) ($existing['currentStock'] ?? 0) > 0 && empty($body['confirmUnitChange'])) {
+    http_response_code(409);
+    echo json_encode(['success' => false, 'error' => 'This item has ' . hc_qty_unit((int) $existing['currentStock'], $existingUnit) . ' in stock, which will not be converted. Confirm the unit change to continue.']);
     exit;
 }
 
@@ -118,6 +136,15 @@ if (array_key_exists('piecesPerBox', $body)) {
         exit;
     }
     $piecesPerBox = (int) $rawPiecesPerBox;
+}
+// Same packaging rules as api/create-medicine.php.
+if ($piecesPerBox <= 0 && hc_unit_requires_pieces_per_box($unit)) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please enter how many ' . strtolower(rtrim($unit, 's')) . 's come in one box.']);
+    exit;
+}
+if (!hc_unit_allows_boxes($unit)) {
+    $piecesPerBox = 0;
 }
 
 $minLevel = (int) $minLevel;

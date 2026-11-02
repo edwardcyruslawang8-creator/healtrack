@@ -415,3 +415,11 @@
 .rs-qty-row #rsQtyUnit{ width: 140px; flex-shrink: 0; }
 .rs-qty-unit-label{ flex-shrink: 0; font-size: 13px; font-weight: 600; color: var(--adm-text-muted); }
 .rs-qty-preview{ font-weight: 600; color: var(--adm-text); }
+.rs-ppb-wrap{ margin-top: 12px; }
+.rs-ppb-wrap #rsPiecesPerBox{ flex: 1; min-width: 0; }
+.rs-ppb-wrap #rsPiecesPerBox[readonly]{ background: var(--adm-hover-bg, #F1F2F5); color: var(--adm-text); }
+.rs-ppb-change{ flex-shrink: 0; padding: 9px 16px; }
+
+/* Add Medicine's optional first-stock block (#amInitialStockSection). */
+.am-initial-stock{ border-top: 1px solid var(--adm-border); padding-top: 16px; margin-bottom: 4px; }
+.am-initial-stock-title{ font-size: 13.5px; font-weight: 700; color: var(--adm-text); margin-bottom: 12px; }
