@@ -336,6 +336,45 @@ document.addEventListener('DOMContentLoaded', function () {
             fillOpacity: Math.min(baseFill + extraFill, 0.85),
         };
     }
+    // Hover tooltip placement. Leaflet always opens it on the configured
+    // side and never flips it, so near an edge it was clipped by the map.
+    // Pick the side with room for the tooltip's real size instead: above
+    // the cursor by default, to the right/left near the side edges, below
+    // near the top edge.
+    const TOOLTIP_EDGE_MARGIN = 12;
+    function hcPlaceHoverTooltip(layer, containerPoint) {
+        const tooltip = layer.getTooltip();
+        const el = tooltip && tooltip.getElement();
+        if (!el || !containerPoint) return;
+        const size = map.getSize();
+        const w = el.offsetWidth;
+        const h = el.offsetHeight;
+        let direction = 'top';
+        if (containerPoint.x - w / 2 < TOOLTIP_EDGE_MARGIN) direction = 'right';
+        else if (containerPoint.x + w / 2 > size.x - TOOLTIP_EDGE_MARGIN) direction = 'left';
+        else if (containerPoint.y - h - TOOLTIP_EDGE_MARGIN < 0) direction = 'bottom';
+        if (tooltip.options.direction !== direction) {
+            tooltip.options.direction = direction;
+            tooltip.update();
+        }
+    }
+
+    // The barangay whose shape (or centroid marker) is under the cursor.
+    let hoveredLayer = null;
+    function hcHoverStart(layer) {
+        hoveredLayer = layer;
+        if (layer !== selectedLayer) layer.setStyle(hcBarangayStyle(layer.feature.properties, 'hover'));
+    }
+    function hcHoverEnd(layer) {
+        if (hoveredLayer === layer) hoveredLayer = null;
+        hcRestyle(layer);
+    }
+    // A hover tooltip left open while the map pans/zooms would float over
+    // the wrong place; Leaflet re-opens it on the next mouseover.
+    map.on('movestart zoomstart', function () {
+        if (hoveredLayer) hoveredLayer.closeTooltip();
+    });
+
     // The barangay whose popup is open — keeps a subtle "selected" style
     // (slightly heavier maroon outline + fill) until that popup closes.
     let selectedLayer = null;
@@ -372,13 +411,19 @@ document.addEventListener('DOMContentLoaded', function () {
                     // on mouseover/mouseout automatically; sticky:true
                     // lets it follow the cursor around the shape instead
                     // of staying pinned to one spot.
-                    layer.bindTooltip(hcBarangayInfoHtml(p), { sticky: true, direction: 'top', className: 'barangay-hover-tooltip' });
+                    // opacity 1: Leaflet's default 0.9 let the map show
+                    // through and washed the text out.
+                    layer.bindTooltip(hcBarangayInfoHtml(p), { sticky: true, direction: 'top', opacity: 1, className: 'barangay-hover-tooltip' });
 
-                    layer.on('mouseover', function () {
-                        if (layer !== selectedLayer) layer.setStyle(hcBarangayStyle(p, 'hover'));
+                    layer.on('mouseover', function (e) {
+                        hcHoverStart(layer);
+                        hcPlaceHoverTooltip(layer, e.containerPoint);
+                    });
+                    layer.on('mousemove', function (e) {
+                        hcPlaceHoverTooltip(layer, e.containerPoint);
                     });
                     layer.on('mouseout', function () {
-                        hcRestyle(layer);
+                        hcHoverEnd(layer);
                     });
                     layer.on('click', function () {
                         layer.openPopup();
@@ -444,6 +489,30 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Same popup (and selected style) as clicking the shape itself
                 marker.on('click', function () {
                     barangayLayers[p.name].openPopup(L.latLng(lat, lng));
+                });
+                // The marker sits on top of its own shape, so crossing it
+                // fired the shape's mouseout — the highlight and tooltip
+                // blinked off and back on. Treat the marker as part of the
+                // shape: keep the hover style and show the same tooltip.
+                marker.on('mouseover', function (e) {
+                    const layer = barangayLayers[p.name];
+                    hcHoverStart(layer);
+                    if (!layer.isPopupOpen()) {
+                        layer.openTooltip(e.latlng);
+                        hcPlaceHoverTooltip(layer, e.containerPoint);
+                    }
+                });
+                marker.on('mousemove', function (e) {
+                    const layer = barangayLayers[p.name];
+                    if (layer.isTooltipOpen()) {
+                        layer.getTooltip().setLatLng(e.latlng);
+                        hcPlaceHoverTooltip(layer, e.containerPoint);
+                    }
+                });
+                marker.on('mouseout', function () {
+                    const layer = barangayLayers[p.name];
+                    layer.closeTooltip();
+                    hcHoverEnd(layer);
                 });
             });
         })

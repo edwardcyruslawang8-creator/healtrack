@@ -317,6 +317,7 @@ $adminNavItems = [
                     <p class="text-muted small mb-0">No notifiable-disease cases reported <?= htmlspecialchars(strtolower($selectedDateRange)) ?>.</p>
                     <?php endif; ?>
                     <?php foreach ($topDiseases as $i => $d): ?>
+                    <div class="disease-rank-item">
                     <div class="disease-rank-row">
                         <span class="rank-badge"><?= $i + 1 ?></span>
                         <span class="disease-name"><?= htmlspecialchars($d['name']) ?></span>
@@ -328,6 +329,7 @@ $adminNavItems = [
                     <?php if (!empty($d['causes'])): ?>
                     <p class="disease-causes-note"><i class="bi bi-info-circle"></i> Likely contributing factors: <?= htmlspecialchars($d['causes']) ?></p>
                     <?php endif; ?>
+                    </div>
                     <?php endforeach; ?>
                 </div>
             </div>
