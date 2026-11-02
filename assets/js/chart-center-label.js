@@ -48,14 +48,99 @@
 (function () {
     if (typeof Chart === 'undefined') return;
 
+    function hasHtmlTotal(chart) {
+        var canvasParent = chart.canvas && chart.canvas.parentElement;
+        // .an-donut-total is Facility Analytics' own HTML total (same idea, "an-" prefix)
+        return !!(canvasParent && canvasParent.querySelector('.adm-donut-total, .an-donut-total'));
+    }
+
+    /*
+     * Tooltip for doughnuts with an HTML total in the hole. Chart.js's
+     * own tooltip is drawn INSIDE the canvas, and on these small
+     * doughnuts it lands right in the hole — under the HTML total
+     * (which sits above the canvas), so the two overlapped. This draws
+     * the same tooltip content (title, colour swatch, label lines from
+     * each chart's own callbacks) as an HTML box just OUTSIDE the ring,
+     * past the hovered slice's outer edge, so the total stays fully
+     * visible. Attached to <body> with position:fixed so no card's
+     * overflow can clip it.
+     */
+    function externalDoughnutTooltip(context) {
+        var chart = context.chart;
+        var tooltip = context.tooltip;
+        var el = chart.canvas.__hcDonutTooltip;
+        if (!el) {
+            el = document.createElement('div');
+            el.setAttribute('role', 'tooltip');
+            el.style.cssText = 'position:fixed;z-index:1080;pointer-events:none;opacity:0;transition:opacity .12s ease;' +
+                'background:rgba(17,24,39,.92);color:#fff;border-radius:8px;padding:7px 10px;font:500 12px/1.35 Poppins,-apple-system,Segoe UI,Roboto,Arial,sans-serif;' +
+                'box-shadow:0 6px 18px rgba(0,0,0,.18);white-space:nowrap;';
+            document.body.appendChild(el);
+            chart.canvas.__hcDonutTooltip = el;
+        }
+
+        var point = tooltip.dataPoints && tooltip.dataPoints[0];
+        if (tooltip.opacity === 0 || !point) {
+            el.style.opacity = '0';
+            return;
+        }
+
+        el.textContent = '';
+        (tooltip.title || []).forEach(function (line) {
+            var title = document.createElement('div');
+            title.style.fontWeight = '700';
+            title.textContent = line;
+            el.appendChild(title);
+        });
+        (tooltip.body || []).forEach(function (bodyItem, i) {
+            bodyItem.lines.forEach(function (line) {
+                var row = document.createElement('div');
+                row.style.cssText = 'display:flex;align-items:center;gap:6px;';
+                var swatch = document.createElement('span');
+                var colors = tooltip.labelColors && tooltip.labelColors[i];
+                swatch.style.cssText = 'width:10px;height:10px;border-radius:2px;flex-shrink:0;border:1px solid rgba(255,255,255,.7);background:' +
+                    ((colors && colors.backgroundColor) || '#999') + ';';
+                row.appendChild(swatch);
+                row.appendChild(document.createTextNode(line));
+                el.appendChild(row);
+            });
+        });
+
+        // Just past the hovered slice's outer edge, on the side it points to.
+        var arc = point.element;
+        var angle = (arc.startAngle + arc.endAngle) / 2;
+        var radius = arc.outerRadius + 8;
+        var rect = chart.canvas.getBoundingClientRect();
+        var x = rect.left + arc.x + Math.cos(angle) * radius;
+        var y = rect.top + arc.y + Math.sin(angle) * radius;
+        var cos = Math.cos(angle);
+        var sin = Math.sin(angle);
+        var shiftX = Math.abs(cos) < 0.35 ? '-50%' : (cos > 0 ? '0' : '-100%');
+        var shiftY = Math.abs(sin) < 0.35 ? '-50%' : (sin > 0 ? '0' : '-100%');
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+        el.style.transform = 'translate(' + shiftX + ',' + shiftY + ')';
+        el.style.opacity = '1';
+    }
+
     Chart.register({
         id: 'doughnutCenterTotal',
+        // Swap Chart.js's in-canvas tooltip for the outside-the-ring one
+        // above, only on doughnuts that have an HTML total in the hole.
+        beforeInit: function (chart) {
+            if (chart.config.type !== 'doughnut' || !hasHtmlTotal(chart)) return;
+            var options = chart.config.options;
+            options.plugins = options.plugins || {};
+            options.plugins.tooltip = Object.assign({}, options.plugins.tooltip, { enabled: false, external: externalDoughnutTooltip });
+        },
+        afterDestroy: function (chart) {
+            var el = chart.canvas && chart.canvas.__hcDonutTooltip;
+            if (el && el.parentNode) el.parentNode.removeChild(el);
+        },
         afterDraw: function (chart) {
             if (chart.config.type !== 'doughnut') return;
 
-            var canvasParent = chart.canvas && chart.canvas.parentElement;
-            // .an-donut-total is Facility Analytics' own HTML total (same idea, "an-" prefix)
-            if (canvasParent && canvasParent.querySelector('.adm-donut-total, .an-donut-total')) return;
+            if (hasHtmlTotal(chart)) return; // the page shows its own HTML total — see header comment
 
             var dataset = chart.data && chart.data.datasets && chart.data.datasets[0];
             if (!dataset || !Array.isArray(dataset.data)) return;
