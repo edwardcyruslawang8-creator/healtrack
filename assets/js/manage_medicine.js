@@ -480,6 +480,16 @@ document.addEventListener('DOMContentLoaded', function () {
             editForm.reset();
             editForm.classList.remove('was-validated');
             editErrorBox.classList.add('d-none');
+            // Reset the submit button back to its normal state (undoing
+            // a previous "Saving…" spinner) BEFORE setting "Save
+            // Changes" below, not after — innerHTML replaces
+            // #amSubmitLabel with a fresh node, so doing this reset
+            // afterward would silently stomp "Save Changes" back to
+            // whatever text was in the button's very first page-load
+            // markup ("Add Medicine") — the same bug confirmed on the
+            // Add Vaccine flow (assets/js/medicine_vaccine_inventory_pharmacist.js).
+            editSubmitBtn.disabled = false;
+            editSubmitBtn.innerHTML = editSubmitBtnDefaultHtml;
 
             document.getElementById('amFormType').value = item.type;
             document.getElementById('amFormId').value = item.id;
@@ -514,8 +524,6 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('amDosageRow').classList.remove('d-none');
             document.getElementById('amDosage').value = item.dosage || '';
 
-            editSubmitBtn.disabled = false;
-            editSubmitBtn.innerHTML = editSubmitBtnDefaultHtml;
             editModal.show();
         });
 
@@ -556,6 +564,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 dosage: document.getElementById('amDosage').value.trim(),
             };
 
+            // Captured HERE, not reused from editSubmitBtnDefaultHtml —
+            // that's the button's very first page-load markup ("Add
+            // Medicine"), not "Save Changes". A failed save needs to
+            // restore to THIS edit modal's own idle state, not revert
+            // the label back to a completely different mode's text.
+            const idleHtml = editSubmitBtn.innerHTML;
             editErrorBox.classList.add('d-none');
             editSubmitBtn.disabled = true;
             editSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving…';
@@ -574,7 +588,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     editErrorBox.textContent = err.message;
                     editErrorBox.classList.remove('d-none');
                     editSubmitBtn.disabled = false;
-                    editSubmitBtn.innerHTML = editSubmitBtnDefaultHtml;
+                    editSubmitBtn.innerHTML = idleHtml;
                 });
         });
     }

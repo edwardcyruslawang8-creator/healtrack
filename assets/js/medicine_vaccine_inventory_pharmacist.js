@@ -31,7 +31,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const modal = new bootstrap.Modal(modalEl);
     const errorBox = document.getElementById('addMedicineError');
     const submitBtn = document.getElementById('amSubmitBtn');
-    const submitLabel = document.getElementById('amSubmitLabel');
+    // NOT cached as a const here — openAddModal() below restores
+    // submitBtn's innerHTML (undoing a previous "Saving…" spinner
+    // state), which replaces the #amSubmitLabel span with a brand new
+    // DOM node each time; a reference captured once up here would go
+    // stale the first time that happens, silently stop reflecting
+    // what's on screen, and leave the button reading "Add Medicine"
+    // even while adding a vaccine (confirmed from a live screenshot).
     const submitBtnDefaultHtml = submitBtn.innerHTML;
 
     const typeInput = document.getElementById('amFormType');
@@ -55,6 +61,15 @@ document.addEventListener('DOMContentLoaded', function () {
         errorBox.classList.add('d-none');
         typeInput.value = type;
         expiryInput.min = todayIso;
+        // Reset the submit button back to its normal icon+label state
+        // (undoing a previous "Saving…" spinner) BEFORE the type-
+        // specific label below, not after — innerHTML replaces
+        // #amSubmitLabel with a fresh node, so doing this first and
+        // re-querying it fresh (rather than reusing a reference from
+        // before this reset) is what keeps the label actually visible.
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = submitBtnDefaultHtml;
+        const submitLabel = document.getElementById('amSubmitLabel');
         // Adding a brand-new item now only collects its catalog info
         // (Name/Category/Unit/Description) — Expiry Date/Current
         // Stock/Minimum Level/Reorder Level/Maximum Level/Dosage
@@ -94,8 +109,6 @@ document.addEventListener('DOMContentLoaded', function () {
             submitLabel.textContent = 'Add Medicine';
         }
 
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = submitBtnDefaultHtml;
         modal.show();
     }
 
@@ -124,31 +137,43 @@ document.addEventListener('DOMContentLoaded', function () {
             dosage: document.getElementById('amDosage').value.trim(),
         };
 
-        // Optional first stock — received like a "new batch" Restock
-        // (add_medicine_modal.php's #amInitialStockSection); the server
-        // converts boxes with this form's own per-box count.
+        // Required first stock — received like a "new batch" Restock
+        // (add_medicine_modal.php's #amInitialStockSection, whose
+        // Quantity/Batch Number/Expiry all carry the HTML required
+        // attribute, already enforced by the form.checkValidity() check
+        // above); the server converts boxes with this form's own
+        // per-box count. The two checks below are defense-in-depth —
+        // step/min on the Quantity input already guarantee a whole
+        // number >= 1 by this point, but piecesPerBox isn't tied to
+        // native validation the same way.
         const initialQty = document.getElementById('amIsQty').value.trim();
-        if (initialQty !== '') {
-            const qtyUnitSelect = document.getElementById('amIsQtyUnit');
-            const inBoxes = !qtyUnitSelect.classList.contains('d-none') && qtyUnitSelect.value === 'box';
-            if (!(parseInt(initialQty, 10) >= 1)) {
-                errorBox.textContent = 'Please enter a valid initial quantity, or leave it blank to add without stock.';
-                errorBox.classList.remove('d-none');
-                return;
-            }
-            if (inBoxes && !(parseInt(payload.piecesPerBox, 10) >= 1)) {
-                errorBox.textContent = 'Enter how many ' + payload.unit.toLowerCase() + 's come in one box, or receive the initial stock in ' + payload.unit.toLowerCase() + 's instead.';
-                errorBox.classList.remove('d-none');
-                return;
-            }
-            payload.initialStock = {
-                batchNumber: document.getElementById('amIsBatchNumber').value.trim(),
-                expiryDate: document.getElementById('amIsExpiry').value,
-                quantity: parseInt(initialQty, 10),
-                quantityUnit: inBoxes ? 'box' : 'unit',
-            };
+        const qtyUnitSelect = document.getElementById('amIsQtyUnit');
+        const inBoxes = !qtyUnitSelect.classList.contains('d-none') && qtyUnitSelect.value === 'box';
+        if (!(parseInt(initialQty, 10) >= 1)) {
+            errorBox.textContent = 'Please enter a valid initial quantity.';
+            errorBox.classList.remove('d-none');
+            return;
         }
+        if (inBoxes && !(parseInt(payload.piecesPerBox, 10) >= 1)) {
+            errorBox.textContent = 'Enter how many ' + payload.unit.toLowerCase() + 's come in one box, or receive the initial stock in ' + payload.unit.toLowerCase() + 's instead.';
+            errorBox.classList.remove('d-none');
+            return;
+        }
+        payload.initialStock = {
+            batchNumber: document.getElementById('amIsBatchNumber').value.trim(),
+            expiryDate: document.getElementById('amIsExpiry').value,
+            quantity: parseInt(initialQty, 10),
+            quantityUnit: inBoxes ? 'box' : 'unit',
+        };
 
+        // Captured HERE, not reused from submitBtnDefaultHtml — that's
+        // the button's very first page-load markup ("Add Medicine"),
+        // not necessarily this attempt's own label ("Add Vaccine"). A
+        // failed submission needs to restore to what was actually
+        // showing before "Saving…", not revert to a different mode's
+        // text — the exact same bug already caught and fixed on
+        // subadmin's Edit flow (assets/js/manage_medicine.js).
+        const idleHtml = submitBtn.innerHTML;
         errorBox.classList.add('d-none');
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving…';
@@ -171,7 +196,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 errorBox.textContent = err.message;
                 errorBox.classList.remove('d-none');
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = submitBtnDefaultHtml;
+                submitBtn.innerHTML = idleHtml;
             });
     });
 
