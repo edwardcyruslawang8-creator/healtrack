@@ -38,4 +38,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    /* ---------- Sort by — belongs to #filtersForm (form= attribute,
+       it sits in the results toolbar), so it re-submits with the
+       current search term + categories. ---------- */
+    const sortSelect = document.getElementById('sortSelect');
+    if (sortSelect && filtersForm) {
+        sortSelect.addEventListener('change', function () {
+            filtersForm.submit();
+        });
+    }
+
 });

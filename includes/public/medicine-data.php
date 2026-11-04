@@ -55,8 +55,23 @@ $categoryFilter = $_GET['category'] ?? 'All Categories';
 $formFilter = $_GET['form'] ?? 'All Forms';
 $availabilityFilter = $_GET['availability'] ?? 'All Availability';
 
+// Filter options built from the real values on file (sorted, blanks
+// dropped) instead of a fixed list — the filters compare exactly, so a
+// hardcoded "Vitamin" never matched a real "Vitamin & Supplement", and
+// categories like "Antihypertensive" had no option at all.
+if (!function_exists('hc_medicine_filter_options')) {
+    function hc_medicine_filter_options(array $items, string $field, string $allLabel): array
+    {
+        $values = array_unique(array_filter(array_map(fn ($i) => trim((string) ($i[$field] ?? '')), $items), 'strlen'));
+        sort($values, SORT_NATURAL | SORT_FLAG_CASE);
+        return array_merge([$allLabel], $values);
+    }
+}
+
 if ($activeTab === 'medicines') {
     $allMedicines = getAllMedicines();
+    $medicineCategoryOptions = hc_medicine_filter_options($allMedicines, 'category', 'All Categories');
+    $medicineFormOptions     = hc_medicine_filter_options($allMedicines, 'form', 'All Forms');
 
     $filteredMedicines = array_values(array_filter($allMedicines, function ($m) use ($searchTerm, $categoryFilter, $formFilter, $availabilityFilter, $medicineStatusMeta) {
         if ($searchTerm !== '' && !hc_fuzzy_match($m['name'] . ' ' . $m['desc'], $searchTerm)) {
@@ -92,6 +107,7 @@ if ($activeTab === 'medicines') {
     $medicineResults = array_slice($filteredMedicines, ($medicineCurrentPageNum - 1) * $medicinePerPage, $medicinePerPage);
 } else {
     $allVaccines = getAllVaccines();
+    $vaccineFormOptions = hc_medicine_filter_options($allVaccines, 'form', 'All Forms');
 
     $filteredVaccines = array_values(array_filter($allVaccines, function ($v) use ($searchTerm, $formFilter, $availabilityFilter, $medicineStatusMeta) {
         if ($searchTerm !== '' && !hc_fuzzy_match($v['name'] . ' ' . $v['desc'], $searchTerm)) {
