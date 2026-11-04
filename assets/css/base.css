@@ -402,7 +402,19 @@ button{ font-family: inherit; }
   .sidebar.show{ left: 0; }
   .main-wrapper{ margin-left: 0; }
   .main-content{ padding-top: 70px; }
-  .mobile-menu-btn{ display: flex; }
+  .mobile-menu-btn{ display: flex; transition: left .25s ease; }
+
+  /* Sidebar open (assets/js/base.js): the toggle slides out beside the
+     sidebar as its close button instead of covering the logo, and the
+     floating chatbot launcher/panel hide so they don't sit on top of
+     the menu. */
+  body.sidebar-open .mobile-menu-btn{
+    left: calc(var(--sidebar-width) + 12px);
+    background: #fff;
+    color: var(--maroon);
+  }
+  body.sidebar-open .chatbot-fab-wrap,
+  body.sidebar-open .chatbot-widget-panel{ display: none !important; }
 }
 
 @media (max-width: 575.98px){

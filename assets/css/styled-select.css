@@ -1,0 +1,101 @@
+/* =============================================================
+   STYLED SELECT (shared — assets/js/styled-select.js)
+   ---------------------------------------------------------------
+   The button carries the original select's class (filter-select /
+   mini-select / sort-select), so its size, padding and border come
+   from that page's existing rules; this file only adds what a <button>
+   needs to look like that select, plus the open list itself.
+   ============================================================= */
+.hc-select{ position: relative; }
+.hc-select-own-wrap{ display: inline-block; }
+
+.hc-select-trigger{
+  display: flex;
+  align-items: center;
+  font-family: inherit;
+  line-height: normal;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.hc-select-label{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.hc-select-trigger:hover{ border-color: var(--maroon); }
+.hc-select-trigger:focus-visible,
+.hc-select.is-open .hc-select-trigger{
+  outline: none;
+  border-color: var(--maroon);
+  box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.12); /* --maroon at 12% */
+}
+
+/* Chevron — the page's own (filter-select-wrap's i.chevron,
+   mini-select-wrap's i) or the one styled-select.js adds. */
+.hc-select > i.chevron,
+.mini-select-wrap.hc-select > i{ transition: transform .15s ease; }
+.hc-select.is-open > i.chevron,
+.mini-select-wrap.hc-select.is-open > i{ transform: translateY(-50%) rotate(180deg); }
+.hc-select-own-wrap > i.chevron{
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--text-soft);
+  pointer-events: none;
+}
+.hc-select-own-wrap > .hc-select-trigger{ padding-right: 32px; }
+
+.hc-select-menu{
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1020; /* under the mobile sidebar (1030) and chatbot (1050) */
+  width: max-content;
+  min-width: 100%;
+  max-width: min(340px, calc(100vw - 32px));
+  max-height: 300px; /* tightened to the space actually left in the viewport by styled-select.js */
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(43, 34, 35, 0.14);
+}
+.hc-select.is-open .hc-select-menu{ display: block; }
+.hc-select.opens-up .hc-select-menu{ top: auto; bottom: calc(100% + 6px); }
+.hc-select.align-right .hc-select-menu{ left: auto; right: 0; }
+
+.hc-select-option{
+  position: relative;
+  padding: 9px 34px 9px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--text-dark);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.hc-select-option.is-active{ background: var(--bg-light); }
+.hc-select-option.is-selected{
+  background: var(--maroon-tint);
+  color: var(--maroon);
+  font-weight: 600;
+}
+.hc-select-option.is-selected::after{
+  content: "\F26E"; /* bootstrap-icons "check" */
+  font-family: "bootstrap-icons";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+}
+.hc-select-menu::-webkit-scrollbar{ width: 6px; }
+.hc-select-menu::-webkit-scrollbar-thumb{ background: var(--border-soft); border-radius: 3px; }
+
+@media (max-width: 767.98px){
+  .hc-select-option{ padding-top: 11px; padding-bottom: 11px; } /* bigger touch targets */
+}

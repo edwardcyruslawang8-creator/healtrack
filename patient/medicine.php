@@ -22,8 +22,8 @@ require_once __DIR__ . '/../includes/public/medicine-data.php';    // $activeTab
 $queryTerm = isset($_GET['q']) ? trim($_GET['q']) : '';
 
 $pageTitle   = 'Medicine & Vaccine Availability';
-$pageCss     = ['medicine.css', 'quick-search.css'];
-$pageScripts = ['medicine.js', 'quick-search.js'];
+$pageCss     = ['medicine.css', 'quick-search.css', 'styled-select.css'];
+$pageScripts = ['styled-select.js', 'medicine.js', 'quick-search.js'];
 require_once __DIR__ . '/../includes/shared/header.php';
 require_once __DIR__ . '/../includes/shared/sidebar.php';
 ?>
@@ -45,7 +45,6 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
              the search term. -->
         <input type="hidden" name="category" value="<?= htmlspecialchars($categoryFilter) ?>">
         <input type="hidden" name="form" value="<?= htmlspecialchars($formFilter) ?>">
-        <input type="hidden" name="availability" value="<?= htmlspecialchars($availabilityFilter) ?>">
         <div class="qs-field">
             <i class="bi bi-search"></i>
             <input type="text" name="q" value="<?= htmlspecialchars($queryTerm) ?>"
@@ -70,7 +69,7 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
 
         <?php if ($activeTab === 'medicines'): ?>
 
-            <!-- FILTER TOOLBAR — category/form/availability all really
+            <!-- FILTER TOOLBAR — category/form both really
                  filter $medicineResults now (see includes/medicine-data.php);
                  each select keeps its current value selected, and the
                  search term carries over via the hidden field below. -->
@@ -79,7 +78,7 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                 <input type="hidden" name="q" value="<?= htmlspecialchars($queryTerm) ?>">
                 <div class="filter-select-wrap">
                     <i class="bi bi-grid-fill leading-icon"></i>
-                    <select class="filter-select" name="category">
+                    <select data-styled-select class="filter-select" name="category">
                         <?php foreach ($medicineCategoryOptions as $opt): ?>
                         <option <?= $opt === $categoryFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
                         <?php endforeach; ?>
@@ -88,18 +87,9 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                 </div>
                 <div class="filter-select-wrap">
                     <i class="bi bi-file-earmark-text leading-icon"></i>
-                    <select class="filter-select" name="form">
+                    <select data-styled-select class="filter-select" name="form">
                         <?php foreach ($medicineFormOptions as $opt): ?>
                         <option <?= $opt === $formFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <i class="bi bi-chevron-down chevron"></i>
-                </div>
-                <div class="filter-select-wrap">
-                    <i class="bi bi-check-circle leading-icon"></i>
-                    <select class="filter-select" name="availability">
-                        <?php foreach ($medicineAvailabilityOptions as $opt): ?>
-                        <option <?= $opt === $availabilityFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
                         <?php endforeach; ?>
                     </select>
                     <i class="bi bi-chevron-down chevron"></i>
@@ -115,10 +105,9 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                 <span class="results-count">
                     Showing 1&ndash;<?= count($medicineResults) ?> of <?= $medicineTotalResults ?> medicines
                 </span>
-                <select class="sort-select" name="sort">
+                <select data-styled-select class="sort-select" name="sort">
                     <option>Sort by: Name (A&ndash;Z)</option>
                     <option>Sort by: Name (Z&ndash;A)</option>
-                    <option>Sort by: Availability</option>
                 </select>
             </div>
 
@@ -130,7 +119,6 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                             <th>Medicine Name</th>
                             <th>Category</th>
                             <th>Form</th>
-                            <th>Availability</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -145,9 +133,8 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                                     </div>
                                 </div>
                             </td>
-                            <td><?= htmlspecialchars($m['category']) ?></td>
-                            <td><?= htmlspecialchars($m['form']) ?></td>
-                            <td><span class="status-badge <?= htmlspecialchars($m['status']) ?>"><?= htmlspecialchars($m['statusLabel']) ?></span></td>
+                            <td data-label="Category"><?= htmlspecialchars($m['category']) ?></td>
+                            <td data-label="Form"><?= htmlspecialchars($m['form']) ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -180,18 +167,9 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                 <input type="hidden" name="q" value="<?= htmlspecialchars($queryTerm) ?>">
                 <div class="filter-select-wrap">
                     <i class="bi bi-file-earmark-text leading-icon"></i>
-                    <select class="filter-select" name="form">
+                    <select data-styled-select class="filter-select" name="form">
                         <?php foreach ($vaccineFormOptions as $opt): ?>
                         <option <?= $opt === $formFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <i class="bi bi-chevron-down chevron"></i>
-                </div>
-                <div class="filter-select-wrap">
-                    <i class="bi bi-check-circle leading-icon"></i>
-                    <select class="filter-select" name="availability">
-                        <?php foreach ($vaccineAvailabilityOptions as $opt): ?>
-                        <option <?= $opt === $availabilityFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
                         <?php endforeach; ?>
                     </select>
                     <i class="bi bi-chevron-down chevron"></i>
@@ -214,13 +192,12 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                         <tr>
                             <th>Vaccine Name</th>
                             <th>Form</th>
-                            <th>Availability</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($vaccineResults)): ?>
                         <tr>
-                            <td colspan="3" style="text-align:center; padding:28px; color:var(--text-muted);">No vaccines match your search/filters.</td>
+                            <td colspan="2" style="text-align:center; padding:28px; color:var(--text-muted);">No vaccines match your search/filters.</td>
                         </tr>
                         <?php endif; ?>
                         <?php foreach ($vaccineResults as $v): ?>
@@ -234,8 +211,7 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                                     </div>
                                 </div>
                             </td>
-                            <td><?= htmlspecialchars($v['form']) ?></td>
-                            <td><span class="status-badge <?= htmlspecialchars($v['status']) ?>"><?= htmlspecialchars($v['statusLabel']) ?></span></td>
+                            <td data-label="Form"><?= htmlspecialchars($v['form']) ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>

@@ -4,7 +4,8 @@
    Loaded only by patient/medicine.php, after base.js. The Medicines/
    Vaccines tabs and filters work via normal page navigation (?tab=...
    and GET form submits), which keeps things simple and fully
-   functional without JS.
+   functional without JS. The filter/sort dropdowns' styled lists come
+   from assets/js/styled-select.js (each <select data-styled-select>).
 
    One real piece of interactivity: the top search box is shared by
    BOTH tabs (assets/js/quick-search.js, ?scope=medicines — which

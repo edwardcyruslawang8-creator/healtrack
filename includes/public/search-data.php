@@ -103,12 +103,40 @@ if ($queryTerm !== '') {
                 'status' => null,
                 'statusLabel' => '',
                 'href' => 'announcements.php?q=' . urlencode($a['title']),
+                'postedAt' => $a['postedAt'],
             ];
         }
     }
     // "service", "vaccine" — deliberately no real data source yet (see
     // header comment), so they contribute zero results here regardless
     // of $selectedCategories.
+}
+
+// ---------------------------------------------------------------------
+// Sort (?sort=, the results toolbar's "Sort by" dropdown). "relevance"
+// keeps the matched order above. "newest" puts dated results
+// (announcements' real postedAt) first, newest on top — medicines have
+// no date on file, so they follow in their existing order (usort is
+// stable as of PHP 8).
+// ---------------------------------------------------------------------
+$sortOptions = [
+    'relevance' => 'Sort by: Relevance',
+    'name'      => 'Sort by: Name (A–Z)',
+    'newest'    => 'Sort by: Newest',
+];
+$sortOption = isset($sortOptions[$_GET['sort'] ?? '']) ? $_GET['sort'] : 'relevance';
+
+if ($sortOption === 'name') {
+    usort($searchResults, fn ($a, $b) => strnatcasecmp($a['title'], $b['title']));
+} elseif ($sortOption === 'newest') {
+    usort($searchResults, function ($a, $b) {
+        $ta = !empty($a['postedAt']) ? strtotime($a['postedAt']) : false;
+        $tb = !empty($b['postedAt']) ? strtotime($b['postedAt']) : false;
+        if ($ta === $tb) return 0;
+        if ($ta === false) return 1;
+        if ($tb === false) return -1;
+        return $tb <=> $ta;
+    });
 }
 
 // ---------------------------------------------------------------------

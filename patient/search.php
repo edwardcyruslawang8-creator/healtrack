@@ -18,8 +18,8 @@ require_once __DIR__ . '/../includes/public/search-data.php';     // $popularSea
 $queryTerm = isset($_GET['q']) ? trim($_GET['q']) : '';
 
 $pageTitle   = 'Search';
-$pageCss     = ['search.css', 'quick-search.css'];
-$pageScripts = ['search.js', 'quick-search.js'];
+$pageCss     = ['search.css', 'quick-search.css', 'styled-select.css'];
+$pageScripts = ['styled-select.js', 'search.js', 'quick-search.js'];
 require_once __DIR__ . '/../includes/shared/header.php';
 require_once __DIR__ . '/../includes/shared/sidebar.php';
 ?>
@@ -35,6 +35,9 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
 
     <!-- SEARCH BAR -->
     <form class="search-page-bar" role="search" action="search.php" method="get">
+        <?php if ($sortOption !== 'relevance'): ?>
+        <input type="hidden" name="sort" value="<?= htmlspecialchars($sortOption) ?>"><!-- keep the chosen sort on a new search -->
+        <?php endif; ?>
         <div class="qs-field">
             <i class="bi bi-search"></i>
             <input type="text" name="q" value="<?= htmlspecialchars($queryTerm) ?>"
@@ -97,10 +100,14 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                 <?php if ($queryTerm !== ''): ?>
                 <span class="results-count">Showing 1&ndash;<?= count($searchResults) ?> of <?= $totalResults ?> results</span>
                 <?php endif; ?>
-                <select class="sort-select" name="sort">
-                    <option>Sort by: Relevance</option>
-                    <option>Sort by: Name (A&ndash;Z)</option>
-                    <option>Sort by: Newest</option>
+                <!-- form="filtersForm" — submits with the filters (and the
+                     search term they carry), so a sort survives a filter
+                     change and vice versa; assets/js/search.js submits on
+                     change. Sorting itself: includes/public/search-data.php. -->
+                <select data-styled-select class="sort-select" name="sort" id="sortSelect" form="filtersForm">
+                    <?php foreach ($sortOptions as $value => $label): ?>
+                    <option value="<?= $value ?>" <?= $value === $sortOption ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
+                    <?php endforeach; ?>
                 </select>
             </div>
 

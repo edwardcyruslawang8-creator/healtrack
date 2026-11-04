@@ -19,13 +19,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const sidebarToggle   = document.getElementById('sidebarToggle');
     const sidebarBackdrop = document.getElementById('sidebarBackdrop');
 
+    // body.sidebar-open lets base.css move the toggle off the sidebar's
+    // logo (it becomes a close button beside the sidebar) and hide the
+    // floating chatbot launcher, which otherwise sits on top of it.
+    const sidebarToggleIcon = sidebarToggle ? sidebarToggle.querySelector('i') : null;
     function openSidebar() {
         sidebar.classList.add('show');
         sidebarBackdrop.classList.add('show');
+        document.body.classList.add('sidebar-open');
+        if (sidebarToggle) sidebarToggle.setAttribute('aria-label', 'Close menu');
+        if (sidebarToggleIcon) sidebarToggleIcon.className = 'bi bi-x-lg';
     }
     function closeSidebar() {
         sidebar.classList.remove('show');
         sidebarBackdrop.classList.remove('show');
+        document.body.classList.remove('sidebar-open');
+        if (sidebarToggle) sidebarToggle.setAttribute('aria-label', 'Open menu');
+        if (sidebarToggleIcon) sidebarToggleIcon.className = 'bi bi-list';
     }
     if (sidebarToggle) {
         sidebarToggle.addEventListener('click', function () {

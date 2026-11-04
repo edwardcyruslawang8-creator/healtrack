@@ -36,8 +36,8 @@ require_once __DIR__ . '/../includes/public/data.php';       // $navItems (share
 require_once __DIR__ . '/../includes/public/gis-data.php';   // $dateRangeFilterOptions, $selectedDateRange, $gisRange, $gisSummary, $topDiseases, $healthTrend, $seasonalOverview
 
 $pageTitle   = 'GIS Mapping';
-$pageCss     = 'gis.css';
-$pageScripts = ['gis.js'];
+$pageCss     = ['gis.css', 'styled-select.css'];
+$pageScripts = ['styled-select.js', 'gis.js'];
 
 // Leaflet + Chart.js (for the "Health Trend" line chart below), loaded
 // only on this page (not site-wide). Same Chart.js version every other
@@ -81,7 +81,7 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
              has no submit button of its own). -->
         <div class="filter-select-wrap has-icon">
             <i class="bi bi-calendar3 leading-icon"></i>
-            <select class="filter-select" name="date_range" id="gisDateRangeSelect">
+            <select data-styled-select class="filter-select" name="date_range" id="gisDateRangeSelect">
                 <?php foreach ($dateRangeFilterOptions as $opt): ?>
                 <option <?= $opt === $selectedDateRange ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
                 <?php endforeach; ?>
@@ -167,7 +167,7 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                          leads with; both are always real, this only
                          changes which one reads first. -->
                     <div class="mini-select-wrap">
-                        <select class="mini-select" id="topDiseasesViewBy">
+                        <select data-styled-select class="mini-select" id="topDiseasesViewBy">
                             <option value="cases">View by: Cases</option>
                             <option value="percentage">View by: Percentage</option>
                         </select>
@@ -210,7 +210,7 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                          breakdown (hc_gis_seasonal_overview()'s own
                          categoryMonthly), client-side, no extra request. -->
                     <div class="mini-select-wrap">
-                        <select class="mini-select" id="seasonalDiseaseSelect">
+                        <select data-styled-select class="mini-select" id="seasonalDiseaseSelect">
                             <?php foreach ($seasonalOverview['categoryOptions'] as $catOpt): ?>
                             <option value="<?= htmlspecialchars($catOpt) ?>" <?= $catOpt === $seasonalOverview['topCategory'] ? 'selected' : '' ?>><?= htmlspecialchars($catOpt) ?></option>
                             <?php endforeach; ?>

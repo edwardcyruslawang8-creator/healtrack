@@ -94,6 +94,19 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             map.fitBounds(fitBounds, { padding: [10, 10] });
 
+            // The preview's height changes at home.css's breakpoints (and
+            // on phone rotation) — re-measure and re-fit so the barangays
+            // stay centered instead of clipped. Debounced: resize fires
+            // continuously while dragging a window edge.
+            let resizeTimer = null;
+            window.addEventListener('resize', function () {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function () {
+                    map.invalidateSize();
+                    map.fitBounds(fitBounds, { padding: [10, 10] });
+                }, 150);
+            });
+
             // Name-only label per barangay (no icon/case-count — this card
             // is too small for the full page's house-icon markers) so
             // it's at least clear which shape is which, same real
