@@ -96,7 +96,7 @@ $adminNavItems = [
 
     <!-- Brand -->
     <div class="adm-brand">
-        <div class="adm-logo-badge"><img src="<?= asset_url('/assets/images/main_logo.jpg') ?>" alt="HEALTrack logo" class="adm-logo-img"></div>
+        <div class="adm-logo-badge"><img src="<?= asset_url('/assets/images/main_logo.png') ?>" alt="HEALTrack logo" class="adm-logo-img"></div>
         <div class="adm-brand-text">
             <h1>HEALTrack</h1>
             <p><?= t('app.tagline') ?></p>

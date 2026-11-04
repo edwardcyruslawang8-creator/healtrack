@@ -48,7 +48,7 @@ html, body{ height: 100%; }
   overflow: hidden;
 }
 .login-logo-row .logo-badge i{ font-size: 24px; color: #5B0A0A; }
-.login-logo-row .logo-badge .logo-img{ width: 100%; height: 100%; object-fit: cover; border-radius: 13px; }
+.login-logo-row .logo-badge .logo-img{ width: 100%; height: 100%; object-fit: contain; border-radius: 13px; padding: 5px; box-sizing: border-box; }
 .login-logo-row .login-brand-text h1{
   font-size: 16px;
   font-weight: 700;

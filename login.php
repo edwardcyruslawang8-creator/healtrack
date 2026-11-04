@@ -66,7 +66,7 @@ $idleTimeoutNotice = ($_GET['reason'] ?? '') === 'idle'
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sign In — North Super Health Center</title>
-<link rel="icon" type="image/jpeg" href="<?= asset_url('/assets/images/main_logo.jpg') ?>">
+<link rel="icon" type="image/png" href="<?= asset_url('/assets/images/main_logo.png') ?>">
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -95,7 +95,7 @@ $idleTimeoutNotice = ($_GET['reason'] ?? '') === 'idle'
 
         <!-- Logo area -->
         <div class="login-logo-row">
-            <div class="logo-badge"><img src="<?= asset_url('/assets/images/main_logo.jpg') ?>" alt="HEALTrack logo" class="logo-img"></div>
+            <div class="logo-badge"><img src="<?= asset_url('/assets/images/main_logo.png') ?>" alt="HEALTrack logo" class="logo-img"></div>
             <div class="login-brand-text">
                 <h1>NORTH SUPER HEALTH CENTER</h1>
                 <p>Healthcare Management System</p>

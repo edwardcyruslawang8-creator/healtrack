@@ -156,7 +156,7 @@ body.adm-body{
   overflow: hidden;
 }
 .adm-brand .adm-logo-badge i{ font-size: 22px; color: #fff; }
-.adm-brand .adm-logo-badge .adm-logo-img{ width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.adm-brand .adm-logo-badge .adm-logo-img{ width: 100%; height: 100%; object-fit: contain; border-radius: 50%; background: #fff; padding: 6px; box-sizing: border-box; } /* white disc: the maroon logo would vanish on this see-through badge */
 .adm-brand .adm-brand-text h1{
   font-size: 19px;
   font-weight: 800;

@@ -19,7 +19,7 @@ $currentPage = basename($_SERVER['SCRIPT_NAME']);
 <aside class="sidebar" id="sidebar">
 
     <div class="sidebar-brand">
-        <div class="logo-badge"><img src="<?= asset_url('/assets/images/main_logo.jpg') ?>" alt="HEALTrack logo" class="logo-img"></div>
+        <div class="logo-badge"><img src="<?= asset_url('/assets/images/main_logo.png') ?>" alt="HEALTrack logo" class="logo-img"></div>
         <div class="brand-text">
             <h1>NORTH SUPER<br>HEALTH CENTER</h1>
             <p>Healthcare Management System</p>
