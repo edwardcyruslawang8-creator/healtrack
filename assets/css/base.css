@@ -107,7 +107,7 @@ button{ font-family: inherit; }
   overflow: hidden;
 }
 .sidebar-brand .logo-badge i{ font-size: 23px; color: var(--maroon); }
-.sidebar-brand .logo-badge .logo-img{ width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+.sidebar-brand .logo-badge .logo-img{ width: 100%; height: 100%; object-fit: contain; border-radius: 12px; padding: 5px; box-sizing: border-box; }
 .sidebar-brand .brand-text h1{
   font-size: 14.5px;
   font-weight: 700;
