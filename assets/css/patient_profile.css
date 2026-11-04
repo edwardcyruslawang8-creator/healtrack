@@ -44,6 +44,7 @@
 }
 .ppf-restricted-status.pending{ background: #FDF3DC; color: #B7791F; }
 .ppf-restricted-status.declined{ background: #FCE4E4; color: #D93025; }
+.ppf-restricted-status.expired{ background: #EEF0F3; color: #6B7280; }
 .ppf-restricted-btn{
   display: inline-flex;
   align-items: center;

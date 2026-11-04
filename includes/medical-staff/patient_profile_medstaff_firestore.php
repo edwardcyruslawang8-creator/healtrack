@@ -94,6 +94,49 @@ if ($requestedPatientId !== '') {
 }
 
 // ---------------------------------------------------------------------
+// Per-subpage "viewed" audit trail — patient_profile.php logs its own
+// view separately (see medical-staff/patient_profile.php); every OTHER
+// patient-scoped page that requires THIS file first (every tab page +
+// every detail drill-down) logs its own distinct entry here instead of
+// each duplicating the call individually — same one shared choke-point
+// this file's consent gate above already relies on.
+// ---------------------------------------------------------------------
+if ($patient !== null && !$accessRestricted) {
+    $hcSubpageLabels = [
+        'medical_history.php'            => 'Medical Records',
+        'patient_laboratory_xray.php'    => 'Laboratory & X-ray',
+        'vaccination_records.php'        => 'Vaccination Records',
+        'allergies.php'                  => 'Allergies',
+        'medications.php'                => 'Medications',
+        'documents.php'                  => 'Documents',
+        'history.php'                    => 'History',
+        'allergy_details.php'            => 'Allergy Details',
+        'vaccination_record_details.php' => 'Vaccination Record Details',
+        'laboratory_result_details.php'  => 'Laboratory Result Details',
+    ];
+    $hcCurrentScript = basename($_SERVER['SCRIPT_NAME']);
+    if (isset($hcSubpageLabels[$hcCurrentScript])) {
+        require_once __DIR__ . '/../shared/audit_log_writer.php'; // write_audit_log()
+        write_audit_log('viewed', 'Patient Management', 'Viewed ' . $patient['name'] . "'s " . $hcSubpageLabels[$hcCurrentScript] . ' tab.');
+    }
+}
+
+// ---------------------------------------------------------------------
+// Real-time 1-hour expiry countdown — surfaced to the client via a
+// global config/constants.php's shared ob_start() output-buffer
+// callback already reads (same injection point idle-timeout.js and the
+// reminder toasts use), so no individual page needs its own <script>
+// tag for this. Only set when there's a real deadline to count down to
+// — subadmin/registrant-today/consultation-today access has none.
+// ---------------------------------------------------------------------
+if (($consentStatus['expiresAt'] ?? null) !== null) {
+    $GLOBALS['hcPatientAccessExpiry'] = [
+        'expiresAtMs' => strtotime($consentStatus['expiresAt']) * 1000,
+        'redirectUrl' => BASE_URL . '/medical-staff/patient_profile.php?id=' . urlencode($requestedPatientId),
+    ];
+}
+
+// ---------------------------------------------------------------------
 // Profile tabs — Documents has no medical-staff page yet, so it stays
 // an inert placeholder pane; every other tab now links to a real page.
 // ---------------------------------------------------------------------

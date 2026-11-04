@@ -50,10 +50,31 @@ require_once __DIR__ . '/../includes/subadmin/patient_profile_firestore.php';
 // shows a patient (never for a blocked/not-found id, and never while
 // $accessRestricted — nothing was really viewed then) — see
 // subadmin/audit_logs.php and this account's own Audit Logs tab for
-// where this shows up.
+// where this shows up. This now also fires for every sub-admin
+// oversight view (hc_patient_consent_status()'s unconditional
+// subadmin access, includes/shared/patient_consent.php) — the
+// deliberate trade-off for sub-admin never waiting on consent: every
+// such view is still a real, visible PHI-access entry here.
 if ($patient !== null && !$accessRestricted) {
     require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
     write_audit_log('viewed', 'Patient Management', 'Viewed ' . $patient['name'] . "'s patient profile.");
+
+    // Sub-admin's access here never went through the request/approve
+    // cycle (consentStatus['reason'] === 'subadmin_oversight') — the
+    // other half of that same trade-off is that the patient is told
+    // about it every time, not just logged internally.
+    if (($consentStatus['reason'] ?? '') === 'subadmin_oversight') {
+        require_once __DIR__ . '/../includes/shared/mailer.php'; // hc_send_email(), hc_account_email_shell()
+        hc_send_email(
+            $patient['email'] ?? '',
+            $patient['name'] ?? '',
+            'Your patient details were viewed at ' . $adminProfile['facility'],
+            hc_account_email_shell(
+                'Your patient details were viewed',
+                '<p style="margin:0; font-size:14px; line-height:1.6;">Hi ' . htmlspecialchars($patient['name'] ?? '') . ', <strong>' . htmlspecialchars($adminProfile['name'] ?? 'A sub-administrator') . '</strong> at ' . htmlspecialchars($adminProfile['facility']) . ' viewed your patient details for administrative oversight on ' . date('F j, Y \a\t g:i A') . '.</p>'
+            )
+        );
+    }
 }
 
 // Sidebar nav — same Sub-Admin nav list as subadmin/dashboard.php.

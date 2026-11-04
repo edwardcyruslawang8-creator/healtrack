@@ -100,6 +100,23 @@ ob_start(function ($buffer) {
     } catch (\Throwable $e) {
         error_log('[Notification poll] Skipped after a late-stage failure: ' . $e->getMessage());
     }
+    // Real-time 1-hour patient-profile-access countdown — set as a
+    // global by includes/doctor/patient_profile_doctor_firestore.php /
+    // includes/medical-staff/patient_profile_medstaff_firestore.php
+    // (the one shared choke-point every tab + detail page for those
+    // roles already requires) only when there's a real consent-expiry
+    // deadline to count down to. Reusing this same late-stage injection
+    // point means none of those ~20 individual page files need their
+    // own <script> tag for this.
+    try {
+        if (isset($GLOBALS['hcPatientAccessExpiry'])) {
+            $script .= '<script>window.HC_PATIENT_ACCESS_EXPIRES_AT = ' . json_encode($GLOBALS['hcPatientAccessExpiry']['expiresAtMs']) . ';'
+                . 'window.HC_PATIENT_ACCESS_REDIRECT_URL = ' . json_encode($GLOBALS['hcPatientAccessExpiry']['redirectUrl']) . ';</script>'
+                . '<script src="' . asset_url('/assets/js/patient-access-timer.js') . '"></script>';
+        }
+    } catch (\Throwable $e) {
+        error_log('[Patient access timer] Skipped after a late-stage failure: ' . $e->getMessage());
+    }
 
     return str_replace('</body>', $script . '</body>', $buffer);
 });

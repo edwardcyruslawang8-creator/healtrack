@@ -79,6 +79,7 @@ $staffNavItems = [
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="<?= asset_url('/assets/images/favicon.svg') ?>">
 <title>Patient Profile — HEALTrack</title>
 
 <!-- Google Fonts -->
@@ -262,6 +263,13 @@ $staffNavItems = [
             <div class="ppf-restricted-status declined">
                 <i class="bi bi-x-circle-fill"></i>
                 Previously declined on <?= htmlspecialchars(date('M j, Y', strtotime($consentStatus['declinedRequest']['respondedAt'] ?? $consentStatus['declinedRequest']['givenOn']))) ?>. You may send a new request.
+            </div>
+            <?php endif; ?>
+
+            <?php if ($consentStatus['expiredRequest'] !== null): ?>
+            <div class="ppf-restricted-status expired">
+                <i class="bi bi-clock-history"></i>
+                Your access expired on <?= htmlspecialchars(date('M j, Y g:i A', strtotime($consentStatus['expiredRequest']['firstAccessedAt']) + 3600)) ?> (1 hour after you first opened this profile). You may send a new request.
             </div>
             <?php endif; ?>
 
