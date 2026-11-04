@@ -65,7 +65,7 @@ function hc_rxq_query(array $overrides = []): string
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/svg+xml" href="<?= asset_url('/assets/images/favicon.svg') ?>">
+<link rel="icon" type="image/jpeg" href="<?= asset_url('/assets/images/main_logo.jpg') ?>">
 <title>Prescription Queue — HEALTrack</title>
 
 <!-- Google Fonts -->
@@ -101,7 +101,7 @@ function hc_rxq_query(array $overrides = []): string
 
     <!-- Brand -->
     <div class="adm-brand">
-        <div class="adm-logo-badge"><i class="bi bi-shield-fill-plus"></i></div>
+        <div class="adm-logo-badge"><img src="<?= asset_url('/assets/images/main_logo.jpg') ?>" alt="HEALTrack logo" class="adm-logo-img"></div>
         <div class="adm-brand-text">
             <h1>HEALTrack</h1>
             <p>Health Information System</p>

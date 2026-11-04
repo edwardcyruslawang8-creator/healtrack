@@ -30,7 +30,7 @@ $cssString = fn ($s) => '"' . str_replace(['\\', '"', "\n"], ['\\\\', '\\"', ' '
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/svg+xml" href="<?= asset_url('/assets/images/favicon.svg') ?>">
+<link rel="icon" type="image/jpeg" href="<?= asset_url('/assets/images/main_logo.jpg') ?>">
 <title><?= $e($rxPayload['title']) ?> — <?= $e($rxPayload['facility']) ?></title>
 <link rel="stylesheet" href="<?= asset_url('/assets/css/fonts-poppins.css') ?>">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">

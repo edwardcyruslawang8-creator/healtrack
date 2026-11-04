@@ -31,7 +31,7 @@ require_once __DIR__ . '/config/constants.php'; // BASE_URL
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reset Password — North Super Health Center</title>
-<link rel="icon" type="image/svg+xml" href="<?= asset_url('/assets/images/favicon.svg') ?>">
+<link rel="icon" type="image/jpeg" href="<?= asset_url('/assets/images/main_logo.jpg') ?>">
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -59,7 +59,7 @@ require_once __DIR__ . '/config/constants.php'; // BASE_URL
     <div class="login-left">
 
         <div class="login-logo-row">
-            <div class="logo-badge"><i class="bi bi-shield-fill-plus"></i></div>
+            <div class="logo-badge"><img src="<?= asset_url('/assets/images/main_logo.jpg') ?>" alt="HEALTrack logo" class="logo-img"></div>
             <div class="login-brand-text">
                 <h1>NORTH SUPER HEALTH CENTER</h1>
                 <p>Healthcare Management System</p>
