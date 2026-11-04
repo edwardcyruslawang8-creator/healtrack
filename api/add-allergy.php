@@ -25,6 +25,7 @@ session_start();
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
+require_once __DIR__ . '/../includes/firestore/allergies.php'; // hc_allergy_type_meta()
 
 header('Content-Type: application/json');
 
@@ -48,6 +49,11 @@ $reaction = trim((string) ($body['reaction'] ?? '')) ?: 'Not specified';
 $severity = trim((string) ($body['severity'] ?? ''));
 $severity = in_array($severity, ['mild', 'moderate', 'severe'], true) ? $severity : 'mild';
 
+$typeMeta = hc_allergy_type_meta();
+$type = trim((string) ($body['type'] ?? ''));
+$type = array_key_exists($type, $typeMeta) ? $type : 'Other';
+$iconMeta = $typeMeta[$type];
+
 if ($patientId === '' || $allergen === '') {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Please enter an allergen.']);
@@ -60,10 +66,10 @@ $newId = $firestore->addDocument('allergies', [
     'patientId' => $patientId,
     'allergen' => $allergen,
     'subtype' => null,
-    'type' => 'Other',
-    'icon' => 'bi-exclamation-triangle-fill',
-    'iconBg' => '#FDECDD',
-    'iconColor' => '#E8710A',
+    'type' => $type,
+    'icon' => $iconMeta['icon'],
+    'iconBg' => $iconMeta['iconBg'],
+    'iconColor' => $iconMeta['iconColor'],
     'reaction' => $reaction,
     'severity' => $severity,
     'onsetDate' => $today,

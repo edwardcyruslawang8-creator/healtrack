@@ -87,7 +87,8 @@ $adminNavItems = [
 ];
 
 $selectedSeverity = $severityMeta[$selectedAllergy['severity']] ?? $severityMeta['mild'];
-$selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStatusMeta['active'];
+$selectedStatus = $allergyStatusMeta[$selectedAllergy['clinicalStatus']] ?? $allergyStatusMeta['active'];
+$selectedVerification = $verificationStatusMeta[$selectedAllergy['verificationStatus']] ?? $verificationStatusMeta['unconfirmed'];
 ?>
 <!DOCTYPE html>
 <html lang="en"<?= admin_theme_data_attr() ?>>
@@ -376,6 +377,7 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                         <th>Severity</th>
                         <th>Onset Date</th>
                         <th>Status</th>
+                        <th>Verification</th>
                         <th>Notes</th>
                         <th>Actions</th>
                     </tr>
@@ -383,10 +385,10 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                 <tbody>
                     <?php if (empty($activeAllergies)): ?>
                     <tr>
-                        <td colspan="8" class="adm-table-empty">No active allergies recorded.</td>
+                        <td colspan="9" class="adm-table-empty">No active allergies recorded.</td>
                     </tr>
                     <?php endif; ?>
-                    <?php foreach ($activeAllergies as $alg): $sev = $severityMeta[$alg['severity']] ?? $severityMeta['mild']; $stat = $allergyStatusMeta[$alg['status']] ?? $allergyStatusMeta['active']; ?>
+                    <?php foreach ($activeAllergies as $alg): $sev = $severityMeta[$alg['severity']] ?? $severityMeta['mild']; $stat = $allergyStatusMeta[$alg['clinicalStatus']] ?? $allergyStatusMeta['active']; $ver = $verificationStatusMeta[$alg['verificationStatus']] ?? $verificationStatusMeta['unconfirmed']; ?>
                     <tr>
                         <td>
                             <div class="alg-name-cell">
@@ -406,6 +408,7 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                         <td><span class="alg-badge" style="background:<?= htmlspecialchars($sev['bg']) ?>; color:<?= htmlspecialchars($sev['color']) ?>;"><?= htmlspecialchars($sev['label']) ?></span></td>
                         <td><?= htmlspecialchars($alg['onsetDate']) ?></td>
                         <td><span class="alg-badge" style="background:<?= htmlspecialchars($stat['bg']) ?>; color:<?= htmlspecialchars($stat['color']) ?>;"><?= htmlspecialchars($stat['label']) ?></span></td>
+                        <td><span class="alg-badge alg-badge-verif" style="background:<?= htmlspecialchars($ver['bg']) ?>; color:<?= htmlspecialchars($ver['color']) ?>;"><?= htmlspecialchars($ver['label']) ?></span></td>
                         <td class="alg-notes-cell"><?= htmlspecialchars($alg['notes']) ?></td>
                         <td>
                             <div class="adm-action-btns">
@@ -438,6 +441,7 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                         <th>Severity</th>
                         <th>Onset Date</th>
                         <th>Status</th>
+                        <th>Verification</th>
                         <th>Notes</th>
                         <th>Actions</th>
                     </tr>
@@ -445,10 +449,10 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                 <tbody>
                     <?php if (empty($inactiveAllergies)): ?>
                     <tr>
-                        <td colspan="8" class="adm-table-empty">No inactive or resolved allergies recorded.</td>
+                        <td colspan="9" class="adm-table-empty">No inactive or resolved allergies recorded.</td>
                     </tr>
                     <?php endif; ?>
-                    <?php foreach ($inactiveAllergies as $alg): $sev = $severityMeta[$alg['severity']] ?? $severityMeta['mild']; $stat = $allergyStatusMeta[$alg['status']] ?? $allergyStatusMeta['active']; ?>
+                    <?php foreach ($inactiveAllergies as $alg): $sev = $severityMeta[$alg['severity']] ?? $severityMeta['mild']; $stat = $allergyStatusMeta[$alg['clinicalStatus']] ?? $allergyStatusMeta['resolved']; $ver = $verificationStatusMeta[$alg['verificationStatus']] ?? $verificationStatusMeta['unconfirmed']; ?>
                     <tr>
                         <td>
                             <div class="alg-name-cell">
@@ -468,6 +472,7 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                         <td><span class="alg-badge" style="background:<?= htmlspecialchars($sev['bg']) ?>; color:<?= htmlspecialchars($sev['color']) ?>;"><?= htmlspecialchars($sev['label']) ?></span></td>
                         <td><?= htmlspecialchars($alg['onsetDate']) ?></td>
                         <td><span class="alg-badge" style="background:<?= htmlspecialchars($stat['bg']) ?>; color:<?= htmlspecialchars($stat['color']) ?>;"><?= htmlspecialchars($stat['label']) ?></span></td>
+                        <td><span class="alg-badge alg-badge-verif" style="background:<?= htmlspecialchars($ver['bg']) ?>; color:<?= htmlspecialchars($ver['color']) ?>;"><?= htmlspecialchars($ver['label']) ?></span></td>
                         <td class="alg-notes-cell"><?= htmlspecialchars($alg['notes']) ?></td>
                         <td>
                             <div class="adm-action-btns">
@@ -505,6 +510,7 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                     <div class="alg-field"><span class="alg-field-label">Type</span><span class="alg-field-value"><?= htmlspecialchars($selectedAllergy['type']) ?><?= $selectedAllergy['subtype'] ? ' (' . htmlspecialchars($selectedAllergy['subtype']) . ')' : '' ?></span></div>
                     <div class="alg-field"><span class="alg-field-label">Severity</span><span class="alg-badge" style="background:<?= htmlspecialchars($selectedSeverity['bg']) ?>; color:<?= htmlspecialchars($selectedSeverity['color']) ?>;"><?= htmlspecialchars($selectedSeverity['label']) ?></span></div>
                     <div class="alg-field"><span class="alg-field-label">Status</span><span class="alg-badge" style="background:<?= htmlspecialchars($selectedStatus['bg']) ?>; color:<?= htmlspecialchars($selectedStatus['color']) ?>;"><?= htmlspecialchars($selectedStatus['label']) ?></span></div>
+                    <div class="alg-field"><span class="alg-field-label">Verification</span><span class="alg-badge" style="background:<?= htmlspecialchars($selectedVerification['bg']) ?>; color:<?= htmlspecialchars($selectedVerification['color']) ?>;"><?= htmlspecialchars($selectedVerification['label']) ?></span></div>
                 </div>
                 <div class="alg-details-col">
                     <div class="alg-field"><span class="alg-field-label">Reaction</span><span class="alg-field-value"><?= htmlspecialchars($selectedAllergy['reaction']) ?></span></div>

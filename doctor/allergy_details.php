@@ -54,7 +54,8 @@ $doctorNavItems = [
 ];
 
 $selectedSeverity = $severityMeta[$selectedAllergy['severity']] ?? $severityMeta['mild'];
-$selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStatusMeta['active'];
+$selectedStatus = $allergyStatusMeta[$selectedAllergy['clinicalStatus']] ?? $allergyStatusMeta['active'];
+$selectedVerification = $verificationStatusMeta[$selectedAllergy['verificationStatus']] ?? $verificationStatusMeta['unconfirmed'];
 $typeLabel = $selectedAllergy['type'] . ($selectedAllergy['subtype'] ? ' (' . $selectedAllergy['subtype'] . ')' : '');
 ?>
 <!DOCTYPE html>
@@ -267,13 +268,13 @@ $typeLabel = $selectedAllergy['type'] . ($selectedAllergy['subtype'] ? ' (' . $s
 
             <div class="ald-overview-col">
                 <div class="ald-field"><span class="ald-field-label">Status</span><span class="ald-badge" style="background:<?= htmlspecialchars($selectedStatus['bg']) ?>; color:<?= htmlspecialchars($selectedStatus['color']) ?>;"><?= htmlspecialchars($selectedStatus['label']) ?></span></div>
+                <div class="ald-field"><span class="ald-field-label">Verification</span><span class="ald-badge" style="background:<?= htmlspecialchars($selectedVerification['bg']) ?>; color:<?= htmlspecialchars($selectedVerification['color']) ?>;"><?= htmlspecialchars($selectedVerification['label']) ?></span></div>
                 <div class="ald-field"><span class="ald-field-label">Onset Date</span><span class="ald-field-value"><?= htmlspecialchars($selectedAllergy['onsetDate']) ?></span></div>
                 <div class="ald-field"><span class="ald-field-label">Last Occurred</span><span class="ald-field-value"><?= htmlspecialchars($selectedAllergy['lastOccurred']) ?></span></div>
             </div>
 
             <div class="ald-overview-col">
                 <div class="ald-field ald-field-stacked"><span class="ald-field-label">Added On</span><span class="ald-field-value"><?= htmlspecialchars($selectedAllergy['addedOn']) ?></span></div>
-                <div class="ald-field ald-field-stacked"><span class="ald-field-label">Notes</span><span class="ald-field-value"><?= htmlspecialchars($selectedAllergy['notes']) ?></span></div>
                 <div class="ald-field ald-field-stacked"><span class="ald-field-label">Recommendations</span><span class="ald-field-value"><?= htmlspecialchars($selectedAllergy['recommendations']) ?></span></div>
             </div>
         </div>
@@ -293,6 +294,7 @@ $typeLabel = $selectedAllergy['type'] . ($selectedAllergy['subtype'] ? ' (' . $s
                 <div class="ald-field"><span class="ald-field-label">Onset Date</span><span class="ald-field-value"><?= htmlspecialchars($selectedAllergy['onsetDate']) ?></span></div>
                 <div class="ald-field"><span class="ald-field-label">Last Occurred</span><span class="ald-field-value"><?= htmlspecialchars($selectedAllergy['lastOccurred']) ?></span></div>
                 <div class="ald-field"><span class="ald-field-label">Status</span><span class="ald-badge" style="background:<?= htmlspecialchars($selectedStatus['bg']) ?>; color:<?= htmlspecialchars($selectedStatus['color']) ?>;"><?= htmlspecialchars($selectedStatus['label']) ?></span></div>
+                <div class="ald-field"><span class="ald-field-label">Verification</span><span class="ald-badge" style="background:<?= htmlspecialchars($selectedVerification['bg']) ?>; color:<?= htmlspecialchars($selectedVerification['color']) ?>;"><?= htmlspecialchars($selectedVerification['label']) ?></span></div>
             </div>
 
             <div class="ald-symptoms-panel">
@@ -317,19 +319,31 @@ $typeLabel = $selectedAllergy['type'] . ($selectedAllergy['subtype'] ? ' (' . $s
                         <th>Date</th>
                         <th>Event</th>
                         <th>Details</th>
+                        <th>Reason</th>
+                        <th>Assessed By</th>
+                        <th>Attachment</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($selectedAllergy['history'])): ?>
                     <tr>
-                        <td colspan="3" class="adm-table-empty">No history recorded yet.</td>
+                        <td colspan="6" class="adm-table-empty">No history recorded yet.</td>
                     </tr>
                     <?php endif; ?>
-                    <?php foreach ($selectedAllergy['history'] as $entry): ?>
+                    <?php foreach ($selectedAllergy['history'] as $i => $entry): ?>
                     <tr>
                         <td class="ald-strong"><?= htmlspecialchars($entry['date']) ?></td>
                         <td class="ald-event-cell"><?= htmlspecialchars($entry['event']) ?></td>
                         <td><?= htmlspecialchars($entry['details']) ?></td>
+                        <td class="ald-reason-cell"><?= htmlspecialchars($entry['reason'] ?? '—') ?></td>
+                        <td><?= htmlspecialchars($entry['assessedByName'] ?? '—') ?></td>
+                        <td>
+                            <?php if (!empty($entry['attachment']['storedFileName'])): ?>
+                            <a href="../api/download-allergy-attachment.php?allergyId=<?= urlencode($selectedAllergy['id']) ?>&historyIndex=<?= (int) $i ?>&view=1" target="_blank" class="ald-attachment-link">
+                                <i class="bi bi-paperclip"></i> <?= htmlspecialchars($entry['attachment']['originalName'] ?? 'File') ?>
+                            </a>
+                            <?php else: ?>—<?php endif; ?>
+                        </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>

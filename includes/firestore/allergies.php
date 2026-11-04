@@ -10,12 +10,43 @@
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
+require_once __DIR__ . '/../shared/inventory_match.php'; // hc_normalize_text()
+
+if (!function_exists('hc_text_mentions_possible_allergy')) {
+    /**
+     * Whether free text (e.g. a consultation's chiefComplaint) mentions
+     * a possible allergy at all — a generic trigger-word check, NOT an
+     * attempt to extract which allergen. Same simple case-insensitive
+     * substring convention as includes/shared/predictive_analytics_core.php's
+     * hc_notifiable_cases_from_records() (hc_normalize_text() + str_contains(),
+     * no regex/word-boundary/stemming) — used by
+     * doctor/active_consultation.php to prompt the doctor to confirm/add
+     * a real allergy record via the existing api/add-allergy.php mini-form
+     * when Save & End is clicked, rather than silently creating anything.
+     */
+    function hc_text_mentions_possible_allergy(string $text): bool
+    {
+        $normalized = hc_normalize_text($text);
+        if ($normalized === '') {
+            return false;
+        }
+
+        $triggerWords = ['allergic', 'allergy', 'allergies', 'hypersensitive', 'anaphylaxis', 'anaphylactic'];
+        foreach ($triggerWords as $word) {
+            if (str_contains($normalized, $word)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
 
 if (!function_exists('hc_get_allergies_for_patient')) {
     /**
      * Every allergies/{id} doc for $patientId, newest added first.
      *
-     * @return array<int, array{id: string, allergen: string, subtype: ?string, type: string, icon: string, iconBg: string, iconColor: string, reaction: string, severity: string, onsetDate: string, lastOccurred: string, addedOn: string, updatedOn: string, status: string, notes: string, recommendations: string, summary: string, description: string, symptoms: array, history: array}>
+     * @return array<int, array{id: string, allergen: string, subtype: ?string, type: string, icon: string, iconBg: string, iconColor: string, reaction: string, severity: string, onsetDate: string, onsetDateRaw: string, lastOccurred: string, addedOn: string, updatedOn: string, status: string, clinicalStatus: string, verificationStatus: string, notes: string, recommendations: string, summary: string, description: string, symptoms: array, history: array}>
      */
     function hc_get_allergies_for_patient(string $patientId): array
     {
@@ -37,18 +68,36 @@ if (!function_exists('hc_get_allergies_for_patient')) {
                 'reaction' => $f['reaction'],
                 'severity' => $f['severity'],
                 'onsetDate' => date('M j, Y', strtotime($f['onsetDate'])),
+                'onsetDateRaw' => $f['onsetDate'],
                 'lastOccurred' => date('M j, Y', strtotime($f['lastOccurred'])),
                 'addedOn' => date('M j, Y', strtotime($f['addedOn'])),
-                // Last status change (api/update-allergy-status.php);
+                // Last status change (api/update-allergy-clinical-status.php);
                 // records never changed since being added fall back to addedOn.
                 'updatedOn' => date('M j, Y', strtotime($f['statusUpdatedOn'] ?? $f['addedOn'])),
                 'status' => $f['status'],
+                // clinicalStatus/verificationStatus are new fields — a doc
+                // written before this feature existed has neither, so both
+                // are backfilled here on read rather than requiring a data
+                // migration: clinicalStatus derives from the legacy
+                // 2-value 'status' field (an 'inactive' value never
+                // existed pre-feature, so there's nothing to derive it
+                // from), and an unreviewed old record defaults to the
+                // most conservative verification value, 'unconfirmed' —
+                // never silently treated as Confirmed/Refuted.
+                'clinicalStatus' => $f['clinicalStatus'] ?? ($f['status'] === 'active' ? 'active' : 'resolved'),
+                'verificationStatus' => $f['verificationStatus'] ?? 'unconfirmed',
                 'notes' => $f['notes'],
                 'recommendations' => $f['recommendations'],
                 'summary' => $f['summary'],
                 'description' => $f['description'],
                 'symptoms' => $f['symptoms'] ?? [],
-                'history' => array_map(fn ($h) => ['date' => date('M j, Y', strtotime($h['date'])), 'event' => $h['event'], 'details' => $h['details']], $f['history'] ?? []),
+                'history' => array_map(function ($h) {
+                    $h['date'] = date('M j, Y', strtotime($h['date']));
+                    if (!empty($h['assessmentDate'])) {
+                        $h['assessmentDate'] = date('M j, Y', strtotime($h['assessmentDate']));
+                    }
+                    return $h;
+                }, $f['history'] ?? []),
             ];
         }, $docs);
     }
@@ -60,8 +109,9 @@ if (!function_exists('hc_empty_allergy')) {
         return [
             'id' => '', 'allergen' => 'No allergies on record.', 'subtype' => null, 'type' => '—',
             'icon' => 'bi-shield-fill-check', 'iconBg' => '#EEF0F3', 'iconColor' => '#6B7280',
-            'reaction' => '—', 'severity' => 'mild', 'onsetDate' => '—', 'lastOccurred' => '—', 'addedOn' => '—', 'updatedOn' => '—',
-            'status' => 'resolved', 'notes' => '—', 'recommendations' => '—', 'summary' => 'No allergies on record for this patient.',
+            'reaction' => '—', 'severity' => 'mild', 'onsetDate' => '—', 'onsetDateRaw' => '', 'lastOccurred' => '—', 'addedOn' => '—', 'updatedOn' => '—',
+            'status' => 'resolved', 'clinicalStatus' => 'resolved', 'verificationStatus' => 'unconfirmed',
+            'notes' => '—', 'recommendations' => '—', 'summary' => 'No allergies on record for this patient.',
             'description' => '—', 'symptoms' => [], 'history' => [],
         ];
     }

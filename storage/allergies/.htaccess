@@ -1,0 +1,14 @@
+# Supporting documentation attached to an allergy clinical-status
+# change lives here on local disk (same convention as
+# storage/patient_documents/ — see includes/shared/document_storage.php's
+# header comment; Firebase Cloud Storage isn't enabled for this
+# project). This folder must never be served directly; every real
+# download goes through api/download-allergy-attachment.php, which
+# re-checks the signed-in user's access to the owning patient before
+# streaming the file.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Deny from all
+</IfModule>

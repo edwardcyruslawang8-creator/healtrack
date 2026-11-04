@@ -320,6 +320,11 @@ $doctorNavItems = [
                         <input type="hidden" id="acvAllergyPatientId" value="<?= htmlspecialchars($patient['id']) ?>">
                         <div class="acv-add-allergy-row">
                             <input type="text" class="form-control form-control-sm" id="acvAllergyAllergen" placeholder="Allergen (e.g. Penicillin)">
+                            <select class="form-select form-select-sm" id="acvAllergyType">
+                                <?php foreach ($allergyTypeOptions as $typeOption): ?>
+                                <option value="<?= htmlspecialchars($typeOption) ?>" <?= $typeOption === 'Other' ? 'selected' : '' ?>><?= htmlspecialchars($typeOption) ?></option>
+                                <?php endforeach; ?>
+                            </select>
                             <input type="text" class="form-control form-control-sm" id="acvAllergyReaction" placeholder="Reaction (e.g. Rash)">
                             <select class="form-select form-select-sm" id="acvAllergySeverity">
                                 <option value="mild">Mild</option>
@@ -698,6 +703,62 @@ $doctorNavItems = [
 
 </main>
 
+<!-- ============ POSSIBLE ALLERGY DETECTED MODAL ============
+     Shown once, the first time "Save & End Consultation" is clicked,
+     only when this consultation's own real Chief Complaint text
+     mentions a possible allergy (hc_text_mentions_possible_allergy(),
+     includes/firestore/allergies.php) — a generic trigger-word check,
+     not an attempt to extract which allergen from free text. The
+     doctor reviews the quoted Chief Complaint themselves and fills in
+     the same 3 fields as the "+ Add Allergy" mini-form above; "Add to
+     Allergies" writes via the exact same api/add-allergy.php path.
+     Never creates anything automatically. -->
+<div class="modal fade adm-modal" id="acvAllergyDetectedModal" tabindex="-1" aria-labelledby="acvAllergyDetectedModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="acvAllergyDetectedModalLabel"><i class="bi bi-exclamation-triangle-fill"></i> Possible Allergy Mentioned</h5>
+      </div>
+      <div class="modal-body">
+        <p class="small">The Chief Complaint for this visit mentions a possible allergy:</p>
+        <blockquote class="acv-readonly-box"><?= htmlspecialchars($consultation['chiefComplaint']) ?></blockquote>
+        <p class="small">If this is a real allergy, add it below. Otherwise, skip — this won't be asked again for this consultation.</p>
+
+        <div id="acvDetectedAllergyError" class="alert alert-danger py-2 px-3 small d-none"></div>
+
+        <div class="mb-2">
+          <label for="acvDetectedAllergyAllergen" class="form-label">Allergen</label>
+          <input type="text" class="form-control form-control-sm" id="acvDetectedAllergyAllergen" placeholder="Allergen (e.g. Penicillin)">
+        </div>
+        <div class="mb-2">
+          <label for="acvDetectedAllergyType" class="form-label">Allergy Type</label>
+          <select class="form-select form-select-sm" id="acvDetectedAllergyType">
+            <?php foreach ($allergyTypeOptions as $typeOption): ?>
+            <option value="<?= htmlspecialchars($typeOption) ?>" <?= $typeOption === 'Other' ? 'selected' : '' ?>><?= htmlspecialchars($typeOption) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label for="acvDetectedAllergyReaction" class="form-label">Reaction</label>
+          <input type="text" class="form-control form-control-sm" id="acvDetectedAllergyReaction" placeholder="Reaction (e.g. Rash)">
+        </div>
+        <div class="mb-2">
+          <label for="acvDetectedAllergySeverity" class="form-label">Severity</label>
+          <select class="form-select form-select-sm" id="acvDetectedAllergySeverity">
+            <option value="mild">Mild</option>
+            <option value="moderate">Moderate</option>
+            <option value="severe">Severe</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="adm-modal-btn-cancel" id="acvAllergyDetectedSkip">Not an Allergy / Skip</button>
+        <button type="button" class="adm-modal-btn-submit" id="acvAllergyDetectedSave">Add to Allergies</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <datalist id="acvMedicineList">
     <?php foreach ($medicineNames as $name): ?>
     <option value="<?= htmlspecialchars($name) ?>">
@@ -717,6 +778,7 @@ $doctorNavItems = [
 <script>
     window.ACV_CONSULTATION_ID = <?= json_encode($consultation['id']) ?>;
     window.ACV_MEDICATIONS = <?= json_encode($consultation['medications']) ?>;
+    window.ACV_CHIEF_COMPLAINT_MENTIONS_ALLERGY = <?= json_encode($chiefComplaintMentionsAllergy) ?>;
 </script>
 <script src="<?= asset_url('/assets/js/active_consultation.js') ?>"></script>
 </body>

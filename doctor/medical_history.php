@@ -294,18 +294,17 @@ $doctorNavItems = [
         <div class="adm-table-wrap">
             <table class="adm-table mhx-table">
                 <thead>
-                    <tr><th>Condition</th><th>Date Diagnosed</th><th>Status</th><th>Notes</th><th>Actions</th></tr>
+                    <tr><th>Condition</th><th>Date Diagnosed</th><th>Status</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                     <?php if (empty($chronicConditions)): ?>
-                    <tr><td colspan="5" class="adm-table-empty">No chronic conditions on record.</td></tr>
+                    <tr><td colspan="4" class="adm-table-empty">No chronic conditions on record.</td></tr>
                     <?php endif; ?>
                     <?php foreach ($chronicConditions as $c): $rowJson = htmlspecialchars(json_encode($c), ENT_QUOTES); ?>
                     <tr>
                         <td class="mhx-cond-label"><?= htmlspecialchars($c['label']) ?></td>
                         <td><?= htmlspecialchars($c['diagnosedOn']) ?></td>
                         <td><span class="mhx-status-badge <?= strtolower($c['status']) ?>"><?= htmlspecialchars($c['status']) ?></span></td>
-                        <td class="mhx-notes-cell"><?= htmlspecialchars($c['details'] ?? '—') ?></td>
                         <td>
                             <div class="adm-action-btns">
                                 <button type="button" class="adm-action-btn edit" aria-label="Edit" data-mhx-edit="condition" data-id="<?= htmlspecialchars($c['id']) ?>" data-row='<?= $rowJson ?>'><i class="bi bi-pencil"></i></button>
@@ -331,18 +330,17 @@ $doctorNavItems = [
         <div class="adm-table-wrap">
             <table class="adm-table mhx-table">
                 <thead>
-                    <tr><th>Procedure</th><th>Date</th><th>Surgeon / Facility</th><th>Notes</th><th>Actions</th></tr>
+                    <tr><th>Procedure</th><th>Date</th><th>Surgeon / Facility</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                     <?php if (empty($surgicalHistory)): ?>
-                    <tr><td colspan="5" class="adm-table-empty">No past surgeries or procedures on record.</td></tr>
+                    <tr><td colspan="4" class="adm-table-empty">No past surgeries or procedures on record.</td></tr>
                     <?php endif; ?>
                     <?php foreach ($surgicalHistory as $s): $rowJson = htmlspecialchars(json_encode($s), ENT_QUOTES); ?>
                     <tr>
                         <td class="mhx-cond-label"><?= htmlspecialchars($s['procedure']) ?></td>
                         <td><?= htmlspecialchars($s['date']) ?></td>
                         <td><?= htmlspecialchars($s['surgeonFacility'] ?? '—') ?></td>
-                        <td class="mhx-notes-cell"><?= htmlspecialchars($s['details'] ?? '—') ?></td>
                         <td>
                             <div class="adm-action-btns">
                                 <button type="button" class="adm-action-btn edit" aria-label="Edit" data-mhx-edit="surgery" data-id="<?= htmlspecialchars($s['id']) ?>" data-row='<?= $rowJson ?>'><i class="bi bi-pencil"></i></button>

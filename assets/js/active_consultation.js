@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function closeAllergyForm() {
         allergyForm.classList.add('d-none');
         document.getElementById('acvAllergyAllergen').value = '';
+        document.getElementById('acvAllergyType').value = 'Other';
         document.getElementById('acvAllergyReaction').value = '';
         document.getElementById('acvAllergySeverity').value = 'mild';
         allergyError.classList.add('d-none');
@@ -100,24 +101,20 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     allergyCancelBtn.addEventListener('click', closeAllergyForm);
 
-    allergySaveBtn.addEventListener('click', function () {
-        const allergen = document.getElementById('acvAllergyAllergen').value.trim();
-        if (allergen === '') {
-            allergyError.textContent = 'Please enter an allergen.';
-            allergyError.classList.remove('d-none');
-            return;
-        }
-        const severity = document.getElementById('acvAllergySeverity').value;
-
+    // Shared write path — reused by both the mini-form above and the
+    // "Possible Allergy Detected" modal (below) that the Save & End
+    // handler can show first. Updates the on-page Allergies list in
+    // place rather than reloading (see closeAllergyForm()'s own
+    // reasoning: a reload here would wipe out unsaved consultation
+    // fields that have no autosave).
+    function saveAllergy(allergen, type, reaction, severity, onSuccess, onError) {
         const payload = {
             patientId: document.getElementById('acvAllergyPatientId').value,
             allergen: allergen,
-            reaction: document.getElementById('acvAllergyReaction').value.trim(),
+            type: type,
+            reaction: reaction,
             severity: severity,
         };
-
-        allergySaveBtn.disabled = true;
-        allergyError.classList.add('d-none');
 
         fetch('../api/add-allergy.php', {
             method: 'POST',
@@ -129,26 +126,91 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (!result.ok || !result.data.success) {
                     throw new Error(result.data.error || 'Something went wrong. Please try again.');
                 }
-                // Update the list in place rather than reloading the
-                // page — this form has no autosave (see the
-                // beforeunload guard above), so a reload here would
-                // silently wipe out any HPI/diagnosis/prescription/
-                // vitals/medications/notes the doctor already typed but
-                // hasn't Saved & Ended yet. Everything needed to render
-                // the new entry was already just submitted, so no
-                // re-fetch is needed either.
                 const list = document.getElementById('acvAllergyList');
                 const entry = allergen + ' (' + severity + ')';
                 list.textContent = list.textContent.trim() === 'No known allergies.' ? entry : list.textContent + ', ' + entry;
-                closeAllergyForm();
-                allergySaveBtn.disabled = false;
+                onSuccess();
             })
-            .catch(function (err) {
-                allergyError.textContent = err.message;
-                allergyError.classList.remove('d-none');
-                allergySaveBtn.disabled = false;
-            });
+            .catch(onError);
+    }
+
+    allergySaveBtn.addEventListener('click', function () {
+        const allergen = document.getElementById('acvAllergyAllergen').value.trim();
+        if (allergen === '') {
+            allergyError.textContent = 'Please enter an allergen.';
+            allergyError.classList.remove('d-none');
+            return;
+        }
+        const type = document.getElementById('acvAllergyType').value;
+        const severity = document.getElementById('acvAllergySeverity').value;
+        const reaction = document.getElementById('acvAllergyReaction').value.trim();
+
+        allergySaveBtn.disabled = true;
+        allergyError.classList.add('d-none');
+
+        saveAllergy(allergen, type, reaction, severity, function () {
+            closeAllergyForm();
+            allergySaveBtn.disabled = false;
+        }, function (err) {
+            allergyError.textContent = err.message;
+            allergyError.classList.remove('d-none');
+            allergySaveBtn.disabled = false;
+        });
     });
+
+    // -----------------------------------------------------------
+    // Possible Allergy Detected modal — shown once by the Save & End
+    // Consultation handler (below) when this consultation's own real
+    // Chief Complaint text mentions a possible allergy
+    // (window.ACV_CHIEF_COMPLAINT_MENTIONS_ALLERGY, computed server-side
+    // by hc_text_mentions_possible_allergy()). Reuses saveAllergy()
+    // above — the exact same write path as the mini-form, never
+    // creates an allergy automatically. Either button resolves the
+    // prompt (allergyPromptHandled) and re-clicks Save & End, which
+    // then proceeds through the normal confirm+submit flow untouched.
+    // -----------------------------------------------------------
+    const allergyDetectedModalEl = document.getElementById('acvAllergyDetectedModal');
+    const allergyDetectedModal = (allergyDetectedModalEl && typeof bootstrap !== 'undefined') ? new bootstrap.Modal(allergyDetectedModalEl) : null;
+    const allergyDetectedSaveBtn = document.getElementById('acvAllergyDetectedSave');
+    const allergyDetectedSkipBtn = document.getElementById('acvAllergyDetectedSkip');
+    const allergyDetectedError = document.getElementById('acvDetectedAllergyError');
+    let allergyPromptHandled = false;
+
+    function resolveAllergyPrompt() {
+        allergyPromptHandled = true;
+        if (allergyDetectedModal) allergyDetectedModal.hide();
+        saveBtn.click();
+    }
+
+    if (allergyDetectedSkipBtn) {
+        allergyDetectedSkipBtn.addEventListener('click', resolveAllergyPrompt);
+    }
+
+    if (allergyDetectedSaveBtn) {
+        allergyDetectedSaveBtn.addEventListener('click', function () {
+            const allergen = document.getElementById('acvDetectedAllergyAllergen').value.trim();
+            if (allergen === '') {
+                allergyDetectedError.textContent = 'Please enter an allergen.';
+                allergyDetectedError.classList.remove('d-none');
+                return;
+            }
+            const type = document.getElementById('acvDetectedAllergyType').value;
+            const severity = document.getElementById('acvDetectedAllergySeverity').value;
+            const reaction = document.getElementById('acvDetectedAllergyReaction').value.trim();
+
+            allergyDetectedSaveBtn.disabled = true;
+            allergyDetectedError.classList.add('d-none');
+
+            saveAllergy(allergen, type, reaction, severity, function () {
+                allergyDetectedSaveBtn.disabled = false;
+                resolveAllergyPrompt();
+            }, function (err) {
+                allergyDetectedError.textContent = err.message;
+                allergyDetectedError.classList.remove('d-none');
+                allergyDetectedSaveBtn.disabled = false;
+            });
+        });
+    }
 
     // -----------------------------------------------------------
     // Prescription rich-text editor
@@ -687,6 +749,17 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         followUpDateError.classList.add('d-none');
+
+        // Possible-allergy prompt — only once per click sequence
+        // (allergyPromptHandled), only after every other validation
+        // above has passed, so it only interrupts a save that's
+        // genuinely about to go through. Halts here; the modal's own
+        // buttons resolve it and re-click Save & End, which then skips
+        // straight past this gate.
+        if (window.ACV_CHIEF_COMPLAINT_MENTIONS_ALLERGY && !allergyPromptHandled && allergyDetectedModal) {
+            allergyDetectedModal.show();
+            return;
+        }
 
         const confirmMessages = {
             laboratory: 'Send this patient to the Laboratory? This saves the consultation and notifies the medical technologist — it does NOT end the consultation.',

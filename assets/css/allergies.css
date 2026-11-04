@@ -42,10 +42,30 @@
 
 /* Row actions beside Select / View — distinct colors so they don't
    read as another view/select icon. */
-.adm-action-btn.alg-action-deactivate{ color: var(--adm-red); }
+.adm-action-btn.alg-action-manage{ color: var(--adm-blue); }
 .adm-action-btn.alg-action-reactivate{ color: #1E8E3E; }
-.adm-action-btn.alg-action-deactivate:disabled,
+.adm-action-btn.alg-action-manage:disabled,
 .adm-action-btn.alg-action-reactivate:disabled{ opacity: .5; cursor: wait; }
+
+/* Manage Allergy modal — read-only existing-info summary card, sits
+   above the editable New Clinical Status / Verification Status /
+   Assessment Date / Reason / Attachment fields. */
+#manageAllergyModal .modal-dialog{ max-width: 640px; }
+.alg-manage-readonly{
+  background: var(--adm-border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+.alg-manage-readonly-head{ display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.alg-manage-readonly-grid{
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 20px;
+}
+.alg-manage-readonly-grid .alg-field-label{ display: block; font-size: 11.5px; color: var(--adm-text-muted); }
+.alg-badge-verif{ font-size: 11px; padding: 4px 10px; background: #EEF0F3; color: #6B7280; }
 
 /* "Add Allergy Record" modal — wider than admin-dashboard.css's shared
    .adm-modal 480px cap, so the paired 2-column fields have room
@@ -173,4 +193,5 @@
   .alg-details-toggle{ padding: 18px; }
   .alg-field{ flex-direction: column; align-items: flex-start; gap: 4px; }
   .alg-field-label{ width: auto; }
+  .alg-manage-readonly-grid{ grid-template-columns: 1fr; }
 }

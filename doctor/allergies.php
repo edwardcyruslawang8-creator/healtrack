@@ -22,6 +22,14 @@
  * so that page shows the actual clicked record. The "Allergy Details"
  * panel below the table on this page is a separate, always-expandable
  * summary of the most recently added record.
+ *
+ * Each row's "Manage Allergy" / "Reactivate Allergy" action
+ * (includes/shared/manage_allergy_modal.php ->
+ * api/update-allergy-clinical-status.php) is wired up in
+ * assets/js/allergy-actions.js — doctor is one of the two authorized
+ * clinician roles (with healthcare_staff) that may change an allergy's
+ * clinical status; a status change always requires a documented
+ * clinical reason + assessment date and never deletes the record.
  * =====================================================================
  */
 session_start();
@@ -59,7 +67,8 @@ $doctorNavItems = [
 ];
 
 $selectedSeverity = $severityMeta[$selectedAllergy['severity']] ?? $severityMeta['mild'];
-$selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStatusMeta['active'];
+$selectedStatus = $allergyStatusMeta[$selectedAllergy['clinicalStatus']] ?? $allergyStatusMeta['active'];
+$selectedVerification = $verificationStatusMeta[$selectedAllergy['verificationStatus']] ?? $verificationStatusMeta['unconfirmed'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -87,6 +96,8 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_profile.css') ?>">
 <!-- Allergies page styles (summary cards, table, details panel) — shared verbatim with every other role's version -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/allergies.css') ?>">
+<!-- Shared confirm/alert dialog (kept loaded for allergy-actions.js's shared helpers) -->
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -346,6 +357,7 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                         <th>Severity</th>
                         <th>Onset Date</th>
                         <th>Status</th>
+                        <th>Verification</th>
                         <th>Notes</th>
                         <th>Actions</th>
                     </tr>
@@ -353,10 +365,10 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                 <tbody>
                     <?php if (empty($activeAllergies)): ?>
                     <tr>
-                        <td colspan="8" class="adm-table-empty">No active allergies recorded.</td>
+                        <td colspan="9" class="adm-table-empty">No active allergies recorded.</td>
                     </tr>
                     <?php endif; ?>
-                    <?php foreach ($activeAllergies as $alg): $sev = $severityMeta[$alg['severity']] ?? $severityMeta['mild']; $stat = $allergyStatusMeta[$alg['status']] ?? $allergyStatusMeta['active']; ?>
+                    <?php foreach ($activeAllergies as $alg): $sev = $severityMeta[$alg['severity']] ?? $severityMeta['mild']; $stat = $allergyStatusMeta[$alg['clinicalStatus']] ?? $allergyStatusMeta['active']; $ver = $verificationStatusMeta[$alg['verificationStatus']] ?? $verificationStatusMeta['unconfirmed']; ?>
                     <tr>
                         <td>
                             <div class="alg-name-cell">
@@ -376,11 +388,32 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                         <td><span class="alg-badge" style="background:<?= htmlspecialchars($sev['bg']) ?>; color:<?= htmlspecialchars($sev['color']) ?>;"><?= htmlspecialchars($sev['label']) ?></span></td>
                         <td><?= htmlspecialchars($alg['onsetDate']) ?></td>
                         <td><span class="alg-badge" style="background:<?= htmlspecialchars($stat['bg']) ?>; color:<?= htmlspecialchars($stat['color']) ?>;"><?= htmlspecialchars($stat['label']) ?></span></td>
+                        <td><span class="alg-badge alg-badge-verif" style="background:<?= htmlspecialchars($ver['bg']) ?>; color:<?= htmlspecialchars($ver['color']) ?>;"><?= htmlspecialchars($ver['label']) ?></span></td>
                         <td class="alg-notes-cell"><?= htmlspecialchars($alg['notes']) ?></td>
                         <td>
                             <div class="adm-action-btns">
                                 <a href="allergies.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($alg['id']) ?>#algDetailsPanel" class="adm-action-btn" aria-label="Select"><i class="bi bi-check2-square"></i></a>
                                 <a href="allergy_details.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($alg['id']) ?>" class="adm-action-btn view" aria-label="View"><i class="bi bi-eye"></i></a>
+                                <button type="button" class="adm-action-btn alg-action-manage"
+                                    data-allergy-manage="manage"
+                                    data-allergy-id="<?= htmlspecialchars($alg['id']) ?>"
+                                    data-allergen="<?= htmlspecialchars($alg['allergen']) ?>"
+                                    data-allergy-type="<?= htmlspecialchars($alg['type']) ?>"
+                                    data-allergy-subtype="<?= htmlspecialchars($alg['subtype'] ?? '') ?>"
+                                    data-allergy-icon="<?= htmlspecialchars($alg['icon']) ?>"
+                                    data-allergy-icon-bg="<?= htmlspecialchars($alg['iconBg']) ?>"
+                                    data-allergy-icon-color="<?= htmlspecialchars($alg['iconColor']) ?>"
+                                    data-allergy-reaction="<?= htmlspecialchars($alg['reaction']) ?>"
+                                    data-allergy-severity-label="<?= htmlspecialchars($sev['label']) ?>"
+                                    data-allergy-severity-bg="<?= htmlspecialchars($sev['bg']) ?>"
+                                    data-allergy-severity-color="<?= htmlspecialchars($sev['color']) ?>"
+                                    data-allergy-onset="<?= htmlspecialchars($alg['onsetDate']) ?>"
+                                    data-allergy-onset-raw="<?= htmlspecialchars($alg['onsetDateRaw']) ?>"
+                                    data-clinical-status-label="<?= htmlspecialchars($stat['label']) ?>"
+                                    data-clinical-status-bg="<?= htmlspecialchars($stat['bg']) ?>"
+                                    data-clinical-status-color="<?= htmlspecialchars($stat['color']) ?>"
+                                    data-verification-status-label="<?= htmlspecialchars($ver['label']) ?>"
+                                    title="Manage Allergy" aria-label="Manage <?= htmlspecialchars($alg['allergen']) ?>"><i class="bi bi-clipboard2-pulse"></i></button>
                             </div>
                         </td>
                     </tr>
@@ -408,6 +441,7 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                         <th>Severity</th>
                         <th>Onset Date</th>
                         <th>Status</th>
+                        <th>Verification</th>
                         <th>Notes</th>
                         <th>Actions</th>
                     </tr>
@@ -415,10 +449,10 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                 <tbody>
                     <?php if (empty($inactiveAllergies)): ?>
                     <tr>
-                        <td colspan="8" class="adm-table-empty">No inactive or resolved allergies recorded.</td>
+                        <td colspan="9" class="adm-table-empty">No inactive or resolved allergies recorded.</td>
                     </tr>
                     <?php endif; ?>
-                    <?php foreach ($inactiveAllergies as $alg): $sev = $severityMeta[$alg['severity']] ?? $severityMeta['mild']; $stat = $allergyStatusMeta[$alg['status']] ?? $allergyStatusMeta['active']; ?>
+                    <?php foreach ($inactiveAllergies as $alg): $sev = $severityMeta[$alg['severity']] ?? $severityMeta['mild']; $stat = $allergyStatusMeta[$alg['clinicalStatus']] ?? $allergyStatusMeta['resolved']; $ver = $verificationStatusMeta[$alg['verificationStatus']] ?? $verificationStatusMeta['unconfirmed']; ?>
                     <tr>
                         <td>
                             <div class="alg-name-cell">
@@ -438,11 +472,32 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                         <td><span class="alg-badge" style="background:<?= htmlspecialchars($sev['bg']) ?>; color:<?= htmlspecialchars($sev['color']) ?>;"><?= htmlspecialchars($sev['label']) ?></span></td>
                         <td><?= htmlspecialchars($alg['onsetDate']) ?></td>
                         <td><span class="alg-badge" style="background:<?= htmlspecialchars($stat['bg']) ?>; color:<?= htmlspecialchars($stat['color']) ?>;"><?= htmlspecialchars($stat['label']) ?></span></td>
+                        <td><span class="alg-badge alg-badge-verif" style="background:<?= htmlspecialchars($ver['bg']) ?>; color:<?= htmlspecialchars($ver['color']) ?>;"><?= htmlspecialchars($ver['label']) ?></span></td>
                         <td class="alg-notes-cell"><?= htmlspecialchars($alg['notes']) ?></td>
                         <td>
                             <div class="adm-action-btns">
                                 <a href="allergies.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($alg['id']) ?>#algDetailsPanel" class="adm-action-btn" aria-label="Select"><i class="bi bi-check2-square"></i></a>
                                 <a href="allergy_details.php?id=<?= urlencode($patient['id']) ?>&recordId=<?= urlencode($alg['id']) ?>" class="adm-action-btn view" aria-label="View"><i class="bi bi-eye"></i></a>
+                                <button type="button" class="adm-action-btn alg-action-reactivate"
+                                    data-allergy-manage="reactivate"
+                                    data-allergy-id="<?= htmlspecialchars($alg['id']) ?>"
+                                    data-allergen="<?= htmlspecialchars($alg['allergen']) ?>"
+                                    data-allergy-type="<?= htmlspecialchars($alg['type']) ?>"
+                                    data-allergy-subtype="<?= htmlspecialchars($alg['subtype'] ?? '') ?>"
+                                    data-allergy-icon="<?= htmlspecialchars($alg['icon']) ?>"
+                                    data-allergy-icon-bg="<?= htmlspecialchars($alg['iconBg']) ?>"
+                                    data-allergy-icon-color="<?= htmlspecialchars($alg['iconColor']) ?>"
+                                    data-allergy-reaction="<?= htmlspecialchars($alg['reaction']) ?>"
+                                    data-allergy-severity-label="<?= htmlspecialchars($sev['label']) ?>"
+                                    data-allergy-severity-bg="<?= htmlspecialchars($sev['bg']) ?>"
+                                    data-allergy-severity-color="<?= htmlspecialchars($sev['color']) ?>"
+                                    data-allergy-onset="<?= htmlspecialchars($alg['onsetDate']) ?>"
+                                    data-allergy-onset-raw="<?= htmlspecialchars($alg['onsetDateRaw']) ?>"
+                                    data-clinical-status-label="<?= htmlspecialchars($stat['label']) ?>"
+                                    data-clinical-status-bg="<?= htmlspecialchars($stat['bg']) ?>"
+                                    data-clinical-status-color="<?= htmlspecialchars($stat['color']) ?>"
+                                    data-verification-status-label="<?= htmlspecialchars($ver['label']) ?>"
+                                    title="Reactivate Allergy" aria-label="Reactivate <?= htmlspecialchars($alg['allergen']) ?>"><i class="bi bi-arrow-counterclockwise"></i></button>
                             </div>
                         </td>
                     </tr>
@@ -475,6 +530,7 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
                     <div class="alg-field"><span class="alg-field-label">Type</span><span class="alg-field-value"><?= htmlspecialchars($selectedAllergy['type']) ?><?= $selectedAllergy['subtype'] ? ' (' . htmlspecialchars($selectedAllergy['subtype']) . ')' : '' ?></span></div>
                     <div class="alg-field"><span class="alg-field-label">Severity</span><span class="alg-badge" style="background:<?= htmlspecialchars($selectedSeverity['bg']) ?>; color:<?= htmlspecialchars($selectedSeverity['color']) ?>;"><?= htmlspecialchars($selectedSeverity['label']) ?></span></div>
                     <div class="alg-field"><span class="alg-field-label">Status</span><span class="alg-badge" style="background:<?= htmlspecialchars($selectedStatus['bg']) ?>; color:<?= htmlspecialchars($selectedStatus['color']) ?>;"><?= htmlspecialchars($selectedStatus['label']) ?></span></div>
+                    <div class="alg-field"><span class="alg-field-label">Verification</span><span class="alg-badge" style="background:<?= htmlspecialchars($selectedVerification['bg']) ?>; color:<?= htmlspecialchars($selectedVerification['color']) ?>;"><?= htmlspecialchars($selectedVerification['label']) ?></span></div>
                 </div>
                 <div class="alg-details-col">
                     <div class="alg-field"><span class="alg-field-label">Reaction</span><span class="alg-field-value"><?= htmlspecialchars($selectedAllergy['reaction']) ?></span></div>
@@ -490,11 +546,18 @@ $selectedStatus = $allergyStatusMeta[$selectedAllergy['status']] ?? $allergyStat
         </div>
     </div>
 
+    <!-- Inside <main> so it comes along when assets/js/ajax-tab-nav.js
+         swaps this tab in from another Patient Profile tab. -->
+    <script>window.HC_CURRENT_USER_NAME = <?= json_encode($doctorProfile['name'] ?? '') ?>;</script>
+    <?php require __DIR__ . '/../includes/shared/manage_allergy_modal.php'; ?>
+
 </main>
 
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-tab-nav.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/allergy-actions.js') ?>"></script>
 </body>
 </html>

@@ -108,7 +108,32 @@ $consultationStatus = $consultationStatusMeta[$consultation['status']] ?? $consu
 // than each source page's own generic "No records" wording.
 // ---------------------------------------------------------------------
 $medicalConditions = hc_get_medical_conditions_for_patient($patient['id']);
-$allergies = hc_get_allergies_for_patient($patient['id']);
+// Medication-safety relevance filter: show only allergies that are
+// still clinically active, OR whose verification is still uncertain
+// (unconfirmed/presumed) — a confidently Resolved+Confirmed/Refuted
+// allergy is hidden here, since it's no longer something a doctor
+// needs to weigh while prescribing. See
+// api/update-allergy-clinical-status.php for how clinicalStatus/
+// verificationStatus actually get set.
+$allergies = array_values(array_filter(
+    hc_get_allergies_for_patient($patient['id']),
+    fn ($a) => $a['clinicalStatus'] === 'active' || in_array($a['verificationStatus'], ['unconfirmed', 'presumed'], true)
+));
+
+// Whether this consultation's own real Chief Complaint text mentions a
+// possible allergy at all (generic trigger words, not a specific
+// allergen) — computed once here since Chief Complaint is read-only
+// and can't change mid-session. Drives the "Save & End" flow's
+// detected-allergy prompt (assets/js/active_consultation.js), which
+// reuses the exact same api/add-allergy.php write path as the
+// existing "+ Add Allergy" mini-form rather than creating anything
+// automatically.
+$chiefComplaintMentionsAllergy = hc_text_mentions_possible_allergy($consultation['chiefComplaint'] ?? '');
+
+// Allergy Type options for the "+ Add Allergy" mini-form and the
+// detected-allergy modal's own Type dropdown — same real enum every
+// other Add Allergy flow uses (hc_allergy_type_meta()).
+$allergyTypeOptions = array_keys(hc_allergy_type_meta());
 
 // ---------------------------------------------------------------------
 // Vitals — prefill from the patient's own registration-time snapshot

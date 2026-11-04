@@ -1,13 +1,16 @@
 /* =====================================================================
-   Allergy actions — medical-staff/allergies.php
+   Allergy actions — doctor/allergies.php and medical-staff/allergies.php
    ---------------------------------------------------------------------
-   - "+ Add Allergy" (#btnAddAllergy) opens
+   - "+ Add Allergy" (#btnAddAllergy, medical-staff only) opens
      includes/medical-staff/add_allergy_modal.php; "Save Allergy" POSTs
      to api/create-allergy-record.php.
-   - "Mark Inactive" ([data-allergy-action="deactivate"], Active
-     Allergies table) and "Reactivate" ([data-allergy-action="reactivate"],
-     Inactive / Resolved table) confirm with HCDialog.confirm()
-     (assets/js/hc-dialogs.js), then POST to api/update-allergy-status.php.
+   - "Manage Allergy" ([data-allergy-manage="manage"], Active Allergies
+     table) and "Reactivate Allergy" ([data-allergy-manage="reactivate"],
+     Inactive / Resolved table) both open the ONE shared
+     includes/shared/manage_allergy_modal.php, pre-filled from the
+     clicked row's data-* attributes; "Save Status Change" POSTs to
+     api/update-allergy-clinical-status.php (multipart/form-data — the
+     optional attachment needs real FormData, not JSON).
    Every success reloads the page — the server re-renders both tables
    and the summary cards from the real records — and a one-shot
    success toast is shown after the reload (sessionStorage).
@@ -70,6 +73,23 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
         })
+            .then(function (res) {
+                return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+            })
+            .then(function (result) {
+                if (!result.ok || !result.data.success) {
+                    throw new Error(result.data.error || 'Something went wrong. Please try again.');
+                }
+                return result.data;
+            });
+    }
+
+    // Same shape as postJson(), but for requests carrying a file
+    // (the Manage Allergy modal's optional attachment) — fetch sets
+    // the multipart Content-Type/boundary itself when given a
+    // FormData body, so no headers are set here.
+    function postFormData(url, formData) {
+        return fetch(url, { method: 'POST', body: formData })
             .then(function (res) {
                 return res.json().then(function (data) { return { ok: res.ok, data: data }; });
             })
@@ -144,38 +164,103 @@
     });
 
     // -------------------------------------------------------------
-    // Mark Inactive / Reactivate
+    // Manage Allergy / Reactivate Allergy — both open the ONE shared
+    // modal, pre-filled from the clicked row's data-* attributes.
     // -------------------------------------------------------------
-    document.addEventListener('click', async function (e) {
-        const btn = e.target.closest('[data-allergy-action]');
+    function setBadge(id, label, bg, color) {
+        const node = el(id);
+        if (!node) return;
+        node.textContent = label || '—';
+        node.style.background = bg || '';
+        node.style.color = color || '';
+    }
+
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-allergy-manage]');
         if (!btn || btn.disabled) return;
         e.preventDefault();
 
-        const action = btn.dataset.allergyAction;
-        const allergen = btn.dataset.allergen || 'this allergy';
-        const deactivate = action === 'deactivate';
+        const modalEl = el('manageAllergyModal');
+        const form = el('manageAllergyForm');
+        if (!modalEl || !form || typeof bootstrap === 'undefined') return;
 
-        if (typeof HCDialog === 'undefined') return;
-        const confirmed = await HCDialog.confirm(
-            deactivate
-                ? '"' + allergen + '" will be moved from Active Allergies to Inactive / Resolved Allergies. The record is kept, not deleted, and can be reactivated later.'
-                : '"' + allergen + '" will be moved from Inactive / Resolved Allergies back to Active Allergies. The original record and its history are kept.',
-            {
-                title: deactivate ? 'Mark Allergy as Inactive?' : 'Reactivate Allergy?',
-                confirmText: 'Confirm',
-                cancelText: 'Cancel',
-            }
-        );
-        if (!confirmed) return;
+        form.reset();
+        form.classList.remove('was-validated');
+        el('manageAllergyError').classList.add('d-none');
 
-        btn.disabled = true;
-        try {
-            const data = await postJson('../api/update-allergy-status.php', { allergyId: btn.dataset.allergyId, action: action });
-            reloadWithFlash(data.message || 'Allergy status updated.');
-        } catch (err) {
-            btn.disabled = false;
-            HCDialog.alert(err.message, { title: 'Could Not Update Allergy' });
+        const d = btn.dataset;
+        el('malAllergyId').value = d.allergyId || '';
+        el('malAllergenName').textContent = d.allergen || '';
+        el('malTypeLabel').textContent = d.allergyType + (d.allergySubtype ? ' (' + d.allergySubtype + ')' : '');
+        el('malReaction').textContent = d.allergyReaction || '—';
+        el('malOnsetDate').textContent = d.allergyOnset || '—';
+
+        setBadge('malSeverity', d.allergySeverityLabel, d.allergySeverityBg, d.allergySeverityColor);
+        setBadge('malCurrentClinicalStatus', d.clinicalStatusLabel, d.clinicalStatusBg, d.clinicalStatusColor);
+        setBadge('malCurrentVerificationStatus', d.verificationStatusLabel, '', '');
+
+        const iconEl = el('malTypeIcon');
+        if (iconEl) {
+            iconEl.style.background = d.allergyIconBg || '';
+            iconEl.style.color = d.allergyIconColor || '';
+            const i = iconEl.querySelector('i');
+            if (i) i.className = 'bi ' + (d.allergyIcon || 'bi-exclamation-triangle-fill');
         }
+
+        const today = new Date().toISOString().slice(0, 10);
+        el('malAssessmentDate').value = today;
+        el('malAssessmentDate').max = today;
+        if (d.allergyOnsetRaw) el('malAssessmentDate').min = d.allergyOnsetRaw;
+        el('malAssessedBy').value = window.HC_CURRENT_USER_NAME || '';
+
+        const isReactivate = d.allergyManage === 'reactivate';
+        el('manageAllergyModalLabel').textContent = isReactivate ? 'Reactivate Allergy' : 'Manage Allergy';
+        el('malNewClinicalStatus').value = isReactivate ? 'active' : '';
+
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    });
+
+    document.addEventListener('submit', function (e) {
+        const form = e.target;
+        if (form.id !== 'manageAllergyForm') return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const errorBox = el('manageAllergyError');
+        errorBox.classList.add('d-none');
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            const firstInvalid = form.querySelector(':invalid');
+            if (firstInvalid) firstInvalid.focus();
+            return;
+        }
+
+        const fd = new FormData();
+        fd.append('allergyId', val('malAllergyId'));
+        fd.append('newClinicalStatus', val('malNewClinicalStatus'));
+        fd.append('newVerificationStatus', val('malNewVerificationStatus'));
+        fd.append('reason', val('malReason'));
+        fd.append('assessmentDate', el('malAssessmentDate').value);
+        const fileInput = el('malAttachment');
+        if (fileInput.files && fileInput.files[0]) {
+            fd.append('attachment', fileInput.files[0]);
+        }
+
+        const submitBtn = el('malSubmitBtn');
+        const submitBtnDefaultHtml = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving…';
+
+        postFormData('../api/update-allergy-clinical-status.php', fd)
+            .then(function (data) {
+                reloadWithFlash(data.message || 'Allergy status updated.');
+            })
+            .catch(function (err) {
+                errorBox.textContent = err.message;
+                errorBox.classList.remove('d-none');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = submitBtnDefaultHtml;
+            });
     });
 
     showFlash();
