@@ -29,8 +29,6 @@ document.addEventListener('DOMContentLoaded', function () {
             setText('mdvFrequency', d.medFrequency);
             setText('mdvRoute', d.medRoute);
             setText('mdvIndication', d.medIndication);
-            setText('mdvStartDate', d.medStartDate);
-            setText('mdvEndDate', d.medEndDate ? d.medEndDate + (d.medEndDateNote ? ' (' + d.medEndDateNote + ')' : '') : '');
             setText('mdvPrescribedBy', d.medPrescribedBy);
             setText('mdvStatus', d.medStatus);
             setText('mdvNotes', d.medNotes);

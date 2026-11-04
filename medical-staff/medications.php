@@ -349,8 +349,6 @@ $staffNavItems = [
                         <th>Frequency</th>
                         <th>Route</th>
                         <th>Indication / Reason</th>
-                        <th>Start Date</th>
-                        <th>End Date</th>
                         <th>Prescribed By</th>
                         <th>Notes</th>
                         <th>Actions</th>
@@ -359,7 +357,7 @@ $staffNavItems = [
                 <tbody>
                     <?php if (empty($currentMedications)): ?>
                     <tr>
-                        <td colspan="10" class="adm-table-empty">No current medications recorded.</td>
+                        <td colspan="8" class="adm-table-empty">No current medications recorded.</td>
                     </tr>
                     <?php endif; ?>
                     <?php foreach ($currentMedications as $med): ?>
@@ -387,17 +385,6 @@ $staffNavItems = [
                         <td><?= htmlspecialchars($med['frequency']) ?></td>
                         <td><?= htmlspecialchars($med['route']) ?></td>
                         <td><?= htmlspecialchars($med['indication']) ?></td>
-                        <td><?= htmlspecialchars($med['startDate']) ?></td>
-                        <td>
-                            <?php if ($med['endDate']): ?>
-                            <?= htmlspecialchars($med['endDate']) ?>
-                            <?php if ($med['endDateNote']): ?>
-                            <span class="mdc-end-note">(<?= htmlspecialchars($med['endDateNote']) ?>)</span>
-                            <?php endif; ?>
-                            <?php else: ?>
-                            &mdash;
-                            <?php endif; ?>
-                        </td>
                         <td class="mdc-strong"><?= htmlspecialchars($med['prescribedBy']) ?></td>
                         <td class="mdc-notes-cell"><?= htmlspecialchars($med['notes']) ?></td>
                         <td>
@@ -432,8 +419,6 @@ $staffNavItems = [
                         <th>Frequency</th>
                         <th>Route</th>
                         <th>Indication / Reason</th>
-                        <th>Start Date</th>
-                        <th>End Date</th>
                         <th>Prescribed By</th>
                         <th>Notes</th>
                         <th>Actions</th>
@@ -442,7 +427,7 @@ $staffNavItems = [
                 <tbody>
                     <?php if (empty($pastMedications)): ?>
                     <tr>
-                        <td colspan="10" class="adm-table-empty">No past medications recorded.</td>
+                        <td colspan="8" class="adm-table-empty">No past medications recorded.</td>
                     </tr>
                     <?php endif; ?>
                     <?php foreach ($pastMedications as $med): ?>
@@ -470,17 +455,6 @@ $staffNavItems = [
                         <td><?= htmlspecialchars($med['frequency']) ?></td>
                         <td><?= htmlspecialchars($med['route']) ?></td>
                         <td><?= htmlspecialchars($med['indication']) ?></td>
-                        <td><?= htmlspecialchars($med['startDate']) ?></td>
-                        <td>
-                            <?php if ($med['endDate']): ?>
-                            <?= htmlspecialchars($med['endDate']) ?>
-                            <?php if ($med['endDateNote']): ?>
-                            <span class="mdc-end-note">(<?= htmlspecialchars($med['endDateNote']) ?>)</span>
-                            <?php endif; ?>
-                            <?php else: ?>
-                            &mdash;
-                            <?php endif; ?>
-                        </td>
                         <td class="mdc-strong"><?= htmlspecialchars($med['prescribedBy']) ?></td>
                         <td class="mdc-notes-cell"><?= htmlspecialchars($med['notes']) ?></td>
                         <td>

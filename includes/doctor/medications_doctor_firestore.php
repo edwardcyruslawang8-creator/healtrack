@@ -32,11 +32,13 @@ unset($tab);
 $medications = hc_get_medications_for_patient($patient['id']);
 $medicationsTotal = count($medications);
 
-// Current vs Past — same real 'active' status the Overview tab's
-// "Active Medications" summary and hc_medications_summary() below
-// already key off; everything else (e.g. 'completed') is Past.
-$currentMedications = array_values(array_filter($medications, fn ($m) => $m['status'] === 'active'));
-$pastMedications = array_values(array_filter($medications, fn ($m) => $m['status'] !== 'active'));
+// Current vs Past — hc_medication_is_current() (includes/firestore/medications.php)
+// is the single real rule: 'active' status alone isn't enough, since
+// nothing in this app ever updates a medication's status after it's
+// created, so a medication also lapses into Past on its own once ~3
+// months have passed since its startDate with no newer prescription.
+$currentMedications = array_values(array_filter($medications, fn ($m) => $m['isCurrent']));
+$pastMedications = array_values(array_filter($medications, fn ($m) => !$m['isCurrent']));
 
 // ---------------------------------------------------------------------
 // Medications Summary — real counts over $medications.

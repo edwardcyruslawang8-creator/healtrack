@@ -28,8 +28,6 @@
           <div class="am-detail-row"><dt>Frequency</dt><dd id="mdvFrequency"></dd></div>
           <div class="am-detail-row"><dt>Route</dt><dd id="mdvRoute"></dd></div>
           <div class="am-detail-row"><dt>Indication / Reason</dt><dd id="mdvIndication"></dd></div>
-          <div class="am-detail-row"><dt>Start Date</dt><dd id="mdvStartDate"></dd></div>
-          <div class="am-detail-row"><dt>End Date</dt><dd id="mdvEndDate"></dd></div>
           <div class="am-detail-row"><dt>Prescribed By</dt><dd id="mdvPrescribedBy"></dd></div>
           <div class="am-detail-row"><dt>Status</dt><dd id="mdvStatus"></dd></div>
           <div class="am-detail-row"><dt>Notes</dt><dd id="mdvNotes"></dd></div>

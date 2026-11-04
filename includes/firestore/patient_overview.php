@@ -76,7 +76,7 @@ if (!function_exists('hc_get_patient_overview')) {
         $activeConditions = array_values(array_filter($conditions, fn ($c) => $c['status'] === 'Active'));
 
         $allergies = hc_get_allergies_for_patient($patientId);
-        $activeMedications = array_filter(hc_get_medications_for_patient($patientId), fn ($m) => $m['status'] === 'active');
+        $activeMedications = array_filter(hc_get_medications_for_patient($patientId), fn ($m) => $m['isCurrent']);
 
         $summary = [
             'totalConsultations' => count($consultationsOnly),
