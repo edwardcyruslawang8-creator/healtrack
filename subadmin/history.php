@@ -133,7 +133,7 @@ $adminNavItems = [
 
     <!-- Brand -->
     <div class="adm-brand">
-        <div class="adm-logo-badge"><i class="bi bi-heart-pulse-fill"></i></div>
+        <div class="adm-logo-badge"><i class="bi bi-shield-fill-plus"></i></div>
         <div class="adm-brand-text">
             <h1>HEALTrack</h1>
             <p><?= htmlspecialchars(t('app.tagline')) ?></p>

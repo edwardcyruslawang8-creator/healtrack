@@ -79,7 +79,7 @@ $savedResult = hc_gram_stain_saved_value($currentDoc, 'result');
 
 <aside class="adm-sidebar" id="admSidebar">
     <div class="adm-brand">
-        <div class="adm-logo-badge"><i class="bi bi-heart-pulse-fill"></i></div>
+        <div class="adm-logo-badge"><i class="bi bi-shield-fill-plus"></i></div>
         <div class="adm-brand-text">
             <h1>HEALTrack</h1>
             <p>Health Information System</p>
