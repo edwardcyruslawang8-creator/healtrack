@@ -28,6 +28,12 @@ storage/profile_photos/*
 storage/xray_results/*
 !storage/xray_results/.htaccess
 
+# --- Allergy status-change attachments: same reasoning — real
+# supporting clinical documentation, never belongs in git. The
+# .htaccess guarding this folder is kept.
+storage/allergies/*
+!storage/allergies/.htaccess
+
 # --- Inventory snapshots written by scripts/seed-inventory-demo-data.php
 # before it replaces the medicines/medicine_batches collections.
 storage/inventory_backups/
