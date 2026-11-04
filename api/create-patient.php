@@ -338,7 +338,16 @@ foreach ($medications as $m) {
         'startDate' => (strtotime($startDate) !== false && $startDate !== '') ? $startDate : date('Y-m-d'),
         'endDate' => null,
         'endDateNote' => null,
-        'prescribedBy' => trim((string) ($m['prescribedBy'] ?? '')) ?: ($_SESSION['name'] ?? 'Not specified'),
+        // Defaults to 'Not specified' when left blank — NOT the
+        // registering staff member's own name. This field represents a
+        // medication the patient reports already taking (typically
+        // prescribed elsewhere, before this registration), so
+        // defaulting it to whoever happened to type it in here would
+        // falsely imply that staff member prescribed it — staff/sub-
+        // admin accounts can never prescribe anything in this app
+        // (only a doctor, during a real consultation, can — see
+        // api/complete-consultation.php).
+        'prescribedBy' => trim((string) ($m['prescribedBy'] ?? '')) ?: 'Not specified',
         'notes' => 'Recorded during patient registration.',
         'status' => 'active',
     ]);

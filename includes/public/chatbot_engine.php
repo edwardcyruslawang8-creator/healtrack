@@ -145,7 +145,20 @@ if (!function_exists('hc_chatbot_find_medicine_match')) {
                 if (strlen($word) < 4) {
                     continue;
                 }
-                if (str_contains($firstWord, $word) || str_contains($word, $firstWord)) {
+                if (min(strlen($word), strlen($firstWord)) < 5) {
+                    // Below 5 characters, a common short English word
+                    // (e.g. "love") can appear as a substring inside a
+                    // much longer real medicine name (e.g. "dicyclo-
+                    // VER-in"... "dicyclo-LOVE-rin" once case-folded)
+                    // and falsely score as a perfect match — require
+                    // exact equality instead of substring containment
+                    // for short words, only relaxing to substring/
+                    // Levenshtein fuzziness once both sides are long
+                    // enough for a partial match to be meaningfully
+                    // specific. Same fix as hc_chatbot_find_doctor_match()'s
+                    // own guard below, for the identical reason.
+                    $score = $word === $firstWord ? 1.0 : 0.0;
+                } elseif (str_contains($firstWord, $word) || str_contains($word, $firstWord)) {
                     $score = 1.0;
                 } else {
                     $dist = hc_chatbot_levenshtein($word, $firstWord);

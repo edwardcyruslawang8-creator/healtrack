@@ -43,6 +43,14 @@ if (!function_exists('hc_log_search_term')) {
         }
 
         $docId = hc_search_log_term_id($term);
+        // 'blank' is hc_search_log_term_id()'s own sentinel for "no real
+        // alphanumeric content" (e.g. "_", "---", "???") — a non-empty
+        // string that still isn't a meaningful search term. Logging it
+        // anyway would let punctuation-only input climb into Popular
+        // Searches, same credibility problem as any other junk data.
+        if ($docId === 'blank') {
+            return;
+        }
         $existing = $firestore->getDocument('search_logs', $docId);
 
         $firestore->setDocument('search_logs', $docId, [
