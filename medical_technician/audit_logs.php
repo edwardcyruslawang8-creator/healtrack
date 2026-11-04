@@ -67,6 +67,7 @@ $staffNavItems = [
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="<?= asset_url('/assets/images/favicon.svg') ?>">
 <title>Audit Logs — HEALTrack</title>
 
 <!-- Google Fonts -->
@@ -271,7 +272,7 @@ $staffNavItems = [
                         <td class="aud-datetime"><?= htmlspecialchars($log['datetime']) ?></td>
                         <td>
                             <span class="aud-action-badge" style="background:<?= htmlspecialchars($meta['bg']) ?>; color:<?= htmlspecialchars($meta['color']) ?>;">
-                                <i class="bi <?= htmlspecialchars($meta['icon']) ?>"></i> <?= htmlspecialchars($meta['label']) ?>
+                                <?= htmlspecialchars($meta['label']) ?>
                             </span>
                         </td>
                         <td><?= htmlspecialchars($log['module']) ?></td>

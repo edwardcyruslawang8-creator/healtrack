@@ -330,7 +330,7 @@ $adminNavItems = [
                         </td>
                         <td>
                             <span class="aud-action-badge" style="background:<?= htmlspecialchars($meta['bg']) ?>; color:<?= htmlspecialchars($meta['color']) ?>;">
-                                <i class="bi <?= htmlspecialchars($meta['icon']) ?>"></i> <?= htmlspecialchars($meta['label']) ?>
+                                <?= htmlspecialchars($meta['label']) ?>
                             </span>
                         </td>
                         <td><?= htmlspecialchars($log['module']) ?></td>
