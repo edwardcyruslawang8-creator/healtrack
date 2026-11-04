@@ -92,6 +92,7 @@ if (!function_exists('mvi_page_url')) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="<?= asset_url('/assets/images/favicon.svg') ?>">
 <title>Medicine &amp; Vaccine Inventory — HEALTrack</title>
 
 <!-- Google Fonts -->

@@ -17,7 +17,13 @@
  *     early as possible in <head>, that resolves "System" from the
  *     OS's prefers-color-scheme synchronously (before first paint) and
  *     exposes window.ADMIN_THEME_MODE for assets/js/theme.js to react
- *     to a live OS theme change while the page is open.
+ *     to a live OS theme change while the page is open. Also emits the
+ *     favicon <link> — every admin/*.php-style page already calls this
+ *     function as the very first thing in <head>, so it doubles as the
+ *     one shared injection point that reaches all of them without
+ *     editing each page individually (includes/shared/header.php is
+ *     the equivalent injection point for the plain patient-facing
+ *     pages, which don't go through this function at all).
  *
  * Assumes session_start() already ran — every admin/*.php page calls
  * it before requiring its own *_data.php file, same as $_SESSION reads
@@ -43,5 +49,7 @@ function admin_theme_head_script(): string
     }
     $script .= '</script>';
 
-    return $script;
+    $favicon = '<link rel="icon" type="image/svg+xml" href="' . asset_url('/assets/images/favicon.svg') . '">';
+
+    return $favicon . $script;
 }

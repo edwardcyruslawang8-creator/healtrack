@@ -12,6 +12,10 @@ require_once __DIR__ . '/../../config/constants.php'; // BASE_URL — used below
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?= isset($pageTitle) ? htmlspecialchars($pageTitle) . ' — ' : '' ?>North Super Health Center</title>
 
+<!-- Favicon — same heart-pulse-on-maroon mark used as the "logo" badge
+     everywhere else in the app (sidebar brand, login page). -->
+<link rel="icon" type="image/svg+xml" href="<?= asset_url('/assets/images/favicon.svg') ?>">
+
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
