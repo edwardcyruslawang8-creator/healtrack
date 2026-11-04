@@ -254,7 +254,7 @@ $staffNavItems = [
             <?php if ($consentStatus['pendingRequest'] !== null): ?>
             <div class="ppf-restricted-status pending">
                 <i class="bi bi-hourglass-split"></i>
-                Request sent on <?= htmlspecialchars(date('M j, Y', strtotime($consentStatus['pendingRequest']['givenOn']))) ?> — awaiting the patient's response.
+                Request sent on <?= htmlspecialchars(date('M j, Y', strtotime($consentStatus['pendingRequest']['givenOn']))) ?> — awaiting sub-admin review.
             </div>
             <?php else: ?>
 

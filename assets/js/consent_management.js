@@ -7,10 +7,11 @@
    consent document built from that same record (in a hidden iframe,
    so the page itself isn't what gets printed), and "Download PDF"
    saves the same document as a real PDF file via jsPDF (loaded from
-   cdnjs by the page). The Accept/Reject buttons and the Add Consent
-   modal/form were removed from the page — they were decorative with
-   no write endpoint behind them — so this file no longer handles
-   either.
+   cdnjs by the page). Pending "profile_access" rows also get real
+   Approve/Reject buttons (api/review-patient-consent.php) — every
+   other row has neither, since that's the one consent type with an
+   actual decision behind it. The Add Consent modal/form stays removed
+   (decorative, no write endpoint behind it).
    ============================================================= */
 document.addEventListener('DOMContentLoaded', function () {
     /* ---------- Search field: clearing an active search with the
@@ -28,7 +29,44 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const tableBody = document.getElementById('csmTableBody');
     const detailsModalEl = document.getElementById('csmDetailsModal');
-    if (!tableBody || !detailsModalEl) return;
+    if (!tableBody) return;
+
+    /* ---------- Approve / Reject a pending "profile_access" request ---------- */
+    tableBody.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-consent-approve], [data-consent-reject]');
+        if (!btn) return;
+
+        const row = btn.closest('.csm-row');
+        const consentId = row ? row.dataset.consentId : null;
+        if (!consentId) return;
+
+        const decision = btn.hasAttribute('data-consent-approve') ? 'accepted' : 'rejected';
+        const verb = decision === 'accepted' ? 'approve' : 'reject';
+
+        HCDialog.confirm('Are you sure you want to ' + verb + ' this access request? The patient will be notified by email.').then(function (confirmed) {
+            if (!confirmed) return;
+
+            fetch('../api/review-patient-consent.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ consentId: consentId, decision: decision }),
+            })
+                .then(function (res) {
+                    return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+                })
+                .then(function (result) {
+                    if (!result.ok || !result.data.success) {
+                        throw new Error(result.data.error || 'Something went wrong. Please try again.');
+                    }
+                    window.location.reload();
+                })
+                .catch(function (err) {
+                    HCDialog.alert(err.message);
+                });
+        });
+    });
+
+    if (!detailsModalEl) return;
 
     const statusMeta = {
         pending:  { label: 'Pending',  bg: '#FDF3DC', color: '#B7791F', icon: 'bi-clock-fill' },
@@ -84,6 +122,16 @@ document.addEventListener('DOMContentLoaded', function () {
         if (requestedByRow) {
             set('csmDetailRequestedBy', currentRecord.requestedBy);
             requestedByRow.style.display = currentRecord.requestedBy ? '' : 'none';
+        }
+
+        // Only shown when a real note exists (e.g. the registration
+        // "Share My Information" rows) — a "profile_access" request
+        // never has one, so hide the row entirely instead of showing
+        // a bare "—".
+        const notesRow = document.getElementById('csmDetailNotesRow');
+        if (notesRow) {
+            const hasNotes = d.notes && d.notes.trim() !== '';
+            notesRow.style.display = hasNotes ? '' : 'none';
         }
 
         // Same pill as the table's Status column: icon + label.

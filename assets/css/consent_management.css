@@ -254,6 +254,10 @@
 }
 .csm-modal-btn-primary:hover{ background: var(--adm-red-bright-hover); color: #fff; }
 
+/* -- Approve/Reject (pending "profile_access" rows only) -- */
+.adm-action-btn.approve{ color: var(--adm-green); }
+.adm-action-btn.reject{ color: var(--adm-red); }
+
 /* -- Add Consent form fields -- */
 .csm-field{ margin-bottom: 16px; }
 .csm-field label{ display: block; font-size: 12.5px; font-weight: 600; color: var(--adm-text); margin-bottom: 6px; }

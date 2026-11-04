@@ -87,7 +87,7 @@
         <div id="pcgSentState" class="d-none">
           <div class="pcg-status-banner sent">
             <i class="bi bi-check-circle-fill"></i>
-            Consent request sent — you'll be able to view this profile once the patient responds.
+            Consent request sent — you'll be able to view this profile once a sub-admin at your facility approves it.
           </div>
         </div>
       </div>

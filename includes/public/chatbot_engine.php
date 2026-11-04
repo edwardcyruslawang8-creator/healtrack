@@ -1146,8 +1146,8 @@ if (!function_exists('hc_chatbot_rbac_reply')) {
     {
         return match ($role) {
             'admin' => 'Administrators can manage staff accounts, facility settings, system-wide reports, and disease-mapping data. They don\'t directly view or edit individual patients\' medical records.',
-            'subadmin' => 'Subadmins manage announcements, patient consent records, and facility-level reports for their facility.',
-            'doctor' => 'Doctors can access consultations and medical records for their own patients, and for other patients only after that patient\'s owning doctor approves AND the patient themselves consents by email — never automatically.',
+            'subadmin' => 'Subadmins manage announcements, review and approve/reject staff requests to view patient details, and handle facility-level reports for their facility.',
+            'doctor' => 'Doctors can access consultations and medical records for their own patients, and for other patients only after a sub-admin at that facility reviews and approves the access request — the patient is then notified by email, but access is never automatic.',
             'medical-staff' => 'Medical staff (nurses, healthcare personnel) can view and update clinical records — labs, medications, vaccination records — for patients within their facility, under a doctor\'s supervision.',
             'patient' => 'Patients don\'t have login accounts in this system — this public chatbot and website are the only patient-facing access, and only to public information like medicine availability and announcements.',
             default => '',

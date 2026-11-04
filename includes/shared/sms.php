@@ -5,16 +5,13 @@
  * ---------------------------------------------------------------------
  * hc_send_sms() is the SMS sibling of includes/shared/mailer.php's
  * hc_send_email() — same shape, same "never fatal, just log and return
- * false" behavior. No real SMS provider account exists for this
- * project yet (config/sms.php's HC_SMS_API_KEY is blank), so right now
- * every call safely no-ops and logs it, the same way hc_send_email()
- * already does when config/mail.php's SMTP credentials are blank.
- *
- * Once a real provider (e.g. Semaphore, common for Philippine mobile
- * numbers) and its API key exist, the body of this function is the
- * ONLY place that needs the real HTTP call filled in — every caller
- * (api/request-patient-consent.php, etc.) already calls this exact
- * function signature and doesn't need to change.
+ * false" behavior. A real Semaphore integration was built and tested
+ * here, then deliberately reverted: the decision was to notify patients
+ * by email only for now, not email + SMS. This stays a safe no-op
+ * (logs, never sends) so nothing currently calls it, and no code
+ * changes are needed if SMS is turned back on later — the real
+ * Semaphore HTTP call (api.semaphore.co/api/v4/messages, apikey/
+ * number/message/sendername fields) goes back in this function's body.
  * =====================================================================
  */
 
@@ -38,10 +35,9 @@ if (!function_exists('hc_send_sms')) {
             return false;
         }
 
-        // No real provider wired in yet — this branch is unreachable
-        // until HC_SMS_API_KEY is filled in, at which point the real
-        // HTTP call to that provider's API goes here.
-        error_log('[sms] HC_SMS_API_KEY is set but no provider call is implemented yet — SMS to ' . $phone . ' was NOT sent.');
+        // SMS notifications are off for now (email-only decision) — no
+        // provider call happens here even though a key may be present.
+        error_log('[sms] SMS notifications are disabled for now (email-only) — SMS to ' . $phone . ' was NOT sent.');
 
         return false;
     }

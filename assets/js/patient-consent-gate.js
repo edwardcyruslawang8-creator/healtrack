@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 nameEl.textContent = data.patientName || 'This patient';
 
                 if (data.pendingRequest) {
-                    pendingText.textContent = 'Request sent on ' + formatDate(data.pendingRequest.givenOn) + ' — awaiting the patient\'s response.';
+                    pendingText.textContent = 'Request sent on ' + formatDate(data.pendingRequest.givenOn) + ' — awaiting sub-admin review.';
                     pendingStatus.classList.remove('d-none');
                     setFormVisible(false);
                 } else {

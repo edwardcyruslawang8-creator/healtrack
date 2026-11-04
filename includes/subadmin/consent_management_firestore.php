@@ -13,11 +13,12 @@
  *
  * The search box and status filter now really filter $consentRecords.
  * The date-range/type filters and pagination beyond page 1 are still
- * not wired up. The "Add Consent" button/modal and each row's
- * Accept/Reject buttons were removed (decorative, no write endpoint
- * behind them) — the "View" (eye) icon's Consent Details modal is the
- * only per-row interaction left, driven by
- * assets/js/consent_management.js.
+ * not wired up. The "Add Consent" button/modal was removed (decorative,
+ * no write endpoint behind it) — but pending "profile_access" rows get
+ * real Approve/Reject buttons (api/review-patient-consent.php), since
+ * that's the one consent type a sub-admin actually decides on. The
+ * "View" (eye) icon's Consent Details modal is the other per-row
+ * interaction, driven by assets/js/consent_management.js.
  * =====================================================================
  */
 
@@ -165,11 +166,25 @@ foreach ($cmFacilityPatientDocs as $doc) {
         ],
     ];
 }
-usort($rawConsents, fn ($a, $b) => strcmp($b['fields']['givenOn'] ?? '', $a['fields']['givenOn'] ?? ''));
+// Newest activity first — a decided profile_access request sorts by
+// its real decision date (respondedAt), same precedence as the
+// "Given On" column below, so a just-decided row rises to the top
+// instead of staying pinned at its original request date.
+$rawConsentSortKey = fn ($doc) => $doc['fields']['respondedAt'] ?? $doc['fields']['givenOn'] ?? '';
+usort($rawConsents, fn ($a, $b) => strcmp($rawConsentSortKey($b), $rawConsentSortKey($a)));
 
 $allConsents = [];
 foreach ($rawConsents as $i => $doc) {
     $fields = $doc['fields'];
+    // "Given On" means the date consent was actually GRANTED. For every
+    // decorative type that's the same instant it was created (no
+    // separate request/decision step), but a real "profile_access"
+    // request is created pending and only actually decided later by
+    // api/review-patient-consent.php (which stamps respondedAt) — once
+    // decided, show that real decision date here instead of the
+    // original request date, so an approved/rejected row reflects when
+    // the sub-admin actually acted, not when the staff member asked.
+    $grantedDate = !empty($fields['respondedAt']) ? $fields['respondedAt'] : ($fields['givenOn'] ?? null);
     $allConsents[] = [
         'id' => $doc['id'],
         'patientName' => $fields['patientName'] ?? '(unknown patient)',
@@ -177,7 +192,7 @@ foreach ($rawConsents as $i => $doc) {
         'type' => $fields['type'] ?? 'data_sharing',
         'purpose' => $fields['purpose'] ?? '',
         'status' => $fields['status'] ?? 'pending',
-        'givenOn' => isset($fields['givenOn']) ? date('M j, Y', strtotime($fields['givenOn'])) : '—',
+        'givenOn' => $grantedDate !== null ? date('M j, Y', strtotime($grantedDate)) : '—',
         'expirationDate' => !empty($fields['expirationDate']) ? date('M j, Y', strtotime($fields['expirationDate'])) : null,
         'approvedBy' => $fields['approvedBy'] ?? '—',
         'notes' => $fields['notes'] ?? '',

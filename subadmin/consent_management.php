@@ -20,10 +20,13 @@
  * includes/subadmin/consent_management_firestore.php's header comment). The search
  * box and status filter now really filter the table. The date-range/
  * type filters and pagination beyond page 1 are still not wired up.
- * The "Add Consent" button/modal and each row's Accept/Reject buttons
- * were removed (decorative, no write endpoint behind them). The "View"
- * (eye) icon still opens a real Consent Details modal populated from
- * that row's data, via assets/js/consent_management.js.
+ * The "Add Consent" button/modal is still removed (decorative, no write
+ * endpoint behind it). Each row's Approve/Reject buttons are real and
+ * write to api/review-patient-consent.php — shown only on pending
+ * "profile_access" rows, since that's the one consent type with an
+ * actual decision to make (every other type here is a display-only
+ * record). The "View" (eye) icon still opens a real Consent Details
+ * modal populated from that row's data, via assets/js/consent_management.js.
  * =====================================================================
  */
 session_start();
@@ -322,8 +325,9 @@ $adminNavItems = [
                         </td>
                     </tr>
                     <?php endif; ?>
-                    <?php foreach ($consentRecords as $c): $type = $consentTypeMeta[$c['type']] ?? ['label' => 'Consent', 'bg' => '#EEF0F3', 'color' => '#6B7280']; $status = $consentStatusMeta[$c['status']] ?? $consentStatusMeta['pending']; ?>
+                    <?php foreach ($consentRecords as $c): $type = $consentTypeMeta[$c['type']] ?? ['label' => 'Consent', 'bg' => '#EEF0F3', 'color' => '#6B7280']; $status = $consentStatusMeta[$c['status']] ?? $consentStatusMeta['pending']; $canReview = $c['type'] === 'profile_access' && $c['status'] === 'pending'; ?>
                     <tr class="csm-row"
+                        data-consent-id="<?= htmlspecialchars($c['id']) ?>"
                         data-status="<?= htmlspecialchars($c['status']) ?>"
                         data-patient-name="<?= htmlspecialchars($c['patientName']) ?>"
                         data-patient-id="<?= htmlspecialchars($c['patientId']) ?>"
@@ -362,6 +366,14 @@ $adminNavItems = [
                                 <button type="button" class="adm-action-btn view csm-view-btn" aria-label="View" data-bs-toggle="modal" data-bs-target="#csmDetailsModal">
                                     <i class="bi bi-eye"></i>
                                 </button>
+                                <?php if ($canReview): ?>
+                                <button type="button" class="adm-action-btn approve csm-approve-btn" aria-label="Approve" data-consent-approve>
+                                    <i class="bi bi-check-circle"></i>
+                                </button>
+                                <button type="button" class="adm-action-btn reject csm-reject-btn" aria-label="Reject" data-consent-reject>
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                                <?php endif; ?>
                             </div>
                         </td>
                     </tr>
@@ -403,7 +415,7 @@ $adminNavItems = [
                     <div class="csm-detail-field csm-detail-field-full"><span class="csm-detail-label">Purpose</span><span class="csm-detail-value" id="csmDetailPurpose">—</span></div>
                     <div class="csm-detail-field"><span class="csm-detail-label">Date Granted</span><span class="csm-detail-value" id="csmDetailGivenOn">—</span></div>
                     <div class="csm-detail-field"><span class="csm-detail-label">Authorized By</span><span class="csm-detail-value" id="csmDetailApprovedBy">—</span></div>
-                    <div class="csm-detail-field csm-detail-field-full"><span class="csm-detail-label">Notes</span><span class="csm-detail-value" id="csmDetailNotes">—</span></div>
+                    <div class="csm-detail-field csm-detail-field-full" id="csmDetailNotesRow"><span class="csm-detail-label">Notes</span><span class="csm-detail-value" id="csmDetailNotes">—</span></div>
                 </div>
             </div>
             <div class="modal-footer">
