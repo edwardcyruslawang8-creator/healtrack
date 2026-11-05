@@ -139,24 +139,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const FACILITY_LATLNG = [FACILITIES[0].lat, FACILITIES[0].lng];
 
     // ---------------------------------------------------------------
-    // Batangas Province viewing limit — per the capstone adviser's
-    // recommendation, this map must never zoom/pan out past the
-    // province the 11 covered barangays actually sit in. This is ONLY
+    // Lipa City viewing limit — this map must never zoom/pan out past
+    // the city the 11 covered barangays actually sit in. This is ONLY
     // a navigation limit (a plain lat/lng rectangle fed to Leaflet's
     // own maxBounds/minZoom) — no new GeoJSON, polygon, or boundary
     // overlay is drawn from it, and it never touches the real barangay
     // GeoJSON loaded below.
     //
     // Coordinates are the real OpenStreetMap administrative boundary
-    // for Batangas Province (relation osm_id 1504427, place_rank 8 =
-    // province/state level), its own reported bounding box — not a
-    // hand-guessed rectangle:
-    //   https://nominatim.openstreetmap.org/search?q=Batangas,+Calabarzon,+Philippines&format=json&featureType=state
-    //   -> boundingbox: ["13.4738466","14.2488877","120.3477783","121.6099702"]
+    // for Lipa City (relation osm_id 6209763, place_rank 12 = city
+    // level), its own reported bounding box — not a hand-guessed
+    // rectangle:
+    //   https://nominatim.openstreetmap.org/search?q=Lipa,Philippines&format=json
+    //   -> boundingbox: ["13.8614972","14.0298672","121.0226440","121.2826268"]
     // ---------------------------------------------------------------
-    const BATANGAS_BOUNDS = L.latLngBounds(
-        [13.4738, 120.3478], // southwest
-        [14.2489, 121.6100]  // northeast
+    const LIPA_CITY_BOUNDS = L.latLngBounds(
+        [13.8615, 121.0226], // southwest
+        [14.0299, 121.2826]  // northeast
     );
 
     // ---------------------------------------------------------------
@@ -165,14 +164,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const map = L.map('gisMap', {
         zoomControl: false, // custom-positioned zoom control added below
         scrollWheelZoom: true,
-        maxBounds: BATANGAS_BOUNDS,
+        maxBounds: LIPA_CITY_BOUNDS,
         maxBoundsViscosity: 1.0,
     });
 
     // The real minimum zoom depends on the map container's own current
     // pixel size (a taller/narrower container needs a different zoom to
-    // show the same Batangas extent) — getBoundsZoom() computes exactly
-    // that from BATANGAS_BOUNDS above, same rectangle every time; this
+    // show the same Lipa City extent) — getBoundsZoom() computes exactly
+    // that from LIPA_CITY_BOUNDS above, same rectangle every time; this
     // never recomputes or touches the rectangle itself, only how far out
     // the CURRENT container is allowed to zoom to still show it.
     // Leaflet's own zoom control, mouse wheel, keyboard (+/-), and
@@ -188,7 +187,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // already-whole number) so small, hard-to-pin-down differences in
     // exactly how the container measures on a given screen (scrollbar
     // width, OS display scaling, a pixel or two of layout timing) can
-    // never let a sliver of area outside Batangas Province show at the
+    // never let a sliver of area outside Lipa City show at the
     // permitted minimum.
     const MIN_ZOOM_SAFETY_MARGIN = 1;
     function hcRecalcMinZoom() {
@@ -205,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // current geometry, not a floor inherited from this function's
         // own last call.
         map.options.minZoom = 0;
-        const raw = map.getBoundsZoom(BATANGAS_BOUNDS, false);
+        const raw = map.getBoundsZoom(LIPA_CITY_BOUNDS, false);
         map.setMinZoom(raw + MIN_ZOOM_SAFETY_MARGIN);
     }
     hcRecalcMinZoom();
@@ -232,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // wrapped height (and therefore the map's matching height) can
     // change at a narrower viewport.
     // hcRecalcMinZoom() rides along on these same three triggers — the
-    // Batangas rectangle itself never changes, but the minimum zoom that
+    // Lipa City rectangle itself never changes, but the minimum zoom that
     // keeps it fully on screen does whenever the container's real size
     // does.
     window.addEventListener('load', function () { map.invalidateSize(); hcRecalcMinZoom(); });
@@ -245,7 +244,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Defensive safety net, independent of all the recalculation
     // triggers above: the instant ANY zoom change finishes, re-confirm
     // the current zoom isn't somehow below this container's real
-    // Batangas-fitting minimum (map.setMinZoom() already self-corrects
+    // Lipa-City-fitting minimum (map.setMinZoom() already self-corrects
     // when it's called with a stricter value than the current zoom —
     // see Leaflet's own setMinZoom() — this just guarantees that check
     // actually runs against the container's size right now, every time,
@@ -541,7 +540,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // column's own cards/charts (rendered synchronously at the
             // very top of this file) have long since settled the page's
             // final layout — the single most reliable point to confirm
-            // the Batangas minZoom restriction against the container's
+            // the Lipa City minZoom restriction against the container's
             // actual final size, on top of the load/resize/ResizeObserver
             // checks already in place above.
             hcRecalcMinZoom();
