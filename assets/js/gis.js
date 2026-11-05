@@ -139,12 +139,52 @@ document.addEventListener('DOMContentLoaded', function () {
     const FACILITY_LATLNG = [FACILITIES[0].lat, FACILITIES[0].lng];
 
     // ---------------------------------------------------------------
+    // Batangas Province viewing limit — per the capstone adviser's
+    // recommendation, this map must never zoom/pan out past the
+    // province the 11 covered barangays actually sit in. This is ONLY
+    // a navigation limit (a plain lat/lng rectangle fed to Leaflet's
+    // own maxBounds/minZoom) — no new GeoJSON, polygon, or boundary
+    // overlay is drawn from it, and it never touches the real barangay
+    // GeoJSON loaded below.
+    //
+    // Coordinates are the real OpenStreetMap administrative boundary
+    // for Batangas Province (relation osm_id 1504427, place_rank 8 =
+    // province/state level), its own reported bounding box — not a
+    // hand-guessed rectangle:
+    //   https://nominatim.openstreetmap.org/search?q=Batangas,+Calabarzon,+Philippines&format=json&featureType=state
+    //   -> boundingbox: ["13.4738466","14.2488877","120.3477783","121.6099702"]
+    // ---------------------------------------------------------------
+    const BATANGAS_BOUNDS = L.latLngBounds(
+        [13.4738, 120.3478], // southwest
+        [14.2489, 121.6100]  // northeast
+    );
+
+    // ---------------------------------------------------------------
     // Map init
     // ---------------------------------------------------------------
     const map = L.map('gisMap', {
         zoomControl: false, // custom-positioned zoom control added below
         scrollWheelZoom: true,
+        maxBounds: BATANGAS_BOUNDS,
+        maxBoundsViscosity: 1.0,
     });
+
+    // The real minimum zoom depends on the map container's own current
+    // pixel size (a taller/narrower container needs a different zoom to
+    // show the same Batangas extent) — getBoundsZoom() computes exactly
+    // that from BATANGAS_BOUNDS above, same rectangle every time; this
+    // never recomputes or touches the rectangle itself, only how far out
+    // the CURRENT container is allowed to zoom to still show it.
+    // Leaflet's own zoom control, mouse wheel, keyboard (+/-), and
+    // pinch-to-zoom all already respect map.setMinZoom() globally (it's
+    // enforced once on the map object, not per input method), including
+    // disabling the control's own zoom-out button once reached — no
+    // separate wiring needed for each.
+    function hcRecalcMinZoom() {
+        if (!mapEl.offsetWidth || !mapEl.offsetHeight) return; // container not laid out yet
+        map.setMinZoom(map.getBoundsZoom(BATANGAS_BOUNDS, false));
+    }
+    hcRecalcMinZoom();
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
@@ -167,12 +207,16 @@ document.addEventListener('DOMContentLoaded', function () {
     // Re-checked on real window resizes too, since the left column's
     // wrapped height (and therefore the map's matching height) can
     // change at a narrower viewport.
-    window.addEventListener('load', function () { map.invalidateSize(); });
-    window.addEventListener('resize', function () { map.invalidateSize(); });
+    // hcRecalcMinZoom() rides along on these same three triggers — the
+    // Batangas rectangle itself never changes, but the minimum zoom that
+    // keeps it fully on screen does whenever the container's real size
+    // does.
+    window.addEventListener('load', function () { map.invalidateSize(); hcRecalcMinZoom(); });
+    window.addEventListener('resize', function () { map.invalidateSize(); hcRecalcMinZoom(); });
     // Also catches height changes that aren't a window resize (e.g. a
     // left-column card's content changing after load).
     if (window.ResizeObserver) {
-        new ResizeObserver(function () { map.invalidateSize(); }).observe(document.getElementById('gisMap'));
+        new ResizeObserver(function () { map.invalidateSize(); hcRecalcMinZoom(); }).observe(document.getElementById('gisMap'));
     }
     let initialBounds = null;
     const barangayLayers = {}; // real barangay name -> its Leaflet layer, filled in once the GeoJSON below loads
