@@ -49,7 +49,7 @@ function admin_theme_head_script(): string
     }
     $script .= '</script>';
 
-    $favicon = '<link rel="icon" type="image/jpeg" href="' . asset_url('/assets/images/main_logo.jpg') . '">';
+    $favicon = '<link rel="icon" type="image/png" href="' . asset_url('/assets/images/main_logo.png') . '">';
 
     return $favicon . $script;
 }

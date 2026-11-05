@@ -65,7 +65,7 @@ $selectedStatus = $vaccineStatusMeta[$selectedVaccineRecord['status']] ?? $vacci
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/jpeg" href="<?= asset_url('/assets/images/main_logo.jpg') ?>">
+<link rel="icon" type="image/png" href="<?= asset_url('/assets/images/main_logo.png') ?>">
 <title>Vaccination Record Details — HEALTrack</title>
 
 <!-- Google Fonts -->
@@ -103,7 +103,7 @@ $selectedStatus = $vaccineStatusMeta[$selectedVaccineRecord['status']] ?? $vacci
 
     <!-- Brand -->
     <div class="adm-brand">
-        <div class="adm-logo-badge"><img src="<?= asset_url('/assets/images/main_logo.jpg') ?>" alt="HEALTrack logo" class="adm-logo-img"></div>
+        <div class="adm-logo-badge"><img src="<?= asset_url('/assets/images/main_logo.png') ?>" alt="HEALTrack logo" class="adm-logo-img"></div>
         <div class="adm-brand-text">
             <h1>HEALTrack</h1>
             <p>Health Information System</p>
