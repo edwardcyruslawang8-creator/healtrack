@@ -386,6 +386,11 @@ button{ font-family: inherit; }
   border-color: var(--maroon);
   color: #fff;
 }
+.pagination-custom .page-btn.disabled{
+  opacity: .4;
+  pointer-events: none;
+  cursor: default;
+}
 .pagination-custom .page-ellipsis{
   color: var(--text-soft);
   font-size: 13px;

@@ -98,7 +98,7 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
             <div class="results-toolbar">
                 <h2>Search Results</h2>
                 <?php if ($queryTerm !== ''): ?>
-                <span class="results-count">Showing 1&ndash;<?= count($searchResults) ?> of <?= $totalResults ?> results</span>
+                <span class="results-count">Showing <?= $totalResults > 0 ? (($currentPageNum - 1) * $resultsPerPage + 1) : 0 ?>&ndash;<?= min($currentPageNum * $resultsPerPage, $totalResults) ?> of <?= $totalResults ?> results</span>
                 <?php endif; ?>
                 <!-- form="filtersForm" — submits with the filters (and the
                      search term they carry), so a sort survives a filter
@@ -135,15 +135,15 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
 
             <!-- PAGINATION -->
             <nav class="pagination-custom" aria-label="Search results pages">
-                <a href="#" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => max(1, $currentPageNum - 1)])) ?>" class="page-btn <?= $currentPageNum <= 1 ? 'disabled' : '' ?>" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
                 <?php for ($p = 1; $p <= min(4, $totalPages); $p++): ?>
-                <a href="#" class="page-btn <?= $p === $currentPageNum ? 'active' : '' ?>"><?= $p ?></a>
+                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => $p])) ?>" class="page-btn <?= $p === $currentPageNum ? 'active' : '' ?>"><?= $p ?></a>
                 <?php endfor; ?>
                 <?php if ($totalPages > 5): ?>
                 <span class="page-ellipsis">&hellip;</span>
-                <a href="#" class="page-btn"><?= $totalPages ?></a>
+                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => $totalPages])) ?>" class="page-btn <?= $totalPages === $currentPageNum ? 'active' : '' ?>"><?= $totalPages ?></a>
                 <?php endif; ?>
-                <a href="#" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => min($totalPages, $currentPageNum + 1)])) ?>" class="page-btn <?= $currentPageNum >= $totalPages ? 'disabled' : '' ?>" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
             </nav>
         </section>
 

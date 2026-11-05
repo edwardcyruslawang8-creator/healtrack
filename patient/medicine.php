@@ -73,7 +73,7 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                  filter $medicineResults now (see includes/medicine-data.php);
                  each select keeps its current value selected, and the
                  search term carries over via the hidden field below. -->
-            <form class="filter-toolbar" action="medicine.php" method="get">
+            <form class="filter-toolbar" id="medicineFilterToolbar" action="medicine.php" method="get">
                 <input type="hidden" name="tab" value="medicines">
                 <input type="hidden" name="q" value="<?= htmlspecialchars($queryTerm) ?>">
                 <div class="filter-select-wrap">
@@ -103,11 +103,18 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
             <!-- RESULTS META -->
             <div class="medicine-meta-row">
                 <span class="results-count">
-                    Showing 1&ndash;<?= count($medicineResults) ?> of <?= $medicineTotalResults ?> medicines
+                    Showing <?= $medicineTotalResults > 0 ? (($medicineCurrentPageNum - 1) * $medicinePerPage + 1) : 0 ?>&ndash;<?= min($medicineCurrentPageNum * $medicinePerPage, $medicineTotalResults) ?> of <?= $medicineTotalResults ?> medicines
                 </span>
-                <select data-styled-select class="sort-select" name="sort">
-                    <option>Sort by: Name (A&ndash;Z)</option>
-                    <option>Sort by: Name (Z&ndash;A)</option>
+                <!-- form="medicineFilterToolbar" — submits the filter form
+                     above (carrying category/form/q along with it) instead
+                     of needing its own <form>; assets/js/medicine.js
+                     submits it on change, same pattern as search.php's own
+                     sort select (assets/js/search.js). Real sort:
+                     includes/public/medicine-data.php. -->
+                <select data-styled-select class="sort-select" name="sort" id="medicineSortSelect" form="medicineFilterToolbar">
+                    <?php foreach ($medicineSortOptions as $value => $label): ?>
+                    <option value="<?= htmlspecialchars($value) ?>" <?= $value === $medicineSort ? 'selected' : '' ?>>Sort by: <?= htmlspecialchars($label) ?></option>
+                    <?php endforeach; ?>
                 </select>
             </div>
 
@@ -143,17 +150,17 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
 
             <!-- PAGINATION -->
             <nav class="pagination-custom" aria-label="Medicine list pages">
-                <a href="#" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => max(1, $medicineCurrentPageNum - 1)])) ?>" class="page-btn <?= $medicineCurrentPageNum <= 1 ? 'disabled' : '' ?>" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
                 <?php for ($p = 1; $p <= min(5, $medicineTotalPages); $p++): ?>
-                <a href="#" class="page-btn <?= $p === $medicineCurrentPageNum ? 'active' : '' ?>"><?= $p ?></a>
+                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => $p])) ?>" class="page-btn <?= $p === $medicineCurrentPageNum ? 'active' : '' ?>"><?= $p ?></a>
                 <?php endfor; ?>
                 <?php if ($medicineTotalPages > 6): ?>
                 <span class="page-ellipsis">&hellip;</span>
                 <?php endif; ?>
                 <?php if ($medicineTotalPages > 5): ?>
-                <a href="#" class="page-btn"><?= $medicineTotalPages ?></a>
+                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => $medicineTotalPages])) ?>" class="page-btn <?= $medicineTotalPages === $medicineCurrentPageNum ? 'active' : '' ?>"><?= $medicineTotalPages ?></a>
                 <?php endif; ?>
-                <a href="#" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => min($medicineTotalPages, $medicineCurrentPageNum + 1)])) ?>" class="page-btn <?= $medicineCurrentPageNum >= $medicineTotalPages ? 'disabled' : '' ?>" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
             </nav>
 
         <?php else: ?>
@@ -182,7 +189,7 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
 
             <div class="medicine-meta-row">
                 <span class="results-count">
-                    Showing 1&ndash;<?= count($vaccineResults) ?> of <?= $vaccineTotalResults ?> vaccines
+                    Showing <?= $vaccineTotalResults > 0 ? (($vaccineCurrentPageNum - 1) * $vaccinePerPage + 1) : 0 ?>&ndash;<?= min($vaccineCurrentPageNum * $vaccinePerPage, $vaccineTotalResults) ?> of <?= $vaccineTotalResults ?> vaccines
                 </span>
             </div>
 
@@ -217,6 +224,21 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                     </tbody>
                 </table>
             </div>
+
+            <!-- PAGINATION -->
+            <nav class="pagination-custom" aria-label="Vaccine list pages">
+                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => max(1, $vaccineCurrentPageNum - 1)])) ?>" class="page-btn <?= $vaccineCurrentPageNum <= 1 ? 'disabled' : '' ?>" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <?php for ($p = 1; $p <= min(5, $vaccineTotalPages); $p++): ?>
+                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => $p])) ?>" class="page-btn <?= $p === $vaccineCurrentPageNum ? 'active' : '' ?>"><?= $p ?></a>
+                <?php endfor; ?>
+                <?php if ($vaccineTotalPages > 6): ?>
+                <span class="page-ellipsis">&hellip;</span>
+                <?php endif; ?>
+                <?php if ($vaccineTotalPages > 5): ?>
+                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => $vaccineTotalPages])) ?>" class="page-btn <?= $vaccineTotalPages === $vaccineCurrentPageNum ? 'active' : '' ?>"><?= $vaccineTotalPages ?></a>
+                <?php endif; ?>
+                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => min($vaccineTotalPages, $vaccineCurrentPageNum + 1)])) ?>" class="page-btn <?= $vaccineCurrentPageNum >= $vaccineTotalPages ? 'disabled' : '' ?>" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+            </nav>
 
         <?php endif; ?>
 

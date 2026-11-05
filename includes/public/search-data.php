@@ -40,6 +40,7 @@
 require_once __DIR__ . '/../../firebase/firestore.php'; // getAllMedicines(), getAllAnnouncements()
 require_once __DIR__ . '/../shared/fuzzy_search.php'; // hc_fuzzy_match()
 require_once __DIR__ . '/../shared/search_log.php'; // hc_log_search_term(), hc_get_popular_searches()
+require_once __DIR__ . '/../shared/query_helpers.php'; // hc_url_with_params() — used by patient/search.php's pagination links
 
 $queryTerm = trim($_GET['q'] ?? '');
 if ($queryTerm !== '') {

@@ -19,6 +19,7 @@
 
 require_once __DIR__ . '/../../firebase/firestore.php';
 require_once __DIR__ . '/../shared/fuzzy_search.php'; // hc_fuzzy_match()
+require_once __DIR__ . '/../shared/query_helpers.php'; // hc_url_with_params() — used by patient/medicine.php's pagination links
 
 // Which pill tab is active — defaults to Medicines. Computed here (not
 // patient/medicine.php) since it decides which collection this file
@@ -94,10 +95,17 @@ if ($activeTab === 'medicines') {
     }
     unset($medicine);
 
+    // Real sort — the "Sort by: Name" dropdown (patient/medicine.php's
+    // Medicines tab only). Applied before pagination slices the page out
+    // below, same ordering every sort in this app follows (validate
+    // against a real option list, default to the first one).
+    $medicineSortOptions = ['name_asc' => 'Name (A–Z)', 'name_desc' => 'Name (Z–A)'];
+    $medicineSort = isset($medicineSortOptions[$_GET['sort'] ?? '']) ? $_GET['sort'] : 'name_asc';
+    usort($filteredMedicines, fn ($a, $b) => $medicineSort === 'name_desc'
+        ? strnatcasecmp($b['name'], $a['name'])
+        : strnatcasecmp($a['name'], $b['name']));
+
     // Pagination — real total/page-count from the filtered result above.
-    // The pagination links themselves still render as "#" placeholders
-    // (see patient/medicine.php) rather than real ?page= links; with the
-    // current catalog size everything fits on page 1 regardless.
     $medicineTotalResults   = count($filteredMedicines);
     $medicinePerPage        = 8;
     $medicineCurrentPageNum = max(1, (int) ($_GET['page'] ?? 1));

@@ -6,6 +6,10 @@
    and GET form submits), which keeps things simple and fully
    functional without JS. The filter/sort dropdowns' styled lists come
    from assets/js/styled-select.js (each <select data-styled-select>).
+   The Medicines tab's sort select (id="medicineSortSelect") submits
+   its form="medicineFilterToolbar" on change, same pattern
+   assets/js/search.js already uses for search.php's own sort select —
+   real sort logic lives in includes/public/medicine-data.php.
 
    One real piece of interactivity: the top search box is shared by
    BOTH tabs (assets/js/quick-search.js, ?scope=medicines — which
@@ -31,8 +35,12 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // TODO: once a real backend exists, wire the filter form and sort
-    // dropdown to submit via fetch() and re-render just the table +
-    // pagination, instead of a full-page reload.
+    const sortSelect = document.getElementById('medicineSortSelect');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function () {
+            const form = document.getElementById(sortSelect.getAttribute('form'));
+            if (form) form.submit();
+        });
+    }
 
 });
