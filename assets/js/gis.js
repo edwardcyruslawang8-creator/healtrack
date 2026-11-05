@@ -180,9 +180,33 @@ document.addEventListener('DOMContentLoaded', function () {
     // enforced once on the map object, not per input method), including
     // disabling the control's own zoom-out button once reached — no
     // separate wiring needed for each.
+    // getBoundsZoom() already snaps DOWN to a whole zoom level internally
+    // (Leaflet's own zoomSnap:1 default), so e.g. a "10.3 fits exactly"
+    // result comes back as a flat 10 — the most permissive whole zoom
+    // that still fits the whole rectangle. +1 on top of that is a real,
+    // deliberate margin (not just Math.ceil(), which is a no-op on an
+    // already-whole number) so small, hard-to-pin-down differences in
+    // exactly how the container measures on a given screen (scrollbar
+    // width, OS display scaling, a pixel or two of layout timing) can
+    // never let a sliver of area outside Batangas Province show at the
+    // permitted minimum.
+    const MIN_ZOOM_SAFETY_MARGIN = 1;
     function hcRecalcMinZoom() {
         if (!mapEl.offsetWidth || !mapEl.offsetHeight) return; // container not laid out yet
-        map.setMinZoom(map.getBoundsZoom(BATANGAS_BOUNDS, false));
+        // getBoundsZoom() clamps its OWN result to never go below the
+        // map's CURRENT minZoom (Math.max(this.getMinZoom(), ...) inside
+        // Leaflet's own implementation) — calling this function more than
+        // once without resetting that first would silently ratchet the
+        // "raw" value up by this function's own previous result every
+        // single time it re-runs (a real, confirmed bug: 4 calls in a row
+        // against the exact same unchanged container size produced 10,
+        // 11, 12, 13 instead of 10 every time). Dropping minZoom to 0
+        // first guarantees getBoundsZoom() always measures the TRUE
+        // current geometry, not a floor inherited from this function's
+        // own last call.
+        map.options.minZoom = 0;
+        const raw = map.getBoundsZoom(BATANGAS_BOUNDS, false);
+        map.setMinZoom(raw + MIN_ZOOM_SAFETY_MARGIN);
     }
     hcRecalcMinZoom();
 
@@ -218,6 +242,21 @@ document.addEventListener('DOMContentLoaded', function () {
     if (window.ResizeObserver) {
         new ResizeObserver(function () { map.invalidateSize(); hcRecalcMinZoom(); }).observe(document.getElementById('gisMap'));
     }
+    // Defensive safety net, independent of all the recalculation
+    // triggers above: the instant ANY zoom change finishes, re-confirm
+    // the current zoom isn't somehow below this container's real
+    // Batangas-fitting minimum (map.setMinZoom() already self-corrects
+    // when it's called with a stricter value than the current zoom —
+    // see Leaflet's own setMinZoom() — this just guarantees that check
+    // actually runs against the container's size right now, every time,
+    // rather than depending on one of the handlers above having already
+    // fired with the final, settled size).
+    map.on('zoomend', function () {
+        hcRecalcMinZoom();
+        if (map.getZoom() < map.getMinZoom()) {
+            map.setZoom(map.getMinZoom());
+        }
+    });
     let initialBounds = null;
     const barangayLayers = {}; // real barangay name -> its Leaflet layer, filled in once the GeoJSON below loads
 
@@ -498,6 +537,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 initialBounds.extend(marker.getLatLng());
             });
             map.invalidateSize(); // real flex-stretched height may not be final yet when L.map() first ran — see this file's own comment on map init
+            // By the time this real GeoJSON fetch resolves, the left
+            // column's own cards/charts (rendered synchronously at the
+            // very top of this file) have long since settled the page's
+            // final layout — the single most reliable point to confirm
+            // the Batangas minZoom restriction against the container's
+            // actual final size, on top of the load/resize/ResizeObserver
+            // checks already in place above.
+            hcRecalcMinZoom();
             map.fitBounds(initialBounds, { padding: [30, 30] });
 
             // Centroid marker + permanent label for each barangay
