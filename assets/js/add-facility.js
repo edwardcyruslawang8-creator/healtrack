@@ -296,9 +296,36 @@ document.addEventListener('DOMContentLoaded', function () {
     // button (enabled/disabled based on this exact flag) re-renders in
     // sync with it.
     // ---------------------------------------------------------------
+    const needsSubadminModalEl = document.getElementById('facNeedsSubadminModal');
+    const needsSubadminModal = needsSubadminModalEl && typeof bootstrap !== 'undefined' ? new bootstrap.Modal(needsSubadminModalEl) : null;
+    const needsSubadminNameEl = document.getElementById('facNeedsSubadminName');
+    const needsSubadminLinkEl = document.getElementById('facNeedsSubadminLink');
+
     document.querySelectorAll('[data-fac-integrated-toggle]').forEach(function (toggle) {
         toggle.addEventListener('change', function () {
             const wasChecked = !toggle.checked; // the state before this change
+
+            // Turning it ON requires a real sub-administrator already
+            // assigned to this facility — checked here first (from data
+            // this page already rendered, no extra request) so the
+            // toggle never fires a doomed request; api/update-facility-integration.php
+            // enforces this same rule server-side either way.
+            if (toggle.checked && toggle.dataset.facHasSubadmin !== '1') {
+                toggle.checked = false;
+                if (needsSubadminModal) {
+                    if (needsSubadminNameEl) {
+                        needsSubadminNameEl.textContent = toggle.dataset.facilityName || 'This facility';
+                    }
+                    if (needsSubadminLinkEl) {
+                        needsSubadminLinkEl.href = 'subadmin_management.php?q=' + encodeURIComponent(toggle.dataset.facilityName || '');
+                    }
+                    needsSubadminModal.show();
+                } else if (typeof HCDialog !== 'undefined') {
+                    HCDialog.alert('This facility needs a sub-administrator before it can be integrated with HEALTrack.');
+                }
+                return;
+            }
+
             toggle.disabled = true;
 
             fetch('../api/update-facility-integration.php', {

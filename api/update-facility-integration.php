@@ -52,6 +52,26 @@ if ($existing === null) {
     exit;
 }
 
+// Turning this ON requires a real sub-administrator already assigned to
+// this facility (users/{id}.role === 'subadmin', same facility name) —
+// they're who actually runs day-to-day consent/account decisions once
+// the system is live there. assets/js/add-facility.js checks this same
+// rule client-side first (so the toggle never fires a doomed request),
+// but it's enforced here too since a client-side-only check can be
+// bypassed by calling this endpoint directly.
+if ($isIntegrated) {
+    $facilityName = $existing['name'] ?? '';
+    $hasSubadmin = count(array_filter(
+        $firestore->listDocuments('users'),
+        fn ($u) => ($u['fields']['role'] ?? '') === 'subadmin' && ($u['fields']['facility'] ?? '') === $facilityName
+    )) > 0;
+    if (!$hasSubadmin) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => 'This facility needs a sub-administrator before it can be integrated with HEALTrack.']);
+        exit;
+    }
+}
+
 $saved = $firestore->setDocument('facilities', $id, array_merge($existing, [
     'isIntegrated' => $isIntegrated,
 ]));

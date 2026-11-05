@@ -101,6 +101,16 @@ foreach ($firestore->listDocuments('facilities') as $doc) {
         'lat' => $fields['lat'] ?? null,
         'lng' => $fields['lng'] ?? null,
         'isIntegrated' => !empty($fields['isIntegrated']),
+        // A real sub-administrator account (users/{id}.role === 'subadmin')
+        // for this exact facility name — api/update-facility-integration.php
+        // requires this before "Integrated with HEALTrack" can be turned on
+        // (the sub-admin is who actually runs day-to-day consent/account
+        // decisions there), so the page can warn before the toggle click
+        // even reaches the server.
+        'hasSubadmin' => count(array_filter(
+            $allUsersForCounts,
+            fn ($u) => ($u['fields']['role'] ?? '') === 'subadmin' && ($u['fields']['facility'] ?? '') === $facilityName
+        )) > 0,
         'patients' => count(array_filter($allPatientsForCounts, fn ($p) => $p['facility'] === $facilityName)),
         'records' => count(array_filter($allRecordDocsForCounts, fn ($d) => ($d['fields']['facility'] ?? '') === $facilityName)),
         'staff' => count(array_filter($allUsersForCounts, fn ($u) => ($u['fields']['facility'] ?? '') === $facilityName)),

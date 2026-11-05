@@ -257,7 +257,7 @@ $adminNavItems = [
             <div class="fac-integrated-row">
                 <span class="fac-integrated-label">Integrated with HEALTrack</span>
                 <div class="form-check form-switch fac-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="facIntegrated-<?= htmlspecialchars($f['id']) ?>" data-fac-integrated-toggle data-facility-id="<?= htmlspecialchars($f['id']) ?>" <?= $f['isIntegrated'] ? 'checked' : '' ?>>
+                    <input class="form-check-input" type="checkbox" role="switch" id="facIntegrated-<?= htmlspecialchars($f['id']) ?>" data-fac-integrated-toggle data-facility-id="<?= htmlspecialchars($f['id']) ?>" data-facility-name="<?= htmlspecialchars($f['name']) ?>" data-fac-has-subadmin="<?= $f['hasSubadmin'] ? '1' : '0' ?>" <?= $f['isIntegrated'] ? 'checked' : '' ?>>
                 </div>
             </div>
 
@@ -316,6 +316,40 @@ $adminNavItems = [
 </main>
 
 <?php require __DIR__ . '/../includes/admin/add_facility_modal.php'; ?>
+
+<!-- ============ SUB-ADMINISTRATOR REQUIRED MODAL ============
+     Shown instead of letting a facility's "Integrated with HEALTrack"
+     switch turn on when that facility has no real sub-administrator
+     account yet (assets/js/add-facility.js checks each toggle's own
+     data-fac-has-subadmin before it ever calls
+     api/update-facility-integration.php, which also enforces this same
+     rule server-side). A sub-admin is who actually runs day-to-day
+     consent/account decisions for a facility, so HEALTrack shouldn't
+     go "live" there without one. -->
+<div class="modal fade adm-modal" id="facNeedsSubadminModal" tabindex="-1" aria-labelledby="facNeedsSubadminModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="facNeedsSubadminModalLabel">Sub-Administrator Required</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>
+            <strong id="facNeedsSubadminName">This facility</strong> doesn't have a sub-administrator account yet.
+            A sub-administrator has to be assigned to a facility before it can be marked "Integrated with HEALTrack" —
+            they're the one who handles that facility's day-to-day account and consent decisions once the system goes live there.
+        </p>
+        <p class="mb-0">Add a sub-administrator for this facility first, then come back and turn this on.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="adm-modal-btn-cancel" data-bs-dismiss="modal">Cancel</button>
+        <a href="#" id="facNeedsSubadminLink" class="adm-modal-btn-submit" style="text-decoration:none;">
+            <i class="bi bi-person-plus-fill"></i> Go to Sub-Admin Management
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
