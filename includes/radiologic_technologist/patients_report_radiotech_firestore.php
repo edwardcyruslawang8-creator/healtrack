@@ -16,6 +16,7 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../shared/patient_consultation_report.php'; // hc_report_date_range_from_get(), hc_xray_report_rows()
 require_once __DIR__ . '/../shared/query_helpers.php'; // hc_url_with_params() — used by includes/shared/simple_filter_dropdown.php, this page's real "X-ray Test" filter button
+require_once __DIR__ . '/../firestore/xray_results.php'; // hc_xray_exam_catalog() — this page's real "X-ray Test" filter options
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -31,17 +32,16 @@ $dashboardDateLabel = date('F j, Y');
 $myReportRange = hc_report_date_range_from_get();
 $myAllPatientReportRows = hc_xray_report_rows($_SESSION['name'] ?? '', $myReportRange['from'], $myReportRange['to']);
 
-// Real "X-ray Test" filter button (includes/shared/simple_filter_dropdown.php,
-// same real-options-from-data convention includes/public/medicine-data.php's
-// hc_medicine_filter_options() uses) — built from this technologist's
-// ENTIRE real history, not just whatever the currently-selected date
-// range happens to contain (a narrow/empty range would otherwise leave
-// the dropdown with nothing to pick, even though real exams of theirs
-// exist outside that window).
-$myReportTestValues = array_values(array_unique(array_map(
-    fn ($r) => $r['detail'],
-    hc_xray_report_rows($_SESSION['name'] ?? '', '0001-01-01', '9999-12-31')
-)));
+// Real "X-ray Test" filter button (includes/shared/simple_filter_dropdown.php) —
+// every real exam type this app's catalog offers (hc_xray_exam_catalog(),
+// the same list doctor/active_consultation.php's own X-ray referral
+// checkboxes read from), not just whatever this technologist happens to
+// have personally completed so far, so every real exam type is always
+// pickable. hc_xray_report_rows()'s own 'detail' is already the bare
+// exam name with no prefix (see that function's own 'detail' assignment
+// — unlike the Laboratory side, which keeps a "Laboratory — " prefix),
+// so catalog keys match it directly with no transformation needed.
+$myReportTestValues = array_values(array_unique(array_keys(hc_xray_exam_catalog())));
 sort($myReportTestValues, SORT_NATURAL | SORT_FLAG_CASE);
 $myReportTestOptions = array_merge(['All X-ray Exams'], $myReportTestValues);
 

@@ -16,6 +16,7 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../shared/patient_consultation_report.php'; // hc_report_date_range_from_get(), hc_lab_report_rows()
 require_once __DIR__ . '/../shared/query_helpers.php'; // hc_url_with_params() — used by includes/shared/simple_filter_dropdown.php, this page's real "Laboratory Test" filter button
+require_once __DIR__ . '/../firestore/lab_results.php'; // hc_lab_test_catalog() — this page's real "Laboratory Test" filter options
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -31,17 +32,21 @@ $dashboardDateLabel = date('F j, Y');
 $myReportRange = hc_report_date_range_from_get();
 $myAllPatientReportRows = hc_lab_report_rows($_SESSION['name'] ?? '', $myReportRange['from'], $myReportRange['to']);
 
-// Real "Laboratory Test" filter button (includes/shared/simple_filter_dropdown.php,
-// same real-options-from-data convention includes/public/medicine-data.php's
-// hc_medicine_filter_options() uses) — built from this technologist's
-// ENTIRE real history, not just whatever the currently-selected date
-// range happens to contain (a narrow/empty range would otherwise leave
-// the dropdown with nothing to pick, even though real tests of theirs
-// exist outside that window).
-$myReportTestValues = array_values(array_unique(array_map(
-    fn ($r) => $r['detail'],
-    hc_lab_report_rows($_SESSION['name'] ?? '', '0001-01-01', '9999-12-31')
-)));
+// Real "Laboratory Test" filter button (includes/shared/simple_filter_dropdown.php) —
+// every real test this facility's catalog offers
+// (medical_technician/lab_test_catalog.php's own hc_lab_test_catalog()),
+// not just whatever this technologist happens to have personally
+// completed so far, so every real test type is always pickable. Each
+// catalog testName is prefixed "Laboratory — " to match the exact
+// 'detail' format api/complete-lab-result.php's/complete-*-test.php's
+// own 'title' field always writes (see hc_lab_report_rows() above).
+$myReportTestValues = [];
+foreach (hc_lab_test_catalog() as $category => $testNames) {
+    foreach ($testNames as $testName) {
+        $myReportTestValues[] = 'Laboratory — ' . $testName;
+    }
+}
+$myReportTestValues = array_values(array_unique($myReportTestValues));
 sort($myReportTestValues, SORT_NATURAL | SORT_FLAG_CASE);
 $myReportTestOptions = array_merge(['All Laboratory Tests'], $myReportTestValues);
 
