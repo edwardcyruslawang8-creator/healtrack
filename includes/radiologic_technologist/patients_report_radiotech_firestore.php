@@ -33,11 +33,15 @@ $myAllPatientReportRows = hc_xray_report_rows($_SESSION['name'] ?? '', $myReport
 
 // Real "X-ray Test" filter button (includes/shared/simple_filter_dropdown.php,
 // same real-options-from-data convention includes/public/medicine-data.php's
-// hc_medicine_filter_options() uses) — built from what's actually in
-// this date range, not a hardcoded list. Index 0 is that partial's own
-// "All ..." sentinel label (always treated as "no filter" regardless of
-// its text).
-$myReportTestValues = array_values(array_unique(array_map(fn ($r) => $r['detail'], $myAllPatientReportRows)));
+// hc_medicine_filter_options() uses) — built from this technologist's
+// ENTIRE real history, not just whatever the currently-selected date
+// range happens to contain (a narrow/empty range would otherwise leave
+// the dropdown with nothing to pick, even though real exams of theirs
+// exist outside that window).
+$myReportTestValues = array_values(array_unique(array_map(
+    fn ($r) => $r['detail'],
+    hc_xray_report_rows($_SESSION['name'] ?? '', '0001-01-01', '9999-12-31')
+)));
 sort($myReportTestValues, SORT_NATURAL | SORT_FLAG_CASE);
 $myReportTestOptions = array_merge(['All X-ray Exams'], $myReportTestValues);
 
