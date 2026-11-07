@@ -184,13 +184,14 @@ $staffNavItems = [
             <label>To <input type="date" name="to" value="<?= htmlspecialchars($myReportRange['to']) ?>"></label>
             <button type="submit" class="arp-report-filter-btn">Apply</button>
             <a href="patients_report.php" class="arp-report-today-link">Today</a>
+            <?php $sfdOptions = $myReportTestOptions; $sfdParam = 'test'; $sfdCurrent = $myReportTestFilter; $sfdBtnClass = 'arp-filter-select'; include __DIR__ . '/../includes/shared/simple_filter_dropdown.php'; ?>
             <div class="arp-filter-spacer"></div>
             <a href="../api/export-radiotech-patient-report.php?from=<?= urlencode($myReportRange['from']) ?>&to=<?= urlencode($myReportRange['to']) ?>" class="arp-report-export-btn"><i class="bi bi-download"></i> Export CSV</a>
             <button type="button" class="arp-report-export-btn arp-report-print-btn"><i class="bi bi-printer"></i> Print</button>
         </form>
 
         <div class="adm-table-wrap">
-            <table class="adm-table" data-sortable="true">
+            <table class="adm-table">
                 <thead>
                     <tr>
                         <th>Patient</th>
@@ -233,6 +234,5 @@ $staffNavItems = [
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/analytics_reports.js') ?>"></script>
-<script src="<?= asset_url('/assets/js/sortable-table.js') ?>"></script>
 </body>
 </html>
