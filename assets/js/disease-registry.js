@@ -3,15 +3,14 @@
    ---------------------------------------------------------------
    Wires the "Manage" button (existing entries) and "Add to Registry"
    button (candidate conditions) to the one shared modal
-   (includes/admin/manage_disease_registry_modal.php), and submits its
-   two independent forms to their own endpoints:
-     - #mdrEntryForm -> api/update-disease-registry-entry.php (existing)
-       or api/add-disease-registry-entry.php (new, from a candidate or
-       from scratch) — routine name/keywords/preventable maintenance.
-     - #mdrClassificationForm -> api/update-disease-classification.php —
-       the real, reason-required visibility decision. Hidden entirely
-       for a brand-new (not-yet-saved) entry, since there's nothing to
-       classify until the entry itself is first saved.
+   (includes/admin/manage_disease_registry_modal.php) and its single
+   form (#mdrEntryForm), submitted to:
+     - api/update-disease-registry-entry.php (existing entries) —
+       name/keywords/preventable/category together, no reason required.
+     - api/add-disease-registry-entry.php (new entries, from a
+       candidate or from scratch) — always starts uncategorized
+       server-side regardless of what's submitted, so the Category
+       field is hidden until the entry has been saved once.
    ============================================================= */
 document.addEventListener('DOMContentLoaded', function () {
     const modalEl = document.getElementById('manageDiseaseRegistryModal');
@@ -23,33 +22,24 @@ document.addEventListener('DOMContentLoaded', function () {
     const nameField = document.getElementById('mdrName');
     const keywordsField = document.getElementById('mdrKeywords');
     const preventableField = document.getElementById('mdrPreventable');
+    const categorySection = document.getElementById('mdrCategorySection');
+    const categoryField = document.getElementById('mdrCategory');
+    const preventiveMeasuresField = document.getElementById('mdrPreventiveMeasures');
     const entryError = document.getElementById('mdrEntryError');
     const entrySaveBtn = document.getElementById('mdrEntrySaveBtn');
-
-    const classificationSection = document.getElementById('mdrClassificationSection');
-    const classificationForm = document.getElementById('mdrClassificationForm');
-    const classificationEntryIdField = document.getElementById('mdrClassificationEntryId');
-    const classificationField = document.getElementById('mdrClassification');
-    const preventiveMeasuresField = document.getElementById('mdrPreventiveMeasures');
-    const reasonField = document.getElementById('mdrReason');
-    const classificationError = document.getElementById('mdrClassificationError');
-    const classificationSaveBtn = document.getElementById('mdrClassificationSaveBtn');
 
     let isNewEntry = false;
     let pendingCandidateFlag = false;
 
     function resetModal() {
         entryForm.reset();
-        classificationForm.reset();
         entryError.classList.add('d-none');
-        classificationError.classList.add('d-none');
         entryIdField.value = '';
-        classificationEntryIdField.value = '';
+        entrySaveBtn.disabled = false;
     }
 
-    function showClassificationSection(show) {
-        classificationSection.style.display = show ? '' : 'none';
-        classificationSaveBtn.style.display = show ? '' : 'none';
+    function showCategorySection(show) {
+        categorySection.style.display = show ? '' : 'none';
     }
 
     // "Manage" button on an existing row.
@@ -58,22 +48,20 @@ document.addEventListener('DOMContentLoaded', function () {
             resetModal();
             isNewEntry = false;
             pendingCandidateFlag = false;
-            const id = btn.dataset.id;
-            entryIdField.value = id;
-            classificationEntryIdField.value = id;
+            entryIdField.value = btn.dataset.id;
             nameField.value = btn.dataset.name || '';
             keywordsField.value = btn.dataset.keywords || '';
             preventableField.checked = btn.dataset.preventable === '1';
-            classificationField.value = btn.dataset.classification || 'pending_classification';
+            categoryField.value = btn.dataset.category || '';
             preventiveMeasuresField.value = btn.dataset.preventiveMeasures || '';
-            showClassificationSection(true);
+            showCategorySection(true);
             modal.show();
         });
     });
 
     // "Add to Registry" on a candidate row — pre-fills name/keyword,
-    // classification section hidden until the entry itself is saved
-    // once (nothing to classify yet).
+    // category section hidden until the entry itself is saved once
+    // (it always starts uncategorized regardless).
     document.querySelectorAll('[data-add-candidate]').forEach(function (btn) {
         btn.addEventListener('click', function () {
             resetModal();
@@ -82,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function () {
             nameField.value = btn.dataset.name || '';
             keywordsField.value = btn.dataset.keyword || '';
             preventableField.checked = false;
-            showClassificationSection(false);
+            showCategorySection(false);
             modal.show();
         });
     });
@@ -97,6 +85,8 @@ document.addEventListener('DOMContentLoaded', function () {
             name: nameField.value.trim(),
             keywords: keywordsField.value,
             isPreventable: preventableField.checked,
+            category: categoryField.value,
+            preventiveMeasures: preventiveMeasuresField.value.trim(),
         };
         const url = isNewEntry ? '../api/add-disease-registry-entry.php' : '../api/update-disease-registry-entry.php';
         if (isNewEntry) {
@@ -113,48 +103,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (!result.ok || !result.data.success) {
                     throw new Error(result.data.error || 'Something went wrong. Please try again.');
                 }
-                if (isNewEntry) {
-                    // A brand-new entry is always created Pending — reload
-                    // so the admin sees it in the table and can classify
-                    // it as a real, separate next action.
-                    window.location.reload();
-                    return;
-                }
                 window.location.reload();
             })
             .catch(function (err) {
                 entryError.textContent = err.message;
                 entryError.classList.remove('d-none');
                 entrySaveBtn.disabled = false;
-            });
-    });
-
-    classificationForm.addEventListener('submit', function (e) {
-        e.preventDefault();
-        classificationError.classList.add('d-none');
-        classificationSaveBtn.disabled = true;
-
-        fetch('../api/update-disease-classification.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id: classificationEntryIdField.value,
-                classification: classificationField.value,
-                preventiveMeasures: preventiveMeasuresField.value.trim(),
-                reason: reasonField.value.trim(),
-            }),
-        })
-            .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
-            .then(function (result) {
-                if (!result.ok || !result.data.success) {
-                    throw new Error(result.data.error || 'Something went wrong. Please try again.');
-                }
-                window.location.reload();
-            })
-            .catch(function (err) {
-                classificationError.textContent = err.message;
-                classificationError.classList.remove('d-none');
-                classificationSaveBtn.disabled = false;
             });
     });
 });

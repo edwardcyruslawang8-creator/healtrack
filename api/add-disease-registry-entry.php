@@ -8,12 +8,12 @@
  * recurring diagnosis string nothing in the registry matches yet — see
  * hc_disease_registry_candidates()) or typed from scratch.
  *
- * Admin-only (system-wide scope). Server FORCES
- * classification = 'pending_classification' unconditionally, ignoring
- * any classification value the client sends — "newly recognized
- * diseases must not automatically become publicly visible" holds even
- * against a tampered request. A real classification decision is a
- * separate, later action via api/update-disease-classification.php.
+ * Admin-only (system-wide scope). Server FORCES a brand-new entry to
+ * start with NO category, ignoring any category value the client
+ * sends — "newly recognized diseases must not automatically become
+ * publicly visible" holds even against a tampered request. A category
+ * is assigned afterward, as ordinary maintenance, via
+ * api/update-disease-registry-entry.php.
  * =====================================================================
  */
 
@@ -73,27 +73,23 @@ $today = date('Y-m-d');
 $newId = $firestore->addDocument('disease_registry', [
     'name' => $name,
     'keywords' => $keywords,
-    'classification' => 'pending_classification', // always — never accepts a client-supplied classification, see this file's own header comment
+    'category' => null, // always — never accepts a client-supplied category, see this file's own header comment
     'isPreventable' => $isPreventable,
     'preventiveMeasures' => '',
     'isAutoDetected' => $isAutoDetected,
     'createdAt' => $nowIso,
-    'classifiedByName' => $adminName,
-    'classifiedByUid' => $adminUid,
-    'classifiedByRole' => 'admin',
-    'classifiedAt' => $nowIso,
-    'classificationReason' => 'Created' . ($isAutoDetected ? ' from a real recurring unmatched diagnosis.' : ' manually.') . ' Awaiting classification.',
+    'updatedByName' => $adminName,
+    'updatedByUid' => $adminUid,
+    'updatedByRole' => 'admin',
+    'updatedAt' => $nowIso,
     'history' => [[
         'date' => $today,
-        'event' => 'Created — Pending Classification',
-        'previousClassification' => null,
-        'newClassification' => 'pending_classification',
-        'reason' => $isAutoDetected ? 'Promoted from a real recurring unmatched diagnosis.' : 'Created manually.',
-        'previousPreventiveMeasures' => null,
-        'newPreventiveMeasures' => '',
-        'classifiedByName' => $adminName,
-        'classifiedByUid' => $adminUid,
-        'classifiedByRole' => 'admin',
+        'event' => 'Created — no category yet (excluded from public GIS)',
+        'previousCategory' => null,
+        'newCategory' => null,
+        'changedByName' => $adminName,
+        'changedByUid' => $adminUid,
+        'changedByRole' => 'admin',
         'recordedAt' => $nowIso,
     ]],
 ]);
@@ -102,6 +98,6 @@ if ($newId === null) {
     adre_fail(500, 'Could not create this entry. Please try again.');
 }
 
-write_audit_log('created', 'Disease Registry', 'Added "' . $name . '" to the disease registry (Pending Classification).');
+write_audit_log('created', 'Disease Registry', 'Added "' . $name . '" to the disease registry (uncategorized).');
 
 echo json_encode(['success' => true, 'id' => $newId, 'name' => $name]);

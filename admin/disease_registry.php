@@ -6,14 +6,14 @@
  * ---------------------------------------------------------------------
  * The one real management UI for includes/firestore/disease_registry.php's
  * real "disease_registry" Firestore collection — every notifiable-
- * disease category the GIS/predictive-analytics pipeline matches
- * against, each with a real public-visibility classification deciding
- * whether it's safe to show on the PUBLIC GIS map (patient/gis.php) or
- * stays internal-surveillance-only. See that file's own header comment
- * for the full four-tier design. Admin-only — this is a system-wide
- * policy decision (the public GIS and its underlying disease-matching
- * are system-wide, not scoped to one facility, unlike subadmin's other
- * pages).
+ * disease condition the GIS/predictive-analytics pipeline matches
+ * against, each assigned one of 5 fixed clinical categories (or none)
+ * automatically deciding whether it's safe to show on the PUBLIC GIS
+ * map (patient/gis.php) — no manual per-disease approval step. See that
+ * file's own header comment for the full design. Admin-only — this is
+ * system-wide registry maintenance (the public GIS and its underlying
+ * disease-matching are system-wide, not scoped to one facility, unlike
+ * subadmin's other pages).
  *
  * Reuses the exact same sidebar/topbar shell as every other admin/*.php
  * page (assets/css/admin-dashboard.css).
@@ -31,7 +31,7 @@ if (($_SESSION['role'] ?? null) !== 'admin') {
 }
 
 require_once __DIR__ . '/../includes/admin/disease_registry_firestore.php';
-// $adminProfile, $registryRows, $registryByClassification, $classificationMeta,
+// $adminProfile, $registryRows, $registryByCategory, $categoryMeta, $categoryColors,
 // $registryTotalCount, $pendingCount, $candidates
 
 $adminNavItems = [
@@ -163,7 +163,7 @@ $adminNavItems = [
     <div class="adm-topbar">
         <div>
             <h1>Disease Registry</h1>
-            <p class="adm-page-subtitle">Which conditions are safe to show on the public GIS map, and which stay internal — a real, documented decision per disease.</p>
+            <p class="adm-page-subtitle">Maintain each condition's name, keywords, and clinical category — a category is automatically public on the GIS map; an uncategorized condition stays internal-only until one is assigned.</p>
         </div>
         <div class="adm-topbar-right">
             <div class="adm-topbar-actions">
@@ -193,11 +193,11 @@ $adminNavItems = [
     </div>
 
     <!-- ============ SUMMARY ROW ============ -->
-    <div class="adm-kpi-row" style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:22px;">
-        <?php foreach (['public_awareness', 'conditional_public_display', 'internal_surveillance_only', 'pending_classification'] as $tier): $meta = $classificationMeta[$tier]; ?>
+    <div class="adm-kpi-row" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px; margin-bottom:22px;">
+        <?php foreach ($categoryMeta as $key => $label): $colors = $categoryColors[$key]; ?>
         <div class="adm-card" style="padding:18px;">
-            <div style="font-size:12px; font-weight:600; color:<?= htmlspecialchars($meta['color']) ?>; background:<?= htmlspecialchars($meta['bg']) ?>; display:inline-block; padding:4px 10px; border-radius:6px; margin-bottom:8px;"><?= htmlspecialchars($meta['label']) ?></div>
-            <div style="font-size:26px; font-weight:800;"><?= count($registryByClassification[$tier]) ?></div>
+            <div style="font-size:12px; font-weight:600; color:<?= htmlspecialchars($colors['color']) ?>; background:<?= htmlspecialchars($colors['bg']) ?>; display:inline-block; padding:4px 10px; border-radius:6px; margin-bottom:8px;"><?= htmlspecialchars($label) ?></div>
+            <div style="font-size:26px; font-weight:800;"><?= count($registryByCategory[$key]) ?></div>
         </div>
         <?php endforeach; ?>
     </div>
@@ -206,7 +206,7 @@ $adminNavItems = [
     <?php if (!empty($candidates)): ?>
     <div class="adm-card" style="margin-bottom:22px; padding:20px;">
         <div class="sad-card-header"><h2>Candidate Conditions</h2></div>
-        <p class="adm-page-subtitle">Real, recurring diagnosis text from actual consultations that doesn't match any registry category yet — review and add any of these as a real entry (it will start Pending Classification, never public, until you classify it).</p>
+        <p class="adm-page-subtitle">Real, recurring diagnosis text from actual consultations that doesn't match any registry entry yet — review and add any of these as a real entry (it will start uncategorized, never public, until a category is assigned).</p>
         <div class="adm-table-wrap">
             <table class="adm-table">
                 <thead>
@@ -240,26 +240,26 @@ $adminNavItems = [
         <div class="adm-table-wrap">
             <table class="adm-table">
                 <thead>
-                    <tr><th>Name</th><th>Keywords</th><th>Classification</th><th>Preventable</th><th>Last Classified</th><th></th></tr>
+                    <tr><th>Name</th><th>Keywords</th><th>Category</th><th>Preventable</th><th>Last Updated</th><th></th></tr>
                 </thead>
                 <tbody>
                     <?php if (empty($registryRows)): ?>
                     <tr><td colspan="6" class="adm-table-empty">No registry entries yet.</td></tr>
                     <?php endif; ?>
-                    <?php foreach ($registryRows as $r): $meta = $classificationMeta[$r['classification']]; ?>
+                    <?php foreach ($registryRows as $r): $colors = $categoryColors[$r['categoryKey']]; ?>
                     <tr data-registry-id="<?= htmlspecialchars($r['id']) ?>">
                         <td><strong><?= htmlspecialchars($r['name']) ?></strong></td>
                         <td style="max-width:280px; font-size:12.5px; color:var(--adm-text-soft);"><?= htmlspecialchars(implode(', ', $r['keywords'])) ?></td>
-                        <td><span class="status-badge" style="background:<?= htmlspecialchars($meta['bg']) ?>; color:<?= htmlspecialchars($meta['color']) ?>;"><?= htmlspecialchars($r['classificationLabel']) ?></span></td>
+                        <td><span class="status-badge" style="background:<?= htmlspecialchars($colors['bg']) ?>; color:<?= htmlspecialchars($colors['color']) ?>;"><?= htmlspecialchars($r['categoryLabel']) ?></span></td>
                         <td><?= $r['isPreventable'] ? 'Yes' : 'No' ?></td>
-                        <td><?= $r['classifiedAt'] !== '' ? htmlspecialchars(date('M j, Y', strtotime($r['classifiedAt']))) : '—' ?> by <?= htmlspecialchars($r['classifiedByName']) ?></td>
+                        <td><?= $r['updatedAt'] !== '' ? htmlspecialchars(date('M j, Y', strtotime($r['updatedAt']))) : '—' ?> by <?= htmlspecialchars($r['updatedByName']) ?></td>
                         <td>
                             <button type="button" class="btn btn-sm btn-outline-dark" data-manage-registry
                                 data-id="<?= htmlspecialchars($r['id']) ?>"
                                 data-name="<?= htmlspecialchars($r['name']) ?>"
                                 data-keywords="<?= htmlspecialchars(implode(', ', $r['keywords'])) ?>"
                                 data-preventable="<?= $r['isPreventable'] ? '1' : '0' ?>"
-                                data-classification="<?= htmlspecialchars($r['classification']) ?>"
+                                data-category="<?= htmlspecialchars($r['category'] ?? '') ?>"
                                 data-preventive-measures="<?= htmlspecialchars($r['preventiveMeasures']) ?>">
                                 Manage
                             </button>

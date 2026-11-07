@@ -32,7 +32,7 @@ require_once __DIR__ . '/../firestore/medical_records.php';
 require_once __DIR__ . '/../firestore/consultations.php';
 require_once __DIR__ . '/../shared/predictive_analytics_core.php'; // hc_disease_demand_forecast(), HC_COVERED_BARANGAYS
 require_once __DIR__ . '/../shared/gis_geo.php'; // hc_gis_barangay_shapes()
-require_once __DIR__ . '/../firestore/disease_registry.php'; // hc_disease_registry_classification_by_category(), hc_disease_registry_entry_by_category() — the public-visibility filter below
+require_once __DIR__ . '/../firestore/disease_registry.php'; // hc_disease_registry_category_by_name(), hc_disease_registry_entry_by_category() — the public-visibility filter below
 
 if (!function_exists('hc_gis_intensity_meta')) {
     /**
@@ -145,23 +145,25 @@ if (!function_exists('hc_gis_disease_overview')) {
         // function, not pushed down into hc_disease_demand_forecast()
         // itself.
         //
-        // A case only counts toward the public map when BOTH are true:
-        //   1. Its category's real admin-managed classification
-        //      (includes/firestore/disease_registry.php) is
-        //      'public_awareness' or 'conditional_public_display' —
-        //      'internal_surveillance_only' and 'pending_classification'
-        //      (a brand-new, not-yet-reviewed category) never appear
-        //      publicly, by design.
+        // A case only counts toward the public map when BOTH are true,
+        // fully automatic — no admin approval step anywhere in this:
+        //   1. Its condition has been assigned a real clinical category
+        //      (includes/firestore/disease_registry.php's
+        //      hc_disease_registry_category_meta() — one of 5 fixed
+        //      values) — a condition with NO category yet (including
+        //      ones deliberately never given one, like COVID-19/
+        //      Tuberculosis) never appears publicly. The category IS the
+        //      "maintained clinical reference" — assigning one is
+        //      ordinary registry upkeep, not a per-disease sign-off.
         //   2. Its matchBasis is 'diagnosis' — the doctor's own
         //      documented conclusion, not just a chief-complaint
         //      keyword nobody has actually diagnosed yet (see
         //      hc_notifiable_cases_from_records()'s own header comment).
         // ---------------------------------------------------------------
-        $classificationByCategory = hc_disease_registry_classification_by_category();
+        $categoryByCondition = hc_disease_registry_category_by_name();
         $registryByCategory = hc_disease_registry_entry_by_category(); // preventiveMeasures source for $topDiseases below
-        $notifiableCases = array_values(array_filter($notifiableCases, function ($c) use ($classificationByCategory) {
-            $classification = $classificationByCategory[$c['category']] ?? 'pending_classification';
-            if (!in_array($classification, ['public_awareness', 'conditional_public_display'], true)) {
+        $notifiableCases = array_values(array_filter($notifiableCases, function ($c) use ($categoryByCondition) {
+            if (($categoryByCondition[$c['category']] ?? null) === null) {
                 return false;
             }
 
@@ -311,11 +313,11 @@ if (!function_exists('hc_gis_disease_overview')) {
         //
         // 1. Per-barangay-per-category breakdown: a specific category's
         //    count for one barangay is only named in that barangay's
-        //    "diseases" list once it clears a minimum real-case floor —
-        //    3 for Public Awareness, a stricter 5 for Conditional Public
-        //    Display (the practical, automated stand-in for "additional
-        //    privacy review before publication", since live human
-        //    review of every individual map render isn't realistic).
+        //    "diseases" list once it clears a minimum real-case floor
+        //    (3) — a single uniform threshold across every publicly-
+        //    eligible category now (no more "stricter" tier for a
+        //    middle-ground classification, since categorization is
+        //    binary: a real category, or none at all).
         //    Anything under that floor is folded into a generic "Other"
         //    bucket instead of naming the specific disease, so e.g.
         //    "Dengue: 1" (which could point at a single household) never
@@ -335,7 +337,7 @@ if (!function_exists('hc_gis_disease_overview')) {
         //    unaffected by this rule. The sitewide $gisSummary total
         //    (a much larger, safer pool) is never touched either way.
         // ---------------------------------------------------------------
-        $suppressionFloor = ['public_awareness' => 3, 'conditional_public_display' => 5];
+        $suppressionFloor = 3;
         $isMonoDiseaseWindow = count(array_filter($byCategory)) === 1;
 
         // ---------------------------------------------------------------
@@ -362,8 +364,7 @@ if (!function_exists('hc_gis_disease_overview')) {
                 arsort($diseaseCounts);
                 $suppressedTotal = 0;
                 foreach ($diseaseCounts as $category => $count) {
-                    $floor = $suppressionFloor[$classificationByCategory[$category] ?? ''] ?? 3;
-                    if ($count < $floor) {
+                    if ($count < $suppressionFloor) {
                         $suppressedTotal += $count;
                         continue;
                     }

@@ -94,11 +94,11 @@ if (!function_exists('hc_notifiable_disease_categories')) {
      * read with the same 14 categories this used to hardcode, plus 3
      * new ones) rather than a fixed literal — but this function's own
      * return SHAPE is unchanged, so every existing caller below keeps
-     * working with zero changes of its own. Each category's real
-     * public-visibility classification (shown on the public GIS vs.
-     * internal-surveillance-only vs. still pending review) lives
-     * alongside it on the same registry doc — see
-     * hc_disease_registry_classification_by_category(), read by
+     * working with zero changes of its own. Each condition's real
+     * clinical category (one of 5 fixed values, or none) lives
+     * alongside it on the same registry doc and automatically decides
+     * public-GIS visibility with no manual approval step — see
+     * hc_disease_registry_category_by_name(), read by
      * includes/public/gis_data_firestore.php's hc_gis_disease_overview()
      * specifically, NOT by this function or any of its other callers
      * (which all stay full-detail, unfiltered internal views).
@@ -331,7 +331,46 @@ if (!function_exists('hc_notifiable_cases_from_records')) {
             ];
         }
 
-        return $notifiableCases;
+        // -----------------------------------------------------------
+        // Duplicate-episode suppression — the same patient's repeat
+        // visits for ONE real illness (e.g. 3 Dengue follow-ups in a
+        // week) must count as a single case, not three — both for this
+        // function's own Watch/Elevated/Critical risk tiers below
+        // (today a single patient's follow-ups can inflate those) and
+        // for every downstream GIS/public aggregate that reads this
+        // list. Grouped by (patientId, category), sorted chronologically
+        // per group, then any case within 14 real days of the previous
+        // KEPT case in that same group is collapsed into the same
+        // episode (the earliest case is kept) — the same 14-day window
+        // this function's own risk-tier math below already uses, for
+        // consistency. A blank patientId (shouldn't happen on real
+        // data, but no structural guarantee) is never grouped with
+        // another blank one — there's no real patient identity to
+        // dedup against, so those pass through unchanged.
+        // -----------------------------------------------------------
+        $byPatientCategory = [];
+        $deduped = [];
+        foreach ($notifiableCases as $c) {
+            if ($c['patientId'] === '') {
+                $deduped[] = $c;
+                continue;
+            }
+            $byPatientCategory[$c['patientId'] . '|' . $c['category']][] = $c;
+        }
+        foreach ($byPatientCategory as $group) {
+            usort($group, fn ($a, $b) => strcmp($a['date'], $b['date']));
+            $lastKeptDate = null;
+            foreach ($group as $c) {
+                if ($lastKeptDate !== null && $c['date'] !== '' && $lastKeptDate !== ''
+                    && (strtotime($c['date']) - strtotime($lastKeptDate)) / 86400 < 14) {
+                    continue; // same episode as the already-kept case
+                }
+                $deduped[] = $c;
+                $lastKeptDate = $c['date'];
+            }
+        }
+
+        return $deduped;
     }
 }
 
