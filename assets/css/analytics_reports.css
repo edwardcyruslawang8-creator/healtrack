@@ -147,6 +147,15 @@
 .arp-filter-select:hover{ background: var(--adm-hover-bg); }
 .arp-filter-select:focus,
 .arp-filter-select.show{ border-color: var(--adm-red-bright); }
+/* A long real option list (e.g. medical_technician/radiologic_technologist's
+   "My Reports" test-catalog filter, 20+ real tests) would otherwise
+   stretch the dropdown past the bottom of the screen — scopes to just
+   the dropdown that follows one of these buttons, not every
+   .dropdown-menu in the app. */
+.arp-filter-select + .dropdown-menu{
+  max-height: 320px;
+  overflow-y: auto;
+}
 .arp-filter-spacer{ flex: 1 1 auto; }
 
 /* -- KPI summary cards -- */
