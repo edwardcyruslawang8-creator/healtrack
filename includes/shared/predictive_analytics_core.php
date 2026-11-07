@@ -49,7 +49,7 @@
 require_once __DIR__ . '/forecast_helpers.php'; // hc_last_n_days(), hc_forecast_linear_fit(), hc_forecast_project()
 require_once __DIR__ . '/inventory_match.php'; // hc_normalize_text(), hc_item_names_match()
 require_once __DIR__ . '/../firestore/medicines.php'; // hc_reorder_quantity_label()
-require_once __DIR__ . '/../firestore/disease_registry.php'; // hc_get_disease_registry_docs() — real, admin-managed source for hc_notifiable_disease_categories() below
+require_once __DIR__ . '/clinical_classification.php'; // hc_clinical_condition_catalog(), hc_clinical_qualifier_terms() — automated, code-based source for hc_notifiable_disease_categories() and hc_notifiable_cases_from_records() below
 
 // The 11 real Lipa City barangays this clinic covers — same list
 // includes/medical-staff/add_patient_modal.php:163 offers at patient
@@ -89,16 +89,16 @@ if (!function_exists('hc_notifiable_disease_categories')) {
      * shares this exact same category list instead of carrying its own
      * copy that could drift out of sync.
      *
-     * Real, admin-managed source now (includes/firestore/disease_registry.php's
-     * "disease_registry" Firestore collection, self-seeding on first
-     * read with the same 14 categories this used to hardcode, plus 3
-     * new ones) rather than a fixed literal — but this function's own
-     * return SHAPE is unchanged, so every existing caller below keeps
-     * working with zero changes of its own. Each condition's real
-     * clinical category (one of 5 fixed values, or none) lives
-     * alongside it on the same registry doc and automatically decides
-     * public-GIS visibility with no manual approval step — see
-     * hc_disease_registry_category_by_name(), read by
+     * Automated, code-based source now (includes/shared/clinical_classification.php's
+     * hc_clinical_condition_catalog() — a plain PHP array reviewed the
+     * same way any other code is, no runtime admin editing of any kind)
+     * rather than a fixed literal — but this function's own return SHAPE
+     * is unchanged, so every existing caller below keeps working with
+     * zero changes of its own. Each condition's real ICD-10-aligned
+     * clinical CHAPTER lives alongside it in that catalog and
+     * automatically decides public-GIS visibility via a single
+     * predefined per-chapter rule (hc_clinical_chapter_meta()) — see
+     * hc_condition_chapter_by_name(), read by
      * includes/public/gis_data_firestore.php's hc_gis_disease_overview()
      * specifically, NOT by this function or any of its other callers
      * (which all stay full-detail, unfiltered internal views).
@@ -108,9 +108,8 @@ if (!function_exists('hc_notifiable_disease_categories')) {
     function hc_notifiable_disease_categories(): array
     {
         $out = [];
-        foreach (hc_get_disease_registry_docs() as $doc) {
-            $f = $doc['fields'];
-            $out[$f['name'] ?? ''] = $f['keywords'] ?? [];
+        foreach (hc_clinical_condition_catalog() as $c) {
+            $out[$c['name']] = $c['keywords'];
         }
 
         return $out;
@@ -261,13 +260,21 @@ if (!function_exists('hc_notifiable_cases_from_records')) {
      * patient's presenting complaint, often by non-physician staff,
      * before any diagnosis exists. Pass 1 scans 'diagnosis' alone across
      * every category; only when nothing matches there does pass 2 fall
-     * back to 'chiefComplaint' alone. Each case is tagged with which
-     * pass actually matched it ('diagnosis' vs 'chief_complaint_only') —
+     * back to 'chiefComplaint' alone.
+     *
+     * Each case is tagged with a 3-way 'caseClassification':
+     *   - 'symptom_only' — only the chief complaint matched; nobody has
+     *     diagnosed anything yet.
+     *   - 'suspected' — the diagnosis text matched a condition but also
+     *     contains real clinical hedging language (hc_clinical_qualifier_terms(),
+     *     e.g. "suspected", "r/o") — a keyword match alone is never
+     *     enough to call a case confirmed.
+     *   - 'confirmed' — the diagnosis text matched a condition with no
+     *     hedging language present.
      * includes/public/gis_data_firestore.php's hc_gis_disease_overview()
-     * (the PUBLIC GIS) only ever counts 'diagnosis' matches, so a bare
-     * symptom mention nobody has actually diagnosed never surfaces
-     * publicly; every internal surveillance caller below (which exists
-     * precisely to catch early/undiagnosed signal) keeps seeing both.
+     * (the PUBLIC GIS) only ever counts 'confirmed' cases; every internal
+     * surveillance caller below (which exists precisely to catch early/
+     * undiagnosed signal) keeps seeing all three.
      *
      * One category per real case — a case whose text matches more than
      * one category's keywords is counted once, under whichever
@@ -276,11 +283,12 @@ if (!function_exists('hc_notifiable_cases_from_records')) {
      * always take priority over a chief-complaint-only hit even from a
      * different category).
      *
-     * @return array<int, array{date: string, category: string, barangay: string, patientId: string, matchBasis: string}>
+     * @return array<int, array{date: string, category: string, barangay: string, patientId: string, caseClassification: string}>
      */
     function hc_notifiable_cases_from_records(array $medicalRecordDocs, array $patientBarangayById = []): array
     {
         $keywordCategories = hc_notifiable_disease_categories();
+        $qualifierTerms = hc_clinical_qualifier_terms();
 
         $notifiableCases = [];
         foreach ($medicalRecordDocs as $doc) {
@@ -292,14 +300,21 @@ if (!function_exists('hc_notifiable_cases_from_records')) {
             }
 
             $category = null;
-            $matchBasis = null;
+            $caseClassification = null;
 
             if ($diagnosisText !== '') {
                 foreach ($keywordCategories as $cat => $keywords) {
                     foreach ($keywords as $kw) {
                         if (str_contains($diagnosisText, $kw)) {
                             $category = $cat;
-                            $matchBasis = 'diagnosis';
+                            $hedged = false;
+                            foreach ($qualifierTerms as $term) {
+                                if (str_contains($diagnosisText, $term)) {
+                                    $hedged = true;
+                                    break;
+                                }
+                            }
+                            $caseClassification = $hedged ? 'suspected' : 'confirmed';
                             break 2;
                         }
                     }
@@ -311,7 +326,7 @@ if (!function_exists('hc_notifiable_cases_from_records')) {
                     foreach ($keywords as $kw) {
                         if (str_contains($chiefText, $kw)) {
                             $category = $cat;
-                            $matchBasis = 'chief_complaint_only';
+                            $caseClassification = 'symptom_only';
                             break 2;
                         }
                     }
@@ -327,7 +342,7 @@ if (!function_exists('hc_notifiable_cases_from_records')) {
                 'category' => $category,
                 'barangay' => $patientBarangayById[$f['patientId'] ?? ''] ?? '',
                 'patientId' => $f['patientId'] ?? '',
-                'matchBasis' => $matchBasis,
+                'caseClassification' => $caseClassification,
             ];
         }
 

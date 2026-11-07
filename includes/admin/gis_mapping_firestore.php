@@ -25,6 +25,20 @@
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../public/gis-data.php'; // $dateRangeFilterOptions, $selectedDateRange, $gisRange, $gisSummary, $topDiseases, $healthTrend, $seasonalOverview
+require_once __DIR__ . '/../firestore/medical_records.php'; // hc_get_all_medical_record_docs()
+require_once __DIR__ . '/../shared/clinical_classification.php'; // hc_unclassified_diagnoses_report()
+
+// ---------------------------------------------------------------------
+// Data-quality monitoring ONLY (point 11 of the automated-classification
+// design) — real, recurring diagnosis text that matches no entry in
+// includes/shared/clinical_classification.php's catalog yet. No action
+// is attached to this anywhere; it's visibility for whoever maintains
+// the catalog, never a queue to approve/classify.
+// ---------------------------------------------------------------------
+$unclassifiedDiagnoses = hc_unclassified_diagnoses_report(array_values(array_filter(
+    hc_get_all_medical_record_docs(),
+    fn ($doc) => ($doc['fields']['type'] ?? '') === 'consultation'
+)));
 
 // Read from the PHP session api/session-login.php populated after Firebase sign-in
 // (admin/gis_mapping.php calls session_start() before requiring this file).

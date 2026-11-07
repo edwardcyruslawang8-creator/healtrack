@@ -32,7 +32,7 @@ require_once __DIR__ . '/../firestore/medical_records.php';
 require_once __DIR__ . '/../firestore/consultations.php';
 require_once __DIR__ . '/../shared/predictive_analytics_core.php'; // hc_disease_demand_forecast(), HC_COVERED_BARANGAYS
 require_once __DIR__ . '/../shared/gis_geo.php'; // hc_gis_barangay_shapes()
-require_once __DIR__ . '/../firestore/disease_registry.php'; // hc_disease_registry_category_by_name(), hc_disease_registry_entry_by_category() — the public-visibility filter below
+require_once __DIR__ . '/../shared/clinical_classification.php'; // hc_condition_chapter_by_name(), hc_is_chapter_publicly_eligible(), hc_condition_catalog_by_name() — the public-visibility filter below
 
 if (!function_exists('hc_gis_intensity_meta')) {
     /**
@@ -146,28 +146,30 @@ if (!function_exists('hc_gis_disease_overview')) {
         // itself.
         //
         // A case only counts toward the public map when BOTH are true,
-        // fully automatic — no admin approval step anywhere in this:
-        //   1. Its condition has been assigned a real clinical category
-        //      (includes/firestore/disease_registry.php's
-        //      hc_disease_registry_category_meta() — one of 5 fixed
-        //      values) — a condition with NO category yet (including
-        //      ones deliberately never given one, like COVID-19/
-        //      Tuberculosis) never appears publicly. The category IS the
-        //      "maintained clinical reference" — assigning one is
-        //      ordinary registry upkeep, not a per-disease sign-off.
-        //   2. Its matchBasis is 'diagnosis' — the doctor's own
-        //      documented conclusion, not just a chief-complaint
-        //      keyword nobody has actually diagnosed yet (see
+        // fully automatic — no admin approval step anywhere in this, and
+        // no per-disease decision either (see
+        // includes/shared/clinical_classification.php's header comment —
+        // recognition and publication eligibility are two separate,
+        // predefined, chapter-level rules, never a per-disease choice):
+        //   1. Its clinical CHAPTER (hc_clinical_chapter_meta()) is
+        //      marked publicly eligible — a condition in the one
+        //      excluded chapter (chronic/stigma-sensitive communicable
+        //      disease — TB, COVID-19, HIV, STIs, Viral Hepatitis) never
+        //      appears publicly, no matter how many real cases exist.
+        //   2. Its caseClassification is 'confirmed' — a keyword match
+        //      alone is never enough; 'suspected' (hedging language
+        //      present) and 'symptom_only' (chief-complaint match only)
+        //      both stay internal-surveillance-only (see
         //      hc_notifiable_cases_from_records()'s own header comment).
         // ---------------------------------------------------------------
-        $categoryByCondition = hc_disease_registry_category_by_name();
-        $registryByCategory = hc_disease_registry_entry_by_category(); // preventiveMeasures source for $topDiseases below
-        $notifiableCases = array_values(array_filter($notifiableCases, function ($c) use ($categoryByCondition) {
-            if (($categoryByCondition[$c['category']] ?? null) === null) {
+        $chapterByCondition = hc_condition_chapter_by_name();
+        $catalogByName = hc_condition_catalog_by_name(); // preventiveMeasures source for $topDiseases below
+        $notifiableCases = array_values(array_filter($notifiableCases, function ($c) use ($chapterByCondition) {
+            if (($c['caseClassification'] ?? '') !== 'confirmed') {
                 return false;
             }
 
-            return ($c['matchBasis'] ?? 'diagnosis') === 'diagnosis';
+            return hc_is_chapter_publicly_eligible($chapterByCondition[$c['category']] ?? null);
         }));
 
         $cutoffCurrent = $spec['cutoffCurrent'];
@@ -243,13 +245,13 @@ if (!function_exists('hc_gis_disease_overview')) {
                 'trend' => $changePct >= 0 ? 'up' : 'down',
                 'change' => abs($changePct) . '%',
                 'causes' => hc_disease_causes_narrative($categoryCasesAllTime, $patientAgeById),
-                // Real admin-entered preventive-measures text for this
-                // category (includes/firestore/disease_registry.php) —
-                // '' until an admin fills it in, same honest-empty-state
-                // convention as every other real-but-not-yet-filled-in
-                // field in this app; patient/gis.php only renders this
-                // line when it's non-empty.
-                'preventiveMeasures' => $registryByCategory[$name]['preventiveMeasures'] ?? '',
+                // Fixed, code-maintained preventive-measures text for
+                // this condition (includes/shared/clinical_classification.php)
+                // — '' only for the never-public chapter's own entries,
+                // which never reach this point anyway since the filter
+                // above already excludes them; patient/gis.php only
+                // renders this line when it's non-empty.
+                'preventiveMeasures' => $catalogByName[$name]['preventiveMeasures'] ?? '',
             ];
         }
 
@@ -315,9 +317,8 @@ if (!function_exists('hc_gis_disease_overview')) {
         //    count for one barangay is only named in that barangay's
         //    "diseases" list once it clears a minimum real-case floor
         //    (3) — a single uniform threshold across every publicly-
-        //    eligible category now (no more "stricter" tier for a
-        //    middle-ground classification, since categorization is
-        //    binary: a real category, or none at all).
+        //    eligible condition, since eligibility itself is a single
+        //    per-chapter yes/no rule with no middle tier to begin with.
         //    Anything under that floor is folded into a generic "Other"
         //    bucket instead of naming the specific disease, so e.g.
         //    "Dengue: 1" (which could point at a single household) never

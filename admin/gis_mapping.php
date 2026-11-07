@@ -41,9 +41,9 @@ $adminNavItems = [
     ['icon' => 'bi-grid-fill',           'label' => t('nav.dashboard'),           'href' => 'admin_dashboard.php'],
     ['icon' => 'bi-person-lines-fill',   'label' => 'Patient Management',         'href' => 'patient_management.php'],
     ['icon' => 'bi-capsule',             'label' => 'Medicine & Vaccine Inventory', 'href' => 'medicine_vaccine_inventory.php'],
-    ['icon' => 'bi-building',            'label' => t('nav.facility_management'), 'href' => 'facility_management.php'],    ['icon' => 'bi-people-fill',         'label' => t('nav.subadmin_management'), 'href' => 'subadmin_management.php'],
+    ['icon' => 'bi-building',            'label' => t('nav.facility_management'), 'href' => 'facility_management.php'],
+    ['icon' => 'bi-people-fill',         'label' => t('nav.subadmin_management'), 'href' => 'subadmin_management.php'],
     ['icon' => 'bi-geo-alt-fill',        'label' => t('nav.gis_mapping'),         'href' => 'gis_mapping.php', 'active' => true],
-    ['icon' => 'bi-virus',               'label' => 'Disease Registry',           'href' => 'disease_registry.php'],
     ['icon' => 'bi-shield-lock-fill',    'label' => t('nav.account_monitoring'),  'href' => 'account_monitoring.php'],
     ['icon' => 'bi-bell-fill',           'label' => t('nav.notifications'),       'href' => 'notifications.php', 'badge' => hc_admin_unread_notification_count()],
     ['icon' => 'bi-megaphone-fill',      'label' => 'Announcements',              'href' => 'announcements.php'],
@@ -334,6 +334,38 @@ $adminNavItems = [
                     <?php endforeach; ?>
                 </div>
             </div>
+
+            <!-- Unclassified Diagnoses — DATA-QUALITY MONITORING ONLY.
+                 No action is attached to any row here (no "add"/"approve"
+                 button) — this is visibility into real, recurring
+                 diagnosis text that doesn't match
+                 includes/shared/clinical_classification.php's catalog
+                 yet, not a registry to manage. -->
+            <?php if (!empty($unclassifiedDiagnoses)): ?>
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h2>Unclassified Diagnoses (Data Quality)</h2>
+                </div>
+                <p class="text-muted small" style="margin:0 0 12px;">Real, recurring diagnosis text that doesn't match any recognized condition yet — shown for data-quality review only; nothing here is counted on this map.</p>
+                <div class="adm-table-wrap">
+                    <table class="adm-table">
+                        <thead>
+                            <tr><th>Diagnosis Text</th><th>Occurrences</th><th>First Seen</th><th>Last Seen</th></tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($unclassifiedDiagnoses as $u): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($u['sampleOriginalText']) ?></td>
+                                <td><?= (int) $u['count'] ?></td>
+                                <td><?= htmlspecialchars($u['firstDate']) ?></td>
+                                <td><?= htmlspecialchars($u['lastDate']) ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <!-- Seasonal Patterns: true calendar-month/rainy-vs-dry view,
                  every real year on record merged — NOT the rolling
