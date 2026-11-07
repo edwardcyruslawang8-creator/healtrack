@@ -190,7 +190,7 @@ $staffNavItems = [
         </form>
 
         <div class="adm-table-wrap">
-            <table class="adm-table">
+            <table class="adm-table" data-sortable="true">
                 <thead>
                     <tr>
                         <th>Patient</th>
@@ -233,5 +233,6 @@ $staffNavItems = [
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/analytics_reports.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/sortable-table.js') ?>"></script>
 </body>
 </html>
