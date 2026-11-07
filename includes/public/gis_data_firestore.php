@@ -32,6 +32,7 @@ require_once __DIR__ . '/../firestore/medical_records.php';
 require_once __DIR__ . '/../firestore/consultations.php';
 require_once __DIR__ . '/../shared/predictive_analytics_core.php'; // hc_disease_demand_forecast(), HC_COVERED_BARANGAYS
 require_once __DIR__ . '/../shared/gis_geo.php'; // hc_gis_barangay_shapes()
+require_once __DIR__ . '/../firestore/disease_registry.php'; // hc_disease_registry_classification_by_category(), hc_disease_registry_entry_by_category() — the public-visibility filter below
 
 if (!function_exists('hc_gis_intensity_meta')) {
     /**
@@ -130,6 +131,43 @@ if (!function_exists('hc_gis_disease_overview')) {
         $forecast = hc_disease_demand_forecast($medicalRecordDocs, $consultations, $patientBarangayById, $patientAgeById);
         $notifiableCases = $forecast['notifiableCases']; // every real matched case, all time — see that function's own header comment for the keyword list
 
+        // ---------------------------------------------------------------
+        // PUBLIC-VISIBILITY FILTER — this function (hc_gis_disease_overview())
+        // is the ONLY consumer of hc_disease_demand_forecast() that feeds
+        // a public-facing page (patient/gis.php, admin/gis_mapping.php's
+        // same wrapper, and the homepage preview widget — all via
+        // api/gis-data.php). Every OTHER caller of hc_disease_demand_forecast()
+        // (admin/facility_analytics.php, subadmin/predictive_analytics.php,
+        // doctor's/medical-staff's own dashboard preview cards,
+        // api/get-disease-trends.php) is a role-gated internal
+        // surveillance view and must keep seeing every real case,
+        // unfiltered — this filter is deliberately local to THIS
+        // function, not pushed down into hc_disease_demand_forecast()
+        // itself.
+        //
+        // A case only counts toward the public map when BOTH are true:
+        //   1. Its category's real admin-managed classification
+        //      (includes/firestore/disease_registry.php) is
+        //      'public_awareness' or 'conditional_public_display' —
+        //      'internal_surveillance_only' and 'pending_classification'
+        //      (a brand-new, not-yet-reviewed category) never appear
+        //      publicly, by design.
+        //   2. Its matchBasis is 'diagnosis' — the doctor's own
+        //      documented conclusion, not just a chief-complaint
+        //      keyword nobody has actually diagnosed yet (see
+        //      hc_notifiable_cases_from_records()'s own header comment).
+        // ---------------------------------------------------------------
+        $classificationByCategory = hc_disease_registry_classification_by_category();
+        $registryByCategory = hc_disease_registry_entry_by_category(); // preventiveMeasures source for $topDiseases below
+        $notifiableCases = array_values(array_filter($notifiableCases, function ($c) use ($classificationByCategory) {
+            $classification = $classificationByCategory[$c['category']] ?? 'pending_classification';
+            if (!in_array($classification, ['public_awareness', 'conditional_public_display'], true)) {
+                return false;
+            }
+
+            return ($c['matchBasis'] ?? 'diagnosis') === 'diagnosis';
+        }));
+
         $cutoffCurrent = $spec['cutoffCurrent'];
         $cutoffPrior = $spec['cutoffPrior'];
         $current = array_values(array_filter($notifiableCases, fn ($c) => $c['date'] >= $cutoffCurrent));
@@ -203,6 +241,13 @@ if (!function_exists('hc_gis_disease_overview')) {
                 'trend' => $changePct >= 0 ? 'up' : 'down',
                 'change' => abs($changePct) . '%',
                 'causes' => hc_disease_causes_narrative($categoryCasesAllTime, $patientAgeById),
+                // Real admin-entered preventive-measures text for this
+                // category (includes/firestore/disease_registry.php) —
+                // '' until an admin fills it in, same honest-empty-state
+                // convention as every other real-but-not-yet-filled-in
+                // field in this app; patient/gis.php only renders this
+                // line when it's non-empty.
+                'preventiveMeasures' => $registryByCategory[$name]['preventiveMeasures'] ?? '',
             ];
         }
 
@@ -259,18 +304,74 @@ if (!function_exists('hc_gis_disease_overview')) {
         ];
 
         // ---------------------------------------------------------------
+        // SMALL-CELL SUPPRESSION — real re-identification/stigma-risk
+        // protection for the public map specifically (internal
+        // surveillance callers never see this; they get the real exact
+        // numbers from hc_disease_demand_forecast() directly).
+        //
+        // 1. Per-barangay-per-category breakdown: a specific category's
+        //    count for one barangay is only named in that barangay's
+        //    "diseases" list once it clears a minimum real-case floor —
+        //    3 for Public Awareness, a stricter 5 for Conditional Public
+        //    Display (the practical, automated stand-in for "additional
+        //    privacy review before publication", since live human
+        //    review of every individual map render isn't realistic).
+        //    Anything under that floor is folded into a generic "Other"
+        //    bucket instead of naming the specific disease, so e.g.
+        //    "Dengue: 1" (which could point at a single household) never
+        //    appears — the barangay's own overall total/color intensity
+        //    is unaffected by this step.
+        // 2. Mono-disease-window total: assets/js/gis.js shows each
+        //    barangay's raw "cases" total unsuppressed (map label +
+        //    hover tooltip). If, for the current window, only ONE public
+        //    category has any cases sitewide at all, a small per-
+        //    barangay total is still de-anonymized just by combining it
+        //    with the sitewide "100% <disease>" context from Top 5
+        //    Diseases — suppression #1 above doesn't close this gap
+        //    since it only touches the NAMED breakdown, not the total.
+        //    So in that specific edge case only, any barangay whose own
+        //    total sits below 3 has its displayed total forced to 0
+        //    ("No Cases") — a normal multi-disease window is completely
+        //    unaffected by this rule. The sitewide $gisSummary total
+        //    (a much larger, safer pool) is never touched either way.
+        // ---------------------------------------------------------------
+        $suppressionFloor = ['public_awareness' => 3, 'conditional_public_display' => 5];
+        $isMonoDiseaseWindow = count(array_filter($byCategory)) === 1;
+
+        // ---------------------------------------------------------------
         // Map GeoJSON — real counts/intensity on official boundaries (see
         // includes/shared/gis_geo.php's header comment).
         // ---------------------------------------------------------------
         $features = [];
         foreach (hc_gis_barangay_shapes() as $name => $shape) {
             $cases = $byBarangay[$name];
+            $totalSuppressed = $isMonoDiseaseWindow && $cases > 0 && $cases < 3;
+            if ($totalSuppressed) {
+                $cases = 0; // display-only suppression — see "Mono-disease-window total" above
+            }
             $meta = hc_gis_intensity_meta($cases);
-            $diseaseCounts = $byBarangayDisease[$name];
-            arsort($diseaseCounts);
+
+            // When the total itself is suppressed to 0/"No Cases", the
+            // breakdown list must be empty too — otherwise a lone
+            // "Other: 1" entry would still announce "a case exists here"
+            // right next to a total that's supposed to be hiding exactly
+            // that.
             $diseases = [];
-            foreach ($diseaseCounts as $category => $count) {
-                $diseases[] = ['name' => $category, 'cases' => $count];
+            if (!$totalSuppressed) {
+                $diseaseCounts = $byBarangayDisease[$name];
+                arsort($diseaseCounts);
+                $suppressedTotal = 0;
+                foreach ($diseaseCounts as $category => $count) {
+                    $floor = $suppressionFloor[$classificationByCategory[$category] ?? ''] ?? 3;
+                    if ($count < $floor) {
+                        $suppressedTotal += $count;
+                        continue;
+                    }
+                    $diseases[] = ['name' => $category, 'cases' => $count];
+                }
+                if ($suppressedTotal > 0) {
+                    $diseases[] = ['name' => 'Other', 'cases' => $suppressedTotal];
+                }
             }
             $features[] = [
                 'type' => 'Feature',

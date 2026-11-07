@@ -49,6 +49,7 @@
 require_once __DIR__ . '/forecast_helpers.php'; // hc_last_n_days(), hc_forecast_linear_fit(), hc_forecast_project()
 require_once __DIR__ . '/inventory_match.php'; // hc_normalize_text(), hc_item_names_match()
 require_once __DIR__ . '/../firestore/medicines.php'; // hc_reorder_quantity_label()
+require_once __DIR__ . '/../firestore/disease_registry.php'; // hc_get_disease_registry_docs() — real, admin-managed source for hc_notifiable_disease_categories() below
 
 // The 11 real Lipa City barangays this clinic covers — same list
 // includes/medical-staff/add_patient_modal.php:163 offers at patient
@@ -80,34 +81,39 @@ if (!function_exists('hc_notifiable_disease_categories')) {
     /**
      * Notifiable/communicable-disease keyword categories — Philippine
      * primary-care-relevant, matched case-insensitively as a substring
-     * against a medical_records doc's diagnosis + chiefComplaint text
-     * combined. Chronic/non-communicable conditions (hypertension,
-     * diabetes, etc.) are deliberately NOT here — this is specifically
-     * about outbreak-relevant, community-spread conditions. Factored
-     * out of hc_disease_demand_forecast() below so
-     * hc_gis_seasonal_overview() shares this exact same category list
-     * instead of carrying its own copy that could drift out of sync.
+     * against a medical_records doc's diagnosis + chiefComplaint text.
+     * Chronic/non-communicable conditions (hypertension, diabetes, etc.)
+     * are deliberately NOT here — this is specifically about
+     * outbreak-relevant, community-spread conditions. Factored out of
+     * hc_disease_demand_forecast() below so hc_gis_seasonal_overview()
+     * shares this exact same category list instead of carrying its own
+     * copy that could drift out of sync.
+     *
+     * Real, admin-managed source now (includes/firestore/disease_registry.php's
+     * "disease_registry" Firestore collection, self-seeding on first
+     * read with the same 14 categories this used to hardcode, plus 3
+     * new ones) rather than a fixed literal — but this function's own
+     * return SHAPE is unchanged, so every existing caller below keeps
+     * working with zero changes of its own. Each category's real
+     * public-visibility classification (shown on the public GIS vs.
+     * internal-surveillance-only vs. still pending review) lives
+     * alongside it on the same registry doc — see
+     * hc_disease_registry_classification_by_category(), read by
+     * includes/public/gis_data_firestore.php's hc_gis_disease_overview()
+     * specifically, NOT by this function or any of its other callers
+     * (which all stay full-detail, unfiltered internal views).
      *
      * @return array<string, array<int, string>>
      */
     function hc_notifiable_disease_categories(): array
     {
-        return [
-            'Dengue' => ['dengue'],
-            'Influenza-like Illness' => ['influenza', 'flu-like', ' flu ', 'flu,'],
-            'Acute Gastroenteritis / Diarrhea' => ['gastroenteritis', 'diarrhea', 'diarrhoea'],
-            'Measles' => ['measles', 'rubeola'],
-            'Chickenpox' => ['chickenpox', 'varicella'],
-            'Leptospirosis' => ['leptospirosis'],
-            'Typhoid Fever' => ['typhoid'],
-            'Pneumonia' => ['pneumonia'],
-            'COVID-19' => ['covid'],
-            'Tuberculosis' => ['tuberculosis', 'pulmonary tb'],
-            'Hand-Foot-Mouth Disease' => ['hand-foot-mouth', 'hand, foot, and mouth', 'hfmd'],
-            'Conjunctivitis (Sore Eyes)' => ['conjunctivitis', 'sore eyes'],
-            'Mumps' => ['mumps'],
-            'Pertussis (Whooping Cough)' => ['pertussis', 'whooping cough'],
-        ];
+        $out = [];
+        foreach (hc_get_disease_registry_docs() as $doc) {
+            $f = $doc['fields'];
+            $out[$f['name'] ?? ''] = $f['keywords'] ?? [];
+        }
+
+        return $out;
     }
 }
 
@@ -247,11 +253,30 @@ if (!function_exists('hc_notifiable_cases_from_records')) {
      * for that function's much heavier risk-alert/anomaly computation
      * just to get it.
      *
+     * Two-pass match per record, NOT one combined scan — 'diagnosis' is
+     * the doctor's own documented conclusion (free text, but only ever
+     * written by the doctor, only at consultation completion —
+     * api/complete-consultation.php — and can legitimately stay blank);
+     * 'chiefComplaint' is set earlier, at consultation creation, as the
+     * patient's presenting complaint, often by non-physician staff,
+     * before any diagnosis exists. Pass 1 scans 'diagnosis' alone across
+     * every category; only when nothing matches there does pass 2 fall
+     * back to 'chiefComplaint' alone. Each case is tagged with which
+     * pass actually matched it ('diagnosis' vs 'chief_complaint_only') —
+     * includes/public/gis_data_firestore.php's hc_gis_disease_overview()
+     * (the PUBLIC GIS) only ever counts 'diagnosis' matches, so a bare
+     * symptom mention nobody has actually diagnosed never surfaces
+     * publicly; every internal surveillance caller below (which exists
+     * precisely to catch early/undiagnosed signal) keeps seeing both.
+     *
      * One category per real case — a case whose text matches more than
      * one category's keywords is counted once, under whichever
-     * category's keyword it hit FIRST (not once per matching category).
+     * category's keyword it hit FIRST within whichever pass actually
+     * matched (not once per matching category, and diagnosis-pass hits
+     * always take priority over a chief-complaint-only hit even from a
+     * different category).
      *
-     * @return array<int, array{date: string, category: string, barangay: string, patientId: string}>
+     * @return array<int, array{date: string, category: string, barangay: string, patientId: string, matchBasis: string}>
      */
     function hc_notifiable_cases_from_records(array $medicalRecordDocs, array $patientBarangayById = []): array
     {
@@ -260,23 +285,50 @@ if (!function_exists('hc_notifiable_cases_from_records')) {
         $notifiableCases = [];
         foreach ($medicalRecordDocs as $doc) {
             $f = $doc['fields'];
-            $text = hc_normalize_text(($f['diagnosis'] ?? '') . ' ' . ($f['chiefComplaint'] ?? ''));
-            if ($text === '') {
+            $diagnosisText = hc_normalize_text((string) ($f['diagnosis'] ?? ''));
+            $chiefText = hc_normalize_text((string) ($f['chiefComplaint'] ?? ''));
+            if ($diagnosisText === '' && $chiefText === '') {
                 continue;
             }
-            foreach ($keywordCategories as $category => $keywords) {
-                foreach ($keywords as $kw) {
-                    if (str_contains($text, $kw)) {
-                        $notifiableCases[] = [
-                            'date' => substr((string) ($f['date'] ?? ''), 0, 10),
-                            'category' => $category,
-                            'barangay' => $patientBarangayById[$f['patientId'] ?? ''] ?? '',
-                            'patientId' => $f['patientId'] ?? '',
-                        ];
-                        break 2; // one category per case — first keyword hit wins
+
+            $category = null;
+            $matchBasis = null;
+
+            if ($diagnosisText !== '') {
+                foreach ($keywordCategories as $cat => $keywords) {
+                    foreach ($keywords as $kw) {
+                        if (str_contains($diagnosisText, $kw)) {
+                            $category = $cat;
+                            $matchBasis = 'diagnosis';
+                            break 2;
+                        }
                     }
                 }
             }
+
+            if ($category === null && $chiefText !== '') {
+                foreach ($keywordCategories as $cat => $keywords) {
+                    foreach ($keywords as $kw) {
+                        if (str_contains($chiefText, $kw)) {
+                            $category = $cat;
+                            $matchBasis = 'chief_complaint_only';
+                            break 2;
+                        }
+                    }
+                }
+            }
+
+            if ($category === null) {
+                continue;
+            }
+
+            $notifiableCases[] = [
+                'date' => substr((string) ($f['date'] ?? ''), 0, 10),
+                'category' => $category,
+                'barangay' => $patientBarangayById[$f['patientId'] ?? ''] ?? '',
+                'patientId' => $f['patientId'] ?? '',
+                'matchBasis' => $matchBasis,
+            ];
         }
 
         return $notifiableCases;

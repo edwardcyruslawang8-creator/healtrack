@@ -191,6 +191,9 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                     <?php if (!empty($d['causes'])): ?>
                     <p class="disease-causes-note"><i class="bi bi-info-circle"></i> Likely contributing factors: <?= htmlspecialchars($d['causes']) ?></p>
                     <?php endif; ?>
+                    <?php if (!empty($d['preventiveMeasures'])): ?>
+                    <p class="disease-causes-note"><i class="bi bi-shield-check"></i> How to protect yourself: <?= htmlspecialchars($d['preventiveMeasures']) ?></p>
+                    <?php endif; ?>
                     </div>
                     <?php endforeach; ?>
                 </div>
