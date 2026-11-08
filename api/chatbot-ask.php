@@ -156,6 +156,7 @@ $answer ??= hc_chatbot_is_harm_intent($lowerMessage) ? hc_chatbot_harm_reply() :
 $answer ??= $rbacRole !== '' ? hc_chatbot_rbac_reply($rbacRole) : null;
 $answer ??= hc_chatbot_is_confidential_request($lowerMessage) ? hc_chatbot_confidential_reply() : null;
 $answer ??= hc_chatbot_is_security_bypass_request($lowerMessage) ? hc_chatbot_security_bypass_reply() : null;
+$answer ??= hc_chatbot_is_accreditation_request($lowerMessage) ? hc_chatbot_accreditation_reply() : null;
 // 0e. Short follow-up reference to whatever subject was just discussed
 // — a medicine, a doctor, a health topic, the vaccination
 // announcement, a scoped contact answer ("how many are there", "is he

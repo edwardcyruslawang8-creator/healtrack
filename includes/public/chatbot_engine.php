@@ -1077,6 +1077,35 @@ if (!function_exists('hc_chatbot_confidential_reply')) {
     }
 }
 
+if (!function_exists('hc_chatbot_is_accreditation_request')) {
+    /**
+     * YAKAP/PhilHealth ACCREDITATION — a real, confirmed "yes", checked
+     * as an early, high-priority gate (same tier as the emergency/
+     * confidential/security checks in api/chatbot-ask.php) rather than
+     * only in hc_chatbot_answer()'s legacy keyword engine below.
+     * Without this, a bare "Do you have yakap?" gets misread by
+     * Dialogflow's NLU as an ask_medicine_availability intent (treating
+     * "yakap" as a medicine name to look up in real inventory, which of
+     * course finds nothing) — this gate runs BEFORE Dialogflow even sees
+     * the message, so that misclassification never has a chance to
+     * happen. "accredit..." + "philhealth" together is also matched,
+     * since someone may ask about the PhilHealth accreditation without
+     * saying "yakap" at all.
+     */
+    function hc_chatbot_is_accreditation_request(string $lowerQuestion): bool
+    {
+        return preg_match('/\byakap\b/i', $lowerQuestion) === 1
+            || (preg_match('/\baccredit/i', $lowerQuestion) === 1 && preg_match('/\bphilhealth\b/i', $lowerQuestion) === 1);
+    }
+}
+
+if (!function_exists('hc_chatbot_accreditation_reply')) {
+    function hc_chatbot_accreditation_reply(): string
+    {
+        return 'Yes! North Super Health Center is accredited by both YAKAP and PhilHealth, so patients can get their medicine right here at the health center under these programs.';
+    }
+}
+
 if (!function_exists('hc_chatbot_is_security_bypass_request')) {
     /**
      * A DIFFERENT failure mode than hc_chatbot_is_confidential_request()
