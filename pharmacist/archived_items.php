@@ -313,10 +313,14 @@ if (!function_exists('arc_page_url')) {
             </div>
 
             <div class="adm-table-footer">
-                <span class="adm-showing-text"><?= $medicinesTotal > 0 ? 'Showing 1 to ' . count($medicines) . ' of ' . $medicinesTotal . ' entries' : 'No entries to show' ?></span>
+                <span class="adm-showing-text"><?= $medicinesTotal > 0 ? 'Showing ' . (($medicinesCurrentPage - 1) * $medicinesPerPage + 1) . ' to ' . (($medicinesCurrentPage - 1) * $medicinesPerPage + count($medicines)) . ' of ' . $medicinesTotal . ' entries' : 'No entries to show' ?></span>
                 <?php $medQs = $_GET; unset($medQs['page']); ?>
                 <nav class="adm-pagination" aria-label="Archived medicines pages">
-                    <a href="<?= arc_page_url($medQs, 'page', max(1, $medicinesCurrentPage - 1)) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                    <?php if ($medicinesCurrentPage > 1): ?>
+                    <a href="<?= arc_page_url($medQs, 'page', $medicinesCurrentPage - 1) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                    <?php else: ?>
+                    <span class="page-btn disabled" aria-disabled="true" aria-label="Previous page"><i class="bi bi-chevron-left"></i></span>
+                    <?php endif; ?>
                     <?php foreach ($medicinePaginationWindow as $p): ?>
                         <?php if ($p === '...'): ?>
                         <span class="mvi-page-ellipsis">...</span>
@@ -324,7 +328,11 @@ if (!function_exists('arc_page_url')) {
                         <a href="<?= arc_page_url($medQs, 'page', (int) $p) ?>" class="page-btn <?= $p === $medicinesCurrentPage ? 'active' : '' ?>"><?= $p ?></a>
                         <?php endif; ?>
                     <?php endforeach; ?>
-                    <a href="<?= arc_page_url($medQs, 'page', min($medicinesTotalPages, $medicinesCurrentPage + 1)) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                    <?php if ($medicinesCurrentPage < $medicinesTotalPages): ?>
+                    <a href="<?= arc_page_url($medQs, 'page', $medicinesCurrentPage + 1) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                    <?php else: ?>
+                    <span class="page-btn disabled" aria-disabled="true" aria-label="Next page"><i class="bi bi-chevron-right"></i></span>
+                    <?php endif; ?>
                 </nav>
             </div>
         </div>
@@ -405,10 +413,14 @@ if (!function_exists('arc_page_url')) {
             </div>
 
             <div class="adm-table-footer">
-                <span class="adm-showing-text"><?= $vaccinesTotal > 0 ? 'Showing 1 to ' . count($vaccines) . ' of ' . $vaccinesTotal . ' entries' : 'No entries to show' ?></span>
+                <span class="adm-showing-text"><?= $vaccinesTotal > 0 ? 'Showing ' . (($vaccinesCurrentPage - 1) * $vaccinesPerPage + 1) . ' to ' . (($vaccinesCurrentPage - 1) * $vaccinesPerPage + count($vaccines)) . ' of ' . $vaccinesTotal . ' entries' : 'No entries to show' ?></span>
                 <?php $vacQs = $_GET; unset($vacQs['vpage']); ?>
                 <nav class="adm-pagination" aria-label="Archived vaccines pages">
-                    <a href="<?= arc_page_url($vacQs, 'vpage', max(1, $vaccinesCurrentPage - 1)) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                    <?php if ($vaccinesCurrentPage > 1): ?>
+                    <a href="<?= arc_page_url($vacQs, 'vpage', $vaccinesCurrentPage - 1) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                    <?php else: ?>
+                    <span class="page-btn disabled" aria-disabled="true" aria-label="Previous page"><i class="bi bi-chevron-left"></i></span>
+                    <?php endif; ?>
                     <?php foreach ($vaccinePaginationWindow as $p): ?>
                         <?php if ($p === '...'): ?>
                         <span class="mvi-page-ellipsis">...</span>
@@ -416,7 +428,11 @@ if (!function_exists('arc_page_url')) {
                         <a href="<?= arc_page_url($vacQs, 'vpage', (int) $p) ?>" class="page-btn <?= $p === $vaccinesCurrentPage ? 'active' : '' ?>"><?= $p ?></a>
                         <?php endif; ?>
                     <?php endforeach; ?>
-                    <a href="<?= arc_page_url($vacQs, 'vpage', min($vaccinesTotalPages, $vaccinesCurrentPage + 1)) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                    <?php if ($vaccinesCurrentPage < $vaccinesTotalPages): ?>
+                    <a href="<?= arc_page_url($vacQs, 'vpage', $vaccinesCurrentPage + 1) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                    <?php else: ?>
+                    <span class="page-btn disabled" aria-disabled="true" aria-label="Next page"><i class="bi bi-chevron-right"></i></span>
+                    <?php endif; ?>
                 </nav>
             </div>
         </div>

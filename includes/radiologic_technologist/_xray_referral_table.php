@@ -68,8 +68,16 @@
     <div class="adm-table-footer">
         <span class="adm-showing-text"><?= $referralsTotal > 0 ? 'Showing ' . (($referralsCurrentPage - 1) * $referralsPerPage + 1) . ' to ' . min($referralsCurrentPage * $referralsPerPage, $referralsTotal) . ' of ' . $referralsTotal . ' entries' : 'No entries to show' ?></span>
         <nav class="adm-pagination" aria-label="Referrals pages">
+            <?php if ($referralsCurrentPage > 1): ?>
             <a href="?<?= hc_radiotech_xc_query(['page' => 1]) ?>" class="page-btn" aria-label="First page"><i class="bi bi-chevron-bar-left"></i></a>
-            <a href="?<?= hc_radiotech_xc_query(['page' => max(1, $referralsCurrentPage - 1)]) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+            <?php else: ?>
+            <span class="page-btn disabled" aria-disabled="true" aria-label="First page"><i class="bi bi-chevron-bar-left"></i></span>
+            <?php endif; ?>
+            <?php if ($referralsCurrentPage > 1): ?>
+            <a href="?<?= hc_radiotech_xc_query(['page' => $referralsCurrentPage - 1]) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+            <?php else: ?>
+            <span class="page-btn disabled" aria-disabled="true" aria-label="Previous page"><i class="bi bi-chevron-left"></i></span>
+            <?php endif; ?>
             <?php foreach ($referralsPaginationWindow as $p): ?>
                 <?php if ($p === '...'): ?>
                 <span class="page-ellipsis">&hellip;</span>
@@ -77,8 +85,16 @@
                 <a href="?<?= hc_radiotech_xc_query(['page' => $p]) ?>" class="page-btn <?= $p === $referralsCurrentPage ? 'active' : '' ?>"><?= $p ?></a>
                 <?php endif; ?>
             <?php endforeach; ?>
-            <a href="?<?= hc_radiotech_xc_query(['page' => min($referralsTotalPages, $referralsCurrentPage + 1)]) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+            <?php if ($referralsCurrentPage < $referralsTotalPages): ?>
+            <a href="?<?= hc_radiotech_xc_query(['page' => $referralsCurrentPage + 1]) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+            <?php else: ?>
+            <span class="page-btn disabled" aria-disabled="true" aria-label="Next page"><i class="bi bi-chevron-right"></i></span>
+            <?php endif; ?>
+            <?php if ($referralsCurrentPage < $referralsTotalPages): ?>
             <a href="?<?= hc_radiotech_xc_query(['page' => $referralsTotalPages]) ?>" class="page-btn" aria-label="Last page"><i class="bi bi-chevron-bar-right"></i></a>
+            <?php else: ?>
+            <span class="page-btn disabled" aria-disabled="true" aria-label="Last page"><i class="bi bi-chevron-bar-right"></i></span>
+            <?php endif; ?>
         </nav>
     </div>
 </div>

@@ -142,7 +142,7 @@ if ($expiryDate !== '') {
 // batch never leaves a half-created item behind.
 if (!is_array($body['initialStock'] ?? null)) {
     http_response_code(422);
-    echo json_encode(['success' => false, 'error' => 'Please provide the initial stock — batch number, expiry date, and quantity received.']);
+    echo json_encode(['success' => false, 'error' => 'Please provide the initial stock — ' . ($type === 'vaccine' ? 'lot' : 'batch') . ' number, expiry date, and quantity received.']);
     exit;
 }
 $is = $body['initialStock'];
@@ -153,7 +153,7 @@ $isInBoxes = ($is['quantityUnit'] ?? 'unit') === 'box';
 
 if ($isBatchNumber === '' || strlen($isBatchNumber) > 50) {
     http_response_code(422);
-    echo json_encode(['success' => false, 'error' => 'Please enter the batch number for the initial stock.']);
+    echo json_encode(['success' => false, 'error' => 'Please enter the ' . ($type === 'vaccine' ? 'lot' : 'batch') . ' number for the initial stock.']);
     exit;
 }
 if ($isExpiry === '' || strtotime($isExpiry) === false || strtotime($isExpiry) < strtotime(date('Y-m-d'))) {

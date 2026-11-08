@@ -104,11 +104,19 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                         : 'No announcements to show' ?>
                 </span>
                 <nav class="pagination-custom" aria-label="Announcements pages">
+                    <?php if ($announcementsCurrentPage > 1): ?>
                     <a href="#" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                    <?php else: ?>
+                    <span class="page-btn disabled" aria-disabled="true" aria-label="Previous page"><i class="bi bi-chevron-left"></i></span>
+                    <?php endif; ?>
                     <?php for ($p = 1; $p <= $announcementsTotalPages; $p++): ?>
                     <a href="#" class="page-btn <?= $p === $announcementsCurrentPage ? 'active' : '' ?>"><?= $p ?></a>
                     <?php endfor; ?>
+                    <?php if ($announcementsCurrentPage < $announcementsTotalPages): ?>
                     <a href="#" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                    <?php else: ?>
+                    <span class="page-btn disabled" aria-disabled="true" aria-label="Next page"><i class="bi bi-chevron-right"></i></span>
+                    <?php endif; ?>
                 </nav>
             </div>
         </div>

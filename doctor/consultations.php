@@ -429,7 +429,11 @@ $doctorNavItems = [
                 $cnsWindowStart = max(1, min($consultationsCurrentPage - 1, max(1, $consultationsTotalPages - 2)));
                 $cnsWindowEnd = min($consultationsTotalPages, $cnsWindowStart + 2);
                 ?>
-                <a href="<?= doc_cns_page_url($qs, max(1, $consultationsCurrentPage - 1)) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <?php if ($consultationsCurrentPage > 1): ?>
+                <a href="<?= doc_cns_page_url($qs, $consultationsCurrentPage - 1) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Previous page"><i class="bi bi-chevron-left"></i></span>
+                <?php endif; ?>
                 <?php if ($cnsWindowStart > 1): ?>
                 <a href="<?= doc_cns_page_url($qs, 1) ?>" class="page-btn">1</a>
                 <?php if ($cnsWindowStart > 2): ?>
@@ -445,7 +449,11 @@ $doctorNavItems = [
                 <?php endif; ?>
                 <a href="<?= doc_cns_page_url($qs, $consultationsTotalPages) ?>" class="page-btn"><?= $consultationsTotalPages ?></a>
                 <?php endif; ?>
-                <a href="<?= doc_cns_page_url($qs, min($consultationsTotalPages, $consultationsCurrentPage + 1)) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                <?php if ($consultationsCurrentPage < $consultationsTotalPages): ?>
+                <a href="<?= doc_cns_page_url($qs, $consultationsCurrentPage + 1) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Next page"><i class="bi bi-chevron-right"></i></span>
+                <?php endif; ?>
             </nav>
         </div>
     </div>

@@ -116,7 +116,8 @@
             <div class="am-initial-stock-title">Initial Stock</div>
             <div class="row">
               <div class="col-md-6 mb-3">
-                <label class="am-form-label" for="amIsBatchNumber">Batch Number<span class="text-danger">*</span></label>
+                <!-- "Lot Number" for vaccines, "Batch Number" for medicines — set by openAddModal() in assets/js/medicine_vaccine_inventory_pharmacist.js. -->
+                <label class="am-form-label" for="amIsBatchNumber"><span id="amIsBatchLabel">Batch Number</span><span class="text-danger">*</span></label>
                 <input type="text" class="form-control am-form-control" id="amIsBatchNumber" placeholder="e.g. BATCH-2026-045" maxlength="50" required>
               </div>
               <div class="col-md-6 mb-3">

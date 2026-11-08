@@ -24,6 +24,7 @@
 
 require_once __DIR__ . '/fuzzy_search.php'; // hc_fuzzy_match()
 require_once __DIR__ . '/../firestore/medicines.php'; // hc_inventory_expiry_status(), hc_medicine_expiry_badge_meta()
+require_once __DIR__ . '/pagination_helpers.php'; // hc_page_window()
 
 if (!function_exists('hc_compute_medicine_vaccine_inventory')) {
     function hc_compute_medicine_vaccine_inventory(): array
@@ -195,14 +196,8 @@ if (!function_exists('hc_compute_medicine_vaccine_inventory')) {
         $result['medicinesTotalPages'] = $medicinesTotalPages;
         $result['medicines'] = array_slice($filteredMedicines, ($medicinesCurrentPage - 1) * $medicinesPerPage, $medicinesPerPage);
 
-        $medicinePaginationWindow = [];
-        if ($medicinesTotalPages <= 6) {
-            for ($p = 1; $p <= $medicinesTotalPages; $p++) {
-                $medicinePaginationWindow[] = $p;
-            }
-        } else {
-            $medicinePaginationWindow = [1, 2, 3, 4, '...', $medicinesTotalPages];
-        }
+        // Moving window that always shows (and highlights) the current page — hc_page_window().
+        $medicinePaginationWindow = hc_page_window($medicinesCurrentPage, $medicinesTotalPages);
         $result['medicinePaginationWindow'] = $medicinePaginationWindow;
 
         // -------------------------------------------------------------
@@ -243,14 +238,8 @@ if (!function_exists('hc_compute_medicine_vaccine_inventory')) {
         $result['vaccinesTotalPages'] = $vaccinesTotalPages;
         $result['vaccines'] = array_slice($filteredVaccines, ($vaccinesCurrentPage - 1) * $vaccinesPerPage, $vaccinesPerPage);
 
-        $vaccinePaginationWindow = [];
-        if ($vaccinesTotalPages <= 6) {
-            for ($p = 1; $p <= $vaccinesTotalPages; $p++) {
-                $vaccinePaginationWindow[] = $p;
-            }
-        } else {
-            $vaccinePaginationWindow = [1, 2, 3, 4, '...', $vaccinesTotalPages];
-        }
+        // Moving window that always shows (and highlights) the current page — hc_page_window().
+        $vaccinePaginationWindow = hc_page_window($vaccinesCurrentPage, $vaccinesTotalPages);
         $result['vaccinePaginationWindow'] = $vaccinePaginationWindow;
 
         return $result;

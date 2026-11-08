@@ -145,9 +145,11 @@ $quantityLabel = $quantity . ' ' . $unit . '(s)'
 $batchNumber = trim((string) ($body['batchNumber'] ?? ''));
 $expiryDate = trim((string) ($body['expiryDate'] ?? ''));
 
+// Vaccines are tracked by Lot Number, medicines by Batch Number.
+$isVaccine = ($existing['type'] ?? 'medicine') === 'vaccine';
 if ($batchNumber === '') {
     http_response_code(422);
-    echo json_encode(['success' => false, 'error' => 'Please enter the batch number for this new batch.']);
+    echo json_encode(['success' => false, 'error' => $isVaccine ? 'Please enter the lot number for this new stock.' : 'Please enter the batch number for this new batch.']);
     exit;
 }
 // The same number twice on one item would make two Batch Inventory
@@ -156,7 +158,9 @@ if ($batchNumber === '') {
 foreach (hc_get_batches_for_medicine($id, true) as $existingBatch) {
     if (strcasecmp($existingBatch['batchNumber'], $batchNumber) === 0) {
         http_response_code(422);
-        echo json_encode(['success' => false, 'error' => 'Batch ' . $batchNumber . ' already exists for this item. Enter the batch number printed on this new stock.']);
+        echo json_encode(['success' => false, 'error' => $isVaccine
+            ? 'Lot ' . $batchNumber . ' already exists for this vaccine. Enter the lot number printed on this new stock.'
+            : 'Batch ' . $batchNumber . ' already exists for this item. Enter the batch number printed on this new stock.']);
         exit;
     }
 }

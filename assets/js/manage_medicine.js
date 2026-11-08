@@ -264,7 +264,8 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.mm-batch-archive').forEach(function (btn) {
         btn.addEventListener('click', async function () {
             const d = btn.dataset;
-            const confirmed = await HCDialog.confirm('Archive expired batch ' + d.batchNumber + ' of "' + item.name + '"? Its ' + d.batchQty + ' will be removed from stock. Other batches are not affected.');
+            const lotWord = item.type === 'vaccine' ? 'lot' : 'batch'; // vaccines are tracked by lot
+            const confirmed = await HCDialog.confirm('Archive expired ' + lotWord + ' ' + d.batchNumber + ' of "' + item.name + '"? Its ' + d.batchQty + ' will be removed from stock. Other ' + (lotWord === 'lot' ? 'lots' : 'batches') + ' are not affected.');
             if (!confirmed) return;
 
             btn.disabled = true;
@@ -416,13 +417,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 payload.piecesPerBox = perBox;
             }
             if (rsBatchNumberInput.value.trim() === '') {
-                rsErrorBox.textContent = 'Please enter the batch number for this new batch.';
+                rsErrorBox.textContent = item.type === 'vaccine'
+                    ? 'Please enter the lot number for this new stock.'
+                    : 'Please enter the batch number for this new batch.';
                 rsErrorBox.classList.remove('d-none');
                 rsBatchNumberInput.focus();
                 return;
             }
             if (!rsNewExpiryInput.value) {
-                rsErrorBox.textContent = 'Please enter the expiry date for this new batch.';
+                rsErrorBox.textContent = item.type === 'vaccine'
+                    ? 'Please enter the expiry date for this new lot.'
+                    : 'Please enter the expiry date for this new batch.';
                 rsErrorBox.classList.remove('d-none');
                 rsNewExpiryInput.focus();
                 return;

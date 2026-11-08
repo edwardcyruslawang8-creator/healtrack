@@ -257,14 +257,15 @@ $isVaccine = $item['type'] === 'vaccine';
             </span>
             <div>
                 <h2 class="mm-name"><?= htmlspecialchars($item['name']) ?></h2>
-                <p class="mm-subtitle">Batch management and stock monitoring</p>
+                <?php $bw = $item['type'] === 'vaccine' ? 'Lot' : 'Batch'; // vaccines are tracked by lot, medicines by batch ?>
+                <p class="mm-subtitle"><?= $bw ?> management and stock monitoring</p>
             </div>
         </div>
         <div class="mm-header-actions">
             <button type="button" id="mmEditBtn" class="mvi-manage-header-btn"><i class="bi bi-pencil"></i> Edit</button>
             <div class="mm-search">
                 <i class="bi bi-search"></i>
-                <input type="text" id="mmBatchSearch" placeholder="Search batch number..." autocomplete="off">
+                <input type="text" id="mmBatchSearch" placeholder="Search <?= $item['type'] === 'vaccine' ? 'lot' : 'batch' ?> number..." autocomplete="off">
             </div>
             <button type="button" id="mmRestockBtn" class="mm-restock-btn"><i class="bi bi-plus-lg"></i> Restock</button>
         </div>
@@ -315,22 +316,22 @@ $isVaccine = $item['type'] === 'vaccine';
 
     <!-- ============ BATCH INVENTORY ============ -->
     <div class="adm-card mm-batch-card">
-        <h3 class="mm-batch-title"><i class="bi bi-boxes"></i> Batch Inventory</h3>
+        <h3 class="mm-batch-title"><i class="bi bi-boxes"></i> <?= $bw ?> Inventory</h3>
 
         <?php $expiredBatchCount = count(array_filter($itemBatches, fn ($b) => $b['status']['key'] === 'expired')); ?>
         <?php if ($expiredBatchCount > 0): ?>
         <p class="mm-expired-batches-note"><i class="bi bi-exclamation-triangle-fill"></i>
-            <?= $expiredBatchCount === 1 ? '1 batch has' : $expiredBatchCount . ' batches have' ?> expired and can't be dispensed. Use "Archive Expired Batch" to remove expired stock from inventory.</p>
+            <?= $expiredBatchCount === 1 ? '1 ' . strtolower($bw) . ' has' : $expiredBatchCount . ' ' . strtolower($bw) . ($bw === 'Batch' ? 'es' : 's') . ' have' ?> expired and can't be dispensed. Use "Archive Expired <?= $bw ?>" to remove expired stock from inventory.</p>
         <?php endif; ?>
 
         <?php if (empty($itemBatches)): ?>
-        <p class="am-form-help">No batches recorded yet for this item.</p>
+        <p class="am-form-help">No <?= $bw === 'Lot' ? 'lots' : 'batches' ?> recorded yet for this item.</p>
         <?php else: ?>
         <div class="adm-table-wrap">
             <table class="adm-table mm-batch-table" id="mmBatchTable">
                 <thead>
                     <tr>
-                        <th>Batch Number</th>
+                        <th><?= $bw ?> Number</th>
                         <th>Dosage Information</th>
                         <th>Current Stock</th>
                         <th>Expiry Date</th>
@@ -351,7 +352,7 @@ $isVaccine = $item['type'] === 'vaccine';
                                 <?php if ($batch['status']['key'] === 'expired'): ?>
                                 <!-- Expired batch: archive only THIS batch (api/archive-medicine-batch.php),
                                      not the whole item — see pharmacist/manage_medicine.php. -->
-                                <button type="button" class="mm-archive-expired-btn mm-batch-archive" data-batch-id="<?= htmlspecialchars($batch['id']) ?>" data-batch-number="<?= htmlspecialchars($batch['displayBatchNumber']) ?>" data-batch-qty="<?= htmlspecialchars(hc_qty_unit($batch['quantity'], $item['unit'])) ?>"><i class="bi bi-archive-fill"></i> Archive Expired Batch</button>
+                                <button type="button" class="mm-archive-expired-btn mm-batch-archive" data-batch-id="<?= htmlspecialchars($batch['id']) ?>" data-batch-number="<?= htmlspecialchars($batch['displayBatchNumber']) ?>" data-batch-qty="<?= htmlspecialchars(hc_qty_unit($batch['quantity'], $item['unit'])) ?>"><i class="bi bi-archive-fill"></i> Archive Expired <?= $bw ?></button>
                                 <?php else: ?>
                                 <span class="mvi-unit-sub">—</span>
                                 <?php endif; ?>

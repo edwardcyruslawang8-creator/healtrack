@@ -225,13 +225,14 @@ $isVaccine = $item['type'] === 'vaccine';
             </span>
             <div>
                 <h2 class="mm-name"><?= htmlspecialchars($item['name']) ?></h2>
-                <p class="mm-subtitle">Batch monitoring</p>
+                <?php $bw = $item['type'] === 'vaccine' ? 'Lot' : 'Batch'; // vaccines are tracked by lot, medicines by batch ?>
+                <p class="mm-subtitle"><?= $bw ?> monitoring</p>
             </div>
         </div>
         <div class="mm-header-actions">
             <div class="mm-search">
                 <i class="bi bi-search"></i>
-                <input type="text" id="mmBatchSearch" placeholder="Search batch number..." autocomplete="off">
+                <input type="text" id="mmBatchSearch" placeholder="Search <?= $item['type'] === 'vaccine' ? 'lot' : 'batch' ?> number..." autocomplete="off">
             </div>
         </div>
     </div>
@@ -280,16 +281,16 @@ $isVaccine = $item['type'] === 'vaccine';
 
     <!-- ============ BATCH INVENTORY (read-only — no Action column) ============ -->
     <div class="adm-card mm-batch-card">
-        <h3 class="mm-batch-title"><i class="bi bi-boxes"></i> Batch Inventory</h3>
+        <h3 class="mm-batch-title"><i class="bi bi-boxes"></i> <?= $bw ?> Inventory</h3>
 
         <?php if (empty($itemBatches)): ?>
-        <p class="am-form-help">No batches recorded yet for this item.</p>
+        <p class="am-form-help">No <?= $bw === 'Lot' ? 'lots' : 'batches' ?> recorded yet for this item.</p>
         <?php else: ?>
         <div class="adm-table-wrap">
             <table class="adm-table mm-batch-table" id="mmBatchTable">
                 <thead>
                     <tr>
-                        <th>Batch Number</th>
+                        <th><?= $bw ?> Number</th>
                         <th>Dosage Information</th>
                         <th>Current Stock</th>
                         <th>Expiry Date</th>

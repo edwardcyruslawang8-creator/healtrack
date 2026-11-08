@@ -135,7 +135,11 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
 
             <!-- PAGINATION -->
             <nav class="pagination-custom" aria-label="Search results pages">
-                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => max(1, $currentPageNum - 1)])) ?>" class="page-btn <?= $currentPageNum <= 1 ? 'disabled' : '' ?>" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <?php if ($currentPageNum > 1): ?>
+                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => $currentPageNum - 1])) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Previous page"><i class="bi bi-chevron-left"></i></span>
+                <?php endif; ?>
                 <?php for ($p = 1; $p <= min(4, $totalPages); $p++): ?>
                 <a href="<?= htmlspecialchars(hc_url_with_params(['page' => $p])) ?>" class="page-btn <?= $p === $currentPageNum ? 'active' : '' ?>"><?= $p ?></a>
                 <?php endfor; ?>
@@ -143,7 +147,11 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                 <span class="page-ellipsis">&hellip;</span>
                 <a href="<?= htmlspecialchars(hc_url_with_params(['page' => $totalPages])) ?>" class="page-btn <?= $totalPages === $currentPageNum ? 'active' : '' ?>"><?= $totalPages ?></a>
                 <?php endif; ?>
-                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => min($totalPages, $currentPageNum + 1)])) ?>" class="page-btn <?= $currentPageNum >= $totalPages ? 'disabled' : '' ?>" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                <?php if ($currentPageNum < $totalPages): ?>
+                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => $currentPageNum + 1])) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Next page"><i class="bi bi-chevron-right"></i></span>
+                <?php endif; ?>
             </nav>
         </section>
 

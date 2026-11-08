@@ -330,8 +330,16 @@ function hc_medtech_lxr_query(array $overrides = []): string
         <div class="adm-table-footer">
             <span class="adm-showing-text"><?= $requestsTotal > 0 ? 'Showing ' . (($requestsCurrentPage - 1) * $requestsPerPage + 1) . ' to ' . min($requestsCurrentPage * $requestsPerPage, $requestsTotal) . ' of ' . $requestsTotal . ' entries' : 'No entries to show' ?></span>
             <nav class="adm-pagination" aria-label="Requests pages">
+                <?php if ($requestsCurrentPage > 1): ?>
                 <a href="?<?= hc_medtech_lxr_query(['page' => 1]) ?>" class="page-btn" aria-label="First page"><i class="bi bi-chevron-bar-left"></i></a>
-                <a href="?<?= hc_medtech_lxr_query(['page' => max(1, $requestsCurrentPage - 1)]) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="First page"><i class="bi bi-chevron-bar-left"></i></span>
+                <?php endif; ?>
+                <?php if ($requestsCurrentPage > 1): ?>
+                <a href="?<?= hc_medtech_lxr_query(['page' => $requestsCurrentPage - 1]) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Previous page"><i class="bi bi-chevron-left"></i></span>
+                <?php endif; ?>
                 <?php foreach ($requestsPaginationWindow as $p): ?>
                     <?php if ($p === '...'): ?>
                     <span class="page-ellipsis">&hellip;</span>
@@ -339,8 +347,16 @@ function hc_medtech_lxr_query(array $overrides = []): string
                     <a href="?<?= hc_medtech_lxr_query(['page' => $p]) ?>" class="page-btn <?= $p === $requestsCurrentPage ? 'active' : '' ?>"><?= $p ?></a>
                     <?php endif; ?>
                 <?php endforeach; ?>
-                <a href="?<?= hc_medtech_lxr_query(['page' => min($requestsTotalPages, $requestsCurrentPage + 1)]) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                <?php if ($requestsCurrentPage < $requestsTotalPages): ?>
+                <a href="?<?= hc_medtech_lxr_query(['page' => $requestsCurrentPage + 1]) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Next page"><i class="bi bi-chevron-right"></i></span>
+                <?php endif; ?>
+                <?php if ($requestsCurrentPage < $requestsTotalPages): ?>
                 <a href="?<?= hc_medtech_lxr_query(['page' => $requestsTotalPages]) ?>" class="page-btn" aria-label="Last page"><i class="bi bi-chevron-bar-right"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Last page"><i class="bi bi-chevron-bar-right"></i></span>
+                <?php endif; ?>
             </nav>
         </div>
     </div>

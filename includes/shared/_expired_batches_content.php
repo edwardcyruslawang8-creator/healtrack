@@ -5,13 +5,17 @@
  * expects includes/shared/expired_batches_data.php to have run.
  * Monitoring only: no row actions, no unarchive.
  */
+// Wording follows the type filter: vaccines are tracked by LOT, medicines
+// by BATCH; the unfiltered (mixed) view names both.
+$ebWord = ['vaccine' => 'Lot', 'medicine' => 'Batch'][$ebTypeFilter] ?? 'Batch / Lot';
+$ebWordPlural = ['vaccine' => 'lots', 'medicine' => 'batches'][$ebTypeFilter] ?? 'batches/lots';
 ?>
     <!-- ============ SUMMARY CARDS ============ -->
     <div class="mvi-summary-row mvi-summary-row--3">
         <div class="adm-card mvi-summary-card">
             <div class="mvi-summary-icon" style="background:#FCE4E4; color:#D93025;"><i class="bi bi-calendar-x-fill"></i></div>
             <div class="mvi-summary-text">
-                <span class="mvi-summary-label">Expired Batches Archived</span>
+                <span class="mvi-summary-label">Expired Batches &amp; Lots Archived</span>
                 <span class="mvi-summary-value"><?= number_format($ebSummary['totalBatches']) ?></span>
                 <span class="mvi-summary-sub">Removed from inventory</span>
             </div>
@@ -22,7 +26,7 @@
             <div class="mvi-summary-text">
                 <span class="mvi-summary-label">Items Affected</span>
                 <span class="mvi-summary-value"><?= number_format($ebSummary['itemsAffected']) ?></span>
-                <span class="mvi-summary-sub">Medicines &amp; vaccines with an expired batch</span>
+                <span class="mvi-summary-sub">Medicines &amp; vaccines with an expired batch or lot</span>
             </div>
         </div>
 
@@ -40,7 +44,7 @@
     <form class="mvi-toolbar mvi-toolbar--search-first" method="get" action="expired_batches.php">
         <div class="mvi-search">
             <i class="bi bi-search"></i>
-            <input type="text" name="q" value="<?= htmlspecialchars($ebSearchTerm) ?>" placeholder="Search batch number, item name, category..." autocomplete="off" enterkeyhint="search">
+            <input type="text" name="q" value="<?= htmlspecialchars($ebSearchTerm) ?>" placeholder="Search <?= htmlspecialchars(strtolower($ebWord)) ?> number, item name, category..." autocomplete="off" enterkeyhint="search">
         </div>
         <select class="form-select mvi-filter-select" name="type" aria-label="Filter by type" onchange="this.form.submit()">
             <?php foreach ($ebTypeOptions as $value => $label): ?>
@@ -55,7 +59,7 @@
             <table class="adm-table mvi-table">
                 <thead>
                     <tr>
-                        <th>Batch Number</th>
+                        <th><?= htmlspecialchars($ebWord) ?> Number</th>
                         <th>Item</th>
                         <th>Type</th>
                         <th>Quantity Removed</th>
@@ -67,7 +71,7 @@
                 <tbody>
                     <?php if (empty($expiredBatches)): ?>
                     <tr>
-                        <td colspan="7" class="adm-table-empty"><?= $ebSummary['totalBatches'] === 0 ? 'No expired batches have been archived yet.' : 'No expired batches match your search.' ?></td>
+                        <td colspan="7" class="adm-table-empty"><?= $ebSummary['totalBatches'] === 0 ? 'No expired ' . $ebWordPlural . ' have been archived yet.' : 'No expired ' . $ebWordPlural . ' match your search.' ?></td>
                     </tr>
                     <?php endif; ?>
                     <?php foreach ($expiredBatches as $b): ?>
