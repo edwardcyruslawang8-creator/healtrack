@@ -25,14 +25,21 @@
  *      time a sub-admin opens a profile this way — the trade-off for
  *      skipping the request/approve cycle is that every such view is
  *      visible to both the patient and the facility's own audit trail.
- *   2. Same-day registrant — whoever registered this patient
+ *   2. Doctor (unconditional) — a doctor's own clinical role already
+ *      requires full access to any patient at their facility, not just
+ *      ones with a same-day scheduled consultation (that narrower
+ *      exception existed before this and is now superseded by this
+ *      unconditional one). Unlike sub-admin's oversight path, this
+ *      doesn't trigger the patient-notification email — a doctor
+ *      opening a chart is ordinary clinical care, not an oversight
+ *      exception — but the same "viewed" audit log entry still fires
+ *      every time (doctor/patient_profile.php's own unconditional
+ *      write_audit_log() call, unchanged).
+ *   3. Same-day registrant — whoever registered this patient
  *      (patients.registeredBy) can verify the intake info they just
- *      took is correct, but only on the same calendar day.
- *   3. Same-day consultation (doctor only) — a doctor with a real,
- *      non-cancelled consultation assigned to them for this patient,
- *      scheduled for today, same reasoning: the patient showing up for
- *      a scheduled visit is itself a real consent signal, but only for
- *      that visit's own day.
+ *      took is correct, but only on the same calendar day. In practice
+ *      this now only ever matters for healthcare_staff, since
+ *      sub-admin and doctor both already bypass consent entirely above.
  *   4. An ACCEPTED consent_records doc for this exact
  *      (patientId, requestedByUid) pair — real patient consent, with a
  *      real 1-hour window: the FIRST time this function sees an
@@ -47,21 +54,23 @@
  *      'accepted' or 'pending', so flipping to 'expired' here is what
  *      actually lets them ask again). This also finally makes
  *      includes/subadmin/consent_management_firestore.php's existing
- *      'expired' badge/stat real instead of permanently dead.
+ *      'expired' badge/stat real instead of permanently dead. In
+ *      practice this path too now only ever matters for
+ *      healthcare_staff — the only role still subject to the
+ *      request/approve cycle at all.
  * =====================================================================
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
-require_once __DIR__ . '/../firestore/consultations.php'; // hc_get_consultations_for_patient()
 
 if (!function_exists('hc_patient_consent_status')) {
     /**
      * @param string $patientId Real patients/{id} — already confirmed to exist and belong to the signed-in user's own facility by the caller.
      * @param string $myUid Signed-in user's own uid ($_SESSION['uid']).
-     * @param string $myRole Signed-in user's own role ($_SESSION['role']) — only 'doctor' gets the same-day-consultation exception.
-     * @param string $myName Signed-in user's own real name — matched against consultations.assignedPersonnel, the same plain-name-string matching every other doctor-queue feature in this app already uses (no doctor-uid field exists on a consultation doc).
+     * @param string $myRole Signed-in user's own role ($_SESSION['role']) — 'subadmin' and 'doctor' both get unconditional access; only 'healthcare_staff' goes through the request/approve cycle below.
+     * @param string $myName Signed-in user's own real name — kept for callers that already pass it (same call signature as before); not currently consulted by this function now that doctor access is unconditional.
      * @return array{access: bool, reason: string, expiresAt: ?string, pendingRequest: ?array, declinedRequest: ?array, expiredRequest: ?array}
-     *         reason is one of: 'subadmin_oversight', 'registrant_today', 'consultation_today', 'consent_accepted', 'consent_expired', 'none'.
+     *         reason is one of: 'subadmin_oversight', 'doctor_access', 'registrant_today', 'consent_accepted', 'consent_expired', 'none'.
      *         expiresAt is a real ISO timestamp only when reason is
      *         'consent_accepted' (null for every other reason — those
      *         access paths have no 1-hour window at all).
@@ -81,25 +90,21 @@ if (!function_exists('hc_patient_consent_status')) {
             return ['access' => true, 'reason' => 'subadmin_oversight', 'expiresAt' => null, 'pendingRequest' => null, 'declinedRequest' => null, 'expiredRequest' => null];
         }
 
+        // --- 2. Doctor (unconditional) — never waits on sub-admin
+        // approval; only healthcare_staff still goes through the
+        // request/approve cycle below. ---
+        if ($myRole === 'doctor') {
+            return ['access' => true, 'reason' => 'doctor_access', 'expiresAt' => null, 'pendingRequest' => null, 'declinedRequest' => null, 'expiredRequest' => null];
+        }
+
         $today = date('Y-m-d');
 
-        // --- 2. Same-day registrant ---
+        // --- 3. Same-day registrant ---
         $patientDoc = $firestore->getDocument('patients', $patientId);
         if ($patientDoc !== null
             && ($patientDoc['registeredBy'] ?? '') === $myUid
             && substr((string) ($patientDoc['dateRegistered'] ?? ''), 0, 10) === $today) {
             return ['access' => true, 'reason' => 'registrant_today', 'expiresAt' => null, 'pendingRequest' => null, 'declinedRequest' => null, 'expiredRequest' => null];
-        }
-
-        // --- 3. Same-day consultation (doctor only) ---
-        if ($myRole === 'doctor') {
-            foreach (hc_get_consultations_for_patient($patientId) as $c) {
-                if ($c['assignedPersonnel'] === $myName
-                    && $c['status'] !== 'cancelled'
-                    && substr($c['dateTime'], 0, 10) === $today) {
-                    return ['access' => true, 'reason' => 'consultation_today', 'expiresAt' => null, 'pendingRequest' => null, 'declinedRequest' => null, 'expiredRequest' => null];
-                }
-            }
         }
 
         // --- 4. Accepted real patient consent, with a real 1-hour window ---

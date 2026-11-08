@@ -260,56 +260,12 @@ $doctorNavItems = [
         </div>
     </div>
 
-    <?php if ($accessRestricted): ?>
-    <!-- ============ PATIENT DETAILS RESTRICTED ============
-         Real patient-consent gate — includes/shared/patient_consent.php's
-         hc_patient_consent_status() found no same-day registrant/
-         consultation exception and no accepted consent record for THIS
-         doctor and this exact patient. -->
-    <div class="adm-card ppf-profile-card">
-        <div class="ppf-restricted">
-            <i class="bi bi-shield-lock-fill ppf-restricted-icon"></i>
-            <h2><?= htmlspecialchars($patient['name']) ?></h2>
-            <p class="ppf-restricted-sub">This patient's full details are private. You need their consent before you can view this profile — unless you have a consultation assigned to you for them today.</p>
-
-            <?php if ($consentStatus['pendingRequest'] !== null): ?>
-            <div class="ppf-restricted-status pending">
-                <i class="bi bi-hourglass-split"></i>
-                Request sent on <?= htmlspecialchars(date('M j, Y', strtotime($consentStatus['pendingRequest']['givenOn']))) ?> — awaiting sub-admin review.
-            </div>
-            <?php else: ?>
-
-            <?php if ($consentStatus['declinedRequest'] !== null): ?>
-            <div class="ppf-restricted-status declined">
-                <i class="bi bi-x-circle-fill"></i>
-                Previously declined on <?= htmlspecialchars(date('M j, Y', strtotime($consentStatus['declinedRequest']['respondedAt'] ?? $consentStatus['declinedRequest']['givenOn']))) ?>. You may send a new request.
-            </div>
-            <?php endif; ?>
-
-            <?php if ($consentStatus['expiredRequest'] !== null): ?>
-            <div class="ppf-restricted-status expired">
-                <i class="bi bi-clock-history"></i>
-                Your access expired on <?= htmlspecialchars(date('M j, Y g:i A', strtotime($consentStatus['expiredRequest']['firstAccessedAt']) + 3600)) ?> (1 hour after you first opened this profile). You may send a new request.
-            </div>
-            <?php endif; ?>
-
-            <div id="pcrError" class="alert alert-danger py-2 px-3 d-none" style="font-size:13px;"></div>
-            <form id="patientConsentRequestForm">
-                <div class="mb-3 text-start">
-                    <label for="pcrReason" class="form-label fw-semibold">Why do you need to view this patient's details?</label>
-                    <textarea class="form-control" id="pcrReason" rows="3" required placeholder="e.g. Reviewing history ahead of an upcoming referral"></textarea>
-                </div>
-                <button type="submit" class="ppf-restricted-btn" id="pcrSubmitBtn">
-                    <i class="bi bi-send-fill"></i> Send Consent Request
-                </button>
-            </form>
-            <?php endif; ?>
-        </div>
-    </div>
-    <script>window.PATIENT_CONSENT_REQUEST = <?= json_encode(['patientId' => $requestedPatientId]) ?>;</script>
-    <script src="<?= asset_url('/assets/js/patient-consent-request.js') ?>"></script>
-
-    <?php else: ?>
+    <!-- A doctor's own access is always unconditional now
+         (includes/shared/patient_consent.php's hc_patient_consent_status()
+         — 'doctor_access' reason) — $accessRestricted can never be true
+         on this page, so there is no consent-request UI here at all
+         (unlike medical-staff/patient_profile.php, where it still
+         applies). -->
     <!-- ============ PATIENT PROFILE HEADER CARD ============ -->
     <div class="adm-card ppf-profile-card">
         <div class="ppf-identity">
@@ -493,7 +449,6 @@ $doctorNavItems = [
         </div>
         <?php endforeach; ?>
     </div>
-    <?php endif; ?>
 
 </main>
 
