@@ -394,20 +394,36 @@ document.addEventListener('DOMContentLoaded', function () {
     function hcCasesLabel(cases) {
         return cases + ' disease case' + (cases === 1 ? '' : 's') + (gisRangeLabel ? ' (' + gisRangeLabel + ')' : '');
     }
-    /** Real per-disease breakdown behind that total ("Dengue (4), Influenza (3)"), or '' if there's no data to break down. */
+    /** Real per-disease breakdown behind the total, as a labeled, sorted
+        list (highest count first — already sorted server-side) with one
+        disease per line — every real name/count, however small
+        (deliberately no small-cell suppression here: this is a public
+        awareness map, and full per-barangay transparency is the point —
+        see includes/public/gis_data_firestore.php's own header comment
+        on this). Returns '' if there's nothing to break down (p.cases
+        === 0 is handled separately by hcBarangayInfoHtml, not here). */
     function hcDiseaseBreakdown(diseases) {
         if (!diseases || !diseases.length) return '';
-        return diseases.map(function (d) { return d.name + ' (' + d.cases + ')'; }).join(', ');
+        return '<div class="bht-section-label">Disease Breakdown</div>' +
+            '<ul class="bht-disease-list">' +
+            diseases.map(function (d) {
+                return '<li><span class="bht-disease-name">' + d.name + '</span><span class="bht-disease-count">' + d.cases + '</span></li>';
+            }).join('') +
+            '</ul>';
     }
-    /** Name, district, case count and disease breakdown — shared by the hover tooltip and both popups. */
+    /** Name, district/official-name/PSGC, case count + intensity, and the
+        real disease breakdown (or an explicit "no cases" message) —
+        shared by the hover tooltip and both popups. */
     function hcBarangayInfoHtml(p) {
-        const breakdown = hcDiseaseBreakdown(p.diseases);
         const district = p.district ? p.district + ' District' : '';
         const official = p.officialName && p.officialName !== p.name ? 'Official name: ' + p.officialName : '';
-        return '<div class="bht-name">' + p.name + '</div>' +
-            '<div class="bht-breakdown">' + [district, official, p.psgc ? 'PSGC ' + p.psgc : ''].filter(Boolean).join(' &middot; ') + '</div>' +
-            '<div class="bht-cases">' + hcCasesLabel(p.cases) + ' &middot; ' + p.intensity + '</div>' +
-            (breakdown ? '<div class="bht-breakdown">' + breakdown + '</div>' : '');
+        const meta = '<div class="bht-breakdown">' + [district, official, p.psgc ? 'PSGC ' + p.psgc : ''].filter(Boolean).join(' &middot; ') + '</div>';
+        const head = '<div class="bht-name">' + p.name + '</div>' + meta +
+            '<div class="bht-cases">' + hcCasesLabel(p.cases) + ' &middot; ' + p.intensity + '</div>';
+        if (!p.cases) {
+            return head + '<div class="bht-no-cases">No recorded disease cases for the selected period.</div>';
+        }
+        return head + hcDiseaseBreakdown(p.diseases);
     }
 
     // Choropleth style — the fill color is the server's real intensity

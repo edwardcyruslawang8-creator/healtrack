@@ -322,39 +322,18 @@ if (!function_exists('hc_gis_disease_overview')) {
         ];
 
         // ---------------------------------------------------------------
-        // SMALL-CELL SUPPRESSION — real re-identification/stigma-risk
-        // protection for the public map specifically (internal
-        // surveillance callers never see this; they get the real exact
-        // numbers from hc_disease_demand_forecast() directly).
-        //
-        // 1. Per-barangay-per-category breakdown: a specific category's
-        //    count for one barangay is only named in that barangay's
-        //    "diseases" list once it clears a minimum real-case floor
-        //    (3) — a single uniform threshold across every publicly-
-        //    eligible condition, since eligibility itself is a single
-        //    per-condition yes/no rule (hc_is_publicly_visible()) with
-        //    no middle tier to begin with.
-        //    Anything under that floor is folded into a generic "Other"
-        //    bucket instead of naming the specific disease, so e.g.
-        //    "Dengue: 1" (which could point at a single household) never
-        //    appears — the barangay's own overall total/color intensity
-        //    is unaffected by this step.
-        // 2. Mono-disease-window total: assets/js/gis.js shows each
-        //    barangay's raw "cases" total unsuppressed (map label +
-        //    hover tooltip). If, for the current window, only ONE public
-        //    category has any cases sitewide at all, a small per-
-        //    barangay total is still de-anonymized just by combining it
-        //    with the sitewide "100% <disease>" context from Top 5
-        //    Diseases — suppression #1 above doesn't close this gap
-        //    since it only touches the NAMED breakdown, not the total.
-        //    So in that specific edge case only, any barangay whose own
-        //    total sits below 3 has its displayed total forced to 0
-        //    ("No Cases") — a normal multi-disease window is completely
-        //    unaffected by this rule. The sitewide $gisSummary total
-        //    (a much larger, safer pool) is never touched either way.
+        // No small-cell suppression — explicit, deliberate call (not an
+        // oversight): this is a public community-health AWARENESS map,
+        // and the user confirmed, after the tradeoff was spelled out
+        // (small counts can theoretically point at a single
+        // patient/household), that full transparency is what's wanted
+        // here. Every real barangay-per-condition count is shown by its
+        // real name, however small, and the barangay's own displayed
+        // total is always its real, unmasked case count. Internal
+        // surveillance callers (hc_disease_demand_forecast()'s other
+        // callers) were never affected by this either way — they've
+        // always seen the real exact numbers directly.
         // ---------------------------------------------------------------
-        $suppressionFloor = 3;
-        $isMonoDiseaseWindow = count(array_filter($byCategory)) === 1;
 
         // ---------------------------------------------------------------
         // Map GeoJSON — real counts/intensity on official boundaries (see
@@ -363,32 +342,13 @@ if (!function_exists('hc_gis_disease_overview')) {
         $features = [];
         foreach (hc_gis_barangay_shapes() as $name => $shape) {
             $cases = $byBarangay[$name];
-            $totalSuppressed = $isMonoDiseaseWindow && $cases > 0 && $cases < 3;
-            if ($totalSuppressed) {
-                $cases = 0; // display-only suppression — see "Mono-disease-window total" above
-            }
             $meta = hc_gis_intensity_meta($cases);
 
-            // When the total itself is suppressed to 0/"No Cases", the
-            // breakdown list must be empty too — otherwise a lone
-            // "Other: 1" entry would still announce "a case exists here"
-            // right next to a total that's supposed to be hiding exactly
-            // that.
+            $diseaseCounts = $byBarangayDisease[$name];
+            arsort($diseaseCounts);
             $diseases = [];
-            if (!$totalSuppressed) {
-                $diseaseCounts = $byBarangayDisease[$name];
-                arsort($diseaseCounts);
-                $suppressedTotal = 0;
-                foreach ($diseaseCounts as $category => $count) {
-                    if ($count < $suppressionFloor) {
-                        $suppressedTotal += $count;
-                        continue;
-                    }
-                    $diseases[] = ['name' => $category, 'cases' => $count];
-                }
-                if ($suppressedTotal > 0) {
-                    $diseases[] = ['name' => 'Other', 'cases' => $suppressedTotal];
-                }
+            foreach ($diseaseCounts as $category => $count) {
+                $diseases[] = ['name' => $category, 'cases' => $count];
             }
             $features[] = [
                 'type' => 'Feature',
