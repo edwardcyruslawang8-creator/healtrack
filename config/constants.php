@@ -340,6 +340,7 @@ function hc_doctor_all_notification_ids(): array
 {
     require_once __DIR__ . '/../includes/firestore/consultations.php';
     require_once __DIR__ . '/../includes/firestore/lab_results.php'; // hc_get_doctor_result_ready_notifications()
+    require_once __DIR__ . '/../includes/firestore/pharmacy_orders.php'; // hc_get_dispensed_prescription_notifications()
     require_once __DIR__ . '/../includes/shared/two_fa_reminder.php'; // hc_my_2fa_reminder_notification()
     require_once __DIR__ . '/../includes/shared/phone_reminder.php'; // hc_my_phone_reminder_notification()
     require_once __DIR__ . '/../includes/shared/email_verification_reminder.php'; // hc_my_email_verification_notification()
@@ -352,6 +353,7 @@ function hc_doctor_all_notification_ids(): array
     return array_merge(
         hc_notification_preference_enabled('consultation') ? array_column(hc_get_followup_notifications($_SESSION['name'] ?? null), 'id') : [],
         array_column(hc_get_doctor_result_ready_notifications($_SESSION['name'] ?? ''), 'id'),
+        array_column(hc_get_dispensed_prescription_notifications($_SESSION['name'] ?? ''), 'id'),
         array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
         array_column(array_filter([hc_my_phone_reminder_notification()]), 'id'),
         array_column(array_filter([hc_my_email_verification_notification()]), 'id')

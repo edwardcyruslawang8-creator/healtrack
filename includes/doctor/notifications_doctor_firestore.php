@@ -3,21 +3,26 @@
  * =====================================================================
  * Notifications (Doctor) — Data
  * ---------------------------------------------------------------------
- * CONNECTED — every row is a real notification generated live from two
- * sources scoped to this signed-in doctor's own caseload:
+ * CONNECTED — every row is a real notification generated live from
+ * three sources scoped to this signed-in doctor's own caseload:
  * includes/firestore/consultations.php's hc_get_followup_notifications()
  * (assignedPersonnel matches their real name — one entry per
  * consultation with a real "nextFollowUp" date due within the next 7
- * days or already overdue) and includes/firestore/lab_results.php's
+ * days or already overdue), includes/firestore/lab_results.php's
  * hc_get_doctor_result_ready_notifications() (orderedBy matches their
  * real name — one entry per lab/x-ray result a medical technologist
  * has completed within the last 14 days, so a doctor is actually told
  * when a result they ordered becomes available instead of only finding
- * out by reopening the consultation). This replaces the previous
- * fully-fabricated 8-row placeholder list (patient registrations,
- * stock requests, etc. — none of which reflect anything real for this
- * role) with the notification-worthy real data sources that actually
- * exist for a doctor right now.
+ * out by reopening the consultation), and
+ * includes/firestore/pharmacy_orders.php's
+ * hc_get_dispensed_prescription_notifications() (prescribedBy matches
+ * their real name — one entry per medicine/vaccine they prescribed
+ * during a consultation that a pharmacist has since dispensed, within
+ * the last 14 days — same reasoning as the lab-result-ready case). This
+ * replaces the previous fully-fabricated 8-row placeholder list
+ * (patient registrations, stock requests, etc. — none of which reflect
+ * anything real for this role) with the notification-worthy real data
+ * sources that actually exist for a doctor right now.
  *
  * Which of them are READ is real and persisted server-side (same
  * mechanism as pharmacist/notifications.php —
@@ -38,6 +43,7 @@
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/consultations.php'; // hc_get_followup_notifications()
 require_once __DIR__ . '/../firestore/lab_results.php'; // hc_get_doctor_result_ready_notifications()
+require_once __DIR__ . '/../firestore/pharmacy_orders.php'; // hc_get_dispensed_prescription_notifications()
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
 require_once __DIR__ . '/../shared/phone_reminder.php'; // hc_get_phone_reminder_notification()
 require_once __DIR__ . '/../shared/email_verification_reminder.php'; // hc_my_email_verification_notification()
@@ -55,7 +61,7 @@ $doctorProfile = [
 $dashboardDateLabel = date('F j, Y');
 $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'West Super Health Center'];
 
-$notificationTypeOptions = ['All Types', 'Consultation', 'Reminder'];
+$notificationTypeOptions = ['All Types', 'Consultation', 'Medicine', 'Vaccine', 'Reminder'];
 
 // ---------------------------------------------------------------------
 // Notifications List — real, merging live sources scoped to this
@@ -74,7 +80,8 @@ $rawNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'sy
     array_filter([hc_get_phone_reminder_notification($myUid, $myDoc ?? [])]),
     array_filter([hc_my_email_verification_notification()]),
     hc_notification_preference_enabled_for_doc($myDoc ?? [], 'consultation') ? hc_get_followup_notifications($doctorProfile['name']) : [],
-    hc_get_doctor_result_ready_notifications($doctorProfile['name'])
+    hc_get_doctor_result_ready_notifications($doctorProfile['name']),
+    hc_get_dispensed_prescription_notifications($doctorProfile['name'])
 ) : [];
 // Which real page a notification's "Go to details" button (the
 // Notification Details modal's own primary action, assets/js/notifications.js)
@@ -85,6 +92,8 @@ $notificationTypeLinks = [
     'Consultation' => ['url' => 'consultations.php', 'label' => 'Go to Consultations'],
     'Laboratory' => ['url' => 'patient_laboratory_xray.php', 'label' => 'Go to Lab & X-ray'],
     'X-ray' => ['url' => 'patient_laboratory_xray.php', 'label' => 'Go to Lab & X-ray'],
+    'Medicine' => ['url' => 'medications.php', 'label' => 'Go to Medications'],
+    'Vaccine' => ['url' => 'medications.php', 'label' => 'Go to Medications'],
     'Reminder' => ['url' => 'profile_settings.php', 'label' => 'Go to Security Settings'],
 ];
 
