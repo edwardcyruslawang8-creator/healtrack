@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!modalEl || typeof bootstrap === 'undefined') return;
 
     const modal = new bootstrap.Modal(modalEl);
+    const modalTitle = document.getElementById('manageDiseaseRegistryModalLabel');
     const entryForm = document.getElementById('mdrEntryForm');
     const entryIdField = document.getElementById('mdrEntryId');
     const nameField = document.getElementById('mdrName');
@@ -45,6 +46,7 @@ document.addEventListener('DOMContentLoaded', function () {
         btn.addEventListener('click', function () {
             resetModal();
             isNewEntry = false;
+            modalTitle.textContent = 'Manage Registry Entry';
             addReminder.classList.add('d-none');
             entryIdField.value = btn.dataset.id;
             nameField.value = btn.dataset.name || '';
@@ -65,6 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
         addBtn.addEventListener('click', function () {
             resetModal();
             isNewEntry = true;
+            modalTitle.textContent = 'Add Condition';
             addReminder.classList.remove('d-none');
             modal.show();
         });

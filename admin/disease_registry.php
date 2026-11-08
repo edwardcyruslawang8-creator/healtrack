@@ -31,8 +31,7 @@ if (($_SESSION['role'] ?? null) !== 'admin') {
 }
 
 require_once __DIR__ . '/../includes/admin/disease_registry_firestore.php';
-// $adminProfile, $registryRows, $registryByClassification, $classificationMeta,
-// $classificationColors, $registryTotalCount, $unclassifiedCount
+// $adminProfile, $registryRows, $registryTotalCount, $unclassifiedCount
 
 $adminNavItems = [
     ['icon' => 'bi-grid-fill',           'label' => 'Dashboard',                    'href' => 'admin_dashboard.php'],
@@ -162,7 +161,7 @@ $adminNavItems = [
     <div class="adm-topbar">
         <div>
             <h1>Disease Registry</h1>
-            <p class="adm-page-subtitle">Adding or managing a condition here makes it visible on GIS Mapping automatically. Every valid consultation diagnosis is always preserved; nothing here approves or rejects an individual case.</p>
+            <p class="adm-page-subtitle">Adding or managing a condition here makes it visible on GIS Mapping automatically.</p>
         </div>
         <div class="adm-topbar-right">
             <div class="adm-topbar-actions">
@@ -189,16 +188,6 @@ $adminNavItems = [
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- ============ SUMMARY ROW ============ -->
-    <div class="adm-kpi-row" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px; margin-bottom:22px;">
-        <?php foreach ($classificationMeta as $key => $label): $colors = $classificationColors[$key]; ?>
-        <div class="adm-card" style="padding:18px;">
-            <div style="font-size:12px; font-weight:600; color:<?= htmlspecialchars($colors['color']) ?>; background:<?= htmlspecialchars($colors['bg']) ?>; display:inline-block; padding:4px 10px; border-radius:6px; margin-bottom:8px;"><?= htmlspecialchars($label) ?></div>
-            <div style="font-size:26px; font-weight:800;"><?= count($registryByClassification[$key]) ?></div>
-        </div>
-        <?php endforeach; ?>
     </div>
 
     <!-- ============ REGISTRY TABLE ============ -->
