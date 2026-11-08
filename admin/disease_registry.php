@@ -162,7 +162,7 @@ $adminNavItems = [
     <div class="adm-topbar">
         <div>
             <h1>Disease Registry</h1>
-            <p class="adm-page-subtitle">Disease-level metadata only — classification, GIS eligibility, public visibility, and preventive measures. Every valid consultation diagnosis is always preserved; nothing here approves or rejects an individual case.</p>
+            <p class="adm-page-subtitle">Adding or managing a condition here makes it visible on GIS Mapping automatically. Every valid consultation diagnosis is always preserved; nothing here approves or rejects an individual case.</p>
         </div>
         <div class="adm-topbar-right">
             <div class="adm-topbar-actions">
@@ -210,28 +210,21 @@ $adminNavItems = [
         <div class="adm-table-wrap" style="max-height:520px; overflow-y:auto;">
             <table class="adm-table">
                 <thead style="position:sticky; top:0; z-index:1; background:var(--adm-card);">
-                    <tr><th>Name</th><th>Synonyms</th><th>Classification</th><th>GIS Eligible</th><th>Public</th><th>Last Updated</th><th></th></tr>
+                    <tr><th>Name</th><th>Synonyms</th><th></th></tr>
                 </thead>
                 <tbody>
                     <?php if (empty($registryRows)): ?>
-                    <tr><td colspan="7" class="adm-table-empty">No registry entries yet.</td></tr>
+                    <tr><td colspan="3" class="adm-table-empty">No registry entries yet.</td></tr>
                     <?php endif; ?>
-                    <?php foreach ($registryRows as $r): $colors = $classificationColors[$r['classKey']]; ?>
+                    <?php foreach ($registryRows as $r): ?>
                     <tr data-registry-id="<?= htmlspecialchars($r['id']) ?>">
                         <td><strong><?= htmlspecialchars($r['name']) ?></strong><?php if ($r['isAutoDetected']): ?> <span class="adm-status-badge" style="background:#FDECDD; color:#E8710A; font-size:10px;">auto-detected</span><?php endif; ?></td>
                         <td style="max-width:240px; font-size:12.5px; color:var(--adm-text-soft);"><?= htmlspecialchars(implode(', ', $r['synonyms'])) ?></td>
-                        <td><span class="adm-status-badge" style="background:<?= htmlspecialchars($colors['bg']) ?>; color:<?= htmlspecialchars($colors['color']) ?>;"><?= htmlspecialchars($r['classificationLabel']) ?></span></td>
-                        <td><?= $r['gisEligible'] ? 'Yes' : 'No' ?></td>
-                        <td><?= $r['publicVisibility'] ? 'Yes' : 'No' ?></td>
-                        <td><?= $r['updatedAt'] !== '' ? htmlspecialchars(date('M j, Y', strtotime($r['updatedAt']))) : '—' ?> by <?= htmlspecialchars($r['updatedByName']) ?></td>
                         <td>
                             <button type="button" class="drg-btn-manage" data-manage-registry
                                 data-id="<?= htmlspecialchars($r['id']) ?>"
                                 data-name="<?= htmlspecialchars($r['name']) ?>"
                                 data-synonyms="<?= htmlspecialchars(implode(', ', $r['synonyms'])) ?>"
-                                data-classification="<?= htmlspecialchars($r['classification'] ?? '') ?>"
-                                data-gis-eligible="<?= $r['gisEligible'] ? '1' : '0' ?>"
-                                data-public-visibility="<?= $r['publicVisibility'] ? '1' : '0' ?>"
                                 data-preventable="<?= $r['isPreventable'] ? '1' : '0' ?>"
                                 data-behavioral="<?= htmlspecialchars($r['behavioralMeasures']) ?>"
                                 data-environmental="<?= htmlspecialchars($r['environmentalMeasures']) ?>"

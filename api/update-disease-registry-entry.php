@@ -3,25 +3,33 @@
  * =====================================================================
  * Update Disease Registry Entry (api/update-disease-registry-entry.php)
  * ---------------------------------------------------------------------
- * Disease-level metadata upkeep — name, synonyms, classification, GIS
- * eligibility, public visibility, preventable flag, and the 3
- * preventive-measure fields. Admin-only (system-wide scope — see
- * includes/shared/clinical_classification.php's header comment for why
- * this isn't subadmin-manageable).
+ * Disease-level metadata upkeep — name, synonyms, preventable flag,
+ * and the 3 preventive-measure fields. Admin-only (system-wide scope
+ * — see includes/shared/clinical_classification.php's header comment
+ * for why this isn't subadmin-manageable).
+ *
+ * Saving ANY entry through this endpoint (including a previously
+ * auto-detected/unclassified one) makes it registryStatus='classified',
+ * gisEligible=true, publicVisibility=true unconditionally — there is
+ * no separate classification/eligibility step any more; the admin UI
+ * shows a reminder before this happens (includes/admin/manage_disease_registry_modal.php's
+ * #mdrAddReminder). The condition's `classification` field (used only
+ * for the GIS dynamic classification filter) is left untouched — this
+ * form has no control for it.
  *
  * Deliberately NOT a per-case approval endpoint — it only ever touches
  * a condition's registry metadata, never an individual patient's
  * consultation/diagnosis record. No "reason" is required (this is
- * ordinary catalog upkeep, same as fixing a typo), but every real
- * change to classification/gisEligible/publicVisibility is appended to
- * the doc's own history[] (the audit log requirement).
+ * ordinary catalog upkeep, same as fixing a typo), but a real
+ * gisEligible/publicVisibility transition is still appended to the
+ * doc's own history[] (the audit log requirement).
  * =====================================================================
  */
 
 session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
-require_once __DIR__ . '/../includes/shared/clinical_classification.php'; // hc_disease_registry_classification_meta()
+require_once __DIR__ . '/../includes/shared/clinical_classification.php'; // hc_normalize_text()
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 
 header('Content-Type: application/json');
@@ -46,9 +54,6 @@ $id = trim((string) ($body['id'] ?? ''));
 $name = trim((string) ($body['name'] ?? ''));
 $synonymsRaw = (string) ($body['synonyms'] ?? '');
 $isPreventable = !empty($body['isPreventable']);
-$classification = trim((string) ($body['classification'] ?? ''));
-$gisEligible = !empty($body['gisEligible']);
-$publicVisibility = !empty($body['publicVisibility']);
 $behavioralMeasures = mb_substr(trim((string) ($body['behavioralMeasures'] ?? '')), 0, 500);
 $environmentalMeasures = mb_substr(trim((string) ($body['environmentalMeasures'] ?? '')), 0, 500);
 $communityMeasures = mb_substr(trim((string) ($body['communityMeasures'] ?? '')), 0, 500);
@@ -58,9 +63,6 @@ if ($id === '') {
 }
 if ($name === '') {
     udre_fail(422, 'Please enter a condition name.');
-}
-if ($classification !== '' && !array_key_exists($classification, hc_disease_registry_classification_meta())) {
-    udre_fail(422, 'Please select a valid classification.');
 }
 
 // Comma-separated synonyms, normalized (lowercase, trimmed, deduped,
@@ -79,17 +81,9 @@ if ($existing === null) {
     udre_fail(404, 'This registry entry could not be found.');
 }
 
-$newClassification = $classification !== '' ? $classification : null;
-$newRegistryStatus = $newClassification !== null ? 'classified' : 'unclassified';
-// Public Visibility can never be true unless GIS Eligible is also true
-// and the entry is classified — enforced server-side regardless of
-// what the client sends.
-$newGisEligible = $newRegistryStatus === 'classified' && $gisEligible;
-$newPublicVisibility = $newGisEligible && $publicVisibility;
-
-$prevClassification = $existing['classification'] ?? null;
-$prevGisEligible = !empty($existing['gisEligible']);
-$prevPublicVisibility = !empty($existing['publicVisibility']);
+$wasGisEligible = !empty($existing['gisEligible']);
+$wasPublicVisibility = !empty($existing['publicVisibility']);
+$wasRegistryStatus = $existing['registryStatus'] ?? 'unclassified';
 
 $adminName = $_SESSION['name'] ?? 'Administrator';
 $adminUid = $_SESSION['uid'] ?? '';
@@ -97,14 +91,16 @@ $nowIso = date('c');
 
 // setDocument() is a full overwrite — copy every existing field
 // forward, only replace the fields this form actually edits.
+// 'classification' is deliberately left untouched (no control for it
+// here) — the registry collection fields on disk aren't deleted just
+// because the admin UI no longer exposes them.
 $updated = $existing;
 $updated['name'] = $name;
 $updated['synonyms'] = $synonyms;
 $updated['isPreventable'] = $isPreventable;
-$updated['classification'] = $newClassification;
-$updated['registryStatus'] = $newRegistryStatus;
-$updated['gisEligible'] = $newGisEligible;
-$updated['publicVisibility'] = $newPublicVisibility;
+$updated['registryStatus'] = 'classified';
+$updated['gisEligible'] = true;
+$updated['publicVisibility'] = true;
 $updated['behavioralMeasures'] = $behavioralMeasures;
 $updated['environmentalMeasures'] = $environmentalMeasures;
 $updated['communityMeasures'] = $communityMeasures;
@@ -113,21 +109,15 @@ $updated['updatedByUid'] = $adminUid;
 $updated['updatedByRole'] = 'admin';
 $updated['updatedAt'] = $nowIso;
 
-$metadataChanged = $prevClassification !== $newClassification
-    || $prevGisEligible !== $newGisEligible
-    || $prevPublicVisibility !== $newPublicVisibility;
+$becamePublic = $wasRegistryStatus !== 'classified' || !$wasGisEligible || !$wasPublicVisibility;
 
-if ($metadataChanged) {
-    $classMeta = hc_disease_registry_classification_meta();
+if ($becamePublic) {
     $updated['history'] = array_values(is_array($existing['history'] ?? null) ? $existing['history'] : []);
     $updated['history'][] = [
         'date' => date('Y-m-d'),
-        'event' => 'Metadata changed: classification ' . ($classMeta[$prevClassification] ?? 'None') . ' → ' . ($classMeta[$newClassification] ?? 'None')
-            . ', gisEligible ' . ($prevGisEligible ? 'true' : 'false') . ' → ' . ($newGisEligible ? 'true' : 'false')
-            . ', publicVisibility ' . ($prevPublicVisibility ? 'true' : 'false') . ' → ' . ($newPublicVisibility ? 'true' : 'false'),
-        'previousClassification' => $prevClassification, 'newClassification' => $newClassification,
-        'previousGisEligible' => $prevGisEligible, 'newGisEligible' => $newGisEligible,
-        'previousPublicVisibility' => $prevPublicVisibility, 'newPublicVisibility' => $newPublicVisibility,
+        'event' => 'Became visible on GIS Mapping (registryStatus/gisEligible/publicVisibility all set true via admin save)',
+        'previousGisEligible' => $wasGisEligible, 'newGisEligible' => true,
+        'previousPublicVisibility' => $wasPublicVisibility, 'newPublicVisibility' => true,
         'changedByName' => $adminName, 'changedByUid' => $adminUid, 'changedByRole' => 'admin',
         'recordedAt' => $nowIso,
     ];
@@ -137,6 +127,6 @@ if (!$firestore->setDocument('disease_registry', $id, $updated)) {
     udre_fail(500, 'Could not save. Please try again.');
 }
 
-write_audit_log('updated', 'Disease Registry', 'Updated "' . $name . '" (metadata' . ($metadataChanged ? ': classification/GIS eligibility/public visibility changed' : '') . ').');
+write_audit_log('updated', 'Disease Registry', 'Updated "' . $name . '"' . ($becamePublic ? ' — now visible on GIS Mapping' : '') . '.');
 
 echo json_encode(['success' => true, 'name' => $name]);

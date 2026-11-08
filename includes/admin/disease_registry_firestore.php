@@ -5,12 +5,15 @@
  * ---------------------------------------------------------------------
  * Backs admin/disease_registry.php — the one real management UI for
  * includes/shared/clinical_classification.php's "disease_registry"
- * Firestore collection. Assigning a condition a classification, GIS
- * eligibility, public visibility, or its preventive-measures text is
- * ordinary disease-level metadata upkeep, not a per-case decision — see
- * that file's own header comment. Every real audit entry (who changed
- * what, when) lives in each doc's own history[] array, written by
- * api/update-disease-registry-entry.php.
+ * Firestore collection. Adding or managing a condition's name,
+ * synonyms, or preventive-measures text here makes it visible on GIS
+ * Mapping immediately (api/add-disease-registry-entry.php,
+ * api/update-disease-registry-entry.php) — there's no separate
+ * classification/eligibility step on this UI any more. `classification`
+ * itself still exists on each doc (grouping the KPI row below, and
+ * feeding the GIS Mapping dynamic classification filter) but nothing
+ * on this page sets it. Every real audit entry (who changed what,
+ * when) lives in each doc's own history[] array.
  * =====================================================================
  */
 

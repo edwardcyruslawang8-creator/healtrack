@@ -6,15 +6,13 @@
    (includes/admin/manage_disease_registry_modal.php) and its single
    form (#mdrEntryForm), submitted to:
      - api/update-disease-registry-entry.php (existing entries) —
-       name/synonyms/classification/GIS eligibility/public visibility/
-       preventable/3 preventive-measure fields together, no reason
-       required — disease-level metadata upkeep, never a per-case
-       decision.
-     - api/add-disease-registry-entry.php (new entries) — always starts
-       unclassified/gisEligible=false/publicVisibility=false
-       server-side regardless of what's submitted, so the
-       classification section is hidden until the entry has been saved
-       once.
+       name/synonyms/preventable/3 preventive-measure fields, no
+       reason required.
+     - api/add-disease-registry-entry.php (new entries).
+   Both endpoints make the condition visible on the public GIS map
+   immediately — there's no separate classification/eligibility step
+   any more, so #mdrAddReminder is shown (Add Condition only) to make
+   sure that's never a surprise.
    ============================================================= */
 document.addEventListener('DOMContentLoaded', function () {
     const modalEl = document.getElementById('manageDiseaseRegistryModal');
@@ -26,10 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const nameField = document.getElementById('mdrName');
     const synonymsField = document.getElementById('mdrSynonyms');
     const preventableField = document.getElementById('mdrPreventable');
-    const classificationSection = document.getElementById('mdrClassificationSection');
-    const classificationField = document.getElementById('mdrClassification');
-    const gisEligibleField = document.getElementById('mdrGisEligible');
-    const publicVisibilityField = document.getElementById('mdrPublicVisibility');
+    const addReminder = document.getElementById('mdrAddReminder');
     const behavioralField = document.getElementById('mdrBehavioral');
     const environmentalField = document.getElementById('mdrEnvironmental');
     const communityField = document.getElementById('mdrCommunity');
@@ -45,52 +40,32 @@ document.addEventListener('DOMContentLoaded', function () {
         entrySaveBtn.disabled = false;
     }
 
-    function showClassificationSection(show) {
-        classificationSection.style.display = show ? '' : 'none';
-    }
-
-    // Public Visibility can't be true when GIS Eligible is off — keep
-    // the checkbox itself honest client-side (the server enforces this
-    // regardless).
-    function syncPublicVisibilityAvailability() {
-        if (!gisEligibleField.checked) {
-            publicVisibilityField.checked = false;
-            publicVisibilityField.disabled = true;
-        } else {
-            publicVisibilityField.disabled = false;
-        }
-    }
-    gisEligibleField.addEventListener('change', syncPublicVisibilityAvailability);
-
     // "Manage" button on an existing row.
     document.querySelectorAll('[data-manage-registry]').forEach(function (btn) {
         btn.addEventListener('click', function () {
             resetModal();
             isNewEntry = false;
+            addReminder.classList.add('d-none');
             entryIdField.value = btn.dataset.id;
             nameField.value = btn.dataset.name || '';
             synonymsField.value = btn.dataset.synonyms || '';
             preventableField.checked = btn.dataset.preventable === '1';
-            classificationField.value = btn.dataset.classification || '';
-            gisEligibleField.checked = btn.dataset.gisEligible === '1';
-            publicVisibilityField.checked = btn.dataset.publicVisibility === '1';
             behavioralField.value = btn.dataset.behavioral || '';
             environmentalField.value = btn.dataset.environmental || '';
             communityField.value = btn.dataset.community || '';
-            syncPublicVisibilityAvailability();
-            showClassificationSection(true);
             modal.show();
         });
     });
 
-    // "Add Condition" — classification section hidden until the entry
-    // itself is saved once (it always starts unclassified regardless).
+    // "Add Condition" — the reminder banner always shows here, since
+    // this is the one action that creates a condition that will go
+    // live on the public map immediately.
     const addBtn = document.querySelector('[data-add-entry]');
     if (addBtn) {
         addBtn.addEventListener('click', function () {
             resetModal();
             isNewEntry = true;
-            showClassificationSection(false);
+            addReminder.classList.remove('d-none');
             modal.show();
         });
     }
@@ -105,9 +80,6 @@ document.addEventListener('DOMContentLoaded', function () {
             name: nameField.value.trim(),
             synonyms: synonymsField.value,
             isPreventable: preventableField.checked,
-            classification: classificationField.value,
-            gisEligible: gisEligibleField.checked,
-            publicVisibility: publicVisibilityField.checked,
             behavioralMeasures: behavioralField.value.trim(),
             environmentalMeasures: environmentalField.value.trim(),
             communityMeasures: communityField.value.trim(),
