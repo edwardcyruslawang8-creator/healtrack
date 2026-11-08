@@ -367,22 +367,17 @@ $adminNavItems = [
             <div class="info-card">
                 <div class="info-card-header">
                     <h2>Seasonal Patterns</h2>
-                    <?php if ($seasonalOverview['hasData']): ?>
+                    <?php if ($seasonalOverview['hasData'] && count($seasonalOverview['categoryOptions']) > 1): ?>
                     <!-- Real toggle (assets/js/gis.js) — swaps the chart below
-                         between a Top-5 multi-line comparison (default), a
-                         combined All-Eligible-Diseases view, and every real
-                         disease category's own 12-month breakdown
-                         (hc_gis_seasonal_overview()'s own categoryMonthly/
-                         monthlyTotals/categoryOptions — already sorted by
-                         real all-time case count), all client-side from the
-                         one window.GIS_SEASONAL blob already embedded below
-                         — no extra request, no page reload. -->
+                         between every real, GIS-eligible disease's own
+                         12-month breakdown (hc_gis_seasonal_overview()'s own
+                         categoryMonthly, retrieved dynamically from the
+                         Disease Registry — never hardcoded), client-side,
+                         no extra request, no page reload. -->
                     <div class="mini-select-wrap">
                         <select class="mini-select" id="seasonalDiseaseSelect">
-                            <option value="__top5__" selected>Top 5 Diseases</option>
-                            <option value="__all__">All Eligible Diseases</option>
                             <?php foreach ($seasonalOverview['categoryOptions'] as $catOpt): ?>
-                            <option value="<?= htmlspecialchars($catOpt) ?>"><?= htmlspecialchars($catOpt) ?></option>
+                            <option value="<?= htmlspecialchars($catOpt) ?>" <?= $catOpt === $seasonalOverview['topCategory'] ? 'selected' : '' ?>><?= htmlspecialchars($catOpt) ?></option>
                             <?php endforeach; ?>
                         </select>
                         <i class="bi bi-chevron-down"></i>
@@ -392,16 +387,15 @@ $adminNavItems = [
                 <?php if (!$seasonalOverview['hasData']): ?>
                 <p class="text-muted small mb-0">No notifiable-disease cases on record yet to find a seasonal pattern.</p>
                 <?php else: ?>
-                <?php $top5Names = array_slice($seasonalOverview['categoryOptions'], 0, 5); ?>
                 <p class="health-trend-caption" style="margin-top:0;" id="seasonalChartCaption">
-                    Top 5 diseases by total cases, every year on record.
+                    Monthly case totals for <strong><?= htmlspecialchars($seasonalOverview['topCategory']) ?></strong>, every year on record.
                 </p>
                 <div class="health-trend-canvas-box">
                     <canvas id="seasonalChart"></canvas>
                 </div>
                 <div class="disease-rank-list" id="seasonalCompareList" style="margin-top:12px; max-height:300px; overflow-y:auto; padding-right:4px;">
                     <?php foreach ($seasonalOverview['seasonCompare'] as $sc): ?>
-                    <?php if (!in_array($sc['category'], $top5Names, true)) continue; ?>
+                    <?php if ($sc['category'] !== $seasonalOverview['topCategory']) continue; ?>
                     <div class="disease-rank-row">
                         <span class="disease-name"><?= htmlspecialchars($sc['category']) ?></span>
                         <span class="disease-cases" title="Rainy season (Jun-Nov)"><i class="bi bi-cloud-rain-fill"></i> <?= (int) $sc['rainy'] ?></span>

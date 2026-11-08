@@ -59,24 +59,12 @@ document.addEventListener('DOMContentLoaded', function () {
     })();
 
     // ---------------------------------------------------------------
-    // Seasonal Patterns chart — true calendar-month totals (every real
-    // year on record merged, never the rolling date-range window —
+    // Seasonal Patterns bar chart — true calendar-month totals (every
+    // real year on record merged), set inline as window.GIS_SEASONAL —
     // see includes/shared/predictive_analytics_core.php's
-    // hc_gis_seasonal_overview() header comment for why a genuine
-    // seasonal pattern needs multiple years, not a short window).
-    // Three view modes, all built from the ONE window.GIS_SEASONAL
-    // blob already embedded by the page — no extra request, ever:
-    //   '__top5__' (default) — multi-line comparison of the 5 real
-    //     conditions with the highest all-time case count
-    //     (seasonal.categoryOptions is already sorted that way).
-    //   '__all__' — single series, the combined monthly total across
-    //     every eligible condition (seasonal.monthlyTotals).
-    //   any real condition name — its own 12-month bar chart
-    //     (seasonal.categoryMonthly[name]), the original single-disease
-    //     view, unchanged.
-    // Independent of the Health Trend chart above (that one's a
-    // rolling window) and of the Leaflet map below (never touched by
-    // anything in this function).
+    // hc_gis_seasonal_overview() header comment. Independent of the
+    // Health Trend chart above (that one's a rolling window; this one
+    // never changes with the date-range dropdown).
     // ---------------------------------------------------------------
     (function renderSeasonalChart() {
         const canvas = document.getElementById('seasonalChart');
@@ -87,146 +75,59 @@ document.addEventListener('DOMContentLoaded', function () {
         const gridColor = rootStyle.getPropertyValue('--border-soft').trim() || '#ECEDF3';
         const tickColor = rootStyle.getPropertyValue('--text-muted').trim() || '#6B7280';
 
-        // Same 5-color palette already used for Disease Registry
-        // classification badges (admin/disease_registry.php) — reused
-        // here so the Top 5 lines stay visually consistent with the
-        // rest of the app rather than inventing a new palette.
-        const TOP5_COLORS = ['#E8710A', '#1A73E8', '#D93025', '#1E8E3E', '#7C3AED'];
-        const top5 = (seasonal.categoryOptions || []).slice(0, 5);
-
-        function escapeHtml(s) {
-            return String(s).replace(/[&<>"]/g, function (ch) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch];
-            });
-        }
-
-        function baseScales() {
-            return {
-                y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
-                x: { grid: { display: false }, ticks: { color: tickColor } },
-            };
-        }
-
-        function buildTop5Config() {
-            return {
-                type: 'line',
-                data: {
-                    labels: seasonal.monthlyLabels,
-                    datasets: top5.map(function (name, i) {
-                        const color = TOP5_COLORS[i % TOP5_COLORS.length];
-                        return {
-                            label: name,
-                            data: seasonal.categoryMonthly[name] || [],
-                            borderColor: color,
-                            backgroundColor: color,
-                            borderWidth: 2,
-                            tension: 0.3,
-                            pointRadius: 3,
-                            fill: false,
-                        };
-                    }),
+        const chart = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: seasonal.monthlyLabels,
+                datasets: [{
+                    data: seasonal.topCategoryMonthly,
+                    backgroundColor: '#1A73E8',
+                    borderRadius: 4,
+                    maxBarThickness: 22,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
+                    x: { grid: { display: false }, ticks: { color: tickColor } },
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: {
-                        legend: { display: true, position: 'top', labels: { boxWidth: 10, font: { size: 10.5 }, color: tickColor } },
-                        tooltip: { mode: 'index', intersect: false },
-                    },
-                    scales: baseScales(),
-                },
-            };
-        }
+            },
+        });
 
-        function buildSingleSeriesConfig(data) {
-            return {
-                type: 'bar',
-                data: {
-                    labels: seasonal.monthlyLabels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: '#1A73E8',
-                        borderRadius: 4,
-                        maxBarThickness: 22,
-                    }],
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: baseScales(),
-                },
-            };
-        }
-
+        // Real "View: [disease]" dropdown (hc_gis_seasonal_overview()'s
+        // own categoryMonthly, every real GIS-eligible disease's
+        // 12-month breakdown, retrieved dynamically from the Disease
+        // Registry and already sent inline — this just swaps which one
+        // the SAME chart renders, client-side, no extra request).
+        const select = document.getElementById('seasonalDiseaseSelect');
         const caption = document.getElementById('seasonalChartCaption');
         const compareList = document.getElementById('seasonalCompareList');
-
-        function compareRowHtml(name, rainy, dry) {
-            return '<div class="disease-rank-row">'
-                + '<span class="disease-name">' + escapeHtml(name) + '</span>'
-                + '<span class="disease-cases" title="Rainy season (Jun-Nov)"><i class="bi bi-cloud-rain-fill"></i> ' + rainy + '</span>'
-                + '<span class="disease-cases" title="Dry season (Dec-May)"><i class="bi bi-sun-fill"></i> ' + dry + '</span>'
-                + '</div>';
-        }
-
-        // Reuses the already-embedded seasonal.seasonCompare — no new
-        // data needed for any of the 3 modes.
-        function updateCompareList(mode) {
-            if (!compareList || !seasonal.seasonCompare) return;
-            const byName = {};
-            seasonal.seasonCompare.forEach(function (sc) { byName[sc.category] = sc; });
-
-            let html = '';
-            if (mode === '__top5__') {
-                top5.forEach(function (name) {
-                    const sc = byName[name];
-                    if (sc) html += compareRowHtml(name, sc.rainy, sc.dry);
-                });
-            } else if (mode === '__all__') {
-                let rainy = 0;
-                let dry = 0;
-                seasonal.seasonCompare.forEach(function (sc) { rainy += sc.rainy; dry += sc.dry; });
-                html = compareRowHtml('All Eligible Diseases (Combined)', rainy, dry);
-            } else {
-                const sc = byName[mode];
-                if (sc) html = compareRowHtml(sc.category, sc.rainy, sc.dry);
-            }
-            compareList.innerHTML = html;
-        }
-
-        let chart = null;
-
-        function renderFor(mode) {
-            let config;
-            let captionHtml;
-            if (mode === '__top5__') {
-                config = buildTop5Config();
-                captionHtml = 'Top 5 diseases by total cases, every year on record.';
-            } else if (mode === '__all__') {
-                config = buildSingleSeriesConfig(seasonal.monthlyTotals);
-                captionHtml = 'Combined monthly totals across every eligible condition, every year on record.';
-            } else {
-                config = buildSingleSeriesConfig(seasonal.categoryMonthly[mode] || []);
-                captionHtml = 'Monthly case totals for <strong>' + escapeHtml(mode) + '</strong>, every year on record.';
-            }
-            // Destroying and recreating on the SAME canvas is the
-            // reliable way to flip between 'bar'/'line' and 1/5
-            // datasets — the canvas element itself (and everything
-            // outside it) is never touched.
-            if (chart) chart.destroy();
-            chart = new Chart(canvas, config);
-            if (caption) caption.innerHTML = captionHtml;
-            updateCompareList(mode);
-        }
-
-        renderFor('__top5__');
-
-        const select = document.getElementById('seasonalDiseaseSelect');
-        if (select) {
+        if (select && seasonal.categoryMonthly) {
             select.addEventListener('change', function () {
-                renderFor(select.value);
+                const category = select.value;
+                const monthly = seasonal.categoryMonthly[category];
+                if (!monthly) return;
+                chart.data.datasets[0].data = monthly;
+                chart.update();
+                const escaped = category.replace(/[&<>"]/g, function (ch) {
+                    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch];
+                });
+                if (caption) {
+                    caption.innerHTML = 'Monthly case totals for <strong>' + escaped + '</strong>, every year on record.';
+                }
+                if (compareList && seasonal.seasonCompare) {
+                    const sc = seasonal.seasonCompare.find(function (s) { return s.category === category; });
+                    compareList.innerHTML = sc
+                        ? ('<div class="disease-rank-row">'
+                            + '<span class="disease-name">' + escaped + '</span>'
+                            + '<span class="disease-cases" title="Rainy season (Jun-Nov)"><i class="bi bi-cloud-rain-fill"></i> ' + sc.rainy + '</span>'
+                            + '<span class="disease-cases" title="Dry season (Dec-May)"><i class="bi bi-sun-fill"></i> ' + sc.dry + '</span>'
+                            + '</div>')
+                        : '';
+                }
             });
         }
     })();
