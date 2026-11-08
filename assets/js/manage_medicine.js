@@ -266,9 +266,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const rsErrorBox = document.getElementById('restockError');
         const rsSubmitBtn = document.getElementById('rsSubmitBtn');
         const rsSubmitBtnDefaultHtml = rsSubmitBtn.innerHTML;
-        const rsBatchSelect = document.getElementById('rsBatchSelect');
-        const rsExistingWrap = document.getElementById('rsExistingWrap');
-        const rsNewWrap = document.getElementById('rsNewWrap');
         const rsBatchNumberInput = document.getElementById('rsBatchNumber');
         const rsNewExpiryInput = document.getElementById('rsNewExpiry');
         const rsQtyInput = document.getElementById('rsQty');
@@ -329,16 +326,6 @@ document.addEventListener('DOMContentLoaded', function () {
             rsPpbInput.select();
         });
 
-        function syncModeVisibility() {
-            const isExisting = document.getElementById('rsModeExisting').checked;
-            rsExistingWrap.classList.toggle('d-none', !isExisting);
-            rsNewWrap.classList.toggle('d-none', isExisting);
-            rsNewExpiryInput.required = !isExisting;
-            rsBatchNumberInput.required = !isExisting;
-        }
-        document.getElementById('rsModeExisting').addEventListener('change', syncModeVisibility);
-        document.getElementById('rsModeNew').addEventListener('change', syncModeVisibility);
-
         restockBtn.addEventListener('click', function () {
             restockForm.reset();
             restockForm.classList.remove('was-validated');
@@ -346,21 +333,6 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('rsItemId').value = item.id;
             document.getElementById('rsItemName').textContent = item.name;
             document.getElementById('rsDosage').value = item.dosage || '';
-
-            rsBatchSelect.innerHTML = '';
-            if (batches.length === 0) {
-                rsBatchSelect.innerHTML = '<option value="">No existing batches — add as a new batch instead</option>';
-                document.getElementById('rsModeNew').checked = true;
-            } else {
-                batches.forEach(function (batch) {
-                    const opt = document.createElement('option');
-                    opt.value = batch.id;
-                    opt.textContent = batch.displayBatchNumber + ' — expires ' + batch.expiryDate + ' — ' + batch.quantity.toLocaleString() + ' ' + unitPlural(item.unit, batch.quantity) + ' on hand';
-                    rsBatchSelect.appendChild(opt);
-                });
-                document.getElementById('rsModeExisting').checked = true;
-            }
-            syncModeVisibility();
 
             // Boxes or loose pieces for anything that can come boxed;
             // bottles/inhalers are entered in their own unit only.
@@ -381,7 +353,6 @@ document.addEventListener('DOMContentLoaded', function () {
             e.preventDefault();
             e.stopPropagation();
 
-            const isExisting = document.getElementById('rsModeExisting').checked;
             const quantity = parseInt(rsQtyInput.value, 10);
             if (!Number.isInteger(quantity) || quantity < 1) {
                 rsErrorBox.textContent = 'Please enter a valid quantity.';
@@ -391,7 +362,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const payload = {
                 id: item.id,
-                mode: isExisting ? 'existing' : 'new',
+                mode: 'new', // every restock is its own new batch
                 quantity: quantity,
                 quantityUnit: inBoxes() ? 'box' : 'unit',
                 dosage: document.getElementById('rsDosage').value.trim(),
@@ -406,28 +377,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 payload.piecesPerBox = perBox;
             }
-            if (isExisting) {
-                if (!rsBatchSelect.value) {
-                    rsErrorBox.textContent = 'Please select which batch this stock belongs to.';
-                    rsErrorBox.classList.remove('d-none');
-                    return;
-                }
-                payload.batchId = rsBatchSelect.value;
-            } else {
-                if (rsBatchNumberInput.value.trim() === '') {
-                    rsErrorBox.textContent = 'Please enter the batch number for this new batch.';
-                    rsErrorBox.classList.remove('d-none');
-                    rsBatchNumberInput.focus();
-                    return;
-                }
-                if (!rsNewExpiryInput.value) {
-                    rsErrorBox.textContent = 'Please enter the expiry date for this new batch.';
-                    rsErrorBox.classList.remove('d-none');
-                    return;
-                }
-                payload.batchNumber = rsBatchNumberInput.value.trim();
-                payload.expiryDate = rsNewExpiryInput.value;
+            if (rsBatchNumberInput.value.trim() === '') {
+                rsErrorBox.textContent = 'Please enter the batch number for this new batch.';
+                rsErrorBox.classList.remove('d-none');
+                rsBatchNumberInput.focus();
+                return;
             }
+            if (!rsNewExpiryInput.value) {
+                rsErrorBox.textContent = 'Please enter the expiry date for this new batch.';
+                rsErrorBox.classList.remove('d-none');
+                rsNewExpiryInput.focus();
+                return;
+            }
+            payload.batchNumber = rsBatchNumberInput.value.trim();
+            payload.expiryDate = rsNewExpiryInput.value;
 
             rsErrorBox.classList.add('d-none');
             rsSubmitBtn.disabled = true;
