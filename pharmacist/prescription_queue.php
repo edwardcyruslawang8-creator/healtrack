@@ -319,6 +319,7 @@ function hc_rxq_query(array $overrides = []): string
                                     data-order-id="<?= htmlspecialchars($r['id']) ?>"
                                     data-is-pending="<?= $r['status'] === 'pending' ? '1' : '0' ?>"
                                     data-suggested-item-id="<?= htmlspecialchars($r['suggestedInventoryId']) ?>"
+                                    data-matched-item-name="<?= htmlspecialchars($r['matchedInventoryName'] ?? '') ?>"
                                     data-dispensed-quantity="<?= htmlspecialchars((string) ($r['dispensedQuantity'] ?? '')) ?>"
                                     data-dispensed-item-name="<?= htmlspecialchars($r['dispensedItemName'] ?? '') ?>">View Details</button>
                             </div>
@@ -436,8 +437,24 @@ function hc_rxq_query(array $overrides = []): string
                     <div class="rxq-patient-meta" style="margin-bottom:6px;">Dispense From Inventory</div>
                     <div style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap;">
                         <div style="flex:1; min-width:180px;">
-                            <label for="rxqDispenseItemSelect" style="font-size:11px; color:var(--adm-text-muted); display:block; margin-bottom:4px;">Inventory Item</label>
-                            <select class="form-select form-select-sm" id="rxqDispenseItemSelect"></select>
+                            <label for="rxqItemComboToggle" style="font-size:11px; color:var(--adm-text-muted); display:block; margin-bottom:4px;">Inventory Item</label>
+                            <!-- Hidden native select = the real value (read by the dispense
+                                 logic); the searchable combo below is what the pharmacist
+                                 uses. A native <select> with the whole inventory rendered as
+                                 one giant, unsearchable OS list that overflowed the modal. -->
+                            <select class="d-none" id="rxqDispenseItemSelect" aria-hidden="true" tabindex="-1"></select>
+                            <div class="rxq-combo" id="rxqItemCombo">
+                                <button type="button" class="form-select form-select-sm rxq-combo-toggle" id="rxqItemComboToggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="rxqItemComboList">
+                                    <span class="rxq-combo-label"></span>
+                                </button>
+                                <div class="rxq-combo-panel" hidden>
+                                    <div class="rxq-combo-search">
+                                        <i class="bi bi-search"></i>
+                                        <input type="text" class="form-control form-control-sm" id="rxqItemComboSearch" placeholder="Search inventory..." autocomplete="off" aria-label="Search inventory items" aria-controls="rxqItemComboList">
+                                    </div>
+                                    <ul class="rxq-combo-list" id="rxqItemComboList" role="listbox" aria-label="Inventory items"></ul>
+                                </div>
+                            </div>
                             <div id="rxqDispenseStockNote" style="font-size:11px; color:var(--adm-text-muted); margin-top:4px;"></div>
                         </div>
                         <div style="width:110px;">

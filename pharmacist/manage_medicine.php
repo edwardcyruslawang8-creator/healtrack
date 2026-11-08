@@ -235,8 +235,9 @@ $isVaccine = $item['type'] === 'vaccine';
         </div>
         <div class="mm-info-cell">
             <span class="mm-info-label">Total Current Stock</span>
-            <span class="mm-info-value"><?= htmlspecialchars(hc_qty_unit($item['currentStock'], $item['unit'])) ?></span>
-            <?php if (hc_box_breakdown($item['currentStock'], $item['piecesPerBox'], $item['unit']) !== ''): ?><span class="mm-info-sub"><?= htmlspecialchars(hc_box_breakdown($item['currentStock'], $item['piecesPerBox'], $item['unit'])) ?></span><?php endif; ?>
+            <span class="mm-info-value"><?= htmlspecialchars(hc_qty_unit($itemUsableStock, $item['unit'])) ?></span>
+            <?php if (hc_box_breakdown($itemUsableStock, $item['piecesPerBox'], $item['unit']) !== ''): ?><span class="mm-info-sub"><?= htmlspecialchars(hc_box_breakdown($itemUsableStock, $item['piecesPerBox'], $item['unit'])) ?></span><?php endif; ?>
+            <?php if ($itemExpiredStock > 0): ?><span class="mm-info-sub mm-info-sub-expired"><?= htmlspecialchars(hc_qty_unit($itemExpiredStock, $item['unit'])) ?> expired, not counted</span><?php endif; ?>
         </div>
         <div class="mm-info-cell">
             <span class="mm-info-label">Minimum Level</span>
@@ -276,6 +277,12 @@ $isVaccine = $item['type'] === 'vaccine';
     <div class="adm-card mm-batch-card">
         <h3 class="mm-batch-title"><i class="bi bi-boxes"></i> Batch Inventory</h3>
 
+        <?php $expiredBatchCount = count(array_filter($itemBatches, fn ($b) => $b['status']['key'] === 'expired')); ?>
+        <?php if ($expiredBatchCount > 0): ?>
+        <p class="mm-expired-batches-note"><i class="bi bi-exclamation-triangle-fill"></i>
+            <?= $expiredBatchCount === 1 ? '1 batch has' : $expiredBatchCount . ' batches have' ?> expired and can't be dispensed. Use "Archive Expired Batch" to remove expired stock from inventory.</p>
+        <?php endif; ?>
+
         <?php if (empty($itemBatches)): ?>
         <p class="am-form-help">No batches recorded yet for this item.</p>
         <?php else: ?>
@@ -293,7 +300,7 @@ $isVaccine = $item['type'] === 'vaccine';
                 </thead>
                 <tbody>
                     <?php foreach ($itemBatches as $batch): ?>
-                    <tr data-batch-number="<?= htmlspecialchars(strtolower($batch['displayBatchNumber'])) ?>">
+                    <tr data-batch-number="<?= htmlspecialchars(strtolower($batch['displayBatchNumber'])) ?>"<?= $batch['status']['key'] === 'expired' ? ' class="mm-batch-row-expired"' : '' ?>>
                         <td class="mvi-strong"><?= htmlspecialchars($batch['displayBatchNumber']) ?></td>
                         <td><?= $item['dosage'] !== '' ? htmlspecialchars($item['dosage']) : 'Not Recorded' ?></td>
                         <td><?= htmlspecialchars(hc_qty_unit($batch['quantity'], $item['unit'])) ?><?php if (hc_box_breakdown($batch['quantity'], $item['piecesPerBox'], $item['unit']) !== ''): ?><span class="mvi-unit-sub"><?= htmlspecialchars(hc_box_breakdown($batch['quantity'], $item['piecesPerBox'], $item['unit'])) ?></span><?php endif; ?></td>
@@ -301,18 +308,24 @@ $isVaccine = $item['type'] === 'vaccine';
                         <td><span class="mvi-badge" style="background:<?= htmlspecialchars($batch['status']['bg']) ?>; color:<?= htmlspecialchars($batch['status']['color']) ?>;"><?= htmlspecialchars($batch['status']['label']) ?></span></td>
                         <td>
                             <div class="adm-action-btns">
-                                <!-- Every row's Dispense button triggers the SAME item-level
-                                     FEFO dispense (assets/js/manage_medicine.js's own comment:
-                                     "there's no dispense from exactly this batch operation,
-                                     this item-level action is just repeated on every row for
-                                     convenience") — so every row shares the SAME enabled state
-                                     too ($itemAllStockExpired, same check the banner above
-                                     uses), not each row's own batch status. A per-row check
-                                     here would make a still-valid batch's button look
-                                     independently "dispensable" when clicking it actually
-                                     does the exact same thing as every other row's button. -->
-                                <button type="button" class="mm-dispense-btn mm-item-dispense" <?= $itemAllStockExpired ? 'disabled' : '' ?>><i class="bi bi-capsule"></i> Dispense</button>
-                                <button type="button" class="mvi-archive-btn mm-item-archive"><i class="bi bi-archive"></i> Archive</button>
+                                <!-- Dispense is item-level FEFO (it only ever draws from
+                                     non-expired batches — hc_decrement_medicine_stock_fefo()),
+                                     repeated per row for convenience. An EXPIRED batch's own
+                                     row gets it disabled, so it never looks like this expired
+                                     stock can be dispensed; instead that row's Archive is the
+                                     prominent action and archives only this expired batch
+                                     (api/archive-medicine-batch.php), never the whole item —
+                                     a still-valid batch keeps its stock. Non-expired batches
+                                     have no Archive button at all. Which rows count as expired
+                                     is decided on every page load from the batch's expiry date
+                                     vs. today (hc_batch_status()), so the button appears
+                                     automatically once a batch expires. -->
+                                <?php if ($batch['status']['key'] === 'expired'): ?>
+                                <button type="button" class="mm-dispense-btn" disabled title="This batch has expired and can't be dispensed"><i class="bi bi-capsule"></i> Dispense</button>
+                                <button type="button" class="mm-archive-expired-btn mm-batch-archive" data-batch-id="<?= htmlspecialchars($batch['id']) ?>" data-batch-number="<?= htmlspecialchars($batch['displayBatchNumber']) ?>" data-batch-qty="<?= htmlspecialchars(hc_qty_unit($batch['quantity'], $item['unit'])) ?>"><i class="bi bi-archive-fill"></i> Archive Expired Batch</button>
+                                <?php else: ?>
+                                <button type="button" class="mm-dispense-btn mm-item-dispense" <?= $itemAllStockExpired || $batch['quantity'] <= 0 ? 'disabled' : '' ?>><i class="bi bi-capsule"></i> Dispense</button>
+                                <?php endif; ?>
                             </div>
                         </td>
                     </tr>
@@ -346,6 +359,10 @@ window.MM_ITEM = <?= json_encode([
     'unit' => $item['unit'],
     'piecesPerBox' => $item['piecesPerBox'],
     'currentStock' => $item['currentStock'],
+    // What can actually be dispensed: stock in non-expired batches only
+    // (the same batches FEFO draws from), not currentStock, which also
+    // counts expired stock still waiting to be archived.
+    'dispensableStock' => $itemUsableStock,
     'expiryStatus' => $item['expiryStatus'],
     'dosage' => $item['dosage'],
 ]) ?>;

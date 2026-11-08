@@ -44,3 +44,16 @@ if ($item === null || $item['type'] !== $requestedType || $item['archived']) {
 }
 
 $itemBatches = hc_get_batches_for_medicine($itemId, true);
+
+// Usable vs. expired stock, computed live from the real batches — see
+// includes/pharmacist/manage_medicine_firestore.php for why
+// "Total Current Stock" shows usable stock only.
+$itemUsableStock = 0;
+$itemExpiredStock = 0;
+foreach ($itemBatches as $b) {
+    if ($b['status']['key'] === 'expired') {
+        $itemExpiredStock += $b['quantity'];
+    } else {
+        $itemUsableStock += $b['quantity'];
+    }
+}

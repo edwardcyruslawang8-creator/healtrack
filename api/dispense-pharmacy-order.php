@@ -110,7 +110,11 @@ if ($inventoryItemId !== '') {
         exit;
     }
 
-    $oldStock = (int) ($medicineDoc['currentStock'] ?? 0);
+    // Usable stock, computed live from the real batches — only
+    // non-expired stock counts, exactly what FEFO below can actually
+    // draw from (not the stored currentStock rollup, which can lag
+    // behind a batch that expired just by the date passing).
+    $oldStock = hc_stock_rollup_from_batches(hc_get_batches_for_medicine($inventoryItemId))['usable'];
     if ($quantity > $oldStock) {
         http_response_code(422);
         echo json_encode(['success' => false, 'error' => 'Only ' . hc_qty_unit((int) $oldStock, (string) ($medicineDoc['unit'] ?? 'unit')) . ' in stock — cannot dispense ' . hc_qty_unit((int) $quantity, (string) ($medicineDoc['unit'] ?? 'unit')) . '.']);
@@ -144,8 +148,15 @@ if (!$saved) {
 // soonest-expiring real batch(es) first (FEFO) rather than a single
 // shared number — see includes/firestore/medicine_batches.php's
 // header comment.
-if ($medicineDoc !== null) {
-    hc_decrement_medicine_stock_fefo($inventoryItemId, $dispensedQuantity);
+if ($medicineDoc !== null && !hc_decrement_medicine_stock_fefo($inventoryItemId, $dispensedQuantity)) {
+    // FEFO refused (e.g. another dispense used the stock in between the
+    // check above and now) — it makes no writes in that case, so put the
+    // order back to pending rather than leave it "dispensed" with no
+    // stock actually deducted.
+    $firestore->setDocument('pharmacy_orders', $orderId, $existing);
+    http_response_code(409);
+    echo json_encode(['success' => false, 'error' => 'Stock for ' . $dispensedItemName . ' changed while dispensing — not enough usable stock left. Please reopen the prescription and try again.']);
+    exit;
 }
 
 $auditMessage = 'Dispensed ' . ($existing['itemName'] ?? 'item') . ' for ' . ($existing['patientName'] ?? '');

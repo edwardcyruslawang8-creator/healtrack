@@ -59,6 +59,9 @@ $medicineExpiryBadgeMeta = hc_medicine_expiry_badge_meta();
 // Medicines tab — real list, search, category/status filters, pagination.
 // ---------------------------------------------------------------------
 $allMedicines = hc_get_inventory_items('medicine');
+// Most recently updated first (real stored lastUpdated), before
+// filtering/pagination — see hc_sort_inventory_by_last_updated().
+hc_sort_inventory_by_last_updated($allMedicines);
 $seenMedicineCategories = array_values(array_unique(array_column($allMedicines, 'category')));
 sort($seenMedicineCategories);
 $medicineCategoryOptions = array_merge(['All Categories'], $seenMedicineCategories);
@@ -100,6 +103,7 @@ if ($medicinesTotalPages <= 6) {
 // Vaccines tab — same shape as Medicines, separate $_GET namespace.
 // ---------------------------------------------------------------------
 $allVaccines = hc_get_inventory_items('vaccine');
+hc_sort_inventory_by_last_updated($allVaccines);
 $seenVaccineCategories = array_values(array_unique(array_column($allVaccines, 'category')));
 sort($seenVaccineCategories);
 $vaccineCategoryOptions = array_merge(['All Categories'], $seenVaccineCategories);

@@ -276,6 +276,9 @@ if (!function_exists('hc_compute_inventory_expiry_monitor')) {
         $batchesByItem = [];
         foreach ($firestore->listDocuments('medicine_batches') as $doc) {
             $f = $doc['fields'];
+            if ($f['archived'] ?? false) {
+                continue; // disposed expired batch (api/archive-medicine-batch.php)
+            }
             $batchesByItem[(string) ($f['medicineId'] ?? '')][] = [
                 'id' => $doc['id'],
                 'displayBatchNumber' => hc_batch_display_number($f, $doc['id']),
