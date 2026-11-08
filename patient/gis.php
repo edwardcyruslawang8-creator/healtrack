@@ -240,7 +240,7 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                 <div class="health-trend-canvas-box">
                     <canvas id="seasonalChart"></canvas>
                 </div>
-                <div class="disease-rank-list" style="margin-top:12px;">
+                <div class="disease-rank-list" style="margin-top:12px; max-height:300px; overflow-y:auto; padding-right:4px;">
                     <?php foreach ($seasonalOverview['seasonCompare'] as $sc): ?>
                     <div class="disease-rank-row">
                         <span class="disease-name"><?= htmlspecialchars($sc['category']) ?></span>

@@ -778,7 +778,12 @@ if (!function_exists('hc_gis_seasonal_overview')) {
 
         // Rainy-vs-dry is a raw case-count comparison (not a per-day
         // rate) — both halves of the year are an equal 6 months long, so
-        // a raw count is already an honest comparison.
+        // a raw count is already an honest comparison. Every real
+        // category with at least one case gets a row here — no top-5
+        // cap. This list is driven by whatever is actually in the
+        // disease registry and has real seasonal data, same as
+        // $categoryOptions above (the chart's own dropdown) — it must
+        // never show fewer categories than that dropdown offers.
         $seasonCompare = [];
         foreach ($categoryTotals as $category => $total) {
             $rainy = $rainyCounts[$category] ?? 0;
@@ -799,7 +804,7 @@ if (!function_exists('hc_gis_seasonal_overview')) {
             'topCategoryMonthly' => $topCategoryMonthly,
             'categoryMonthly' => $categoryMonthly,
             'categoryOptions' => $categoryOptions,
-            'seasonCompare' => array_slice($seasonCompare, 0, 5),
+            'seasonCompare' => $seasonCompare,
         ];
     }
 }
