@@ -99,7 +99,12 @@ document.addEventListener('DOMContentLoaded', function () {
             submitLabel.textContent = 'Add Vaccine';
             document.getElementById('amCategory').value = 'Vaccine';
             document.getElementById('amUnit').value = 'Dose';
+            // Vaccines are tracked by Lot Number, medicines by Batch Number.
+            document.getElementById('amIsBatchLabel').textContent = 'Lot Number';
+            document.getElementById('amIsBatchNumber').placeholder = 'e.g. LOT-2026-045';
         } else {
+            document.getElementById('amIsBatchLabel').textContent = 'Batch Number';
+            document.getElementById('amIsBatchNumber').placeholder = 'e.g. BATCH-2026-045';
             // #amUnit is a hidden input (add_medicine_modal.php's unit
             // dropdown) — form.reset() doesn't clear those.
             document.getElementById('amUnit').value = '';

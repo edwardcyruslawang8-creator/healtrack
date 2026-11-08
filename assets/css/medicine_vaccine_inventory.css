@@ -244,7 +244,18 @@
 .mvi-manage-btn:hover{ background: var(--adm-red-bright); color: #fff; }
 
 .mvi-more-btn{ color: var(--adm-text-muted); }
-.mvi-page-ellipsis{ pointer-events: none; color: var(--adm-text-soft); }
+/* "…" between page numbers is a gap marker, not a button — no box, so it
+   doesn't look clickable next to the real page buttons. */
+.mvi-page-ellipsis,
+.adm-pagination .page-btn.mvi-page-ellipsis{
+  pointer-events: none;
+  color: var(--adm-text-soft);
+  background: transparent;
+  border-color: transparent;
+  min-width: 0;
+  padding-left: 2px;
+  padding-right: 2px;
+}
 
 /* -- pharmacist/manage_medicine.php's own "expired" note, right under
       the item header when its real expiry has already passed — same

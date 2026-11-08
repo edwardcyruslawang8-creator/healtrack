@@ -851,6 +851,8 @@ body.adm-body{
   cursor: not-allowed;
   opacity: .55;
 }
+/* Safety net: a disabled arrow that's still an <a> never navigates. */
+.adm-pagination a.page-btn.disabled{ pointer-events: none; }
 .adm-pagination .page-btn.disabled:hover{ background: var(--adm-card); }
 .adm-pagination .page-ellipsis{ color: var(--adm-text-soft); font-size: 12.5px; padding: 0 2px; }
 

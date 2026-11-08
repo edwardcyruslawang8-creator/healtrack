@@ -288,7 +288,7 @@ if (!function_exists('mvi_page_url')) {
          it reads as part of this page's own actions. -->
     <div class="d-flex justify-content-end gap-2 mb-2">
         <a href="expired_batches.php" class="phm-topbar-select-btn" style="text-decoration:none;">
-            <i class="bi bi-calendar-x"></i> View Expired Batches
+            <i class="bi bi-calendar-x"></i> View Expired Batches/Lots
         </a>
         <a href="archived_items.php" class="phm-topbar-select-btn" style="text-decoration:none;">
             <i class="bi bi-archive"></i> Archived Items
@@ -394,10 +394,14 @@ if (!function_exists('mvi_page_url')) {
             </div>
 
             <div class="adm-table-footer">
-                <span class="adm-showing-text"><?= $medicinesTotal > 0 ? 'Showing 1 to ' . count($medicines) . ' of ' . $medicinesTotal . ' entries' : 'No entries to show' ?></span>
+                <span class="adm-showing-text"><?= $medicinesTotal > 0 ? 'Showing ' . (($medicinesCurrentPage - 1) * $medicinesPerPage + 1) . ' to ' . (($medicinesCurrentPage - 1) * $medicinesPerPage + count($medicines)) . ' of ' . $medicinesTotal . ' entries' : 'No entries to show' ?></span>
                 <?php $medQs = $_GET; unset($medQs['page'], $medQs['tab']); ?>
                 <nav class="adm-pagination" aria-label="Medicines pages">
-                    <a href="<?= mvi_page_url($medQs, 'page', max(1, $medicinesCurrentPage - 1)) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                    <?php if ($medicinesCurrentPage > 1): ?>
+                    <a href="<?= mvi_page_url($medQs, 'page', $medicinesCurrentPage - 1) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                    <?php else: ?>
+                    <span class="page-btn disabled" aria-disabled="true" aria-label="Previous page"><i class="bi bi-chevron-left"></i></span>
+                    <?php endif; ?>
                     <?php foreach ($medicinePaginationWindow as $p): ?>
                         <?php if ($p === '...'): ?>
                         <span class="page-btn mvi-page-ellipsis">&hellip;</span>
@@ -405,7 +409,11 @@ if (!function_exists('mvi_page_url')) {
                         <a href="<?= mvi_page_url($medQs, 'page', $p) ?>" class="page-btn <?= $p === $medicinesCurrentPage ? 'active' : '' ?>"><?= $p ?></a>
                         <?php endif; ?>
                     <?php endforeach; ?>
-                    <a href="<?= mvi_page_url($medQs, 'page', min($medicinesTotalPages, $medicinesCurrentPage + 1)) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                    <?php if ($medicinesCurrentPage < $medicinesTotalPages): ?>
+                    <a href="<?= mvi_page_url($medQs, 'page', $medicinesCurrentPage + 1) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                    <?php else: ?>
+                    <span class="page-btn disabled" aria-disabled="true" aria-label="Next page"><i class="bi bi-chevron-right"></i></span>
+                    <?php endif; ?>
                 </nav>
             </div>
         </div>
@@ -498,10 +506,14 @@ if (!function_exists('mvi_page_url')) {
             </div>
 
             <div class="adm-table-footer">
-                <span class="adm-showing-text"><?= $vaccinesTotal > 0 ? 'Showing 1 to ' . count($vaccines) . ' of ' . $vaccinesTotal . ' entries' : 'No entries to show' ?></span>
+                <span class="adm-showing-text"><?= $vaccinesTotal > 0 ? 'Showing ' . (($vaccinesCurrentPage - 1) * $vaccinesPerPage + 1) . ' to ' . (($vaccinesCurrentPage - 1) * $vaccinesPerPage + count($vaccines)) . ' of ' . $vaccinesTotal . ' entries' : 'No entries to show' ?></span>
                 <?php $vacQs = $_GET; unset($vacQs['vpage']); $vacQs['tab'] = 'vaccines'; ?>
                 <nav class="adm-pagination" aria-label="Vaccines pages">
-                    <a href="<?= mvi_page_url($vacQs, 'vpage', max(1, $vaccinesCurrentPage - 1)) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                    <?php if ($vaccinesCurrentPage > 1): ?>
+                    <a href="<?= mvi_page_url($vacQs, 'vpage', $vaccinesCurrentPage - 1) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                    <?php else: ?>
+                    <span class="page-btn disabled" aria-disabled="true" aria-label="Previous page"><i class="bi bi-chevron-left"></i></span>
+                    <?php endif; ?>
                     <?php foreach ($vaccinePaginationWindow as $p): ?>
                         <?php if ($p === '...'): ?>
                         <span class="page-btn mvi-page-ellipsis">&hellip;</span>
@@ -509,7 +521,11 @@ if (!function_exists('mvi_page_url')) {
                         <a href="<?= mvi_page_url($vacQs, 'vpage', $p) ?>" class="page-btn <?= $p === $vaccinesCurrentPage ? 'active' : '' ?>"><?= $p ?></a>
                         <?php endif; ?>
                     <?php endforeach; ?>
-                    <a href="<?= mvi_page_url($vacQs, 'vpage', min($vaccinesTotalPages, $vaccinesCurrentPage + 1)) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                    <?php if ($vaccinesCurrentPage < $vaccinesTotalPages): ?>
+                    <a href="<?= mvi_page_url($vacQs, 'vpage', $vaccinesCurrentPage + 1) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                    <?php else: ?>
+                    <span class="page-btn disabled" aria-disabled="true" aria-label="Next page"><i class="bi bi-chevron-right"></i></span>
+                    <?php endif; ?>
                 </nav>
             </div>
         </div>

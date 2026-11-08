@@ -39,8 +39,9 @@
           <div id="restockError" class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
 
           <div class="mb-3" id="rsNewWrap">
-            <label class="am-form-label" for="rsBatchNumber">Batch Number<span class="text-danger">*</span></label>
-            <input type="text" class="form-control am-form-control" id="rsBatchNumber" placeholder="e.g. BATCH-2026-045" maxlength="50" required>
+            <?php $rsIsVaccine = (($item['type'] ?? '') === 'vaccine'); // vaccines are tracked by Lot Number ?>
+            <label class="am-form-label" for="rsBatchNumber"><?= $rsIsVaccine ? 'Lot Number' : 'Batch Number' ?><span class="text-danger">*</span></label>
+            <input type="text" class="form-control am-form-control" id="rsBatchNumber" placeholder="<?= $rsIsVaccine ? 'e.g. LOT-2026-045' : 'e.g. BATCH-2026-045' ?>" maxlength="50" required>
             <div class="row mt-3">
               <div class="col-md-6">
                 <label class="am-form-label" for="rsNewExpiry">Expiry Date<span class="text-danger">*</span></label>

@@ -150,7 +150,11 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
 
             <!-- PAGINATION -->
             <nav class="pagination-custom" aria-label="Medicine list pages">
-                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => max(1, $medicineCurrentPageNum - 1)])) ?>" class="page-btn <?= $medicineCurrentPageNum <= 1 ? 'disabled' : '' ?>" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <?php if ($medicineCurrentPageNum > 1): ?>
+                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => $medicineCurrentPageNum - 1])) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Previous page"><i class="bi bi-chevron-left"></i></span>
+                <?php endif; ?>
                 <?php for ($p = 1; $p <= min(5, $medicineTotalPages); $p++): ?>
                 <a href="<?= htmlspecialchars(hc_url_with_params(['page' => $p])) ?>" class="page-btn <?= $p === $medicineCurrentPageNum ? 'active' : '' ?>"><?= $p ?></a>
                 <?php endfor; ?>
@@ -160,7 +164,11 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                 <?php if ($medicineTotalPages > 5): ?>
                 <a href="<?= htmlspecialchars(hc_url_with_params(['page' => $medicineTotalPages])) ?>" class="page-btn <?= $medicineTotalPages === $medicineCurrentPageNum ? 'active' : '' ?>"><?= $medicineTotalPages ?></a>
                 <?php endif; ?>
-                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => min($medicineTotalPages, $medicineCurrentPageNum + 1)])) ?>" class="page-btn <?= $medicineCurrentPageNum >= $medicineTotalPages ? 'disabled' : '' ?>" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                <?php if ($medicineCurrentPageNum < $medicineTotalPages): ?>
+                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => $medicineCurrentPageNum + 1])) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Next page"><i class="bi bi-chevron-right"></i></span>
+                <?php endif; ?>
             </nav>
 
         <?php else: ?>
@@ -227,7 +235,11 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
 
             <!-- PAGINATION -->
             <nav class="pagination-custom" aria-label="Vaccine list pages">
-                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => max(1, $vaccineCurrentPageNum - 1)])) ?>" class="page-btn <?= $vaccineCurrentPageNum <= 1 ? 'disabled' : '' ?>" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <?php if ($vaccineCurrentPageNum > 1): ?>
+                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => $vaccineCurrentPageNum - 1])) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Previous page"><i class="bi bi-chevron-left"></i></span>
+                <?php endif; ?>
                 <?php for ($p = 1; $p <= min(5, $vaccineTotalPages); $p++): ?>
                 <a href="<?= htmlspecialchars(hc_url_with_params(['page' => $p])) ?>" class="page-btn <?= $p === $vaccineCurrentPageNum ? 'active' : '' ?>"><?= $p ?></a>
                 <?php endfor; ?>
@@ -237,7 +249,11 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                 <?php if ($vaccineTotalPages > 5): ?>
                 <a href="<?= htmlspecialchars(hc_url_with_params(['page' => $vaccineTotalPages])) ?>" class="page-btn <?= $vaccineTotalPages === $vaccineCurrentPageNum ? 'active' : '' ?>"><?= $vaccineTotalPages ?></a>
                 <?php endif; ?>
-                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => min($vaccineTotalPages, $vaccineCurrentPageNum + 1)])) ?>" class="page-btn <?= $vaccineCurrentPageNum >= $vaccineTotalPages ? 'disabled' : '' ?>" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                <?php if ($vaccineCurrentPageNum < $vaccineTotalPages): ?>
+                <a href="<?= htmlspecialchars(hc_url_with_params(['page' => $vaccineCurrentPageNum + 1])) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Next page"><i class="bi bi-chevron-right"></i></span>
+                <?php endif; ?>
             </nav>
 
         <?php endif; ?>

@@ -20,6 +20,7 @@
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/../firestore/medicines.php';
+require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_page_window()
 require_once __DIR__ . '/../shared/fuzzy_search.php'; // hc_fuzzy_match()
 
 $myUid = $_SESSION['uid'] ?? '';
@@ -65,14 +66,8 @@ $medicinesTotalPages = max(1, (int) ceil($medicinesTotal / $medicinesPerPage));
 $medicinesCurrentPage = min($medicinesCurrentPage, $medicinesTotalPages);
 $medicines = array_slice($filteredMedicines, ($medicinesCurrentPage - 1) * $medicinesPerPage, $medicinesPerPage);
 
-$medicinePaginationWindow = [];
-if ($medicinesTotalPages <= 6) {
-    for ($p = 1; $p <= $medicinesTotalPages; $p++) {
-        $medicinePaginationWindow[] = $p;
-    }
-} else {
-    $medicinePaginationWindow = [1, 2, 3, 4, '...', $medicinesTotalPages];
-}
+// Moving window that always shows (and highlights) the current page — hc_page_window().
+$medicinePaginationWindow = hc_page_window($medicinesCurrentPage, $medicinesTotalPages);
 
 // ---------------------------------------------------------------------
 // Vaccines tab — same shape as Medicines, separate $_GET namespace.
@@ -102,14 +97,8 @@ $vaccinesTotalPages = max(1, (int) ceil($vaccinesTotal / $vaccinesPerPage));
 $vaccinesCurrentPage = min($vaccinesCurrentPage, $vaccinesTotalPages);
 $vaccines = array_slice($filteredVaccines, ($vaccinesCurrentPage - 1) * $vaccinesPerPage, $vaccinesPerPage);
 
-$vaccinePaginationWindow = [];
-if ($vaccinesTotalPages <= 6) {
-    for ($p = 1; $p <= $vaccinesTotalPages; $p++) {
-        $vaccinePaginationWindow[] = $p;
-    }
-} else {
-    $vaccinePaginationWindow = [1, 2, 3, 4, '...', $vaccinesTotalPages];
-}
+// Moving window that always shows (and highlights) the current page — hc_page_window().
+$vaccinePaginationWindow = hc_page_window($vaccinesCurrentPage, $vaccinesTotalPages);
 
 // ---------------------------------------------------------------------
 // Summary — real counts over archived medicines AND vaccines combined.

@@ -333,8 +333,14 @@ function hc_rxq_query(array $overrides = []): string
         <div class="adm-table-footer">
             <span class="adm-showing-text"><?= $ordersTotal > 0 ? 'Showing ' . (($ordersCurrentPage - 1) * $ordersPerPage + 1) . ' to ' . min($ordersCurrentPage * $ordersPerPage, $ordersTotal) . ' of ' . $ordersTotal . ' entries' : 'No entries to show' ?></span>
             <nav class="adm-pagination" aria-label="Queue pages">
+                <?php // First/Previous are disabled (not links) on page 1, Next/Last on the last page — so a single page has no clickable arrows. ?>
+                <?php if ($ordersCurrentPage > 1): ?>
                 <a href="?<?= hc_rxq_query(['page' => 1]) ?>" class="page-btn" aria-label="First page"><i class="bi bi-chevron-bar-left"></i></a>
-                <a href="?<?= hc_rxq_query(['page' => max(1, $ordersCurrentPage - 1)]) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <a href="?<?= hc_rxq_query(['page' => $ordersCurrentPage - 1]) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="First page"><i class="bi bi-chevron-bar-left"></i></span>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Previous page"><i class="bi bi-chevron-left"></i></span>
+                <?php endif; ?>
                 <?php foreach ($ordersPaginationWindow as $p): ?>
                     <?php if ($p === '...'): ?>
                     <span class="page-ellipsis">&hellip;</span>
@@ -342,8 +348,13 @@ function hc_rxq_query(array $overrides = []): string
                     <a href="?<?= hc_rxq_query(['page' => $p]) ?>" class="page-btn <?= $p === $ordersCurrentPage ? 'active' : '' ?>"><?= $p ?></a>
                     <?php endif; ?>
                 <?php endforeach; ?>
-                <a href="?<?= hc_rxq_query(['page' => min($ordersTotalPages, $ordersCurrentPage + 1)]) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                <?php if ($ordersCurrentPage < $ordersTotalPages): ?>
+                <a href="?<?= hc_rxq_query(['page' => $ordersCurrentPage + 1]) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
                 <a href="?<?= hc_rxq_query(['page' => $ordersTotalPages]) ?>" class="page-btn" aria-label="Last page"><i class="bi bi-chevron-bar-right"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Next page"><i class="bi bi-chevron-right"></i></span>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Last page"><i class="bi bi-chevron-bar-right"></i></span>
+                <?php endif; ?>
             </nav>
         </div>
     </div>

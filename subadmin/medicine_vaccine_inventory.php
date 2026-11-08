@@ -319,7 +319,7 @@ $adminNavItems = [
          "Archived Items" button: right-aligned, just above the tabs. -->
     <div class="d-flex justify-content-end gap-2 mb-2">
         <a href="expired_batches.php" class="sad-topbar-select-btn" style="text-decoration:none;">
-            <i class="bi bi-calendar-x"></i> View Expired Batches
+            <i class="bi bi-calendar-x"></i> View Expired Batches/Lots
         </a>
         <a href="archived_items.php" class="sad-topbar-select-btn" style="text-decoration:none;">
             <i class="bi bi-archive"></i> Archived Items

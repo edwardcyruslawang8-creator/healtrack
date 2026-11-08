@@ -345,8 +345,16 @@ $adminNavItems = [
         <div class="adm-table-footer">
             <span class="adm-showing-text"><?= $auditLogsTotal > 0 ? 'Showing ' . (($auditLogsCurrentPage - 1) * $auditLogsPerPage + 1) . ' to ' . min($auditLogsCurrentPage * $auditLogsPerPage, $auditLogsTotal) . ' of ' . number_format($auditLogsTotal) . ' entries' : 'No entries to show' ?></span>
             <nav class="adm-pagination" aria-label="Audit log pages">
-                <a href="?<?= hc_audit_query(['page' => 1]) ?>" class="page-btn <?= $auditLogsCurrentPage <= 1 ? 'disabled' : '' ?>" aria-label="First page"><i class="bi bi-chevron-bar-left"></i></a>
-                <a href="?<?= hc_audit_query(['page' => max(1, $auditLogsCurrentPage - 1)]) ?>" class="page-btn <?= $auditLogsCurrentPage <= 1 ? 'disabled' : '' ?>" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <?php if ($auditLogsCurrentPage > 1): ?>
+                <a href="?<?= hc_audit_query(['page' => 1]) ?>" class="page-btn" aria-label="First page"><i class="bi bi-chevron-bar-left"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="First page"><i class="bi bi-chevron-bar-left"></i></span>
+                <?php endif; ?>
+                <?php if ($auditLogsCurrentPage > 1): ?>
+                <a href="?<?= hc_audit_query(['page' => $auditLogsCurrentPage - 1]) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Previous page"><i class="bi bi-chevron-left"></i></span>
+                <?php endif; ?>
                 <?php foreach ($auditPaginationWindow as $p): ?>
                     <?php if ($p === '...'): ?>
                     <span class="page-ellipsis">&hellip;</span>
@@ -354,8 +362,16 @@ $adminNavItems = [
                     <a href="?<?= hc_audit_query(['page' => $p]) ?>" class="page-btn <?= $p === $auditLogsCurrentPage ? 'active' : '' ?>"><?= $p ?></a>
                     <?php endif; ?>
                 <?php endforeach; ?>
-                <a href="?<?= hc_audit_query(['page' => min($auditLogsTotalPages, $auditLogsCurrentPage + 1)]) ?>" class="page-btn <?= $auditLogsCurrentPage >= $auditLogsTotalPages ? 'disabled' : '' ?>" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
-                <a href="?<?= hc_audit_query(['page' => $auditLogsTotalPages]) ?>" class="page-btn <?= $auditLogsCurrentPage >= $auditLogsTotalPages ? 'disabled' : '' ?>" aria-label="Last page"><i class="bi bi-chevron-bar-right"></i></a>
+                <?php if ($auditLogsCurrentPage < $auditLogsTotalPages): ?>
+                <a href="?<?= hc_audit_query(['page' => $auditLogsCurrentPage + 1]) ?>" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Next page"><i class="bi bi-chevron-right"></i></span>
+                <?php endif; ?>
+                <?php if ($auditLogsCurrentPage < $auditLogsTotalPages): ?>
+                <a href="?<?= hc_audit_query(['page' => $auditLogsTotalPages]) ?>" class="page-btn" aria-label="Last page"><i class="bi bi-chevron-bar-right"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Last page"><i class="bi bi-chevron-bar-right"></i></span>
+                <?php endif; ?>
             </nav>
         </div>
     </div>

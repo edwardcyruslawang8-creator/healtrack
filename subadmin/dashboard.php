@@ -308,6 +308,12 @@ $adminNavItems = [
             <div class="adm-donut-wrap">
                 <div class="adm-donut-canvas-box">
                     <canvas id="patientsByGenderChart"></canvas>
+                    <!-- Total as HTML in the ring's hole (same as subadmin/patient_reports.php) — this also makes
+                         assets/js/chart-center-label.js show the hover tooltip OUTSIDE the ring instead of on top of the total. -->
+                    <div class="adm-donut-center">
+                        <div class="adm-donut-total"><?= number_format($patientsByGenderTotal) ?></div>
+                        <div class="adm-donut-total-label">Patients</div>
+                    </div>
                 </div>
             </div>
             <div class="sad-donut-legend">

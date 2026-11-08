@@ -405,11 +405,19 @@ $fileTypeIconMeta = [
         <div class="adm-table-footer">
             <span class="adm-showing-text"><?= $documentsTotal > 0 ? 'Showing 1 to ' . count($documents) . ' of ' . $documentsTotal . ' entries' : 'No entries to show' ?></span>
             <nav class="adm-pagination" aria-label="Documents pages">
+                <?php if ($documentsCurrentPage > 1): ?>
                 <a href="#" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Previous page"><i class="bi bi-chevron-left"></i></span>
+                <?php endif; ?>
                 <?php for ($p = 1; $p <= $documentsTotalPages; $p++): ?>
                 <a href="#" class="page-btn <?= $p === $documentsCurrentPage ? 'active' : '' ?>"><?= $p ?></a>
                 <?php endfor; ?>
+                <?php if ($documentsCurrentPage < $documentsTotalPages): ?>
                 <a href="#" class="page-btn" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                <?php else: ?>
+                <span class="page-btn disabled" aria-disabled="true" aria-label="Next page"><i class="bi bi-chevron-right"></i></span>
+                <?php endif; ?>
             </nav>
         </div>
     </div>

@@ -65,11 +65,14 @@ if ($medicine === null) {
     exit;
 }
 
+// Vaccines are tracked by lot, medicines by batch — for the wording below.
+$lotWord = ($medicine['type'] ?? 'medicine') === 'vaccine' ? 'lot' : 'batch';
+
 $quantity = (int) ($batch['quantity'] ?? 0);
 $status = hc_batch_status($quantity, (string) ($batch['expiryDate'] ?? ''), (int) ($medicine['reorderLevel'] ?? 0));
 if ($status['key'] !== 'expired') {
     http_response_code(422);
-    echo json_encode(['success' => false, 'error' => 'Only expired batches can be archived here.']);
+    echo json_encode(['success' => false, 'error' => 'Only expired ' . ($lotWord === 'lot' ? 'lots' : 'batches') . ' can be archived here.']);
     exit;
 }
 
@@ -83,7 +86,7 @@ $saved = $firestore->setDocument('medicine_batches', $batchId, array_merge($batc
 
 if (!$saved) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Could not archive this batch. Please try again.']);
+    echo json_encode(['success' => false, 'error' => 'Could not archive this ' . $lotWord . '. Please try again.']);
     exit;
 }
 
@@ -91,6 +94,6 @@ hc_recompute_medicine_rollup($medicineId);
 
 $name = $medicine['name'] ?? '(unnamed)';
 $batchLabel = hc_batch_display_number($batch, $batchId);
-write_audit_log('updated', 'Medicine & Vaccine Inventory', 'Archived expired batch ' . $batchLabel . ' of "' . $name . '" (' . $quantity . ' removed from stock).');
+write_audit_log('updated', 'Medicine & Vaccine Inventory', 'Archived expired ' . $lotWord . ' ' . $batchLabel . ' of "' . $name . '" (' . $quantity . ' removed from stock).');
 
 echo json_encode(['success' => true]);
