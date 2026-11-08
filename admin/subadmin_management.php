@@ -45,6 +45,7 @@ $adminNavItems = [
     ['icon' => 'bi-building',            'label' => t('nav.facility_management'), 'href' => 'facility_management.php'],
     ['icon' => 'bi-people-fill',         'label' => t('nav.subadmin_management'), 'href' => 'subadmin_management.php', 'active' => true],
     ['icon' => 'bi-geo-alt-fill',        'label' => t('nav.gis_mapping'),         'href' => 'gis_mapping.php'],
+    ['icon' => 'bi-virus',               'label' => 'Disease Registry',           'href' => 'disease_registry.php'],
     ['icon' => 'bi-shield-lock-fill',    'label' => t('nav.account_monitoring'),  'href' => 'account_monitoring.php'],
     ['icon' => 'bi-bell-fill',           'label' => t('nav.notifications'),       'href' => 'notifications.php', 'badge' => hc_admin_unread_notification_count()],
     ['icon' => 'bi-megaphone-fill',      'label' => 'Announcements',              'href' => 'announcements.php'],

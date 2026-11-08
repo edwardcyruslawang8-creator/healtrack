@@ -49,7 +49,7 @@
 require_once __DIR__ . '/forecast_helpers.php'; // hc_last_n_days(), hc_forecast_linear_fit(), hc_forecast_project()
 require_once __DIR__ . '/inventory_match.php'; // hc_normalize_text(), hc_item_names_match()
 require_once __DIR__ . '/../firestore/medicines.php'; // hc_reorder_quantity_label()
-require_once __DIR__ . '/clinical_classification.php'; // hc_clinical_condition_catalog(), hc_clinical_qualifier_terms() — automated, code-based source for hc_notifiable_disease_categories() and hc_notifiable_cases_from_records() below
+require_once __DIR__ . '/clinical_classification.php'; // hc_notifiable_disease_categories_from_registry(), hc_clinical_qualifier_terms_suspected/probable() — Firebase-backed source for hc_notifiable_disease_categories() and hc_notifiable_cases_from_records() below
 
 // The 11 real Lipa City barangays this clinic covers — same list
 // includes/medical-staff/add_patient_modal.php:163 offers at patient
@@ -89,16 +89,15 @@ if (!function_exists('hc_notifiable_disease_categories')) {
      * shares this exact same category list instead of carrying its own
      * copy that could drift out of sync.
      *
-     * Automated, code-based source now (includes/shared/clinical_classification.php's
-     * hc_clinical_condition_catalog() — a plain PHP array reviewed the
-     * same way any other code is, no runtime admin editing of any kind)
-     * rather than a fixed literal — but this function's own return SHAPE
-     * is unchanged, so every existing caller below keeps working with
-     * zero changes of its own. Each condition's real ICD-10-aligned
-     * clinical CHAPTER lives alongside it in that catalog and
-     * automatically decides public-GIS visibility via a single
-     * predefined per-chapter rule (hc_clinical_chapter_meta()) — see
-     * hc_condition_chapter_by_name(), read by
+     * Real, Firebase-backed source now (includes/shared/clinical_classification.php's
+     * "disease_registry" Firestore collection — admin-configurable
+     * disease METADATA, never per-case approval; see that file's own
+     * header comment) rather than a fixed literal — but this function's
+     * own return SHAPE is unchanged, so every existing caller below
+     * keeps working with zero changes of its own. Each condition's real
+     * classification/GIS-eligibility/public-visibility lives alongside
+     * it on the same registry doc and decides public-GIS visibility via
+     * hc_is_publicly_visible(), read by
      * includes/public/gis_data_firestore.php's hc_gis_disease_overview()
      * specifically, NOT by this function or any of its other callers
      * (which all stay full-detail, unfiltered internal views).
@@ -107,12 +106,7 @@ if (!function_exists('hc_notifiable_disease_categories')) {
      */
     function hc_notifiable_disease_categories(): array
     {
-        $out = [];
-        foreach (hc_clinical_condition_catalog() as $c) {
-            $out[$c['name']] = $c['keywords'];
-        }
-
-        return $out;
+        return hc_notifiable_disease_categories_from_registry();
     }
 }
 
@@ -262,19 +256,25 @@ if (!function_exists('hc_notifiable_cases_from_records')) {
      * every category; only when nothing matches there does pass 2 fall
      * back to 'chiefComplaint' alone.
      *
-     * Each case is tagged with a 3-way 'caseClassification':
+     * Each case is tagged with a 4-way 'caseClassification' (real
+     * WHO/DOH case-definition convention — suspected < probable <
+     * confirmed in certainty):
      *   - 'symptom_only' — only the chief complaint matched; nobody has
      *     diagnosed anything yet.
      *   - 'suspected' — the diagnosis text matched a condition but also
-     *     contains real clinical hedging language (hc_clinical_qualifier_terms(),
-     *     e.g. "suspected", "r/o") — a keyword match alone is never
-     *     enough to call a case confirmed.
+     *     contains lower-certainty hedging language
+     *     (hc_clinical_qualifier_terms_suspected(), e.g. "suspected",
+     *     "r/o") — a keyword match alone is never enough to call a case
+     *     confirmed.
+     *   - 'probable' — the diagnosis text contains "probable"
+     *     specifically (hc_clinical_qualifier_terms_probable()) — ranks
+     *     above 'suspected', below 'confirmed'.
      *   - 'confirmed' — the diagnosis text matched a condition with no
      *     hedging language present.
      * includes/public/gis_data_firestore.php's hc_gis_disease_overview()
      * (the PUBLIC GIS) only ever counts 'confirmed' cases; every internal
      * surveillance caller below (which exists precisely to catch early/
-     * undiagnosed signal) keeps seeing all three.
+     * undiagnosed signal) keeps seeing all four.
      *
      * One category per real case — a case whose text matches more than
      * one category's keywords is counted once, under whichever
@@ -288,7 +288,8 @@ if (!function_exists('hc_notifiable_cases_from_records')) {
     function hc_notifiable_cases_from_records(array $medicalRecordDocs, array $patientBarangayById = []): array
     {
         $keywordCategories = hc_notifiable_disease_categories();
-        $qualifierTerms = hc_clinical_qualifier_terms();
+        $probableTerms = hc_clinical_qualifier_terms_probable();
+        $suspectedTerms = hc_clinical_qualifier_terms_suspected();
 
         $notifiableCases = [];
         foreach ($medicalRecordDocs as $doc) {
@@ -307,14 +308,21 @@ if (!function_exists('hc_notifiable_cases_from_records')) {
                     foreach ($keywords as $kw) {
                         if (str_contains($diagnosisText, $kw)) {
                             $category = $cat;
-                            $hedged = false;
-                            foreach ($qualifierTerms as $term) {
+                            $caseClassification = 'confirmed';
+                            foreach ($suspectedTerms as $term) {
                                 if (str_contains($diagnosisText, $term)) {
-                                    $hedged = true;
+                                    $caseClassification = 'suspected';
                                     break;
                                 }
                             }
-                            $caseClassification = $hedged ? 'suspected' : 'confirmed';
+                            if ($caseClassification === 'confirmed') {
+                                foreach ($probableTerms as $term) {
+                                    if (str_contains($diagnosisText, $term)) {
+                                        $caseClassification = 'probable';
+                                        break;
+                                    }
+                                }
+                            }
                             break 2;
                         }
                     }

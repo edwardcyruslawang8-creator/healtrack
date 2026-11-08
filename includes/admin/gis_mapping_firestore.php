@@ -24,18 +24,20 @@
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
-require_once __DIR__ . '/../public/gis-data.php'; // $dateRangeFilterOptions, $selectedDateRange, $gisRange, $gisSummary, $topDiseases, $healthTrend, $seasonalOverview
+require_once __DIR__ . '/../public/gis-data.php'; // $dateRangeFilterOptions, $selectedDateRange, $gisRange, $classificationFilterOptions, $gisClassification, $gisSummary, $topDiseases, $healthTrend, $seasonalOverview
 require_once __DIR__ . '/../firestore/medical_records.php'; // hc_get_all_medical_record_docs()
-require_once __DIR__ . '/../shared/clinical_classification.php'; // hc_unclassified_diagnoses_report()
+require_once __DIR__ . '/../shared/clinical_classification.php'; // hc_ensure_disease_registry_entries()
 
 // ---------------------------------------------------------------------
-// Data-quality monitoring ONLY (point 11 of the automated-classification
-// design) — real, recurring diagnosis text that matches no entry in
-// includes/shared/clinical_classification.php's catalog yet. No action
-// is attached to this anywhere; it's visibility for whoever maintains
-// the catalog, never a queue to approve/classify.
+// Real auto-provisioning (includes/shared/clinical_classification.php's
+// header comment) — for diagnosis text matching no existing registry
+// synonym, creates a real 'unclassified' doc so it shows up for admin
+// review on admin/disease_registry.php. Deliberately triggered HERE
+// (authenticated, admin-only, infrequent relative to public traffic)
+// and nowhere on the public-facing patient/gis.php/homepage path, so
+// anonymous public traffic never causes a Firestore write.
 // ---------------------------------------------------------------------
-$unclassifiedDiagnoses = hc_unclassified_diagnoses_report(array_values(array_filter(
+hc_ensure_disease_registry_entries(array_values(array_filter(
     hc_get_all_medical_record_docs(),
     fn ($doc) => ($doc['fields']['type'] ?? '') === 'consultation'
 )));
@@ -55,15 +57,16 @@ $adminProfile = [
 if (!function_exists('hc_gis_admin_query')) {
     /**
      * Builds a ?query string carrying the current ?location= (barangay
-     * search) and ?date_range= except whatever's in $overrides — used
-     * by the topbar's Date Range dropdown links so picking a range
-     * never drops an active barangay search.
+     * search), ?date_range=, and ?classification= except whatever's in
+     * $overrides — used by the topbar's Date Range and Classification
+     * dropdown links so picking one never drops the other two.
      */
     function hc_gis_admin_query(array $overrides = []): string
     {
         $params = array_merge([
             'location' => $_GET['location'] ?? '',
             'date_range' => $_GET['date_range'] ?? 'Last Week',
+            'classification' => $_GET['classification'] ?? 'all',
         ], $overrides);
 
         return http_build_query(array_filter($params, fn ($v) => $v !== '' && $v !== null));

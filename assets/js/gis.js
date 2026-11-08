@@ -368,6 +368,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // (window.GIS_RANGE, set inline by patient/gis.php).
     // ---------------------------------------------------------------
     const gisRange = window.GIS_RANGE || '3m';
+    // Real, server-side classification filter — kept in sync with the
+    // dropdown's own ?classification= value server-side resolved
+    // (window.GIS_CLASSIFICATION, set inline by patient/gis.php).
+    const gisClassification = window.GIS_CLASSIFICATION || 'all';
     // "Cases" on its own is ambiguous (cases of what, over what period?)
     // — every place a case count is shown spells out both: real reported
     // notifiable-disease cases, over the same selected window the page's
@@ -464,7 +468,7 @@ document.addEventListener('DOMContentLoaded', function () {
         layer.setStyle(hcBarangayStyle(layer.feature.properties, layer === selectedLayer ? 'selected' : undefined));
     }
 
-    fetch(BASE_URL + '/api/gis-data.php?range=' + encodeURIComponent(gisRange))
+    fetch(BASE_URL + '/api/gis-data.php?range=' + encodeURIComponent(gisRange) + '&classification=' + encodeURIComponent(gisClassification))
         .then(function (res) { return res.json(); })
         .then(function (geojson) {
 
@@ -697,6 +701,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const gisDateRangeSelect = document.getElementById('gisDateRangeSelect');
     if (gisDateRangeSelect && gisFilterForm) {
         gisDateRangeSelect.addEventListener('change', function () {
+            gisFilterForm.submit();
+        });
+    }
+
+    // Classification dropdown — same real, full-page-reload mechanism,
+    // to ?classification=..., which includes/public/gis-data.php
+    // resolves into the same real server-side filter.
+    const gisClassificationSelect = document.getElementById('gisClassificationSelect');
+    if (gisClassificationSelect && gisFilterForm) {
+        gisClassificationSelect.addEventListener('change', function () {
             gisFilterForm.submit();
         });
     }

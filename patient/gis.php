@@ -20,8 +20,14 @@
  * map's own separate api/gis-data.php fetch, kept in sync via
  * window.GIS_RANGE) recomputes over that real window — "Last Week" uses
  * real day-level buckets, not a month-sized one stretched over 7 days.
- * There's no separate disease filter anymore (removed along with the
- * old Apply Filters/Reset buttons, since neither worked without them).
+ *
+ * The classification dropdown is a real, server-side filter too —
+ * $_GET['classification'] resolves to one of
+ * hc_disease_registry_classification_meta()'s real keys (or 'all') and
+ * is passed into the same hc_gis_disease_overview() call, kept in sync
+ * with the map's own api/gis-data.php fetch via window.GIS_CLASSIFICATION
+ * — only classifications with at least one real, currently public-
+ * eligible condition are offered as options.
  *
  * The map's polygon SHAPES themselves are still schematic, not real
  * surveyed barangay boundaries — see includes/shared/gis_geo.php's
@@ -88,10 +94,29 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
             </select>
             <i class="bi bi-chevron-down chevron"></i>
         </div>
+
+        <!-- Real, server-side classification filter — mirrors the
+             date-range select exactly: changing this reloads the page
+             with ?classification=..., which includes/public/gis-data.php
+             resolves against hc_disease_registry_classification_meta()'s
+             real keys and re-runs the same Firestore aggregation
+             (includes/public/gis_data_firestore.php's header comment).
+             Options are built from real, currently public-eligible
+             registry entries — not a hardcoded list. -->
+        <div class="filter-select-wrap has-icon">
+            <i class="bi bi-funnel leading-icon"></i>
+            <select data-styled-select class="filter-select" name="classification" id="gisClassificationSelect">
+                <?php foreach ($classificationFilterOptions as $key => $label): ?>
+                <option value="<?= htmlspecialchars($key) ?>" <?= $key === $gisClassification ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <i class="bi bi-chevron-down chevron"></i>
+        </div>
     </form>
     <script>
         window.GIS_RANGE = "<?= htmlspecialchars($gisRange, ENT_QUOTES) ?>";
         window.GIS_RANGE_LABEL = "<?= htmlspecialchars(strtolower($selectedDateRange), ENT_QUOTES) ?>";
+        window.GIS_CLASSIFICATION = "<?= htmlspecialchars($gisClassification, ENT_QUOTES) ?>";
     </script>
 
     <!-- TWO-COLUMN LAYOUT: ~30% INFO PANEL / ~70% MAP -->
@@ -191,8 +216,14 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                     <?php if (!empty($d['causes'])): ?>
                     <p class="disease-causes-note"><i class="bi bi-info-circle"></i> Likely contributing factors: <?= htmlspecialchars($d['causes']) ?></p>
                     <?php endif; ?>
-                    <?php if (!empty($d['preventiveMeasures'])): ?>
-                    <p class="disease-causes-note"><i class="bi bi-shield-check"></i> How to protect yourself: <?= htmlspecialchars($d['preventiveMeasures']) ?></p>
+                    <?php if (!empty($d['behavioralMeasures'])): ?>
+                    <p class="disease-causes-note"><i class="bi bi-shield-check"></i> Behavioral: <?= htmlspecialchars($d['behavioralMeasures']) ?></p>
+                    <?php endif; ?>
+                    <?php if (!empty($d['environmentalMeasures'])): ?>
+                    <p class="disease-causes-note"><i class="bi bi-tree"></i> Environmental: <?= htmlspecialchars($d['environmentalMeasures']) ?></p>
+                    <?php endif; ?>
+                    <?php if (!empty($d['communityMeasures'])): ?>
+                    <p class="disease-causes-note"><i class="bi bi-people"></i> Community-based: <?= htmlspecialchars($d['communityMeasures']) ?></p>
                     <?php endif; ?>
                     </div>
                     <?php endforeach; ?>

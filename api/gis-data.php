@@ -17,10 +17,16 @@
  * supplied value. Defaults to '1w' (the same default that file uses)
  * so index.php's home preview widget — which never passes ?range= at
  * all — shows the same "most present" picture by default.
+ *
+ * ?classification=KEY mirrors the same real, server-side filter
+ * (hc_disease_registry_classification_meta()'s keys, or 'all') the
+ * dynamic classification dropdown drives — same allowlist convention,
+ * not trusted as an arbitrary client-supplied value.
  * =====================================================================
  */
 
 require_once __DIR__ . '/../includes/public/gis_data_firestore.php'; // hc_gis_disease_overview()
+require_once __DIR__ . '/../includes/shared/clinical_classification.php'; // hc_disease_registry_classification_meta()
 
 header('Content-Type: application/json');
 
@@ -30,4 +36,9 @@ if (!in_array($range, $allowedRanges, true)) {
     $range = '1w';
 }
 
-echo json_encode(hc_gis_disease_overview($range)['geojson']);
+$classification = (string) ($_GET['classification'] ?? 'all');
+if ($classification !== 'all' && !array_key_exists($classification, hc_disease_registry_classification_meta())) {
+    $classification = 'all';
+}
+
+echo json_encode(hc_gis_disease_overview($range, $classification)['geojson']);

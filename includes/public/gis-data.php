@@ -19,6 +19,7 @@
  */
 
 require_once __DIR__ . '/gis_data_firestore.php'; // hc_gis_disease_overview(), hc_gis_date_range_spec()
+require_once __DIR__ . '/../shared/clinical_classification.php'; // hc_disease_registry_classification_meta()
 require_once __DIR__ . '/../firestore/facilities.php'; // hc_get_all_facilities_summary()
 
 // label -> range key. Keys are exactly what the <select> posts back
@@ -42,7 +43,26 @@ if (!isset($dateRangeToRangeKey[$selectedDateRange])) {
 }
 $gisRange = $dateRangeToRangeKey[$selectedDateRange];
 
-$gisOverview = hc_gis_disease_overview($gisRange);
+// Real, server-side classification filter — anything not in the real
+// taxonomy (hc_disease_registry_classification_meta()) falls back to
+// 'all', same allowlist convention as $dateRangeToRangeKey above.
+$gisClassification = $_GET['classification'] ?? 'all';
+if ($gisClassification !== 'all' && !array_key_exists($gisClassification, hc_disease_registry_classification_meta())) {
+    $gisClassification = 'all';
+}
+
+// Only offer a classification in the dropdown when it currently has at
+// least one real, public-eligible condition — an empty classification
+// (nothing to show) would just be a dead option.
+$classificationFilterOptions = ['all' => 'All Classifications'];
+foreach (hc_condition_registry_meta_by_name() as $entry) {
+    $cls = $entry['classification'] ?? null;
+    if ($cls !== null && hc_is_publicly_visible($entry) && !isset($classificationFilterOptions[$cls])) {
+        $classificationFilterOptions[$cls] = hc_disease_registry_classification_meta()[$cls];
+    }
+}
+
+$gisOverview = hc_gis_disease_overview($gisRange, $gisClassification);
 $gisSummary = $gisOverview['gisSummary'];
 $topDiseases = $gisOverview['topDiseases'];
 $healthTrend = $gisOverview['healthTrend'];

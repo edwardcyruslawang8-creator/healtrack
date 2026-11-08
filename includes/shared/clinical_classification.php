@@ -1,242 +1,518 @@
 <?php
 /**
  * =====================================================================
- * Clinical Classification — automated, code-based disease recognition
- * and public-visibility rules (replaces includes/firestore/disease_registry.php)
+ * Dynamic Disease Registry — Firebase-backed, admin-configurable
+ * disease METADATA (never per-case approval)
  * ---------------------------------------------------------------------
- * There is NO admin-controlled registry behind this file — no Firestore
- * collection, no management UI, no runtime edit of any kind. Every
- * condition recognized here, and every decision about whether its
- * clinical chapter is safe to show on the public GIS map, is a plain
- * PHP array reviewed and changed the same way any other code in this
- * app is (a git-tracked pull request) — that review history IS the
- * audit trail for this layer, there is nothing left to approve at
- * runtime.
+ * The real "disease_registry" Firestore collection — one doc per
+ * recognized condition, each carrying a name, real synonyms used for
+ * case-insensitive diagnosis matching, a clinical classification (one
+ * of 5 fixed values, or none while unclassified), and two SEPARATE
+ * visibility flags:
+ *   - gisEligible   — does this condition participate in geographic
+ *                     aggregation AT ALL (internal surveillance AND
+ *                     public)?
+ *   - publicVisibility — given it's gisEligible, is it ALSO safe to
+ *                     show on the PUBLIC map? (Forced false whenever
+ *                     gisEligible is false or registryStatus is
+ *                     'unclassified', regardless of the stored value —
+ *                     see hc_is_publicly_visible() below.)
+ * This is deliberately NOT a per-case approval system — every valid
+ * consultation/diagnosis is always preserved exactly as recorded (see
+ * api/complete-consultation.php, untouched by this file). What admin
+ * configuration governs here is disease-level metadata only: whether
+ * THIS CONDITION, as a category, is classified/eligible/public — never
+ * whether one particular patient's case "counts." See
+ * admin/disease_registry.php (the one real management UI for this
+ * collection) and its own header comment.
  *
- * TWO SEPARATE DECISIONS, kept deliberately apart (see
- * hc_clinical_chapter_meta() vs hc_clinical_condition_catalog()):
- *   1. RECOGNITION — does this diagnosis text refer to a known,
- *      standardized condition? (hc_clinical_condition_catalog(), keyed
- *      by real ICD-10 chapter groupings, not an arbitrary admin list.)
- *   2. PUBLICATION ELIGIBILITY — is this condition's clinical CHAPTER
- *      (never an individual disease, never an individual case) safe
- *      for prevention-focused public display? (hc_clinical_chapter_meta().)
- * A new condition added under an already-eligible chapter inherits
- * that chapter's eligibility automatically — nobody decides per-disease
- * whether it's "allowed."
+ * Disease RECOGNITION (does this diagnosis text refer to a known
+ * condition?) and public PUBLICATION ELIGIBILITY (is it safe to show
+ * publicly?) are two separate decisions, matching the real synonym
+ * list and the two visibility flags independently of each other.
  *
- * HEALTrack's clinical workflow has no existing ICD-10/coded-diagnosis
- * field and no existing confirmed/suspected case-classification field —
- * diagnosis and chiefComplaint are free text only (confirmed by
- * grepping api/complete-consultation.php and
- * includes/firestore/consultations.php). So "standardized terminology"
- * here means: free-text diagnosis is matched against real synonyms for
- * each standardized condition below, and each condition carries its
- * real ICD-10 code/range for traceability — not that this app captures
- * ICD-10 coding at the point of care (it doesn't, and this file doesn't
- * change that).
- *
- * The excluded chapter (chronic_stigmatized_communicable: TB, COVID-19,
- * HIV, STIs, Viral Hepatitis) mirrors real Philippine legal/clinical
- * confidentiality norms for these specific conditions (RA 11332's
- * notifiable-disease confidentiality provisions, RA 11166 for HIV) —
- * these stay fully visible to internal surveillance
- * (hc_disease_demand_forecast()'s direct callers), only excluded from
- * the PUBLIC map.
+ * A diagnosis matching no existing synonym is never silently dropped
+ * nor silently invented a classification for — hc_ensure_disease_registry_entries()
+ * auto-creates a real 'unclassified' doc for it (gisEligible=false,
+ * publicVisibility=false by construction), which an admin can later
+ * classify. That auto-provisioning write is deliberately triggered
+ * ONLY from admin/gis_mapping.php's authenticated admin view, never
+ * from the public-facing patient/gis.php or homepage widget — so
+ * anonymous public traffic never causes a Firestore write.
  * =====================================================================
  */
 
+require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/inventory_match.php'; // hc_normalize_text()
 
-if (!function_exists('hc_clinical_chapter_meta')) {
+if (!function_exists('hc_disease_registry_classification_meta')) {
     /**
-     * The ONE predefined, fixed public-visibility rule — per CLINICAL
-     * CHAPTER, never per individual disease. Every chapter here is
-     * publicly eligible except the stigmatized/legally-sensitive one.
+     * The 5 fixed clinical classifications a condition can be assigned
+     * — set by admin configuration (routine metadata upkeep, not a
+     * per-case decision), never invented automatically for a new
+     * condition (see hc_ensure_disease_registry_entries()).
      *
-     * @return array<string, array{label: string, publiclyEligible: bool}>
+     * @return array<string, string> classification key -> display label.
      */
-    function hc_clinical_chapter_meta(): array
+    function hc_disease_registry_classification_meta(): array
     {
         return [
-            'vector_borne_viral' => ['label' => 'Vector-Borne Viral Illness', 'publiclyEligible' => true],
-            'zoonotic_bacterial' => ['label' => 'Zoonotic Bacterial Illness', 'publiclyEligible' => true],
-            'enteric_diarrheal' => ['label' => 'Enteric and Diarrheal Illness', 'publiclyEligible' => true],
-            'intestinal_parasitic' => ['label' => 'Intestinal Parasitic Infection', 'publiclyEligible' => true],
-            'acute_respiratory' => ['label' => 'Acute Respiratory Infection', 'publiclyEligible' => true],
-            'vaccine_preventable_childhood' => ['label' => 'Vaccine-Preventable Childhood Illness', 'publiclyEligible' => true],
-            'conjunctival' => ['label' => 'Conjunctival Infection', 'publiclyEligible' => true],
-            'zoonotic_exposure' => ['label' => 'Animal Bite / Rabies Exposure', 'publiclyEligible' => true],
-            'environmental_heat' => ['label' => 'Heat-Related Illness', 'publiclyEligible' => true],
-            'chronic_stigmatized_communicable' => ['label' => 'Chronic/Stigma-Sensitive Communicable Disease', 'publiclyEligible' => false],
+            'vector_borne' => 'Vector-Borne Diseases',
+            'waterborne_foodborne' => 'Waterborne and Foodborne Diseases',
+            'respiratory_contact' => 'Respiratory and Contact-Transmitted Diseases',
+            'environment_zoonotic' => 'Environment-Related Zoonotic Diseases',
+            'animal_exposure' => 'Animal Exposure Incidents',
         ];
     }
 }
 
-if (!function_exists('hc_clinical_condition_catalog')) {
+if (!function_exists('hc_seed_disease_registry')) {
     /**
-     * Standardized conditions, grouped under real ICD-10 chapters. Each
-     * entry's 'keywords' are real-world synonyms/phrasings matched
-     * case-insensitively as a substring of the normalized diagnosis (or
-     * chief complaint) text — broadened deliberately so recognition
-     * isn't a thin, easily-outdated list.
-     *
-     * @return array<int, array{name: string, icd10: string, chapter: string, keywords: array<int,string>, isPreventable: bool, preventiveMeasures: string}>
+     * The 20-item initial registry configuration (the user's own
+     * curated prevention-focused list) plus real conditions already
+     * tracked in this collection before this schema existed (carried
+     * forward during migration, never seeded fresh — see
+     * hc_migrate_disease_registry_to_dynamic_schema()). Only used on a
+     * genuinely empty collection (fresh install).
      */
-    function hc_clinical_condition_catalog(): array
+    function hc_seed_disease_registry(): void
+    {
+        foreach (hc_disease_registry_seed_data() as $s) {
+            hc_write_new_disease_registry_doc($s, 'System', '', 'system');
+        }
+    }
+}
+
+if (!function_exists('hc_disease_registry_seed_data')) {
+    /**
+     * @return array<int, array{name: string, synonyms: array<int,string>, classification: ?string, gisEligible: bool, publicVisibility: bool, isPreventable: bool, behavioralMeasures: string, environmentalMeasures: string, communityMeasures: string}>
+     */
+    function hc_disease_registry_seed_data(): array
     {
         return [
-            ['name' => 'Dengue', 'icd10' => 'A90-A91', 'chapter' => 'vector_borne_viral',
-                'keywords' => ['dengue'], 'isPreventable' => true,
-                'preventiveMeasures' => 'Eliminate stagnant water around the home, use mosquito repellent, wear long sleeves during peak mosquito hours, and seek care promptly for fever with rash or bleeding.'],
+            ['name' => 'Dengue', 'synonyms' => ['dengue', 'dengue fever', 'dengue hemorrhagic fever'], 'classification' => 'vector_borne', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Use mosquito repellent and wear protective clothing during peak mosquito hours; seek care promptly for fever with rash or bleeding.',
+                'environmentalMeasures' => 'Eliminate stagnant water and mosquito breeding sites around the home and workplace.',
+                'communityMeasures' => 'Organize cleanup drives and mosquito-control campaigns in affected barangays.'],
+            ['name' => 'Chikungunya', 'synonyms' => ['chikungunya'], 'classification' => 'vector_borne', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Use mosquito repellent and wear protective clothing during peak mosquito hours.',
+                'environmentalMeasures' => 'Eliminate stagnant water and mosquito breeding sites.',
+                'communityMeasures' => 'Organize mosquito-control and cleanup campaigns.'],
+            ['name' => 'Malaria', 'synonyms' => ['malaria'], 'classification' => 'vector_borne', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Use mosquito nets and repellent, especially at night, and seek care promptly for fever after travel to malaria-endemic areas.',
+                'environmentalMeasures' => 'Clear vegetation and standing water that harbor mosquito breeding sites.',
+                'communityMeasures' => 'Support community mosquito-control and bed-net distribution programs.'],
+            // NOTE: no short 'je' abbreviation synonym — it's a
+            // substring of common unrelated words (e.g. "object"),
+            // which caused real false-positive matches in production
+            // data (196 "lower back pain after lifting heavy object"
+            // chief complaints). Full name only.
+            ['name' => 'Japanese Encephalitis', 'synonyms' => ['japanese encephalitis'], 'classification' => 'vector_borne', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Use mosquito repellent and protective clothing, particularly near rice fields or pig farms at dusk.',
+                'environmentalMeasures' => 'Manage standing water near agricultural areas to reduce mosquito breeding.',
+                'communityMeasures' => 'Support community vaccination and mosquito-control campaigns.'],
 
-            ['name' => 'Leptospirosis', 'icd10' => 'A27', 'chapter' => 'zoonotic_bacterial',
-                'keywords' => ['leptospirosis', 'lepto'], 'isPreventable' => true,
-                'preventiveMeasures' => 'Avoid wading through floodwater; if exposure is unavoidable, wear boots and cover open wounds, and seek care promptly for fever after flood exposure.'],
+            ['name' => 'Leptospirosis', 'synonyms' => ['leptospirosis', 'lepto'], 'classification' => 'environment_zoonotic', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Avoid contaminated floodwater and wear protective footwear.',
+                'environmentalMeasures' => 'Improve drainage, sanitation, and rodent control.',
+                'communityMeasures' => 'Conduct community cleanup and flood-related health education.'],
 
-            ['name' => 'Acute Gastroenteritis / Diarrhea', 'icd10' => 'A09', 'chapter' => 'enteric_diarrheal',
-                'keywords' => ['gastroenteritis', 'diarrhea', 'diarrhoea', 'loose bowel movement', 'lbm'], 'isPreventable' => true,
-                'preventiveMeasures' => 'Drink safe, boiled or treated water, wash hands before eating, and practice proper food handling and sanitation.'],
-            ['name' => 'Typhoid Fever', 'icd10' => 'A01.0', 'chapter' => 'enteric_diarrheal',
-                'keywords' => ['typhoid'], 'isPreventable' => true,
-                'preventiveMeasures' => 'Drink safe water, wash hands before eating, and avoid food from unsanitary sources.'],
-            ['name' => 'Shigellosis / Bacterial Dysentery', 'icd10' => 'A03', 'chapter' => 'enteric_diarrheal',
-                'keywords' => ['shigellosis', 'dysentery'], 'isPreventable' => true,
-                'preventiveMeasures' => 'Practice handwashing and safe food/water preparation; isolate soiled linens and dispose of waste safely.'],
-            ['name' => 'Cholera', 'icd10' => 'A00', 'chapter' => 'enteric_diarrheal',
-                'keywords' => ['cholera'], 'isPreventable' => true,
-                'preventiveMeasures' => 'Drink only safe, treated water and practice proper sanitation and food hygiene.'],
+            // NOTE: no bare 'age' abbreviation synonym — it's a
+            // substring of many common unrelated words ("damage",
+            // "average", "massage"); full terms only.
+            ['name' => 'Acute Gastroenteritis (AGE)', 'synonyms' => ['acute gastroenteritis', 'gastroenteritis', 'diarrhea', 'diarrhoea', 'loose bowel movement', 'lbm'], 'classification' => 'waterborne_foodborne', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Drink safe, boiled or treated water and wash hands before eating.',
+                'environmentalMeasures' => 'Improve sanitation and safe food handling in the community.',
+                'communityMeasures' => 'Conduct water-safety and hygiene education campaigns.'],
+            ['name' => 'Acute Bloody Diarrhea', 'synonyms' => ['acute bloody diarrhea', 'bloody diarrhea', 'dysentery', 'shigellosis'], 'classification' => 'waterborne_foodborne', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Practice handwashing and safe food/water preparation; seek care promptly.',
+                'environmentalMeasures' => 'Ensure safe disposal of waste and isolate soiled materials.',
+                'communityMeasures' => 'Conduct sanitation and food-safety education campaigns.'],
+            ['name' => 'Typhoid Fever', 'synonyms' => ['typhoid', 'typhoid fever'], 'classification' => 'waterborne_foodborne', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Drink safe water, wash hands before eating, and avoid food from unsanitary sources.',
+                'environmentalMeasures' => 'Improve water supply safety and sanitation facilities.',
+                'communityMeasures' => 'Support community water-safety and vaccination programs where available.'],
+            ['name' => 'Paratyphoid Fever', 'synonyms' => ['paratyphoid', 'paratyphoid fever'], 'classification' => 'waterborne_foodborne', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Drink safe water and practice proper food hygiene.',
+                'environmentalMeasures' => 'Improve water supply safety and sanitation.',
+                'communityMeasures' => 'Support community water-safety education.'],
+            ['name' => 'Cholera', 'synonyms' => ['cholera'], 'classification' => 'waterborne_foodborne', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Drink only safe, treated water and practice proper food hygiene.',
+                'environmentalMeasures' => 'Ensure safe water supply and proper waste disposal.',
+                'communityMeasures' => 'Coordinate rapid community water-safety response during outbreaks.'],
+            ['name' => 'Hepatitis A', 'synonyms' => ['hepatitis a', 'hep a'], 'classification' => 'waterborne_foodborne', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Wash hands before eating and avoid food/water from unsanitary sources.',
+                'environmentalMeasures' => 'Improve sanitation and safe water supply.',
+                'communityMeasures' => 'Support community vaccination and hygiene education where available.'],
+            ['name' => 'Hepatitis E', 'synonyms' => ['hepatitis e', 'hep e'], 'classification' => 'waterborne_foodborne', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Drink safe water and avoid food from unsanitary sources.',
+                'environmentalMeasures' => 'Improve water supply safety and sanitation.',
+                'communityMeasures' => 'Support community water-safety education.'],
+            ['name' => 'Rotavirus Infection', 'synonyms' => ['rotavirus'], 'classification' => 'waterborne_foodborne', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Wash hands often, especially before preparing food for children.',
+                'environmentalMeasures' => 'Improve sanitation and safe water access.',
+                'communityMeasures' => 'Support routine childhood vaccination campaigns where available.'],
+            ['name' => 'Intestinal Parasitic Infections', 'synonyms' => ['intestinal parasit', 'ascariasis', 'hookworm', 'trichuriasis', 'enterobiasis', 'pinworm', 'worm infestation', 'helminth'], 'classification' => 'waterborne_foodborne', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Wash hands before eating and wear footwear outdoors.',
+                'environmentalMeasures' => 'Improve sanitation and safe disposal of waste.',
+                'communityMeasures' => 'Support community deworming and sanitation programs.'],
 
-            ['name' => 'Intestinal Parasitic Infection', 'icd10' => 'B65-B83', 'chapter' => 'intestinal_parasitic',
-                'keywords' => ['ascariasis', 'hookworm', 'trichuriasis', 'enterobiasis', 'pinworm', 'intestinal parasit', 'intestinal worm', 'helminth', 'worm infestation'], 'isPreventable' => true,
-                'preventiveMeasures' => 'Wash hands before eating, wear footwear outdoors, and practice proper sanitation and deworming as advised by a health worker.'],
+            ['name' => 'Influenza-like Illness (ILI)', 'synonyms' => ['influenza', 'influenza-like illness', 'ili', 'flu'], 'classification' => 'respiratory_contact', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Cover coughs/sneezes, wash hands often, and stay home when sick.',
+                'environmentalMeasures' => 'Improve ventilation in crowded indoor spaces.',
+                'communityMeasures' => 'Support seasonal vaccination campaigns where available.'],
+            ['name' => 'Hand, Foot, and Mouth Disease (HFMD)', 'synonyms' => ['hand foot and mouth', 'hand, foot, and mouth', 'hfmd', 'hand-foot-mouth'], 'classification' => 'respiratory_contact', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Wash hands often and avoid sharing utensils with a symptomatic child.',
+                'environmentalMeasures' => 'Disinfect shared toys and surfaces in daycare/school settings.',
+                'communityMeasures' => 'Coordinate daycare/school health advisories during outbreaks.'],
+            ['name' => 'Measles', 'synonyms' => ['measles', 'rubeola'], 'classification' => 'respiratory_contact', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Isolate suspected cases and seek care promptly for fever with rash.',
+                'environmentalMeasures' => 'Improve ventilation in crowded settings.',
+                'communityMeasures' => 'Support routine measles vaccination campaigns.'],
+            ['name' => 'Pertussis', 'synonyms' => ['pertussis', 'whooping cough'], 'classification' => 'respiratory_contact', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Isolate a coughing child from infants until cleared by a health worker.',
+                'environmentalMeasures' => 'Improve ventilation in shared spaces.',
+                'communityMeasures' => 'Support routine childhood vaccination campaigns.'],
+            ['name' => 'Chickenpox (Varicella)', 'synonyms' => ['chickenpox', 'chicken pox', 'varicella'], 'classification' => 'respiratory_contact', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Keep an infected child home from school/daycare until lesions have crusted over.',
+                'environmentalMeasures' => 'Disinfect shared surfaces in school/daycare settings.',
+                'communityMeasures' => 'Support routine vaccination campaigns where available.'],
+            ['name' => 'COVID-19', 'synonyms' => ['covid', 'covid-19', 'sars-cov-2'], 'classification' => 'respiratory_contact', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Wear a mask in crowded indoor settings when unwell, wash hands often, and stay home when symptomatic.',
+                'environmentalMeasures' => 'Improve ventilation in shared indoor spaces.',
+                'communityMeasures' => 'Support community vaccination campaigns and public health advisories.'],
 
-            ['name' => 'Influenza-like Illness', 'icd10' => 'J09-J11', 'chapter' => 'acute_respiratory',
-                'keywords' => ['influenza', 'flu-like', ' flu ', 'flu,', 'ili'], 'isPreventable' => true,
-                'preventiveMeasures' => 'Cover coughs/sneezes, wash hands often, stay home when sick, and keep routine vaccinations up to date where available.'],
-            ['name' => 'Pneumonia', 'icd10' => 'J12-J18', 'chapter' => 'acute_respiratory',
-                'keywords' => ['pneumonia'], 'isPreventable' => true,
-                'preventiveMeasures' => 'Keep routine childhood vaccinations up to date, avoid smoke exposure, and seek care early for persistent cough with fast or difficult breathing.'],
-            ['name' => 'Pertussis (Whooping Cough)', 'icd10' => 'A37', 'chapter' => 'acute_respiratory',
-                'keywords' => ['pertussis', 'whooping cough'], 'isPreventable' => true,
-                'preventiveMeasures' => 'Keep routine childhood vaccinations up to date and isolate a coughing child from infants until cleared by a health worker.'],
-            ['name' => 'Acute Upper Respiratory Tract Infection', 'icd10' => 'J00-J06', 'chapter' => 'acute_respiratory',
-                'keywords' => ['upper respiratory tract infection', 'urti', 'acute bronchitis'], 'isPreventable' => true,
-                'preventiveMeasures' => 'Cover coughs/sneezes, wash hands often, and avoid close contact with others while symptomatic.'],
+            ['name' => 'Animal Bite Cases', 'synonyms' => ['animal bite', 'dog bite', 'cat bite', 'bitten by', 'rabies exposure'], 'classification' => 'animal_exposure', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Avoid provoking unfamiliar animals and seek immediate medical assessment after any bite.',
+                'environmentalMeasures' => 'Support safe animal management and responsible waste disposal.',
+                'communityMeasures' => 'Promote responsible pet ownership and animal vaccination campaigns.'],
 
-            ['name' => 'Chickenpox (Varicella)', 'icd10' => 'B01', 'chapter' => 'vaccine_preventable_childhood',
-                'keywords' => ['chickenpox', 'chicken pox', 'varicella'], 'isPreventable' => true,
-                'preventiveMeasures' => 'Keep routine vaccinations up to date and keep an infected child home from school/daycare until lesions have crusted over.'],
-            ['name' => 'Measles', 'icd10' => 'B05', 'chapter' => 'vaccine_preventable_childhood',
-                'keywords' => ['measles', 'rubeola'], 'isPreventable' => true,
-                'preventiveMeasures' => 'Keep routine measles vaccination up to date; isolate suspected cases and seek care promptly for fever with rash.'],
-            ['name' => 'Hand-Foot-Mouth Disease', 'icd10' => 'B08.4', 'chapter' => 'vaccine_preventable_childhood',
-                'keywords' => ['hand-foot-mouth', 'hand, foot, and mouth', 'hand foot and mouth', 'hfmd'], 'isPreventable' => true,
-                'preventiveMeasures' => 'Wash hands often, disinfect shared toys/surfaces, and keep a symptomatic child home from daycare/school.'],
-            ['name' => 'Mumps', 'icd10' => 'B26', 'chapter' => 'vaccine_preventable_childhood',
-                'keywords' => ['mumps'], 'isPreventable' => true,
-                'preventiveMeasures' => 'Keep routine MMR vaccination up to date and isolate a symptomatic child from others until no longer contagious.'],
+            // --- Carried forward from before this schema existed (real
+            // docs, real history — never deleted), classified where a
+            // clear fit exists under the 5 fixed categories. ---
+            ['name' => 'Conjunctivitis (Sore Eyes)', 'synonyms' => ['conjunctivitis', 'sore eyes', 'pink eye'], 'classification' => 'respiratory_contact', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Avoid sharing towels/pillows, wash hands often, and avoid touching or rubbing the eyes.',
+                'environmentalMeasures' => 'Disinfect shared surfaces in schools/daycare settings.',
+                'communityMeasures' => 'Coordinate school/daycare health advisories during outbreaks.'],
+            ['name' => 'Mumps', 'synonyms' => ['mumps'], 'classification' => 'respiratory_contact', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Isolate a symptomatic child from others until no longer contagious.',
+                'environmentalMeasures' => 'Improve ventilation in shared spaces.',
+                'communityMeasures' => 'Support routine MMR vaccination campaigns.'],
+            ['name' => 'Pneumonia', 'synonyms' => ['pneumonia'], 'classification' => 'respiratory_contact', 'gisEligible' => true, 'publicVisibility' => true, 'isPreventable' => true,
+                'behavioralMeasures' => 'Seek care early for persistent cough with fast or difficult breathing.',
+                'environmentalMeasures' => 'Avoid indoor smoke exposure and improve ventilation.',
+                'communityMeasures' => 'Support routine childhood vaccination campaigns.'],
 
-            ['name' => 'Conjunctivitis (Sore Eyes)', 'icd10' => 'B30 / H10', 'chapter' => 'conjunctival',
-                'keywords' => ['conjunctivitis', 'sore eyes', 'pink eye'], 'isPreventable' => true,
-                'preventiveMeasures' => 'Avoid sharing towels/pillows, wash hands often, and avoid touching or rubbing the eyes.'],
+            // --- Carried forward but left UNCLASSIFIED — doesn't cleanly
+            // fit any of the 5 fixed categories, so it's not force-fit
+            // into one; stays excluded from GIS/public display until an
+            // admin reviews it. ---
+            ['name' => 'Heat-Related Illness', 'synonyms' => ['heat stroke', 'heatstroke', 'heat exhaustion', 'hyperthermia'], 'classification' => null, 'gisEligible' => false, 'publicVisibility' => false, 'isPreventable' => true,
+                'behavioralMeasures' => 'Stay hydrated and avoid prolonged outdoor activity during peak heat.',
+                'environmentalMeasures' => 'Provide shaded rest areas in outdoor work/public settings.',
+                'communityMeasures' => 'Issue heat-advisory alerts during extreme-heat periods.'],
 
-            ['name' => 'Animal Bite Exposure', 'icd10' => 'W54 / Z20.3', 'chapter' => 'zoonotic_exposure',
-                'keywords' => ['animal bite', 'dog bite', 'cat bite', 'rabies exposure', 'rabies', 'bitten by'], 'isPreventable' => true,
-                'preventiveMeasures' => 'Avoid stray or unfamiliar animals, have pets vaccinated, and seek immediate post-exposure care after any bite.'],
-
-            ['name' => 'Heat-Related Illness', 'icd10' => 'T67', 'chapter' => 'environmental_heat',
-                'keywords' => ['heat stroke', 'heatstroke', 'heat exhaustion', 'hyperthermia'], 'isPreventable' => true,
-                'preventiveMeasures' => 'Stay hydrated, avoid prolonged outdoor activity during peak heat, and rest in shade or a cool area.'],
-
-            // --- Chapter deliberately NOT publicly eligible (see
-            // hc_clinical_chapter_meta()) — still fully recognized and
-            // visible on every internal-surveillance page. ---
-            ['name' => 'Tuberculosis', 'icd10' => 'A15-A19', 'chapter' => 'chronic_stigmatized_communicable',
-                'keywords' => ['tuberculosis', 'pulmonary tb', ' tb '], 'isPreventable' => true, 'preventiveMeasures' => ''],
-            ['name' => 'COVID-19', 'icd10' => 'U07.1', 'chapter' => 'chronic_stigmatized_communicable',
-                'keywords' => ['covid'], 'isPreventable' => true, 'preventiveMeasures' => ''],
-            ['name' => 'HIV', 'icd10' => 'B20-B24', 'chapter' => 'chronic_stigmatized_communicable',
-                'keywords' => ['hiv', 'aids'], 'isPreventable' => true, 'preventiveMeasures' => ''],
-            ['name' => 'Sexually Transmitted Infection', 'icd10' => 'A50-A64', 'chapter' => 'chronic_stigmatized_communicable',
-                'keywords' => ['gonorrhea', 'syphilis', 'chlamydia', 'sexually transmitted'], 'isPreventable' => true, 'preventiveMeasures' => ''],
-            ['name' => 'Viral Hepatitis', 'icd10' => 'B15-B19', 'chapter' => 'chronic_stigmatized_communicable',
-                'keywords' => ['hepatitis'], 'isPreventable' => true, 'preventiveMeasures' => ''],
+            // --- Privacy-sensitive — stay recognized for internal
+            // surveillance only, never on the public map (point 3). ---
+            ['name' => 'Tuberculosis', 'synonyms' => ['tuberculosis', 'pulmonary tb', ' tb '], 'classification' => 'respiratory_contact', 'gisEligible' => true, 'publicVisibility' => false, 'isPreventable' => true,
+                'behavioralMeasures' => 'Complete the full prescribed treatment course and cover coughs.',
+                'environmentalMeasures' => 'Improve ventilation in shared living/working spaces.',
+                'communityMeasures' => 'Support community TB screening and DOTS treatment programs.'],
         ];
     }
 }
 
-if (!function_exists('hc_condition_chapter_by_name')) {
-    /** @return array<string, string> condition name -> chapter key. */
-    function hc_condition_chapter_by_name(): array
+if (!function_exists('hc_write_new_disease_registry_doc')) {
+    /**
+     * Shared write path for a brand-new registry doc, used by both the
+     * initial seed and the migration's "fresh-add" step — always starts
+     * with a real, documented history[0] entry.
+     */
+    function hc_write_new_disease_registry_doc(array $s, string $byName, string $byUid, string $byRole): ?string
+    {
+        global $firestore;
+        $now = date('c');
+        $today = date('Y-m-d');
+
+        return $firestore->addDocument('disease_registry', [
+            'name' => $s['name'],
+            'synonyms' => array_values(array_unique(array_map('hc_normalize_text', $s['synonyms']))),
+            'classification' => $s['classification'],
+            'registryStatus' => $s['classification'] !== null ? 'classified' : 'unclassified',
+            'gisEligible' => $s['gisEligible'],
+            'publicVisibility' => $s['gisEligible'] ? $s['publicVisibility'] : false,
+            'isPreventable' => $s['isPreventable'],
+            'behavioralMeasures' => $s['behavioralMeasures'],
+            'environmentalMeasures' => $s['environmentalMeasures'],
+            'communityMeasures' => $s['communityMeasures'],
+            'isAutoDetected' => false,
+            'createdAt' => $now,
+            'updatedByName' => $byName,
+            'updatedByUid' => $byUid,
+            'updatedByRole' => $byRole,
+            'updatedAt' => $now,
+            'history' => [[
+                'date' => $today,
+                'event' => $s['classification'] !== null ? ('Created — seeded with classification ' . $s['classification']) : 'Created — unclassified (excluded from GIS)',
+                'previousClassification' => null, 'newClassification' => $s['classification'],
+                'previousGisEligible' => null, 'newGisEligible' => $s['gisEligible'],
+                'previousPublicVisibility' => null, 'newPublicVisibility' => $s['gisEligible'] ? $s['publicVisibility'] : false,
+                'changedByName' => $byName, 'changedByUid' => $byUid, 'changedByRole' => $byRole,
+                'recordedAt' => $now,
+            ]],
+        ]);
+    }
+}
+
+if (!function_exists('hc_migrate_disease_registry_to_dynamic_schema')) {
+    /**
+     * One-time, real data migration of the 17 real docs already in this
+     * collection from the previous (iteration-3) schema — {name,
+     * category} only — to the full dynamic schema. Matches each doc's
+     * real name against the canonical seed list (exact or known rename)
+     * to inherit its classification/eligibility/preventive text,
+     * preserves 100% of its real history[] (appending one migration
+     * entry), and never deletes a doc. After every existing doc is
+     * migrated, any seed item not yet present (genuinely new conditions
+     * like Chikungunya, Malaria, Cholera, etc.) is added fresh.
+     *
+     * Idempotent — a doc without the old 'category' key is already
+     * migrated and is skipped.
+     */
+    function hc_migrate_disease_registry_to_dynamic_schema(): void
+    {
+        global $firestore;
+
+        // Old name -> canonical seed name (renames only; everything
+        // else matches by exact name).
+        $renames = [
+            'Acute Gastroenteritis / Diarrhea' => 'Acute Gastroenteritis (AGE)',
+            'Hand-Foot-Mouth Disease' => 'Hand, Foot, and Mouth Disease (HFMD)',
+            'Chickenpox' => 'Chickenpox (Varicella)',
+            'Pertussis (Whooping Cough)' => 'Pertussis',
+            'Influenza-like Illness' => 'Influenza-like Illness (ILI)',
+            'Animal Bite Exposures' => 'Animal Bite Cases',
+        ];
+        $seedByName = [];
+        foreach (hc_disease_registry_seed_data() as $s) {
+            $seedByName[$s['name']] = $s;
+        }
+
+        $now = date('c');
+        $today = date('Y-m-d');
+        $migratedNames = [];
+
+        foreach ($firestore->listDocuments('disease_registry') as $doc) {
+            $f = $doc['fields'];
+            if (!array_key_exists('category', $f)) {
+                $migratedNames[] = $f['name'] ?? '';
+                continue; // already migrated
+            }
+
+            $oldName = $f['name'] ?? '';
+            $canonicalName = $renames[$oldName] ?? $oldName;
+            $seed = $seedByName[$canonicalName] ?? null;
+
+            $updated = $f;
+            unset($updated['category']);
+            $updated['name'] = $canonicalName;
+            $updated['synonyms'] = $seed !== null
+                ? array_values(array_unique(array_map('hc_normalize_text', $seed['synonyms'])))
+                : array_values(array_unique(array_merge((array) ($f['keywords'] ?? []), [hc_normalize_text($oldName)])));
+            unset($updated['keywords']);
+            $updated['classification'] = $seed['classification'] ?? null;
+            $updated['registryStatus'] = ($seed['classification'] ?? null) !== null ? 'classified' : 'unclassified';
+            $updated['gisEligible'] = $seed['gisEligible'] ?? true;
+            $updated['publicVisibility'] = ($seed['gisEligible'] ?? true) ? ($seed['publicVisibility'] ?? false) : false;
+            $updated['behavioralMeasures'] = $seed['behavioralMeasures'] ?? ($f['preventiveMeasures'] ?? '');
+            $updated['environmentalMeasures'] = $seed['environmentalMeasures'] ?? '';
+            $updated['communityMeasures'] = $seed['communityMeasures'] ?? '';
+            unset($updated['preventiveMeasures']);
+            $updated['updatedByName'] = 'System';
+            $updated['updatedByUid'] = '';
+            $updated['updatedByRole'] = 'system';
+            $updated['updatedAt'] = $now;
+
+            $updated['history'] = array_values(is_array($f['history'] ?? null) ? $f['history'] : []);
+            $updated['history'][] = [
+                'date' => $today,
+                'event' => 'Migrated to the dynamic registry schema (classification=' . ($updated['classification'] ?? 'none') . ', gisEligible=' . ($updated['gisEligible'] ? 'true' : 'false') . ', publicVisibility=' . ($updated['publicVisibility'] ? 'true' : 'false') . ')',
+                'previousClassification' => null, 'newClassification' => $updated['classification'],
+                'previousGisEligible' => null, 'newGisEligible' => $updated['gisEligible'],
+                'previousPublicVisibility' => null, 'newPublicVisibility' => $updated['publicVisibility'],
+                'changedByName' => 'System', 'changedByUid' => '', 'changedByRole' => 'system',
+                'recordedAt' => $now,
+            ];
+
+            $firestore->setDocument('disease_registry', $doc['id'], $updated);
+            $migratedNames[] = $canonicalName;
+        }
+
+        // Fresh-add any canonical seed item not already present.
+        foreach (hc_disease_registry_seed_data() as $s) {
+            if (!in_array($s['name'], $migratedNames, true)) {
+                hc_write_new_disease_registry_doc($s, 'System', '', 'system');
+            }
+        }
+    }
+}
+
+if (!function_exists('hc_get_disease_registry_docs')) {
+    /**
+     * The real read — self-seeds a genuinely empty collection, runs the
+     * one-time schema migration when it finds the old shape still
+     * present, cached per-request (function-local static — this
+     * function is called more than once per request on at least two
+     * real pages).
+     *
+     * @return array<int, array{id: string, fields: array}>
+     */
+    function hc_get_disease_registry_docs(): array
+    {
+        static $cache = null;
+        if ($cache !== null) {
+            return $cache;
+        }
+
+        global $firestore;
+        $docs = $firestore->listDocuments('disease_registry');
+        if (empty($docs)) {
+            hc_seed_disease_registry();
+            $docs = $firestore->listDocuments('disease_registry');
+        } elseif (array_key_exists('category', $docs[0]['fields'] ?? [])) {
+            hc_migrate_disease_registry_to_dynamic_schema();
+            $docs = $firestore->listDocuments('disease_registry');
+        }
+
+        return $cache = $docs;
+    }
+}
+
+if (!function_exists('hc_notifiable_disease_categories_from_registry')) {
+    /**
+     * Only CLASSIFIED entries feed real diagnosis matching (internal
+     * surveillance AND public alike) — an unclassified/auto-detected
+     * entry (hc_ensure_disease_registry_entries()) exists purely so an
+     * admin can review it on admin/disease_registry.php; it must never
+     * flood internal trend/forecast analytics (api/get-disease-trends.php,
+     * admin/facility_analytics.php, etc.) with routine/chronic-care
+     * diagnosis text (e.g. "Well child visit", "Essential hypertension")
+     * just because it recurred often enough to get auto-provisioned.
+     * The moment an admin assigns it a real classification, its
+     * synonyms enter this list and every matching historical
+     * consultation is picked up automatically on the next computation —
+     * no backfill needed.
+     *
+     * @return array<string, array<int, string>> condition name -> real synonym list.
+     */
+    function hc_notifiable_disease_categories_from_registry(): array
     {
         $out = [];
-        foreach (hc_clinical_condition_catalog() as $c) {
-            $out[$c['name']] = $c['chapter'];
+        foreach (hc_get_disease_registry_docs() as $doc) {
+            $f = $doc['fields'];
+            if (($f['registryStatus'] ?? 'unclassified') !== 'classified') {
+                continue;
+            }
+            $out[$f['name'] ?? ''] = $f['synonyms'] ?? [];
         }
 
         return $out;
     }
 }
 
-if (!function_exists('hc_condition_catalog_by_name')) {
-    /** @return array<string, array> condition name -> full catalog entry. */
-    function hc_condition_catalog_by_name(): array
+if (!function_exists('hc_condition_registry_meta_by_name')) {
+    /** @return array<string, array> condition name -> full registry doc (id + fields merged). */
+    function hc_condition_registry_meta_by_name(): array
     {
         $out = [];
-        foreach (hc_clinical_condition_catalog() as $c) {
-            $out[$c['name']] = $c;
+        foreach (hc_get_disease_registry_docs() as $doc) {
+            $f = $doc['fields'];
+            $out[$f['name'] ?? ''] = ['id' => $doc['id']] + $f;
         }
 
         return $out;
     }
 }
 
-if (!function_exists('hc_is_chapter_publicly_eligible')) {
-    function hc_is_chapter_publicly_eligible(?string $chapter): bool
+if (!function_exists('hc_is_publicly_visible')) {
+    /**
+     * The one place that decides whether a condition's real cases may
+     * ever reach the public map — forces publicVisibility off whenever
+     * gisEligible is off or the registry entry is still unclassified,
+     * regardless of what's stored, so a half-configured entry can never
+     * leak.
+     */
+    function hc_is_publicly_visible(?array $registryEntry): bool
     {
-        if ($chapter === null) {
+        if ($registryEntry === null) {
             return false;
         }
-        $meta = hc_clinical_chapter_meta();
+        if (($registryEntry['registryStatus'] ?? 'unclassified') !== 'classified') {
+            return false;
+        }
+        if (empty($registryEntry['gisEligible'])) {
+            return false;
+        }
 
-        return !empty($meta[$chapter]['publiclyEligible']);
+        return !empty($registryEntry['publicVisibility']);
     }
 }
 
-if (!function_exists('hc_clinical_qualifier_terms')) {
+if (!function_exists('hc_clinical_qualifier_terms_probable')) {
     /**
-     * Fixed, documented hedging-language list — a diagnosis containing
-     * any of these is treated as a SUSPECTED case, never CONFIRMED, no
-     * matter which condition keyword it also contains. Real clinical
-     * free-text convention (e.g. "suspected dengue", "r/o leptospirosis"),
-     * not a per-disease judgment call.
-     *
-     * @return array<int, string>
+     * WHO/DOH case-definition convention: "probable" sits between
+     * suspected and confirmed in certainty — kept as its own tier
+     * rather than folded into 'suspected'.
      */
-    function hc_clinical_qualifier_terms(): array
+    function hc_clinical_qualifier_terms_probable(): array
     {
-        return ['suspected', 'suspect', 'probable', 'possible', 'r/o', 'rule out', 'to consider', 'working diagnosis', 'differential diagnosis'];
+        return ['probable'];
     }
 }
 
-if (!function_exists('hc_unclassified_diagnoses_report')) {
+if (!function_exists('hc_clinical_qualifier_terms_suspected')) {
     /**
-     * Data-quality monitoring ONLY — real, recurring diagnosis text that
-     * matches no entry in hc_clinical_condition_catalog() yet. No action
-     * is attached anywhere to this list (no "add to registry" — there is
-     * no registry); it exists purely so unfamiliar terms are visible for
-     * review rather than silently dropped or guessed at.
-     *
-     * @param array $medicalRecordDocs Raw medical_records docs (type=consultation).
-     * @return array<int, array{normalizedText: string, sampleOriginalText: string, count: int, firstDate: string, lastDate: string}>
+     * Lower-certainty hedging language — a diagnosis containing any of
+     * these is never treated as CONFIRMED, no matter which condition
+     * synonym it also contains. Real clinical free-text convention
+     * (e.g. "suspected dengue", "r/o leptospirosis"), not a per-disease
+     * judgment call.
      */
-    function hc_unclassified_diagnoses_report(array $medicalRecordDocs, int $minOccurrences = 3, int $limit = 20): array
+    function hc_clinical_qualifier_terms_suspected(): array
     {
-        $allKeywords = [];
-        foreach (hc_clinical_condition_catalog() as $c) {
-            foreach ($c['keywords'] as $kw) {
-                $allKeywords[] = $kw;
+        return ['suspected', 'suspect', 'possible', 'r/o', 'rule out', 'to consider', 'working diagnosis', 'differential diagnosis'];
+    }
+}
+
+if (!function_exists('hc_ensure_disease_registry_entries')) {
+    /**
+     * Real, idempotent auto-provisioning — for diagnosis text matching
+     * no existing registry synonym, creates ONE new 'unclassified' doc
+     * per distinct normalized text not already provisioned (never
+     * duplicated on repeat calls). Always starts gisEligible=false,
+     * publicVisibility=false, isAutoDetected=true — an admin reviews
+     * and classifies it afterward via admin/disease_registry.php.
+     *
+     * Deliberately called ONLY from admin/gis_mapping.php's
+     * authenticated admin view (includes/admin/gis_mapping_firestore.php)
+     * — never from the public patient/gis.php or homepage widget, so
+     * anonymous public traffic never triggers a Firestore write.
+     *
+     * @return int Number of new entries created.
+     */
+    function hc_ensure_disease_registry_entries(array $medicalRecordDocs, int $minOccurrences = 3): int
+    {
+        global $firestore;
+
+        $existingSynonyms = [];
+        $alreadyProvisioned = [];
+        foreach (hc_get_disease_registry_docs() as $doc) {
+            $f = $doc['fields'];
+            foreach (($f['synonyms'] ?? []) as $syn) {
+                $existingSynonyms[] = $syn;
+            }
+            if (!empty($f['isAutoDetected'])) {
+                $alreadyProvisioned[] = $f['synonyms'][0] ?? '';
             }
         }
 
@@ -252,8 +528,8 @@ if (!function_exists('hc_unclassified_diagnoses_report')) {
                 continue;
             }
             $recognized = false;
-            foreach ($allKeywords as $kw) {
-                if (str_contains($normalized, $kw)) {
+            foreach ($existingSynonyms as $syn) {
+                if (str_contains($normalized, $syn)) {
                     $recognized = true;
                     break;
                 }
@@ -261,33 +537,45 @@ if (!function_exists('hc_unclassified_diagnoses_report')) {
             if ($recognized) {
                 continue;
             }
-
-            $date = substr((string) ($f['date'] ?? ''), 0, 10);
-            $groups[$normalized] ??= ['sample' => $raw, 'count' => 0, 'firstDate' => $date, 'lastDate' => $date];
+            $groups[$normalized] ??= ['sample' => $raw, 'count' => 0];
             $groups[$normalized]['count']++;
-            if ($date !== '' && ($groups[$normalized]['firstDate'] === '' || $date < $groups[$normalized]['firstDate'])) {
-                $groups[$normalized]['firstDate'] = $date;
-            }
-            if ($date !== '' && $date > $groups[$normalized]['lastDate']) {
-                $groups[$normalized]['lastDate'] = $date;
-            }
         }
 
-        $report = [];
+        $created = 0;
+        $now = date('c');
+        $today = date('Y-m-d');
         foreach ($groups as $normalized => $g) {
-            if ($g['count'] < $minOccurrences) {
+            if ($g['count'] < $minOccurrences || in_array($normalized, $alreadyProvisioned, true)) {
                 continue;
             }
-            $report[] = [
-                'normalizedText' => $normalized,
-                'sampleOriginalText' => $g['sample'],
-                'count' => $g['count'],
-                'firstDate' => $g['firstDate'],
-                'lastDate' => $g['lastDate'],
-            ];
+            $firestore->addDocument('disease_registry', [
+                'name' => $g['sample'],
+                'synonyms' => [$normalized],
+                'classification' => null,
+                'registryStatus' => 'unclassified',
+                'gisEligible' => false,
+                'publicVisibility' => false,
+                'isPreventable' => false,
+                'behavioralMeasures' => '',
+                'environmentalMeasures' => '',
+                'communityMeasures' => '',
+                'isAutoDetected' => true,
+                'createdAt' => $now,
+                'updatedByName' => 'System', 'updatedByUid' => '', 'updatedByRole' => 'system',
+                'updatedAt' => $now,
+                'history' => [[
+                    'date' => $today,
+                    'event' => 'Auto-provisioned from ' . $g['count'] . ' real unmatched diagnoses — unclassified, excluded from GIS',
+                    'previousClassification' => null, 'newClassification' => null,
+                    'previousGisEligible' => null, 'newGisEligible' => false,
+                    'previousPublicVisibility' => null, 'newPublicVisibility' => false,
+                    'changedByName' => 'System', 'changedByUid' => '', 'changedByRole' => 'system',
+                    'recordedAt' => $now,
+                ]],
+            ]);
+            $created++;
         }
-        usort($report, fn ($a, $b) => $b['count'] <=> $a['count']);
 
-        return array_slice($report, 0, $limit);
+        return $created;
     }
 }

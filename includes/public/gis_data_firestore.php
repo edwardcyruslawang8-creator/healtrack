@@ -32,7 +32,7 @@ require_once __DIR__ . '/../firestore/medical_records.php';
 require_once __DIR__ . '/../firestore/consultations.php';
 require_once __DIR__ . '/../shared/predictive_analytics_core.php'; // hc_disease_demand_forecast(), HC_COVERED_BARANGAYS
 require_once __DIR__ . '/../shared/gis_geo.php'; // hc_gis_barangay_shapes()
-require_once __DIR__ . '/../shared/clinical_classification.php'; // hc_condition_chapter_by_name(), hc_is_chapter_publicly_eligible(), hc_condition_catalog_by_name() — the public-visibility filter below
+require_once __DIR__ . '/../shared/clinical_classification.php'; // hc_condition_registry_meta_by_name(), hc_is_publicly_visible(), hc_disease_registry_classification_meta() — the public-visibility filter below
 
 if (!function_exists('hc_gis_intensity_meta')) {
     /**
@@ -107,9 +107,16 @@ if (!function_exists('hc_gis_disease_overview')) {
      *                       volume here is thin enough that this often
      *                       renders "No Data"/empty — that's still an
      *                       honest, real view, not a bug.
+     * @param string $classificationFilter One of hc_disease_registry_classification_meta()'s
+     *                       real keys, or 'all' (default) — real,
+     *                       server-side filtering (never client-side)
+     *                       applied alongside the public-visibility
+     *                       filter below, backing the dynamic
+     *                       classification dropdown on patient/gis.php
+     *                       and admin/gis_mapping.php.
      * @return array{gisSummary: array, topDiseases: array, healthTrend: array, geojson: array, seasonalOverview: array}
      */
-    function hc_gis_disease_overview(string $range = '1w'): array
+    function hc_gis_disease_overview(string $range = '1w', string $classificationFilter = 'all'): array
     {
         global $firestore;
 
@@ -145,31 +152,37 @@ if (!function_exists('hc_gis_disease_overview')) {
         // function, not pushed down into hc_disease_demand_forecast()
         // itself.
         //
-        // A case only counts toward the public map when BOTH are true,
-        // fully automatic — no admin approval step anywhere in this, and
-        // no per-disease decision either (see
+        // A case only counts toward the public map when ALL of these are
+        // true, fully automatic — no admin approval step over any
+        // individual case anywhere in this (see
         // includes/shared/clinical_classification.php's header comment —
-        // recognition and publication eligibility are two separate,
-        // predefined, chapter-level rules, never a per-disease choice):
-        //   1. Its clinical CHAPTER (hc_clinical_chapter_meta()) is
-        //      marked publicly eligible — a condition in the one
-        //      excluded chapter (chronic/stigma-sensitive communicable
-        //      disease — TB, COVID-19, HIV, STIs, Viral Hepatitis) never
-        //      appears publicly, no matter how many real cases exist.
-        //   2. Its caseClassification is 'confirmed' — a keyword match
-        //      alone is never enough; 'suspected' (hedging language
-        //      present) and 'symptom_only' (chief-complaint match only)
-        //      both stay internal-surveillance-only (see
+        // disease recognition and public-visibility metadata are real,
+        // admin-configurable settings per CONDITION, never a per-case
+        // decision):
+        //   1. hc_is_publicly_visible() on its registry entry — requires
+        //      registryStatus='classified' AND gisEligible AND
+        //      publicVisibility all true. A condition that's still
+        //      unclassified (including a freshly auto-provisioned one —
+        //      see hc_ensure_disease_registry_entries()) or deliberately
+        //      marked internal-only (e.g. Tuberculosis) never appears
+        //      publicly, no matter how many real cases exist.
+        //   2. Its caseClassification is 'confirmed' — a synonym match
+        //      alone is never enough; 'probable', 'suspected' (hedging
+        //      language present), and 'symptom_only' (chief-complaint
+        //      match only) all stay internal-surveillance-only (see
         //      hc_notifiable_cases_from_records()'s own header comment).
+        //   3. Its classification matches $classificationFilter, when
+        //      the caller asked for a specific one (real server-side
+        //      filtering backing the dynamic classification dropdown).
         // ---------------------------------------------------------------
-        $chapterByCondition = hc_condition_chapter_by_name();
-        $catalogByName = hc_condition_catalog_by_name(); // preventiveMeasures source for $topDiseases below
-        $notifiableCases = array_values(array_filter($notifiableCases, function ($c) use ($chapterByCondition) {
-            if (($c['caseClassification'] ?? '') !== 'confirmed') {
+        $registryByName = hc_condition_registry_meta_by_name(); // also the preventiveMeasures source for $topDiseases below
+        $notifiableCases = array_values(array_filter($notifiableCases, function ($c) use ($registryByName, $classificationFilter) {
+            $entry = $registryByName[$c['category']] ?? null;
+            if (($c['caseClassification'] ?? '') !== 'confirmed' || !hc_is_publicly_visible($entry)) {
                 return false;
             }
 
-            return hc_is_chapter_publicly_eligible($chapterByCondition[$c['category']] ?? null);
+            return $classificationFilter === 'all' || ($entry['classification'] ?? null) === $classificationFilter;
         }));
 
         $cutoffCurrent = $spec['cutoffCurrent'];
@@ -245,13 +258,14 @@ if (!function_exists('hc_gis_disease_overview')) {
                 'trend' => $changePct >= 0 ? 'up' : 'down',
                 'change' => abs($changePct) . '%',
                 'causes' => hc_disease_causes_narrative($categoryCasesAllTime, $patientAgeById),
-                // Fixed, code-maintained preventive-measures text for
-                // this condition (includes/shared/clinical_classification.php)
-                // — '' only for the never-public chapter's own entries,
-                // which never reach this point anyway since the filter
-                // above already excludes them; patient/gis.php only
-                // renders this line when it's non-empty.
-                'preventiveMeasures' => $catalogByName[$name]['preventiveMeasures'] ?? '',
+                // Real, admin-maintained preventive-measures text for
+                // this condition (includes/shared/clinical_classification.php's
+                // "disease_registry" collection), split into the 3
+                // intervention types the spec asks for — patient/gis.php
+                // only renders a section when it's non-empty.
+                'behavioralMeasures' => $registryByName[$name]['behavioralMeasures'] ?? '',
+                'environmentalMeasures' => $registryByName[$name]['environmentalMeasures'] ?? '',
+                'communityMeasures' => $registryByName[$name]['communityMeasures'] ?? '',
             ];
         }
 
@@ -318,7 +332,8 @@ if (!function_exists('hc_gis_disease_overview')) {
         //    "diseases" list once it clears a minimum real-case floor
         //    (3) — a single uniform threshold across every publicly-
         //    eligible condition, since eligibility itself is a single
-        //    per-chapter yes/no rule with no middle tier to begin with.
+        //    per-condition yes/no rule (hc_is_publicly_visible()) with
+        //    no middle tier to begin with.
         //    Anything under that floor is folded into a generic "Other"
         //    bucket instead of naming the specific disease, so e.g.
         //    "Dengue: 1" (which could point at a single household) never
