@@ -1,5 +1,5 @@
 /* =============================================================
-   ARCHIVED ITEMS JS (pharmacist/archived_items.php)
+   ARCHIVED ITEMS JS (pharmacist/archived_items.php, subadmin/archived_items.php)
    ---------------------------------------------------------------
    One real row action, reading the clicked row's own data-arc-*
    attributes (set server-side, no extra request needed to know which

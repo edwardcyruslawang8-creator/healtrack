@@ -441,6 +441,57 @@
 .mm-dispense-btn:hover{ background: var(--adm-red-bright-hover); color: #fff; }
 .mm-dispense-btn:disabled{ opacity: .6; cursor: not-allowed; background: var(--adm-hover-bg); color: var(--adm-text-muted); }
 
+/* -- "Archive Expired Batch" — replaces the quiet gray Archive on an
+      expired batch's row. Solid red with a soft pulsing ring so it's the
+      obvious next step for stock that can no longer be dispensed. -- */
+.mm-archive-expired-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 7px;
+  background: var(--adm-red-bright);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--adm-red-bright) 45%, transparent);
+  animation: mmArchivePulse 2s ease-out infinite;
+  transition: background .15s ease;
+}
+.mm-archive-expired-btn:hover{ background: var(--adm-red-bright-hover); color: #fff; animation: none; }
+.mm-archive-expired-btn:disabled{ opacity: .6; cursor: progress; animation: none; }
+@keyframes mmArchivePulse{
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--adm-red-bright) 45%, transparent); }
+  70%  { box-shadow: 0 0 0 7px color-mix(in srgb, var(--adm-red-bright) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--adm-red-bright) 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce){
+  .mm-archive-expired-btn{ animation: none; }
+}
+
+/* Row of an expired batch — faint red tint so the row itself reads as
+   needing attention, not just its badge. */
+.mm-batch-table tr.mm-batch-row-expired td{ background: rgba(217, 48, 37, .045); }
+
+/* "N expired, not counted" under Total Current Stock. */
+.mm-info-sub-expired{ display: block; color: #D93025; font-weight: 500; }
+
+/* Notice above Batch Inventory when any batch has expired. */
+.mm-expired-batches-note{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #FCE4E4;
+  color: #B3261E;
+  font-size: 13px;
+  font-weight: 500;
+}
+
 @media (max-width: 767.98px){
   .mm-header{ flex-direction: column; align-items: stretch; }
   .mm-header-actions{ flex-direction: column; align-items: stretch; }

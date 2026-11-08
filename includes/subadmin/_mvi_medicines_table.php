@@ -18,8 +18,9 @@
  * subadmin/manage_medicine.php's own detail page (not a modal
  * trigger). Edit/Restock/Archive all live there instead; the three-dot
  * dropdown that used to hold Archive/Delete/View Details/View Stock
- * History is gone from this table entirely, no row-level Archive
- * button here anymore either.
+ * History is gone from this table entirely. A row-level Archive
+ * button sits next to "Manage Medicine" (assets/js/mvi-row-archive.js
+ * -> api/archive-medicine.php).
  *
  * Expects $medicines to already be set (by
  * includes/subadmin/medicine_vaccine_inventory_firestore.php).
@@ -60,6 +61,7 @@
                     <td>
                         <div class="adm-action-btns">
                             <a href="manage_medicine.php?id=<?= urlencode($med['id']) ?>&amp;type=medicine" class="mvi-manage-btn" aria-label="Manage this medicine">Manage Medicine</a>
+                            <button type="button" class="mvi-archive-btn mvi-row-archive" data-archive-id="<?= htmlspecialchars($med['id']) ?>" data-archive-name="<?= htmlspecialchars($med['name']) ?>" aria-label="Archive this medicine"><i class="bi bi-archive"></i> Archive</button>
                         </div>
                     </td>
                 </tr>

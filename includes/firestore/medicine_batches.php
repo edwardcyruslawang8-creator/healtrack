@@ -203,6 +203,11 @@ if (!function_exists('hc_get_batches_for_medicine')) {
             'where' => $firestore->fieldEqualsFilter('medicineId', $medicineId),
         ]) as $doc) {
             $f = $doc['fields'];
+            // An archived (disposed) expired batch — api/archive-medicine-batch.php —
+            // is gone from inventory entirely, even with $includeEmpty.
+            if ($f['archived'] ?? false) {
+                continue;
+            }
             $qty = (int) ($f['quantity'] ?? 0);
             if ($qty <= 0 && !$includeEmpty) {
                 continue;
@@ -265,15 +270,71 @@ if (!function_exists('hc_medicine_has_dispensable_stock')) {
     }
 }
 
+if (!function_exists('hc_stock_rollup_from_batches')) {
+    /**
+     * The usable-stock rollup for one item, from its (non-archived)
+     * batches — each needing 'quantity' and 'expiryDateRaw'. Single
+     * source of truth for what medicines/{id}'s stored currentStock/
+     * expiryDate/status SHOULD be, shared by hc_recompute_medicine_rollup()
+     * (on every write) and hc_apply_usable_stock() (live, on read):
+     *
+     *  - usable:  stock in batches that have NOT expired — the only stock
+     *             that can be dispensed (hc_decrement_medicine_stock_fefo()
+     *             skips expired batches). currentStock and status
+     *             (In Stock/Low/Out/Overstocked) are based on this.
+     *  - expired: stock still sitting in expired batches until archived
+     *             (api/archive-medicine-batch.php) — reported separately,
+     *             never counted as stock.
+     *  - expiryDate: soonest expiry among USABLE batches with stock; only
+     *             when no usable stock is left does it fall back to the
+     *             soonest expired one (so the item reads as expired).
+     *             '' when no batch with stock has an expiry recorded.
+     *
+     * @param array<int, array{quantity: int, expiryDateRaw: string}> $batches
+     * @return array{usable: int, expired: int, expiryDate: string}
+     */
+    function hc_stock_rollup_from_batches(array $batches): array
+    {
+        $usable = 0;
+        $expired = 0;
+        $soonestUsable = '';
+        $soonestExpired = '';
+        foreach ($batches as $b) {
+            $qty = (int) $b['quantity'];
+            if ($qty <= 0) {
+                continue;
+            }
+            $raw = (string) $b['expiryDateRaw'];
+            if ($raw !== '' && hc_inventory_expiry_status($raw) === 'expired') {
+                $expired += $qty;
+                if ($soonestExpired === '' || $raw < $soonestExpired) {
+                    $soonestExpired = $raw;
+                }
+            } else {
+                $usable += $qty;
+                if ($raw !== '' && ($soonestUsable === '' || $raw < $soonestUsable)) {
+                    $soonestUsable = $raw;
+                }
+            }
+        }
+
+        return [
+            'usable' => $usable,
+            'expired' => $expired,
+            'expiryDate' => $usable > 0 ? $soonestUsable : $soonestExpired,
+        ];
+    }
+}
+
 if (!function_exists('hc_recompute_medicine_rollup')) {
     /**
-     * Recomputes medicines/{id}'s own currentStock (sum of every real
-     * batch's remaining quantity) and expiryDate (the soonest expiry
-     * among batches that still have stock — FEFO, same as the table's
-     * own sort) from its real medicine_batches docs, and writes both
-     * back along with a freshly-derived "status". Called after every
-     * batch create/decrement so the rollup never drifts from what the
-     * real batches actually add up to.
+     * Recomputes medicines/{id}'s stored currentStock (USABLE stock only —
+     * non-expired batches, see hc_stock_rollup_from_batches()), expiredStock,
+     * expiryDate and a freshly-derived "status" from its real
+     * medicine_batches docs. Called after every batch create/decrement/
+     * archive so the rollup never drifts from what the real batches add
+     * up to. A batch that expires purely because the date passed is
+     * caught on read instead (hc_apply_usable_stock()).
      */
     function hc_recompute_medicine_rollup(string $medicineId): void
     {
@@ -284,26 +345,94 @@ if (!function_exists('hc_recompute_medicine_rollup')) {
             return;
         }
 
-        $batches = hc_get_batches_for_medicine($medicineId);
-        $totalStock = array_sum(array_column($batches, 'quantity'));
-        $soonestExpiryRaw = '';
-        foreach ($batches as $b) {
-            if ($b['expiryDateRaw'] === '') {
-                continue;
-            }
-            if ($soonestExpiryRaw === '' || $b['expiryDateRaw'] < $soonestExpiryRaw) {
-                $soonestExpiryRaw = $b['expiryDateRaw'];
-            }
-        }
+        $rollup = hc_stock_rollup_from_batches(hc_get_batches_for_medicine($medicineId));
 
         $minLevel = (int) ($medicineDoc['minLevel'] ?? 0);
         $maxLevel = (int) ($medicineDoc['maxLevel'] ?? 0);
         $firestore->setDocument('medicines', $medicineId, array_merge($medicineDoc, [
-            'currentStock' => $totalStock,
-            'expiryDate' => $soonestExpiryRaw !== '' ? $soonestExpiryRaw : ($medicineDoc['expiryDate'] ?? null),
-            'status' => hc_inventory_status_for_stock($totalStock, $minLevel, $maxLevel),
+            'currentStock' => $rollup['usable'],
+            'expiredStock' => $rollup['expired'],
+            'expiryDate' => $rollup['expiryDate'] !== '' ? $rollup['expiryDate'] : ($medicineDoc['expiryDate'] ?? null),
+            'status' => hc_inventory_status_for_stock($rollup['usable'], $minLevel, $maxLevel),
             'lastUpdated' => date('c'),
         ]));
+    }
+}
+
+if (!function_exists('hc_apply_usable_stock')) {
+    /**
+     * Live usable-stock correction for a list of inventory rows, so a
+     * batch that expired purely because the date passed (no write, so the
+     * stored rollup was never recomputed) stops counting as stock right
+     * away — in the inventory tables, summary cards, low-stock
+     * notifications, dashboards and analytics alike.
+     *
+     * Reads every batch in ONE listDocuments() call (request + persisted
+     * cache, invalidated on any batch write). For each row whose item has
+     * batches: overrides currentStock (usable only), status and the raw
+     * expiry field, and adds expiredStock. Items with no batch docs keep
+     * their stored values.
+     *
+     * Self-healing: when the stored rollup on medicines/{id} is out of
+     * date, writes the corrected currentStock/expiredStock/expiryDate/
+     * status back WITHOUT touching lastUpdated (an expiry isn't a user
+     * edit, so it mustn't reorder the "most recently updated" inventory
+     * list). Readers that read the raw doc directly (public medicine list,
+     * sub-admin dashboard/analytics/inventory reports) then catch up too.
+     * Happens once per item per expiry event.
+     *
+     * @param array<int, array> $rows each with 'id', 'currentStock', 'minLevel', 'maxLevel', 'status' and $expiryKey
+     * @param string $expiryKey the row key holding the RAW expiry date
+     */
+    function hc_apply_usable_stock(array &$rows, string $expiryKey = 'expiryDateRaw'): void
+    {
+        global $firestore;
+
+        $batchesByItem = [];
+        foreach ($firestore->listDocuments('medicine_batches') as $doc) {
+            $f = $doc['fields'];
+            if ($f['archived'] ?? false) {
+                continue;
+            }
+            $batchesByItem[(string) ($f['medicineId'] ?? '')][] = [
+                'quantity' => (int) ($f['quantity'] ?? 0),
+                'expiryDateRaw' => (string) ($f['expiryDate'] ?? ''),
+            ];
+        }
+
+        foreach ($rows as &$row) {
+            $id = (string) ($row['id'] ?? '');
+            if (!isset($batchesByItem[$id])) {
+                $row['expiredStock'] = (int) ($row['expiredStock'] ?? 0);
+                continue;
+            }
+
+            $rollup = hc_stock_rollup_from_batches($batchesByItem[$id]);
+            $status = hc_inventory_status_for_stock($rollup['usable'], (int) ($row['minLevel'] ?? 0), (int) ($row['maxLevel'] ?? 0));
+            $expiry = $rollup['expiryDate'] !== '' ? $rollup['expiryDate'] : (string) ($row[$expiryKey] ?? '');
+
+            $stale = (int) $row['currentStock'] !== $rollup['usable']
+                || (string) ($row['status'] ?? '') !== $status
+                || (string) ($row[$expiryKey] ?? '') !== $expiry;
+
+            $row['currentStock'] = $rollup['usable'];
+            $row['expiredStock'] = $rollup['expired'];
+            $row['status'] = $status;
+            $row[$expiryKey] = $expiry;
+
+            if ($stale) {
+                $doc = $firestore->getDocument('medicines', $id);
+                if ($doc !== null) {
+                    $firestore->setDocument('medicines', $id, array_merge($doc, [
+                        'currentStock' => $rollup['usable'],
+                        'expiredStock' => $rollup['expired'],
+                        'expiryDate' => $expiry !== '' ? $expiry : ($doc['expiryDate'] ?? null),
+                        'status' => $status,
+                    ]));
+                }
+            }
+        }
+        unset($row);
     }
 }
 
@@ -452,5 +581,56 @@ if (!function_exists('hc_decrement_medicine_stock_fefo')) {
         hc_recompute_medicine_rollup($medicineId);
 
         return true;
+    }
+}
+
+if (!function_exists('hc_get_archived_expired_batches')) {
+    /**
+     * Every expired batch archived via api/archive-medicine-batch.php,
+     * newest archive first — read-only data for the "Expired Batches"
+     * monitoring page (pharmacist/expired_batches.php,
+     * subadmin/expired_batches.php). Joins each batch to its parent
+     * item's name/type/unit/category (including items that were later
+     * archived themselves).
+     *
+     * @return array<int, array{id: string, displayBatchNumber: string, medicineId: string, itemName: string, itemType: string, category: string, unit: string, quantity: int, expiryDateRaw: string, expiryDate: string, archivedAtRaw: string, archivedAt: string, archivedBy: string}>
+     */
+    function hc_get_archived_expired_batches(): array
+    {
+        global $firestore;
+
+        $medicineCache = [];
+        $rows = [];
+        foreach ($firestore->listDocumentsWhere('medicine_batches', 'archived', true) as $doc) {
+            $f = $doc['fields'];
+            $medicineId = (string) ($f['medicineId'] ?? '');
+            if (!array_key_exists($medicineId, $medicineCache)) {
+                $medicineCache[$medicineId] = $medicineId !== '' ? $firestore->getDocument('medicines', $medicineId) : null;
+            }
+            $med = $medicineCache[$medicineId];
+            $unit = (string) ($med['unit'] ?? '');
+            $expiryRaw = (string) ($f['expiryDate'] ?? '');
+            $archivedRaw = (string) ($f['archivedAt'] ?? '');
+
+            $rows[] = [
+                'id' => $doc['id'],
+                'displayBatchNumber' => hc_batch_display_number($f, $doc['id']),
+                'medicineId' => $medicineId,
+                'itemName' => (string) ($med['name'] ?? '(deleted item)'),
+                'itemType' => ($med['type'] ?? 'medicine') === 'vaccine' ? 'vaccine' : 'medicine',
+                'category' => (string) ($med['category'] ?? ''),
+                'unit' => $unit,
+                'quantity' => (int) ($f['archivedQuantity'] ?? 0),
+                'expiryDateRaw' => $expiryRaw,
+                'expiryDate' => $expiryRaw !== '' && strtotime($expiryRaw) !== false ? strtoupper(date('M d, Y', strtotime($expiryRaw))) : 'No expiry recorded',
+                'archivedAtRaw' => $archivedRaw,
+                'archivedAt' => $archivedRaw !== '' && strtotime($archivedRaw) !== false ? date('M j, Y g:i A', strtotime($archivedRaw)) : '—',
+                'archivedBy' => (string) ($f['archivedBy'] ?? '—'),
+            ];
+        }
+
+        usort($rows, fn ($a, $b) => strcmp($b['archivedAtRaw'], $a['archivedAtRaw']));
+
+        return $rows;
     }
 }

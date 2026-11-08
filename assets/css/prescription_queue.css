@@ -227,3 +227,121 @@
 #rxqDetailModal .modal-header{ padding: 20px 24px; }
 #rxqDetailModal .modal-body{ padding: 22px 24px; }
 #rxqDetailModal .modal-footer{ padding: 16px 24px; }
+
+/* =============================================================
+   Searchable inventory picker in #rxqDetailModal (#rxqItemCombo) —
+   replaces a native <select> that rendered the whole inventory as one
+   giant OS list spilling past the modal. Fixed-height scrolling panel
+   that opens under the field, with a search box on top.
+   ============================================================= */
+.rxq-combo{ position: relative; }
+.rxq-combo-toggle{
+  width: 100%;
+  text-align: left;
+  background-color: var(--adm-card);
+  color: var(--adm-text);
+  cursor: pointer;
+}
+.rxq-combo-label{
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.rxq-combo-placeholder{ color: var(--adm-text-muted); }
+/* In the modal's normal layout, directly under the field and exactly its
+   width — so it stays inside the modal, is never clipped, and never
+   covers the Quantity field or the footer buttons (the modal grows
+   instead; revealPanel() in assets/js/prescription-queue.js scrolls it
+   into view). Flex column: the search row stays put, only the list
+   scrolls. */
+.rxq-combo-panel{
+  position: static;
+  width: 100%;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .08);
+  overflow: hidden;
+}
+.rxq-combo-panel[hidden]{ display: none; }
+.rxq-combo-search{
+  position: relative;
+  flex: 0 0 auto;
+  padding: 8px;
+  border-bottom: 1px solid var(--adm-border);
+}
+.rxq-combo-search input:focus{
+  border-color: var(--adm-red-bright);
+  box-shadow: 0 0 0 .2rem color-mix(in srgb, var(--adm-red-bright) 18%, transparent);
+}
+.rxq-combo-toggle:focus,
+.rxq-combo-toggle[aria-expanded="true"]{
+  border-color: var(--adm-red-bright);
+  box-shadow: 0 0 0 .2rem color-mix(in srgb, var(--adm-red-bright) 18%, transparent);
+}
+.rxq-combo-search i{
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: var(--adm-text-muted);
+}
+.rxq-combo-search input{ padding-left: 28px; }
+.rxq-combo-list{
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: min(264px, 42vh); /* ~6 rows; shorter on small screens */
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable; /* reserve the scrollbar's space so it never sits on top of text */
+  scrollbar-width: thin;
+}
+.rxq-combo-option{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px 8px 12px;
+  font-size: 13px;
+  color: var(--adm-text);
+  cursor: pointer;
+}
+.rxq-combo-option:hover,
+.rxq-combo-option.is-active{ background: var(--adm-hover-bg); }
+/* Currently selected item: maroon text + light maroon tint + a left
+   accent bar, so it's obvious at a glance which one is picked. */
+.rxq-combo-option.is-selected{
+  font-weight: 600;
+  color: var(--adm-red-bright);
+  background: color-mix(in srgb, var(--adm-red-bright) 8%, var(--adm-card));
+  box-shadow: inset 3px 0 0 var(--adm-red-bright);
+}
+.rxq-combo-option.is-selected .rxq-combo-stock{ color: var(--adm-red-bright); }
+.rxq-combo-option.is-selected.is-active{ background: color-mix(in srgb, var(--adm-red-bright) 12%, var(--adm-card)); }
+.rxq-combo-option.is-disabled{ cursor: not-allowed; opacity: .5; }
+.rxq-combo-option.is-disabled:hover{ background: transparent; }
+.rxq-combo-option-none{
+  color: var(--adm-text-muted);
+  border-bottom: 1px solid var(--adm-border);
+  margin-bottom: 4px;
+}
+.rxq-combo-name{ flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.rxq-combo-stock{
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--adm-text-muted);
+  white-space: nowrap;
+}
+.rxq-combo-empty{
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--adm-text-muted);
+}

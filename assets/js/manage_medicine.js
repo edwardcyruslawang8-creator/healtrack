@@ -144,8 +144,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         document.querySelectorAll('.mm-item-dispense').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                if (item.expiryStatus === 'expired') {
-                    HCDialog.alert(item.name + ' has expired and can no longer be dispensed.');
+                // Gate on real non-expired batch stock, not item.expiryStatus
+                // (the item's soonest-expiry rollup, which reads "expired"
+                // as soon as ONE batch expires, even while a later, valid
+                // batch still has stock).
+                const dispensable = typeof item.dispensableStock === 'number' ? item.dispensableStock : item.currentStock;
+                if (dispensable <= 0) {
+                    HCDialog.alert(item.name + ' has no non-expired stock left and can no longer be dispensed.');
                     return;
                 }
                 dnrForm.reset();
@@ -155,12 +160,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('dnrItemId').value = item.id;
                 document.getElementById('dnrItemType').value = item.type;
                 document.getElementById('dnrItemName').textContent = item.name;
-                document.getElementById('dnrCurrentStock').textContent = item.currentStock;
-                document.getElementById('dnrUnit').textContent = unitPlural(item.unit, item.currentStock);
+                // Show/cap at what can really be dispensed — expired stock
+                // still in currentStock can't be.
+                document.getElementById('dnrCurrentStock').textContent = dispensable;
+                document.getElementById('dnrUnit').textContent = unitPlural(item.unit, dispensable);
                 // Always the dispensing unit — individual tablets/capsules
                 // for box-stocked items, never boxes.
                 document.getElementById('dnrQtyUnit').textContent = unitPlural(item.unit, 2);
-                document.getElementById('dnrQty').max = item.currentStock;
+                document.getElementById('dnrQty').max = dispensable;
                 dnrSubmitBtn.disabled = false;
                 dnrSubmitBtn.innerHTML = dnrSubmitBtnDefaultHtml;
                 dnrModal.show();
@@ -242,6 +249,37 @@ document.addEventListener('DOMContentLoaded', function () {
                     window.location.href = 'medicine_vaccine_inventory.php';
                 })
                 .catch(function (err) {
+                    HCDialog.alert(err.message);
+                });
+        });
+    });
+
+    // -------------------------------------------------------------
+    // Archive Expired Batch — only on an expired batch's own row.
+    // Archives just THAT batch (api/archive-medicine-batch.php), so a
+    // still-valid batch of the same item keeps its stock; the item's
+    // Total Current Stock drops by the expired quantity. Reloads so the
+    // table and info row reflect it.
+    // -------------------------------------------------------------
+    document.querySelectorAll('.mm-batch-archive').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+            const d = btn.dataset;
+            const confirmed = await HCDialog.confirm('Archive expired batch ' + d.batchNumber + ' of "' + item.name + '"? Its ' + d.batchQty + ' will be removed from stock. Other batches are not affected.');
+            if (!confirmed) return;
+
+            btn.disabled = true;
+            fetch('../api/archive-medicine-batch.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ batchId: d.batchId }),
+            })
+                .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+                .then(function (result) {
+                    if (!result.ok || !result.data.success) throw new Error(result.data.error || 'Something went wrong. Please try again.');
+                    window.location.reload();
+                })
+                .catch(function (err) {
+                    btn.disabled = false;
                     HCDialog.alert(err.message);
                 });
         });
