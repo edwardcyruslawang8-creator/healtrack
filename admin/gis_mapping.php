@@ -330,7 +330,7 @@ $adminNavItems = [
                         <i class="bi bi-chevron-down"></i>
                     </div>
                 </div>
-                <div class="disease-rank-list">
+                <div class="disease-rank-list" style="max-height:480px; overflow-y:auto; padding-right:4px;">
                     <?php if (empty($topDiseases)): ?>
                     <p class="text-muted small mb-0">No notifiable-disease cases reported <?= htmlspecialchars(strtolower($selectedDateRange)) ?>.</p>
                     <?php endif; ?>
