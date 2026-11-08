@@ -77,6 +77,16 @@ $adminNavItems = [
 
 <link rel="stylesheet" href="<?= asset_url('/assets/css/admin-dashboard.css') ?>">
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
+<style>
+/* Page-scoped buttons, same visual language as admin-dashboard.css's
+   .btn-add-facility (brand red primary action) — this page has no
+   dedicated stylesheet of its own, so these live inline instead of a
+   one-rule-only extra file. */
+.drg-btn-add{ display:inline-flex; align-items:center; gap:8px; background:var(--adm-red-bright); color:#fff; border:none; padding:8px 16px; border-radius:9px; font-size:13px; font-weight:600; transition:background .15s ease; }
+.drg-btn-add:hover{ background:var(--adm-red-bright-hover); color:#fff; }
+.drg-btn-manage{ display:inline-flex; align-items:center; gap:6px; background:transparent; color:var(--adm-text); border:1px solid var(--adm-border); padding:6px 14px; border-radius:8px; font-size:12.5px; font-weight:600; transition:background .15s ease; }
+.drg-btn-manage:hover{ background:var(--adm-hover-bg); color:var(--adm-text); }
+</style>
 </head>
 <body class="adm-body">
 
@@ -193,13 +203,13 @@ $adminNavItems = [
 
     <!-- ============ REGISTRY TABLE ============ -->
     <div class="adm-card">
-        <div class="sad-card-header">
+        <div class="adm-card-header">
             <h2>All Registry Entries (<?= $registryTotalCount ?>)</h2>
-            <button type="button" class="btn btn-sm btn-outline-dark" data-add-entry><i class="bi bi-plus-lg"></i> Add Condition</button>
+            <button type="button" class="drg-btn-add" data-add-entry><i class="bi bi-plus-lg"></i> Add Condition</button>
         </div>
-        <div class="adm-table-wrap">
+        <div class="adm-table-wrap" style="max-height:520px; overflow-y:auto;">
             <table class="adm-table">
-                <thead>
+                <thead style="position:sticky; top:0; z-index:1; background:var(--adm-card);">
                     <tr><th>Name</th><th>Synonyms</th><th>Classification</th><th>GIS Eligible</th><th>Public</th><th>Last Updated</th><th></th></tr>
                 </thead>
                 <tbody>
@@ -208,14 +218,14 @@ $adminNavItems = [
                     <?php endif; ?>
                     <?php foreach ($registryRows as $r): $colors = $classificationColors[$r['classKey']]; ?>
                     <tr data-registry-id="<?= htmlspecialchars($r['id']) ?>">
-                        <td><strong><?= htmlspecialchars($r['name']) ?></strong><?php if ($r['isAutoDetected']): ?> <span class="status-badge" style="background:#FDF3DC; color:#B7791F; font-size:10px;">auto-detected</span><?php endif; ?></td>
+                        <td><strong><?= htmlspecialchars($r['name']) ?></strong><?php if ($r['isAutoDetected']): ?> <span class="adm-status-badge" style="background:#FDECDD; color:#E8710A; font-size:10px;">auto-detected</span><?php endif; ?></td>
                         <td style="max-width:240px; font-size:12.5px; color:var(--adm-text-soft);"><?= htmlspecialchars(implode(', ', $r['synonyms'])) ?></td>
-                        <td><span class="status-badge" style="background:<?= htmlspecialchars($colors['bg']) ?>; color:<?= htmlspecialchars($colors['color']) ?>;"><?= htmlspecialchars($r['classificationLabel']) ?></span></td>
+                        <td><span class="adm-status-badge" style="background:<?= htmlspecialchars($colors['bg']) ?>; color:<?= htmlspecialchars($colors['color']) ?>;"><?= htmlspecialchars($r['classificationLabel']) ?></span></td>
                         <td><?= $r['gisEligible'] ? 'Yes' : 'No' ?></td>
                         <td><?= $r['publicVisibility'] ? 'Yes' : 'No' ?></td>
                         <td><?= $r['updatedAt'] !== '' ? htmlspecialchars(date('M j, Y', strtotime($r['updatedAt']))) : '—' ?> by <?= htmlspecialchars($r['updatedByName']) ?></td>
                         <td>
-                            <button type="button" class="btn btn-sm btn-outline-dark" data-manage-registry
+                            <button type="button" class="drg-btn-manage" data-manage-registry
                                 data-id="<?= htmlspecialchars($r['id']) ?>"
                                 data-name="<?= htmlspecialchars($r['name']) ?>"
                                 data-synonyms="<?= htmlspecialchars(implode(', ', $r['synonyms'])) ?>"

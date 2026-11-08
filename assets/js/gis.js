@@ -705,16 +705,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Classification dropdown — same real, full-page-reload mechanism,
-    // to ?classification=..., which includes/public/gis-data.php
-    // resolves into the same real server-side filter.
-    const gisClassificationSelect = document.getElementById('gisClassificationSelect');
-    if (gisClassificationSelect && gisFilterForm) {
-        gisClassificationSelect.addEventListener('change', function () {
-            gisFilterForm.submit();
-        });
-    }
-
     // ---------------------------------------------------------------
     // Top 5 Diseases "View by" toggle — shows ONLY the selected real
     // number per row (case count OR percent of total, not both at

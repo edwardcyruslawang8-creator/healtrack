@@ -36,12 +36,16 @@ $adminProfile = [
 $classificationMeta = hc_disease_registry_classification_meta() + [
     'unclassified' => 'Unclassified',
 ];
+// Same 5-color badge palette every other admin page's own status/role
+// chips already use (admin-dashboard.css's --adm-orange/-green/-blue/
+// -red/-purple + their *-bg pairs — see e.g. subadmin_management.php's
+// $roleColors) rather than a one-off set of colors just for this page.
 $classificationColors = [
-    'vector_borne' => ['bg' => '#FDE8DC', 'color' => '#C2560C'],
-    'waterborne_foodborne' => ['bg' => '#FDF3DC', 'color' => '#B7791F'],
-    'respiratory_contact' => ['bg' => '#E3F0FC', 'color' => '#1A73E8'],
+    'vector_borne' => ['bg' => '#FDECDD', 'color' => '#E8710A'],
+    'waterborne_foodborne' => ['bg' => '#E8F0FE', 'color' => '#1A73E8'],
+    'respiratory_contact' => ['bg' => '#FCE4E4', 'color' => '#D93025'],
     'environment_zoonotic' => ['bg' => '#E4F7EA', 'color' => '#1E8E3E'],
-    'animal_exposure' => ['bg' => '#F1E7FB', 'color' => '#7E3FB5'],
+    'animal_exposure' => ['bg' => '#EFE7FB', 'color' => '#7C3AED'],
     'unclassified' => ['bg' => '#EEF0F3', 'color' => '#6B7280'],
 ];
 
