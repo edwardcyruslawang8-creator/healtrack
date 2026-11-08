@@ -340,7 +340,7 @@ $adminNavItems = [
                         <span class="rank-badge"><?= $i + 1 ?></span>
                         <span class="disease-name"><?= htmlspecialchars($d['name']) ?></span>
                         <span class="disease-cases" data-cases="<?= htmlspecialchars($d['cases']) ?>" data-percent="<?= htmlspecialchars($d['percent']) ?>"><?= htmlspecialchars($d['cases']) ?></span>
-                        <span class="disease-trend <?= htmlspecialchars($d['trend']) ?>">
+                        <span class="disease-trend <?= htmlspecialchars($d['trend']) ?>" title="Change vs previous <?= htmlspecialchars($gisSummary['periodLabel']) ?> — not a share of total cases">
                             <i class="bi bi-arrow-<?= $d['trend'] === 'up' ? 'up' : 'down' ?>"></i><?= htmlspecialchars($d['change']) ?>
                         </span>
                     </div>
