@@ -90,10 +90,244 @@
 .pn-section .an-forecast-row > * > .pn-empty,
 .pn-section .an-forecast-row > * > .an-reco-empty{ flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
+/* -- Risk & Alert Indicators / Recommendations: scrollable, aligned --
+   Long lists (e.g. 6.3.2's shortage tab with a dozen+ items) stretched
+   both cards far down the page. Cap each list at the same height so the
+   two partner cards end level, and scroll inside instead. */
+.pn-section .an-forecast-row > .adm-card > .adm-status-list,
+.pn-section .an-forecast-row > .an-card > .an-reco-list{
+  max-height: 520px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 6px;
+  margin-right: -6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--adm-border) transparent;
+}
+.pn-section .an-forecast-row .adm-status-list::-webkit-scrollbar,
+.pn-section .an-forecast-row .an-reco-list::-webkit-scrollbar{ width: 6px; }
+.pn-section .an-forecast-row .adm-status-list::-webkit-scrollbar-thumb,
+.pn-section .an-forecast-row .an-reco-list::-webkit-scrollbar-thumb{ background: var(--adm-border); border-radius: 6px; }
+.pn-section .an-forecast-row .adm-status-list::-webkit-scrollbar-track,
+.pn-section .an-forecast-row .an-reco-list::-webkit-scrollbar-track{ background: transparent; }
+
+/* Risk rows: title + severity pill on one line, description on its own
+   line beneath (they're <span>s, so they ran together inline), and the
+   count in a fixed-width right-aligned column so the numbers line up. */
+.pn-section .adm-status-list{ gap: 0; }
+.pn-section .adm-status-row{ align-items: center; gap: 12px; padding: 12px 0; }
+.pn-section .adm-status-row .adm-status-icon{ width: 38px; height: 38px; font-size: 16px; }
+.pn-section .adm-status-row .adm-status-title{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-bottom: 3px;
+  line-height: 1.35;
+}
+.pn-section .adm-status-row .pn-severity{ padding: 2px 8px; font-size: 10px; }
+.pn-section .adm-status-row .pn-severity.unusual{ margin-left: 0; }
+.pn-section .adm-status-row .adm-status-desc{ display: block; }
+.pn-section .adm-status-row .adm-status-number{
+  min-width: 48px;
+  text-align: right;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Recommendation cards: icon pinned to the top of the text block, and a
+   uniform card size/rhythm. */
+.pn-section .an-reco-list{ gap: 10px; }
+.pn-section .an-reco-card{ align-items: flex-start; padding: 14px 16px; flex-shrink: 0; }
+.pn-section .an-reco-icon{ width: 34px; height: 34px; font-size: 15px; }
+.pn-section .an-reco-title{ line-height: 1.35; margin-bottom: 4px; }
+
+/* -- Risk & Alert Indicators: header "View History" button --
+   (includes/shared/_risk_alert_card.php). Stays on the title's line at
+   every width — the title wraps first instead of the button dropping. */
+.pn-section .pn-risk-head{ flex-wrap: nowrap; align-items: center; }
+.pn-section .pn-risk-head h3{ flex: 1 1 auto; min-width: 0; }
+.pn-history-btn{
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 50px;
+  border: 1px solid var(--adm-border);
+  background: var(--adm-card);
+  color: var(--adm-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color .15s ease, border-color .15s ease, background .15s ease;
+}
+.pn-history-btn i{ font-size: 13px; }
+.pn-history-btn:hover,
+.pn-history-btn:focus-visible{ color: var(--adm-text); border-color: var(--adm-text-soft); background: var(--adm-bg); outline: none; }
+
+/* Forecast-based (projected, not recorded) indicator pill + the
+   "returning to normal" progress line on an active indicator. */
+.pn-severity.forecast{ background: var(--adm-bg); color: var(--adm-text-muted); border: 1px dashed var(--adm-border); }
+.pn-resolving-note{ display: block; font-size: 11px; color: var(--adm-green); margin-top: 3px; line-height: 1.4; }
+
+/* =============================================================
+   Alert History modal (includes/shared/risk_alert_history_modal.php,
+   assets/js/risk-alert-history.js). Maroon = --adm-red-bright (this
+   app's brand accent; it already has its own dark-mode value).
+   ============================================================= */
+.rah-modal{
+  --rah-accent: var(--adm-red-bright);
+  --rah-accent-tint: color-mix(in srgb, var(--adm-red-bright) 9%, transparent);
+  --rah-accent-ring: color-mix(in srgb, var(--adm-red-bright) 22%, transparent);
+}
+.rah-modal .modal-dialog{ max-width: min(1140px, calc(100vw - 32px)); }
+.rah-modal .modal-content{
+  background: var(--adm-card); color: var(--adm-text);
+  border: 1px solid var(--adm-border); border-radius: var(--adm-radius-lg);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, .18);
+  overflow: hidden;
+}
+.rah-modal .modal-header{ border-bottom: 1px solid var(--adm-border); align-items: flex-start; padding: 18px 24px 16px; gap: 12px; }
+.rah-modal .modal-title{ font-size: 17px; font-weight: 700; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; line-height: 1.3; }
+.rah-tab-name{ font-weight: 600; color: var(--adm-text-muted); }
+.rah-sub{ margin: 6px 0 0; font-size: 12.5px; color: var(--adm-text-muted); line-height: 1.5; }
+.rah-modal .modal-body{ padding: 20px 24px 22px; overflow-x: hidden; }
+
+/* -- Filters -- */
+.rah-filters{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+  gap: 14px 14px;
+  align-items: end;
+  margin-bottom: 18px;
+}
+.rah-filters label{ display: flex; flex-direction: column; gap: 6px; margin: 0; min-width: 0; }
+.rah-filters label > span{ font-size: 11px; font-weight: 700; color: var(--adm-text-muted); text-transform: uppercase; letter-spacing: .4px; }
+.rah-filters label[hidden]{ display: none; }
+.rah-filters .form-control{
+  height: 38px; background-color: var(--adm-card); color: var(--adm-text);
+  border: 1px solid var(--adm-border); border-radius: var(--adm-radius-md); font-size: 13px;
+}
+.rah-filters .form-control:focus{ border-color: var(--rah-accent); box-shadow: 0 0 0 3px var(--rah-accent-ring); }
+.rah-filters .form-control::-webkit-calendar-picker-indicator{ cursor: pointer; opacity: .7; }
+.rah-reset{
+  justify-self: start; align-self: end;
+  height: 38px; border: none; background: none; padding: 0 2px;
+  color: var(--rah-accent); font-size: 12.5px; font-weight: 600; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.rah-reset:hover{ opacity: .8; }
+
+/* Custom dropdown (replaces the native <select> popup). */
+.rah-dd{ position: relative; }
+.rah-native{
+  position: absolute !important; inset: 0; width: 100%; height: 100%;
+  opacity: 0; pointer-events: none;
+}
+.rah-dd-btn{
+  width: 100%; height: 38px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 0 12px;
+  background: var(--adm-card); color: var(--adm-text);
+  border: 1px solid var(--adm-border); border-radius: var(--adm-radius-md);
+  font-size: 13px; text-align: left; cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.rah-dd-value{ min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rah-dd-btn i{ flex-shrink: 0; font-size: 12px; color: var(--adm-text-muted); transition: transform .15s ease; }
+.rah-dd-btn:hover{ border-color: var(--adm-text-soft); }
+.rah-dd-btn:focus-visible,
+.rah-dd.open .rah-dd-btn{ outline: none; border-color: var(--rah-accent); box-shadow: 0 0 0 3px var(--rah-accent-ring); }
+.rah-dd.open .rah-dd-btn i{ transform: rotate(180deg); color: var(--rah-accent); }
+.rah-dd-list{
+  position: absolute; z-index: 20; top: calc(100% + 6px); left: 0;
+  width: 100%; min-width: 180px; max-height: 240px; overflow-y: auto;
+  margin: 0; padding: 6px; list-style: none;
+  background: var(--adm-card); border: 1px solid var(--adm-border); border-radius: var(--adm-radius-md);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, .14);
+  outline: none;
+}
+.rah-dd-opt{
+  position: relative; padding: 8px 30px 8px 10px; border-radius: 6px;
+  font-size: 13px; color: var(--adm-text); cursor: pointer; line-height: 1.35;
+}
+.rah-dd-opt.active{ background: var(--rah-accent-tint); }
+.rah-dd-opt.selected{ color: var(--rah-accent); font-weight: 600; }
+.rah-dd-opt.selected::after{
+  content: "\F272"; font-family: "bootstrap-icons"; /* bi-check2 */
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 14px;
+}
+
+/* -- Table -- */
+.rah-table-wrap{
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--adm-border); border-radius: var(--adm-radius-md);
+}
+.rah-table{ width: 100%; min-width: 920px; table-layout: fixed; border-collapse: collapse; font-size: 13px; }
+.rah-table th{
+  text-align: left; vertical-align: middle; white-space: nowrap;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+  color: var(--adm-text-muted); background: var(--adm-bg);
+  padding: 12px 16px; border-bottom: 1px solid var(--adm-border);
+}
+.rah-table td{ padding: 14px 16px; border-bottom: 1px solid var(--adm-border); vertical-align: middle; color: var(--adm-text); line-height: 1.45; overflow-wrap: anywhere; }
+.rah-table tbody tr:last-child td{ border-bottom: none; }
+.rah-c-bgy{ width: 15%; }
+.rah-c-ind{ width: auto; }
+.rah-c-sev{ width: 124px; }
+.rah-c-date{ width: 172px; }
+.rah-c-st{ width: 210px; }
+.rah-no-barangay .rah-col-barangay,
+.rah-no-barangay .rah-f-barangay{ display: none; }
+.rah-row:hover td{ background: color-mix(in srgb, var(--adm-bg) 60%, transparent); }
+.rah-ind{ margin-right: 6px; }
+.rah-table .pn-severity{ vertical-align: middle; }
+.rah-nowrap{ white-space: nowrap; overflow-wrap: normal; }
+.rah-state{ text-align: center; color: var(--adm-text-soft); padding: 32px 16px !important; }
+.rah-status{ display: inline-flex; padding: 3px 10px; border-radius: 50px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; }
+.rah-status.active{ background: var(--adm-orange-bg); color: var(--adm-orange); }
+.rah-status.resolved{ background: var(--adm-green-bg); color: var(--adm-green); }
+/* "Auto-resolved: <reason>" under a Resolved status — the evidence the
+   system closed it from real data (replaces the old expandable details). */
+.rah-reason{ display: block; margin-top: 6px; font-size: 11.5px; line-height: 1.4; color: var(--adm-text-muted); overflow-wrap: normal; }
+
+/* -- Pagination -- */
+.rah-pager{ display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+.rah-count{ font-size: 12.5px; color: var(--adm-text-muted); }
+.rah-pager-btns{ display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--adm-text); }
+.rah-pager-btns button{
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 1px solid var(--adm-border); background: var(--adm-card); color: var(--adm-text);
+  border-radius: 50px; padding: 6px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.rah-pager-btns button:not(:disabled):hover{ border-color: var(--rah-accent); color: var(--rah-accent); }
+.rah-pager-btns button:disabled{ opacity: .45; cursor: default; }
+
+@media (max-width: 767.98px){
+  /* modal-fullscreen-md-down takes over sizing here */
+  .rah-modal .modal-dialog{ max-width: none; }
+  .rah-modal .modal-content{ border-radius: 0; border: none; }
+  .rah-modal .modal-header{ padding: 16px; }
+  .rah-modal .modal-body{ padding: 16px; }
+  .rah-filters{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .rah-reset{ grid-column: 1 / -1; height: auto; padding: 2px; }
+  .rah-pager{ flex-direction: column; align-items: stretch; }
+  .rah-count{ text-align: center; }
+  .rah-pager-btns{ justify-content: space-between; }
+}
+@media (max-width: 399.98px){
+  .rah-filters{ grid-template-columns: minmax(0, 1fr); }
+}
+
 @media (max-width: 575.98px){
   .pn-section .tab-pane > .an-card,
   .pn-section .an-forecast-row > .adm-card,
   .pn-section .an-forecast-row > .an-card{ padding: 16px; }
   .pn-section .an-card-header,
   .pn-section .adm-card-header{ flex-wrap: wrap; }
+  .pn-section .an-forecast-row > .adm-card > .adm-status-list,
+  .pn-section .an-forecast-row > .an-card > .an-reco-list{ max-height: 420px; }
 }

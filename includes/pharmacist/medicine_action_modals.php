@@ -6,11 +6,11 @@
      "Manage Medicine"/"Manage Vaccine" detail view now (a dedicated
      page, not a modal over the list), server-rendering every real
      batch for one item (window.MM_BATCHES) so this form's "existing
-     batch" dropdown needs no extra fetch. Two real modes mirroring
-     api/restock-medicine.php's own "mode" field:
-       - "An existing batch": picks one of this item's own real
-         batches and adds quantity to it (hc_add_to_existing_batch()).
-       - "A new batch": a real new batch with its own Batch Number
+     batch" check needs no extra fetch. Every restock is received as
+     its OWN new batch — the old "An existing batch" option (adding to
+     a batch already on file, which allowed restocking an empty or
+     already-expired batch) was removed by request:
+       - A new batch: a real new batch with its own Batch Number
          (optional — api/restock-medicine.php falls back to a short
          label derived from the new batch's own real doc id if left
          blank, same as every pre-existing batch that predates this
@@ -38,28 +38,13 @@
         <div class="modal-body">
           <div id="restockError" class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
 
-          <div class="mb-3">
-            <label class="am-form-label d-block mb-2">This stock is...</label>
-            <div class="btn-group w-100" role="group" aria-label="Restock mode">
-              <input type="radio" class="btn-check" name="rsMode" id="rsModeExisting" value="existing" autocomplete="off" checked>
-              <label class="btn mvi-mode-btn" for="rsModeExisting">An existing batch</label>
-              <input type="radio" class="btn-check" name="rsMode" id="rsModeNew" value="new" autocomplete="off">
-              <label class="btn mvi-mode-btn" for="rsModeNew">A new batch</label>
-            </div>
-          </div>
-
-          <div class="mb-3" id="rsExistingWrap">
-            <label class="am-form-label" for="rsBatchSelect">Batch<span class="text-danger">*</span></label>
-            <select class="form-select am-form-control" id="rsBatchSelect"></select>
-          </div>
-
-          <div class="mb-3 d-none" id="rsNewWrap">
+          <div class="mb-3" id="rsNewWrap">
             <label class="am-form-label" for="rsBatchNumber">Batch Number<span class="text-danger">*</span></label>
-            <input type="text" class="form-control am-form-control" id="rsBatchNumber" placeholder="e.g. BATCH-2026-045" maxlength="50">
+            <input type="text" class="form-control am-form-control" id="rsBatchNumber" placeholder="e.g. BATCH-2026-045" maxlength="50" required>
             <div class="row mt-3">
               <div class="col-md-6">
                 <label class="am-form-label" for="rsNewExpiry">Expiry Date<span class="text-danger">*</span></label>
-                <input type="date" class="form-control am-form-control" id="rsNewExpiry" min="<?= date('Y-m-d') ?>">
+                <input type="date" class="form-control am-form-control" id="rsNewExpiry" min="<?= date('Y-m-d') ?>" required>
               </div>
             </div>
           </div>

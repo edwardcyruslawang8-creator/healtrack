@@ -808,26 +808,7 @@ $adminNavItems = [
                             </div>
                         </div>
                         <div class="an-forecast-row">
-                            <div class="adm-card">
-                                <div class="adm-card-header"><h3>Risk &amp; Alert Indicators</h3></div>
-                                <?php if ($pt1RiskRows === []): ?>
-                                <div class="pn-empty"><i class="bi bi-check-circle-fill"></i><p>No barangay is currently under watch.</p></div>
-                                <?php else: ?>
-                                <div class="adm-status-list">
-                                    <?php foreach ($pt1RiskRows as $r): ?>
-                                    <div class="adm-status-row">
-                                        <span class="adm-status-icon" style="background:<?= htmlspecialchars($r['iconBg']) ?>; color:<?= htmlspecialchars($r['iconColor']) ?>;"><i class="bi <?= htmlspecialchars($r['icon']) ?>"></i></span>
-                                        <span class="adm-status-body">
-                                            <span class="adm-status-title"><?= htmlspecialchars($r['label']) ?> <span class="pn-severity <?= htmlspecialchars($r['badgeClass']) ?>"><?= htmlspecialchars($r['badge']) ?></span><?php if (!empty($r['anomaly'])): ?><span class="pn-severity unusual" title="More than 2 standard deviations above this pair's own 30-day baseline">Unusual</span><?php endif; ?></span>
-                                            <span class="adm-status-desc"><?= htmlspecialchars($r['desc']) ?></span>
-                                            <?php if (!empty($r['causes'])): ?><span class="pn-causes-note">Likely contributing factors: <?= htmlspecialchars($r['causes']) ?></span><?php endif; ?>
-                                        </span>
-                                        <span class="adm-status-number" style="color:<?= htmlspecialchars($r['valueColor']) ?>;"><?= htmlspecialchars((string) $r['value']) ?></span>
-                                    </div>
-                                    <?php endforeach; ?>
-                                </div>
-                                <?php endif; ?>
-                            </div>
+                            <?php $riskCardRows = $pt1RiskRows; $riskCardGroup = 'disease'; include __DIR__ . '/../includes/shared/_risk_alert_card.php'; ?>
                             <div class="an-card">
                                 <div class="an-card-header"><h3>Recommendations</h3></div>
                                 <?php if ($pt1Recommendations === []): ?>
@@ -994,25 +975,7 @@ $adminNavItems = [
                         </div>
 
                         <div class="an-forecast-row">
-                            <div class="adm-card">
-                                <div class="adm-card-header"><h3>Risk &amp; Alert Indicators</h3></div>
-                                <?php if ($pt2RiskRows === []): ?>
-                                <div class="pn-empty"><i class="bi bi-check-circle-fill"></i><p>No medicine or vaccine is currently at risk.</p></div>
-                                <?php else: ?>
-                                <div class="adm-status-list">
-                                    <?php foreach ($pt2RiskRows as $r): ?>
-                                    <div class="adm-status-row">
-                                        <span class="adm-status-icon" style="background:<?= htmlspecialchars($r['iconBg']) ?>; color:<?= htmlspecialchars($r['iconColor']) ?>;"><i class="bi <?= htmlspecialchars($r['icon']) ?>"></i></span>
-                                        <span class="adm-status-body">
-                                            <span class="adm-status-title"><?= htmlspecialchars($r['label']) ?> <span class="pn-severity <?= htmlspecialchars($r['badgeClass']) ?>"><?= htmlspecialchars($r['badge']) ?></span></span>
-                                            <span class="adm-status-desc"><?= htmlspecialchars($r['desc']) ?></span>
-                                        </span>
-                                        <span class="adm-status-number" style="color:<?= htmlspecialchars($r['valueColor']) ?>;"><?= htmlspecialchars((string) $r['value']) ?></span>
-                                    </div>
-                                    <?php endforeach; ?>
-                                </div>
-                                <?php endif; ?>
-                            </div>
+                            <?php $riskCardRows = $pt2RiskRows; $riskCardGroup = 'shortage'; include __DIR__ . '/../includes/shared/_risk_alert_card.php'; ?>
                             <div class="an-card">
                                 <div class="an-card-header"><h3>Recommendations</h3></div>
                                 <?php if ($pt2Recommendations === []): ?>
@@ -1071,25 +1034,7 @@ $adminNavItems = [
                             </div>
                         </div>
                         <div class="an-forecast-row">
-                            <div class="adm-card">
-                                <div class="adm-card-header"><h3>Risk &amp; Alert Indicators</h3></div>
-                                <?php if ($pt3RiskRows === []): ?>
-                                <div class="pn-empty"><i class="bi bi-check-circle-fill"></i><p>Every at-risk item already has a reorder in the pipeline.</p></div>
-                                <?php else: ?>
-                                <div class="adm-status-list">
-                                    <?php foreach ($pt3RiskRows as $r): ?>
-                                    <div class="adm-status-row">
-                                        <span class="adm-status-icon" style="background:<?= htmlspecialchars($r['iconBg']) ?>; color:<?= htmlspecialchars($r['iconColor']) ?>;"><i class="bi <?= htmlspecialchars($r['icon']) ?>"></i></span>
-                                        <span class="adm-status-body">
-                                            <span class="adm-status-title"><?= htmlspecialchars($r['label']) ?> <span class="pn-severity <?= htmlspecialchars($r['badgeClass']) ?>"><?= htmlspecialchars($r['badge']) ?></span></span>
-                                            <span class="adm-status-desc"><?= htmlspecialchars($r['desc']) ?></span>
-                                        </span>
-                                        <span class="adm-status-number" style="color:<?= htmlspecialchars($r['valueColor']) ?>;"><?= htmlspecialchars((string) $r['value']) ?></span>
-                                    </div>
-                                    <?php endforeach; ?>
-                                </div>
-                                <?php endif; ?>
-                            </div>
+                            <?php $riskCardRows = $pt3RiskRows; $riskCardGroup = 'replenishment'; include __DIR__ . '/../includes/shared/_risk_alert_card.php'; ?>
                             <div class="an-card">
                                 <div class="an-card-header"><h3>Recommendations</h3></div>
                                 <?php if ($pt3Recommendations === []): ?>
@@ -1146,25 +1091,7 @@ $adminNavItems = [
                             </div>
                         </div>
                         <div class="an-forecast-row">
-                            <div class="adm-card">
-                                <div class="adm-card-header"><h3>Risk &amp; Alert Indicators</h3></div>
-                                <?php if ($pt4RiskRows === []): ?>
-                                <div class="pn-empty"><i class="bi bi-check-circle-fill"></i><p>No barangay shows a significant rising trend right now.</p></div>
-                                <?php else: ?>
-                                <div class="adm-status-list">
-                                    <?php foreach ($pt4RiskRows as $r): ?>
-                                    <div class="adm-status-row">
-                                        <span class="adm-status-icon" style="background:<?= htmlspecialchars($r['iconBg']) ?>; color:<?= htmlspecialchars($r['iconColor']) ?>;"><i class="bi <?= htmlspecialchars($r['icon']) ?>"></i></span>
-                                        <span class="adm-status-body">
-                                            <span class="adm-status-title"><?= htmlspecialchars($r['label']) ?> <span class="pn-severity <?= htmlspecialchars($r['badgeClass']) ?>"><?= htmlspecialchars($r['badge']) ?></span></span>
-                                            <span class="adm-status-desc"><?= htmlspecialchars($r['desc']) ?></span>
-                                        </span>
-                                        <span class="adm-status-number" style="color:<?= htmlspecialchars($r['valueColor']) ?>;"><?= htmlspecialchars((string) $r['value']) ?></span>
-                                    </div>
-                                    <?php endforeach; ?>
-                                </div>
-                                <?php endif; ?>
-                            </div>
+                            <?php $riskCardRows = $pt4RiskRows; $riskCardGroup = 'barangay'; include __DIR__ . '/../includes/shared/_risk_alert_card.php'; ?>
                             <div class="an-card">
                                 <div class="an-card-header"><h3>Recommendations</h3></div>
                                 <?php if ($pt4Recommendations === []): ?>
@@ -1717,12 +1644,14 @@ $adminNavItems = [
         <?php endforeach; ?>
     </div>
 
+<?php include __DIR__ . '/../includes/shared/risk_alert_history_modal.php'; ?>
 </main>
 
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/risk-alert-history.js') ?>"></script>
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="<?= asset_url('/assets/js/chart-center-label.js') ?>"></script>
