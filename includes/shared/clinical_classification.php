@@ -484,6 +484,54 @@ if (!function_exists('hc_clinical_qualifier_terms_suspected')) {
     }
 }
 
+if (!function_exists('hc_dismissed_registry_synonyms')) {
+    /**
+     * Permanent exclusion list — when an admin deletes a registry entry
+     * (api/delete-disease-registry-entry.php), its real synonym list is
+     * recorded in the "disease_registry_dismissed" collection instead of
+     * just vanishing. Without this, hc_ensure_disease_registry_entries()
+     * would re-discover the same real diagnosis text (or any other real
+     * phrasing containing the same deleted keyword, e.g. "Typhoid fever,
+     * probable" after "Typhoid Fever" itself was deleted) on the very
+     * next admin page view and silently resurrect it as a brand-new
+     * "unclassified" entry — deleting something must actually stick.
+     *
+     * @return array<int, string> every dismissed synonym, flattened.
+     */
+    function hc_dismissed_registry_synonyms(): array
+    {
+        global $firestore;
+        $out = [];
+        foreach ($firestore->listDocuments('disease_registry_dismissed') as $doc) {
+            foreach (($doc['fields']['synonyms'] ?? []) as $syn) {
+                $out[] = $syn;
+            }
+        }
+
+        return $out;
+    }
+}
+
+if (!function_exists('hc_record_dismissed_registry_synonyms')) {
+    /**
+     * Writes one real tombstone doc so hc_dismissed_registry_synonyms()
+     * picks it up on every future read — called whenever a registry
+     * entry is deleted (api/delete-disease-registry-entry.php).
+     */
+    function hc_record_dismissed_registry_synonyms(string $name, array $synonyms, string $byName, string $byUid, string $byRole): void
+    {
+        global $firestore;
+        $firestore->addDocument('disease_registry_dismissed', [
+            'name' => $name,
+            'synonyms' => array_values(array_unique($synonyms)),
+            'dismissedByName' => $byName,
+            'dismissedByUid' => $byUid,
+            'dismissedByRole' => $byRole,
+            'dismissedAt' => date('c'),
+        ]);
+    }
+}
+
 if (!function_exists('hc_ensure_disease_registry_entries')) {
     /**
      * Real, idempotent auto-provisioning — for diagnosis text matching
@@ -498,13 +546,18 @@ if (!function_exists('hc_ensure_disease_registry_entries')) {
      * — never from the public patient/gis.php or homepage widget, so
      * anonymous public traffic never triggers a Firestore write.
      *
+     * Real diagnosis text matching a permanently dismissed synonym
+     * (hc_dismissed_registry_synonyms() — set when an admin deletes an
+     * entry via api/delete-disease-registry-entry.php) is treated as
+     * already recognized and never re-provisioned.
+     *
      * @return int Number of new entries created.
      */
     function hc_ensure_disease_registry_entries(array $medicalRecordDocs, int $minOccurrences = 3): int
     {
         global $firestore;
 
-        $existingSynonyms = [];
+        $existingSynonyms = hc_dismissed_registry_synonyms();
         $alreadyProvisioned = [];
         foreach (hc_get_disease_registry_docs() as $doc) {
             $f = $doc['fields'];
