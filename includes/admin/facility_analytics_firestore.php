@@ -949,6 +949,36 @@ $pt4ForecastTrend = $pt4['forecastTrend'];
 $pt4RiskRows = $pt4['riskRows'];
 $pt4Recommendations = $pt4['recommendations'];
 
+// ---------------------------------------------------------------------
+// Risk & Alert Indicators + their Recommendations — AUTOMATIC monitoring
+// (includes/shared/risk_alerts.php). Replaces the 4 categories' own
+// live riskRows/recommendations above with the stored ACTIVE alerts,
+// which are created/updated/resolved purely from real data:
+//   - today's daily evaluation (normally run at 12:00 AM PST by
+//     scripts/evaluate-risk-alerts.php) is caught up here if it hasn't run;
+//   - inventory/replenishment alerts are re-checked against the numbers
+//     just computed above on every load, so a corrected stock level
+//     resolves immediately.
+// Skipped for a sub-admin whose facility couldn't be resolved, so
+// nothing is ever written under the fallback facility.
+// ---------------------------------------------------------------------
+require_once __DIR__ . '/../shared/risk_alerts.php';
+$riskMonitorFacility = (!empty($subadminFacilityUnresolved) || !empty($facilitiesLoadFailed)) ? '' : $facilityName;
+if ($riskMonitorFacility !== '') {
+    hc_risk_ensure_daily_run($riskMonitorFacility);
+    hc_risk_run_live($pt2, $riskMonitorFacility, $pt3);
+}
+$riskLists = hc_risk_dashboard_lists($riskMonitorFacility);
+$pt1RiskRows = $riskLists['disease']['rows'];
+$pt1Recommendations = $riskLists['disease']['recommendations'];
+$pt2RiskRows = $riskLists['shortage']['rows'];
+$pt2Recommendations = $riskLists['shortage']['recommendations'];
+$pt3RiskRows = $riskLists['replenishment']['rows'];
+$pt3Recommendations = $riskLists['replenishment']['recommendations'];
+$pt4RiskRows = $riskLists['barangay']['rows'];
+$pt4Recommendations = $riskLists['barangay']['recommendations'];
+$riskHistoryFacilityId = $facility['id'] ?? '';
+
 $predictiveSubTabs = [
     ['key' => 'disease', 'icon' => 'bi-virus', 'label' => 'Disease & Demand Forecast', 'active' => true],
     ['key' => 'shortage', 'icon' => 'bi-capsule', 'label' => 'Medicine & Vaccine Shortage'],

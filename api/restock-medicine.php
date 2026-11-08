@@ -5,10 +5,10 @@
  * ---------------------------------------------------------------------
  * Called by assets/js/manage_medicine.js's Restock modal, opened from
  * pharmacist/manage_medicine.php — a pharmacist receiving real stock,
- * either more of an existing real batch ("mode":"existing", a real
- * medicine_batches/{batchId} that already belongs to this item —
- * hc_add_to_existing_batch()) or a brand new one with its own batch
- * number/expiry ("mode":"new" — hc_create_medicine_batch()).
+ * always as a brand new batch with its own batch number/expiry
+ * ("mode":"new" — hc_create_medicine_batch()). Adding into an
+ * existing batch ("mode":"existing") was removed by request and is
+ * now rejected.
  *
  * Deliberately separate from api/adjust-medicine-stock.php (subadmin-
  * only, a free-form +/- override that can also REMOVE stock) — this
@@ -38,7 +38,7 @@ session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/firestore/medicines.php';
-require_once __DIR__ . '/../includes/firestore/medicine_batches.php'; // hc_create_medicine_batch(), hc_add_to_existing_batch()
+require_once __DIR__ . '/../includes/firestore/medicine_batches.php'; // hc_create_medicine_batch()
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 
 header('Content-Type: application/json');
@@ -66,9 +66,12 @@ if ($id === '') {
     echo json_encode(['success' => false, 'error' => 'Missing item id.']);
     exit;
 }
-if (!in_array($mode, ['existing', 'new'], true)) {
+// Every restock is received as its own new batch. Adding stock into a
+// batch already on file ("mode":"existing") was removed by request —
+// it allowed restocking an empty or already-expired batch.
+if ($mode !== 'new') {
     http_response_code(422);
-    echo json_encode(['success' => false, 'error' => 'Please choose whether this is an existing batch or a new one.']);
+    echo json_encode(['success' => false, 'error' => 'Restocking into an existing batch is no longer supported. Add this stock as a new batch with its own batch number and expiry date.']);
     exit;
 }
 if (!is_numeric($quantity) || (int) $quantity <= 0) {
@@ -124,7 +127,7 @@ if ($quantityUnit === 'box') {
     $quantity *= $piecesPerBox;
 }
 
-/** Persists a new/corrected per-box count — only once every check above and in each mode has passed. */
+/** Persists a new/corrected per-box count — only once every check above and below has passed. */
 $savePiecesPerBox = function () use ($firestore, $id, $existing, $piecesPerBox, $piecesPerBoxChanged, $name, $unit): bool {
     if (!$piecesPerBoxChanged) {
         return true;
@@ -139,87 +142,58 @@ $savePiecesPerBox = function () use ($firestore, $id, $existing, $piecesPerBox, 
 $quantityLabel = $quantity . ' ' . $unit . '(s)'
     . (isset($boxesReceived) ? ' — ' . $boxesReceived . ' box(es) of ' . $piecesPerBox : '');
 
-if ($mode === 'existing') {
-    $batchId = trim((string) ($body['batchId'] ?? ''));
-    if ($batchId === '') {
+$batchNumber = trim((string) ($body['batchNumber'] ?? ''));
+$expiryDate = trim((string) ($body['expiryDate'] ?? ''));
+
+if ($batchNumber === '') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please enter the batch number for this new batch.']);
+    exit;
+}
+// The same number twice on one item would make two Batch Inventory
+// rows indistinguishable, so a batch number already on file for this
+// item (including an empty or expired one) is rejected.
+foreach (hc_get_batches_for_medicine($id, true) as $existingBatch) {
+    if (strcasecmp($existingBatch['batchNumber'], $batchNumber) === 0) {
         http_response_code(422);
-        echo json_encode(['success' => false, 'error' => 'Please select which batch this stock belongs to.']);
+        echo json_encode(['success' => false, 'error' => 'Batch ' . $batchNumber . ' already exists for this item. Enter the batch number printed on this new stock.']);
         exit;
     }
-    $batchDoc = $firestore->getDocument('medicine_batches', $batchId);
-    if ($batchDoc === null || ($batchDoc['medicineId'] ?? '') !== $id) {
-        http_response_code(404);
-        echo json_encode(['success' => false, 'error' => 'That batch no longer exists for this item.']);
-        exit;
-    }
-
-    if (!$savePiecesPerBox()) {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'error' => 'Could not save this medicine\'s packaging. Please try again.']);
-        exit;
-    }
-    $ok = hc_add_to_existing_batch($batchId, $quantity);
-    if (!$ok) {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'error' => 'Could not restock this batch. Please try again.']);
-        exit;
-    }
-
-    write_audit_log('updated', 'Medicine & Vaccine Inventory', 'Restocked ' . $quantityLabel . ' into an existing batch of "' . $name . '".');
-} else {
-    $batchNumber = trim((string) ($body['batchNumber'] ?? ''));
-    $expiryDate = trim((string) ($body['expiryDate'] ?? ''));
-
-    if ($batchNumber === '') {
-        http_response_code(422);
-        echo json_encode(['success' => false, 'error' => 'Please enter the batch number for this new batch.']);
-        exit;
-    }
-    // The same number twice on one item would make two Batch Inventory
-    // rows indistinguishable — more of a batch already on hand goes in
-    // through "An existing batch" instead.
-    foreach (hc_get_batches_for_medicine($id, true) as $existingBatch) {
-        if (strcasecmp($existingBatch['batchNumber'], $batchNumber) === 0) {
-            http_response_code(422);
-            echo json_encode(['success' => false, 'error' => 'Batch ' . $batchNumber . ' already exists for this item — choose "An existing batch" to add stock to it.']);
-            exit;
-        }
-    }
-    if ($expiryDate === '' || strtotime($expiryDate) === false) {
-        http_response_code(422);
-        echo json_encode(['success' => false, 'error' => 'Please enter a valid expiry date for this batch.']);
-        exit;
-    }
-    if (strtotime($expiryDate) < strtotime(date('Y-m-d'))) {
-        http_response_code(422);
-        echo json_encode(['success' => false, 'error' => 'Expiry date cannot be in the past.']);
-        exit;
-    }
-
-    if (!$savePiecesPerBox()) {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'error' => 'Could not save this medicine\'s packaging. Please try again.']);
-        exit;
-    }
-    $newBatchId = hc_create_medicine_batch(
-        $id,
-        $quantity,
-        date('Y-m-d', strtotime($expiryDate)),
-        'restock',
-        null,
-        $_SESSION['name'] ?? 'System',
-        $batchNumber
-    );
-    if ($newBatchId === null) {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'error' => 'Could not save this new batch. Please try again.']);
-        exit;
-    }
-
-    write_audit_log('created', 'Medicine & Vaccine Inventory', 'Restocked "' . $name . '" with a new batch (' . $quantityLabel . ').');
+}
+if ($expiryDate === '' || strtotime($expiryDate) === false) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please enter a valid expiry date for this batch.']);
+    exit;
+}
+if (strtotime($expiryDate) < strtotime(date('Y-m-d'))) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Expiry date cannot be in the past.']);
+    exit;
 }
 
-// hc_create_medicine_batch()/hc_add_to_existing_batch() already
+if (!$savePiecesPerBox()) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Could not save this medicine\'s packaging. Please try again.']);
+    exit;
+}
+$newBatchId = hc_create_medicine_batch(
+    $id,
+    $quantity,
+    date('Y-m-d', strtotime($expiryDate)),
+    'restock',
+    null,
+    $_SESSION['name'] ?? 'System',
+    $batchNumber
+);
+if ($newBatchId === null) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Could not save this new batch. Please try again.']);
+    exit;
+}
+
+write_audit_log('created', 'Medicine & Vaccine Inventory', 'Restocked "' . $name . '" with a new batch (' . $quantityLabel . ').');
+
+// hc_create_medicine_batch() already
 // recomputed currentStock via hc_recompute_medicine_rollup() — this is
 // a SEPARATE follow-up write, not a second rollup, so it doesn't touch
 // that shared function (used by every other stock-changing path too,
