@@ -112,15 +112,20 @@ if (!function_exists('hc_compute_medicine_vaccine_inventory')) {
             }
         }
 
-        // FEFO — First Expiry, First Out.
-        $fefoSort = function ($a, $b) {
-            $expiryA = $a['expiryDate'] !== '' ? $a['expiryDate'] : '9999-99-99';
-            $expiryB = $b['expiryDate'] !== '' ? $b['expiryDate'] : '9999-99-99';
+        // Usable stock only — expired batches never count as stock, even
+        // ones that expired just by the date passing (live correction +
+        // self-healing write-back, see hc_apply_usable_stock()). Done
+        // before the summary cards/status filters below read 'status'.
+        require_once __DIR__ . '/../firestore/medicine_batches.php';
+        hc_apply_usable_stock($allMedicines, 'expiryDate');
+        hc_apply_usable_stock($allVaccines, 'expiryDate');
 
-            return $expiryA <=> $expiryB ?: strcasecmp($a['name'], $b['name']);
-        };
-        usort($allMedicines, $fefoSort);
-        usort($allVaccines, $fefoSort);
+        // Most recently updated first, by the real stored "lastUpdated"
+        // timestamp (still raw ISO here — formatted for display below).
+        // Done before filtering/pagination, so every page and every
+        // refresh follows the same order. See hc_sort_inventory_by_last_updated().
+        hc_sort_inventory_by_last_updated($allMedicines, 'lastUpdated');
+        hc_sort_inventory_by_last_updated($allVaccines, 'lastUpdated');
 
         $formatDates = function (&$row) {
             $row['expiryDateRaw'] = $row['expiryDate'];
@@ -278,6 +283,9 @@ if (!function_exists('hc_mvi_vaccines_query')) {
             'vcategory' => $vaccineCategoryFilter,
             'vstatus' => $vaccineStatusFilterLabel,
             'vpage' => $page,
+            // Keeps the Vaccines tab open when this link is followed as a
+            // real page load (no-JS / the URL mvi-ajax-pagination.js keeps).
+            'tab' => 'vaccines',
         ], fn ($v) => $v !== '' && $v !== null && $v !== 'All Categories' && $v !== 'All Status'));
     }
 }

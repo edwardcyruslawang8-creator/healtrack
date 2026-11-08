@@ -58,8 +58,10 @@ $notExpired = fn ($i) => $i['expiryStatus'] !== 'expired';
 // filtered-out middle item leaves a gap in the keys and json_encode()
 // below would serialize this as a JS object instead of an array,
 // breaking window.PRESCRIPTION_QUEUE_DATA.medicines.forEach().
-$medicineInventoryOptions = array_map(fn ($m) => ['id' => $m['id'], 'name' => $m['name'], 'unit' => $m['unit'], 'currentStock' => $m['currentStock']], array_values(array_filter(hc_get_inventory_items('medicine'), $notExpired)));
-$vaccineInventoryOptions = array_map(fn ($v) => ['id' => $v['id'], 'name' => $v['name'], 'unit' => $v['unit'], 'currentStock' => $v['currentStock']], array_values(array_filter(hc_get_inventory_items('vaccine'), $notExpired)));
+$allMedicineItems = hc_get_inventory_items('medicine');
+$allVaccineItems = hc_get_inventory_items('vaccine');
+$medicineInventoryOptions = array_map(fn ($m) => ['id' => $m['id'], 'name' => $m['name'], 'unit' => $m['unit'], 'currentStock' => $m['currentStock']], array_values(array_filter($allMedicineItems, $notExpired)));
+$vaccineInventoryOptions = array_map(fn ($v) => ['id' => $v['id'], 'name' => $v['name'], 'unit' => $v['unit'], 'currentStock' => $v['currentStock']], array_values(array_filter($allVaccineItems, $notExpired)));
 
 $allOrders = [];
 foreach (hc_get_all_pharmacy_order_docs() as $doc) {
@@ -67,18 +69,25 @@ foreach (hc_get_all_pharmacy_order_docs() as $doc) {
     $isVaccine = ($f['itemType'] ?? '') === 'vaccine';
     $itemName = $f['itemName'] ?? '—';
 
-    // Best-guess real inventory match (fuzzy — see hc_item_names_match()'s
-    // own comment) so the Dispense modal can pre-select it; '' when
-    // nothing plausibly matches (the pharmacist picks manually, or
-    // dispenses without touching inventory — this order's item may
-    // genuinely not be a tracked inventory item).
-    $suggestedInventoryId = '';
-    foreach (($isVaccine ? $vaccineInventoryOptions : $medicineInventoryOptions) as $opt) {
-        if (hc_item_names_match($opt['name'], $itemName)) {
-            $suggestedInventoryId = $opt['id'];
+    // Automatic inventory match — STRICT (name + dosage form + strength,
+    // see includes/shared/inventory_match.php's hc_find_inventory_match()),
+    // so the Dispense modal can pre-select it. '' when there's no match or
+    // it's uncertain — the pharmacist then picks manually, or dispenses
+    // without touching inventory. Matched against every active item
+    // (expired ones included) so that when the matching item exists but
+    // has no usable stock, the modal can say so instead of silently
+    // showing "Not in inventory". (Replaces the old first-word fuzzy
+    // match, which e.g. paired "Ibuprofen 400 mg Tablet" with
+    // "B complex Tablet" because "ibuprofen" contains the letter "b".)
+    $matchedItemId = hc_find_inventory_match($itemName, $isVaccine ? $allVaccineItems : $allMedicineItems);
+    $matchedItemName = '';
+    foreach (($isVaccine ? $allVaccineItems : $allMedicineItems) as $invItem) {
+        if ($invItem['id'] === $matchedItemId) {
+            $matchedItemName = $invItem['name'];
             break;
         }
     }
+    $suggestedInventoryId = $matchedItemId;
 
     // 'source' distinguishes a real doctor-ordered doc (api/complete-consultation.php,
     // the default/legacy every existing doc implicitly has) from a
@@ -112,6 +121,7 @@ foreach (hc_get_all_pharmacy_order_docs() as $doc) {
         'time' => $f['orderedTime'] ?? '—',
         'status' => $f['status'] ?? 'pending',
         'suggestedInventoryId' => $suggestedInventoryId,
+        'matchedInventoryName' => $matchedItemName,
         // Only meaningful once dispensed — the "View Details" modal
         // shows these for the Dispensed tab's rows (who/when), blank
         // (still-pending) rows just don't render this section.

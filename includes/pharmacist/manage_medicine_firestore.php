@@ -44,6 +44,22 @@ if ($item === null || $item['type'] !== $requestedType || $item['archived']) {
 
 $itemBatches = hc_get_batches_for_medicine($itemId, true);
 
+// Usable vs. expired stock, computed live from the real batches on every
+// page load. "Total Current Stock" shows only usable (non-expired) stock —
+// the stored medicines/{id}.currentStock rollup sums EVERY batch and is
+// only recomputed on a write, so a batch that simply passes its expiry
+// date would otherwise keep counting. Expired stock is shown separately
+// until it's archived (api/archive-medicine-batch.php).
+$itemUsableStock = 0;
+$itemExpiredStock = 0;
+foreach ($itemBatches as $b) {
+    if ($b['status']['key'] === 'expired') {
+        $itemExpiredStock += $b['quantity'];
+    } else {
+        $itemUsableStock += $b['quantity'];
+    }
+}
+
 // Whether to show the page-level "This item has expired and can no
 // longer be dispensed" note — real per-BATCH expiry (hc_batch_status()'s
 // own 'key'), not $item['expiryStatus'] (a single, largely vestigial

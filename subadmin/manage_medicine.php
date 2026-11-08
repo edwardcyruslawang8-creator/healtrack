@@ -283,8 +283,9 @@ $isVaccine = $item['type'] === 'vaccine';
         </div>
         <div class="mm-info-cell">
             <span class="mm-info-label">Total Current Stock</span>
-            <span class="mm-info-value"><?= htmlspecialchars(hc_qty_unit($item['currentStock'], $item['unit'])) ?></span>
-            <?php if (hc_box_breakdown($item['currentStock'], $item['piecesPerBox'], $item['unit']) !== ''): ?><span class="mm-info-sub"><?= htmlspecialchars(hc_box_breakdown($item['currentStock'], $item['piecesPerBox'], $item['unit'])) ?></span><?php endif; ?>
+            <span class="mm-info-value"><?= htmlspecialchars(hc_qty_unit($itemUsableStock, $item['unit'])) ?></span>
+            <?php if (hc_box_breakdown($itemUsableStock, $item['piecesPerBox'], $item['unit']) !== ''): ?><span class="mm-info-sub"><?= htmlspecialchars(hc_box_breakdown($itemUsableStock, $item['piecesPerBox'], $item['unit'])) ?></span><?php endif; ?>
+            <?php if ($itemExpiredStock > 0): ?><span class="mm-info-sub mm-info-sub-expired"><?= htmlspecialchars(hc_qty_unit($itemExpiredStock, $item['unit'])) ?> expired, not counted</span><?php endif; ?>
         </div>
         <div class="mm-info-cell">
             <span class="mm-info-label">Minimum Level</span>
@@ -316,6 +317,12 @@ $isVaccine = $item['type'] === 'vaccine';
     <div class="adm-card mm-batch-card">
         <h3 class="mm-batch-title"><i class="bi bi-boxes"></i> Batch Inventory</h3>
 
+        <?php $expiredBatchCount = count(array_filter($itemBatches, fn ($b) => $b['status']['key'] === 'expired')); ?>
+        <?php if ($expiredBatchCount > 0): ?>
+        <p class="mm-expired-batches-note"><i class="bi bi-exclamation-triangle-fill"></i>
+            <?= $expiredBatchCount === 1 ? '1 batch has' : $expiredBatchCount . ' batches have' ?> expired and can't be dispensed. Use "Archive Expired Batch" to remove expired stock from inventory.</p>
+        <?php endif; ?>
+
         <?php if (empty($itemBatches)): ?>
         <p class="am-form-help">No batches recorded yet for this item.</p>
         <?php else: ?>
@@ -333,7 +340,7 @@ $isVaccine = $item['type'] === 'vaccine';
                 </thead>
                 <tbody>
                     <?php foreach ($itemBatches as $batch): ?>
-                    <tr data-batch-number="<?= htmlspecialchars(strtolower($batch['displayBatchNumber'])) ?>">
+                    <tr data-batch-number="<?= htmlspecialchars(strtolower($batch['displayBatchNumber'])) ?>"<?= $batch['status']['key'] === 'expired' ? ' class="mm-batch-row-expired"' : '' ?>>
                         <td class="mvi-strong"><?= htmlspecialchars($batch['displayBatchNumber']) ?></td>
                         <td><?= $item['dosage'] !== '' ? htmlspecialchars($item['dosage']) : 'Not Recorded' ?></td>
                         <td><?= htmlspecialchars(hc_qty_unit($batch['quantity'], $item['unit'])) ?><?php if (hc_box_breakdown($batch['quantity'], $item['piecesPerBox'], $item['unit']) !== ''): ?><span class="mvi-unit-sub"><?= htmlspecialchars(hc_box_breakdown($batch['quantity'], $item['piecesPerBox'], $item['unit'])) ?></span><?php endif; ?></td>
@@ -341,7 +348,13 @@ $isVaccine = $item['type'] === 'vaccine';
                         <td><span class="mvi-badge" style="background:<?= htmlspecialchars($batch['status']['bg']) ?>; color:<?= htmlspecialchars($batch['status']['color']) ?>;"><?= htmlspecialchars($batch['status']['label']) ?></span></td>
                         <td>
                             <div class="adm-action-btns">
-                                <button type="button" class="mvi-archive-btn mm-item-archive"><i class="bi bi-archive"></i> Archive</button>
+                                <?php if ($batch['status']['key'] === 'expired'): ?>
+                                <!-- Expired batch: archive only THIS batch (api/archive-medicine-batch.php),
+                                     not the whole item — see pharmacist/manage_medicine.php. -->
+                                <button type="button" class="mm-archive-expired-btn mm-batch-archive" data-batch-id="<?= htmlspecialchars($batch['id']) ?>" data-batch-number="<?= htmlspecialchars($batch['displayBatchNumber']) ?>" data-batch-qty="<?= htmlspecialchars(hc_qty_unit($batch['quantity'], $item['unit'])) ?>"><i class="bi bi-archive-fill"></i> Archive Expired Batch</button>
+                                <?php else: ?>
+                                <span class="mvi-unit-sub">—</span>
+                                <?php endif; ?>
                             </div>
                         </td>
                     </tr>

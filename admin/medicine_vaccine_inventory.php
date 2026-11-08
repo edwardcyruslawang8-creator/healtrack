@@ -266,17 +266,20 @@ $adminNavItems = [
     </div>
 
     <!-- ============ MEDICINES / VACCINES TABS ============ -->
+    <?php // Which tab opens: the Vaccines forms/page links carry tab=vaccines, so a
+          // Vaccines filter/search/page reload comes back to the Vaccines tab. ?>
+    <?php $mviVaccinesActive = ($_GET['tab'] ?? '') === 'vaccines'; ?>
     <ul class="nav mvi-tabs" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="mvi-tab-medicines-btn" data-bs-toggle="tab" data-bs-target="#mvi-tab-medicines" type="button" role="tab">Medicines</button>
+            <button class="nav-link <?= $mviVaccinesActive ? '' : 'active' ?>" id="mvi-tab-medicines-btn" data-bs-toggle="tab" data-bs-target="#mvi-tab-medicines" type="button" role="tab">Medicines</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="mvi-tab-vaccines-btn" data-bs-toggle="tab" data-bs-target="#mvi-tab-vaccines" type="button" role="tab">Vaccines</button>
+            <button class="nav-link <?= $mviVaccinesActive ? 'active' : '' ?>" id="mvi-tab-vaccines-btn" data-bs-toggle="tab" data-bs-target="#mvi-tab-vaccines" type="button" role="tab">Vaccines</button>
         </li>
     </ul>
 
     <div class="tab-content">
-    <div class="tab-pane fade show active" id="mvi-tab-medicines" role="tabpanel">
+    <div class="tab-pane fade <?= $mviVaccinesActive ? '' : 'show active' ?>" id="mvi-tab-medicines" role="tabpanel">
 
         <!-- ============ FILTER & SEARCH TOOLBAR ============ -->
         <form class="mvi-toolbar" method="get" action="medicine_vaccine_inventory.php">
@@ -302,10 +305,11 @@ $adminNavItems = [
 
     </div>
 
-    <div class="tab-pane fade" id="mvi-tab-vaccines" role="tabpanel">
+    <div class="tab-pane fade <?= $mviVaccinesActive ? 'show active' : '' ?>" id="mvi-tab-vaccines" role="tabpanel">
 
         <!-- ============ FILTER & SEARCH TOOLBAR ============ -->
         <form class="mvi-toolbar" method="get" action="medicine_vaccine_inventory.php">
+            <input type="hidden" name="tab" value="vaccines">
             <select class="form-select mvi-filter-select" name="vcategory" aria-label="Filter by category" onchange="this.form.submit()">
                 <?php foreach ($vaccineCategoryOptions as $opt): ?>
                 <option <?= $opt === $vaccineCategoryFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>

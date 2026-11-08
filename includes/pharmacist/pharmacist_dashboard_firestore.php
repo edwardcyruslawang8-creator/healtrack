@@ -130,8 +130,9 @@ foreach ($allInventoryItems as $item) {
 // mostly-empty, not-very-useful chart. When it's blank, this falls
 // back to the SAME approximate name match
 // (includes/shared/inventory_match.php's hc_item_names_match(), "does
-// either string's generic first word appear in the other") the
-// dispense flow's own suggested-item pre-fill already uses — e.g. a
+// either string's generic first word appear in the other as a whole word")
+// — loose on purpose for a category chart (the Dispense modal's own
+// auto-select uses the stricter hc_find_inventory_match()) — e.g. a
 // doctor's free-text "Paracetamol" order still resolves to whatever
 // real "Paracetamol ___ Tablet" inventory item exists right now, same
 // approximate standard this app already applies elsewhere rather than

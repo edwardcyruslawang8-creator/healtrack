@@ -30,9 +30,9 @@
  * pharmacist/manage_medicine.php?id=...&type=medicine|vaccine — a
  * dedicated detail page (not a modal) with the full batch-level
  * management view: Dispense, Restock, Archive, and the Batch
- * Inventory table all live there now; that's the one real place to
- * archive an item from, no row-level Archive button here anymore
- * (removed per request). A pharmacist still can't edit
+ * Inventory table all live there now. Each row also has its own
+ * Archive button next to Manage (assets/js/mvi-row-archive.js ->
+ * api/archive-medicine.php). A pharmacist still can't edit
  * name/category/unit/minimum level/reorder level (api/update-medicine.php
  * is subadmin-only) and can't permanently delete an item
  * (api/delete-medicine.php, also subadmin-only). "+ Add Medicine"/"+
@@ -286,24 +286,30 @@ if (!function_exists('mvi_page_url')) {
          (pharmacist/archived_items.php). Sits right above the
          Add Medicine/Add Vaccine toolbar rather than in the topbar, so
          it reads as part of this page's own actions. -->
-    <div class="d-flex justify-content-end mb-2">
+    <div class="d-flex justify-content-end gap-2 mb-2">
+        <a href="expired_batches.php" class="phm-topbar-select-btn" style="text-decoration:none;">
+            <i class="bi bi-calendar-x"></i> View Expired Batches
+        </a>
         <a href="archived_items.php" class="phm-topbar-select-btn" style="text-decoration:none;">
             <i class="bi bi-archive"></i> Archived Items
         </a>
     </div>
 
     <!-- ============ MEDICINES / VACCINES TABS ============ -->
+    <?php // Which tab opens: the Vaccines forms/page links carry tab=vaccines, so a
+          // Vaccines filter/search/page reload comes back to the Vaccines tab. ?>
+    <?php $mviVaccinesActive = ($_GET['tab'] ?? '') === 'vaccines'; ?>
     <ul class="nav mvi-tabs" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="mvi-tab-medicines-btn" data-bs-toggle="tab" data-bs-target="#mvi-tab-medicines" type="button" role="tab">Medicines</button>
+            <button class="nav-link <?= $mviVaccinesActive ? '' : 'active' ?>" id="mvi-tab-medicines-btn" data-bs-toggle="tab" data-bs-target="#mvi-tab-medicines" type="button" role="tab">Medicines</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="mvi-tab-vaccines-btn" data-bs-toggle="tab" data-bs-target="#mvi-tab-vaccines" type="button" role="tab">Vaccines</button>
+            <button class="nav-link <?= $mviVaccinesActive ? 'active' : '' ?>" id="mvi-tab-vaccines-btn" data-bs-toggle="tab" data-bs-target="#mvi-tab-vaccines" type="button" role="tab">Vaccines</button>
         </li>
     </ul>
 
     <div class="tab-content">
-    <div class="tab-pane fade show active" id="mvi-tab-medicines" role="tabpanel">
+    <div class="tab-pane fade <?= $mviVaccinesActive ? '' : 'show active' ?>" id="mvi-tab-medicines" role="tabpanel">
 
         <!-- ============ FILTER & SEARCH TOOLBAR ============ -->
         <form class="mvi-toolbar mvi-toolbar--search-first" method="get" action="medicine_vaccine_inventory.php">
@@ -378,6 +384,7 @@ if (!function_exists('mvi_page_url')) {
                             <td>
                                 <div class="adm-action-btns">
                                     <a href="manage_medicine.php?id=<?= urlencode($med['id']) ?>&amp;type=medicine" class="mvi-manage-btn" aria-label="Manage this medicine">Manage Medicine</a>
+                                    <button type="button" class="mvi-archive-btn mvi-row-archive" data-archive-id="<?= htmlspecialchars($med['id']) ?>" data-archive-name="<?= htmlspecialchars($med['name']) ?>" aria-label="Archive this medicine"><i class="bi bi-archive"></i> Archive</button>
                                 </div>
                             </td>
                         </tr>
@@ -388,7 +395,7 @@ if (!function_exists('mvi_page_url')) {
 
             <div class="adm-table-footer">
                 <span class="adm-showing-text"><?= $medicinesTotal > 0 ? 'Showing 1 to ' . count($medicines) . ' of ' . $medicinesTotal . ' entries' : 'No entries to show' ?></span>
-                <?php $medQs = $_GET; unset($medQs['page']); ?>
+                <?php $medQs = $_GET; unset($medQs['page'], $medQs['tab']); ?>
                 <nav class="adm-pagination" aria-label="Medicines pages">
                     <a href="<?= mvi_page_url($medQs, 'page', max(1, $medicinesCurrentPage - 1)) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
                     <?php foreach ($medicinePaginationWindow as $p): ?>
@@ -405,10 +412,11 @@ if (!function_exists('mvi_page_url')) {
 
     </div>
 
-    <div class="tab-pane fade" id="mvi-tab-vaccines" role="tabpanel">
+    <div class="tab-pane fade <?= $mviVaccinesActive ? 'show active' : '' ?>" id="mvi-tab-vaccines" role="tabpanel">
 
         <!-- ============ FILTER & SEARCH TOOLBAR ============ -->
-        <form class="mvi-toolbar mvi-toolbar--search-first" method="get" action="medicine_vaccine_inventory.php#vaccines">
+        <form class="mvi-toolbar mvi-toolbar--search-first" method="get" action="medicine_vaccine_inventory.php">
+            <input type="hidden" name="tab" value="vaccines">
             <div class="mvi-search">
                 <i class="bi bi-search"></i>
                 <input type="text" name="vq" value="<?= htmlspecialchars($vaccineSearchTerm) ?>" placeholder="Search vaccine name, category..." autocomplete="off" data-quick-search="<?= BASE_URL ?>/api/quick-search-medicines.php?type=vaccine">
@@ -480,6 +488,7 @@ if (!function_exists('mvi_page_url')) {
                             <td>
                                 <div class="adm-action-btns">
                                     <a href="manage_medicine.php?id=<?= urlencode($vac['id']) ?>&amp;type=vaccine" class="mvi-manage-btn" aria-label="Manage this vaccine">Manage Vaccine</a>
+                                    <button type="button" class="mvi-archive-btn mvi-row-archive" data-archive-id="<?= htmlspecialchars($vac['id']) ?>" data-archive-name="<?= htmlspecialchars($vac['name']) ?>" aria-label="Archive this vaccine"><i class="bi bi-archive"></i> Archive</button>
                                 </div>
                             </td>
                         </tr>
@@ -490,7 +499,7 @@ if (!function_exists('mvi_page_url')) {
 
             <div class="adm-table-footer">
                 <span class="adm-showing-text"><?= $vaccinesTotal > 0 ? 'Showing 1 to ' . count($vaccines) . ' of ' . $vaccinesTotal . ' entries' : 'No entries to show' ?></span>
-                <?php $vacQs = $_GET; unset($vacQs['vpage']); ?>
+                <?php $vacQs = $_GET; unset($vacQs['vpage']); $vacQs['tab'] = 'vaccines'; ?>
                 <nav class="adm-pagination" aria-label="Vaccines pages">
                     <a href="<?= mvi_page_url($vacQs, 'vpage', max(1, $vaccinesCurrentPage - 1)) ?>" class="page-btn" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
                     <?php foreach ($vaccinePaginationWindow as $p): ?>
@@ -519,6 +528,7 @@ if (!function_exists('mvi_page_url')) {
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/quick-search.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/medicine_vaccine_inventory_pharmacist.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/mvi-row-archive.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
 </body>
 </html>

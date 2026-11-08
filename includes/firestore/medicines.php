@@ -156,7 +156,36 @@ if (!function_exists('hc_get_inventory_item')) {
             return null;
         }
 
-        return hc_map_medicine_doc_to_item($id, $doc);
+        $items = [hc_map_medicine_doc_to_item($id, $doc)];
+        hc_items_apply_usable_stock($items);
+
+        return $items[0];
+    }
+}
+
+if (!function_exists('hc_items_apply_usable_stock')) {
+    /**
+     * Applies includes/firestore/medicine_batches.php's live usable-stock
+     * correction (hc_apply_usable_stock() — expired batches never count as
+     * stock) to rows built by hc_map_medicine_doc_to_item(), then refreshes
+     * the derived display fields (formatted expiryDate, expiryStatus) from
+     * the corrected raw expiry. Every inventory read path goes through here,
+     * so currentStock/status mean USABLE stock everywhere.
+     */
+    function hc_items_apply_usable_stock(array &$items): void
+    {
+        if ($items === []) {
+            return;
+        }
+        require_once __DIR__ . '/medicine_batches.php'; // hc_apply_usable_stock() (required lazily — it requires this file too)
+        hc_apply_usable_stock($items, 'expiryDateRaw');
+
+        foreach ($items as &$item) {
+            $raw = (string) $item['expiryDateRaw'];
+            $item['expiryDate'] = $raw !== '' && strtotime($raw) !== false ? strtoupper(date('M d, Y', strtotime($raw))) : '—';
+            $item['expiryStatus'] = hc_inventory_expiry_status($raw);
+        }
+        unset($item);
     }
 }
 
@@ -187,6 +216,8 @@ if (!function_exists('hc_query_inventory_items')) {
             $items[] = hc_map_medicine_doc_to_item($doc['id'], $f);
         }
 
+        hc_items_apply_usable_stock($items);
+
         // FEFO — First Expiry, First Out: soonest-expiring stock surfaces
         // first so staff naturally work through it before it expires.
         // Items with no recorded expiry sort last (unknown urgency, not
@@ -201,6 +232,40 @@ if (!function_exists('hc_query_inventory_items')) {
         });
 
         return $items;
+    }
+}
+
+if (!function_exists('hc_sort_inventory_by_last_updated')) {
+    /**
+     * Sorts inventory rows most-recently-updated first, by the real
+     * "lastUpdated" timestamp stored on each medicines/{id} doc (every
+     * write path bumps it: create/update/restock/dispense/adjust/archive,
+     * directly or via hc_recompute_medicine_rollup()). Used by the
+     * Medicine & Vaccine Inventory tables (pharmacist, sub-admin, admin),
+     * which list by recency rather than hc_query_inventory_items()'s
+     * default FEFO order — FEFO stays the default for every other caller.
+     *
+     * Compared as real timestamps (strtotime), not strings, so mixed
+     * timezone offsets still order correctly. Rows with no timestamp go
+     * last; ties fall back to name, then id, so the order is fully
+     * deterministic across refreshes and pagination.
+     *
+     * @param array<int, array> $items
+     * @param string $field the row key holding the RAW ISO timestamp
+     */
+    function hc_sort_inventory_by_last_updated(array &$items, string $field = 'lastUpdatedRaw'): void
+    {
+        $ts = function (array $row) use ($field): int {
+            $raw = (string) ($row[$field] ?? '');
+            $t = $raw !== '' ? strtotime($raw) : false;
+            return $t === false ? PHP_INT_MIN : $t;
+        };
+
+        usort($items, function ($a, $b) use ($ts) {
+            return $ts($b) <=> $ts($a)
+                ?: strcasecmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? ''))
+                ?: strcmp((string) ($a['id'] ?? ''), (string) ($b['id'] ?? ''));
+        });
     }
 }
 

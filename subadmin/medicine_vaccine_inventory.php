@@ -24,8 +24,8 @@
  * "Manage Medicine" is the one real action left here — a real link to
  * subadmin/manage_medicine.php's own detail page (not a modal); Edit,
  * Restock, Archive, and the real Batch Inventory table all live there
- * now, no row-level Archive button on this table anymore either
- * (removed per request, same as pharmacist's own table). Sub-admin
+ * now; each row also has its own Archive button
+ * (assets/js/mvi-row-archive.js). Sub-admin
  * keeps Edit (api/update-medicine.php) on that detail page, unlike
  * pharmacist's own version of it — that endpoint already accepted the
  * subadmin role. No Delete trigger anywhere (also removed per
@@ -313,18 +313,34 @@ $adminNavItems = [
         </div>
     </div>
 
+    <!-- Link to subadmin/archived_items.php — the one place an archived
+         item (api/archive-medicine.php) can be seen again and unarchived.
+         Same spot as pharmacist/medicine_vaccine_inventory.php's own
+         "Archived Items" button: right-aligned, just above the tabs. -->
+    <div class="d-flex justify-content-end gap-2 mb-2">
+        <a href="expired_batches.php" class="sad-topbar-select-btn" style="text-decoration:none;">
+            <i class="bi bi-calendar-x"></i> View Expired Batches
+        </a>
+        <a href="archived_items.php" class="sad-topbar-select-btn" style="text-decoration:none;">
+            <i class="bi bi-archive"></i> Archived Items
+        </a>
+    </div>
+
     <!-- ============ MEDICINES / VACCINES TABS ============ -->
+    <?php // Which tab opens: the Vaccines forms/page links carry tab=vaccines, so a
+          // Vaccines filter/search/page reload comes back to the Vaccines tab. ?>
+    <?php $mviVaccinesActive = ($_GET['tab'] ?? '') === 'vaccines'; ?>
     <ul class="nav mvi-tabs" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="mvi-tab-medicines-btn" data-bs-toggle="tab" data-bs-target="#mvi-tab-medicines" type="button" role="tab">Medicines</button>
+            <button class="nav-link <?= $mviVaccinesActive ? '' : 'active' ?>" id="mvi-tab-medicines-btn" data-bs-toggle="tab" data-bs-target="#mvi-tab-medicines" type="button" role="tab">Medicines</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="mvi-tab-vaccines-btn" data-bs-toggle="tab" data-bs-target="#mvi-tab-vaccines" type="button" role="tab">Vaccines</button>
+            <button class="nav-link <?= $mviVaccinesActive ? 'active' : '' ?>" id="mvi-tab-vaccines-btn" data-bs-toggle="tab" data-bs-target="#mvi-tab-vaccines" type="button" role="tab">Vaccines</button>
         </li>
     </ul>
 
     <div class="tab-content">
-    <div class="tab-pane fade show active" id="mvi-tab-medicines" role="tabpanel">
+    <div class="tab-pane fade <?= $mviVaccinesActive ? '' : 'show active' ?>" id="mvi-tab-medicines" role="tabpanel">
 
         <!-- ============ FILTER & SEARCH TOOLBAR ============ -->
         <form class="mvi-toolbar mvi-toolbar--search-first" method="get" action="medicine_vaccine_inventory.php">
@@ -350,10 +366,11 @@ $adminNavItems = [
 
     </div>
 
-    <div class="tab-pane fade" id="mvi-tab-vaccines" role="tabpanel">
+    <div class="tab-pane fade <?= $mviVaccinesActive ? 'show active' : '' ?>" id="mvi-tab-vaccines" role="tabpanel">
 
         <!-- ============ FILTER & SEARCH TOOLBAR ============ -->
         <form class="mvi-toolbar mvi-toolbar--search-first" method="get" action="medicine_vaccine_inventory.php">
+            <input type="hidden" name="tab" value="vaccines">
             <div class="mvi-search">
                 <i class="bi bi-search"></i>
                 <input type="text" name="vq" value="<?= htmlspecialchars($vaccineSearchTerm) ?>" placeholder="Search vaccine name, category..." autocomplete="off" data-quick-search="<?= BASE_URL ?>/api/quick-search-medicines.php?type=vaccine">
@@ -379,11 +396,11 @@ $adminNavItems = [
 
 </main>
 
-<!-- No modal requires here, and no assets/js/medicine_vaccine_inventory_pharmacist.js
-     either — Edit/Restock/Archive all moved to manage_medicine.php's
-     own detail page (its own requires/its own JS). This table's one
-     remaining row-level element is "Manage Medicine", a plain link
-     needing no JS of its own at all. -->
+<!-- No modal requires here — Edit/Restock live on manage_medicine.php's
+     own detail page. Each row has "Manage Medicine" (a plain link) plus
+     a row-level Archive button wired by assets/js/mvi-row-archive.js
+     (delegated, so it keeps working after mvi-ajax-pagination.js
+     re-renders the table). -->
 
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -392,5 +409,8 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/mvi-ajax-pagination.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
+<script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/mvi-row-archive.js') ?>"></script>
 </body>
 </html>
