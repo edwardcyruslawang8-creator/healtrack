@@ -185,7 +185,7 @@ $staffNavItems = [
     </div>
 
     <!-- ============ KPI SUMMARY CARDS ============ -->
-    <div class="arp-kpi-row">
+    <div class="arp-kpi-row arp-kpi-row--4">
         <?php foreach ($kpiCards as $kpi): ?>
         <div class="adm-card arp-kpi-card">
             <div class="arp-kpi-icon" style="background:<?= htmlspecialchars($kpi['iconBg']) ?>; color:<?= htmlspecialchars($kpi['iconColor']) ?>;">

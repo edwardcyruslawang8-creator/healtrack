@@ -95,6 +95,17 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!emailValid) valid = false;
         }
 
+        // PhilHealth PIN is optional too — blank passes; anything entered
+        // must be all 12 digits (the input's pattern: 00-000000000-0).
+        const pinField = document.getElementById('apmPhilhealthPin');
+        if (pinField && panel.contains(pinField)) {
+            const pinValid = pinField.checkValidity();
+            pinField.classList.toggle('is-invalid', !pinValid);
+            const pinFeedback = pinField.closest('.apm-field').querySelector('.invalid-feedback');
+            if (pinFeedback) pinFeedback.style.display = pinValid ? 'none' : 'block';
+            if (!pinValid) valid = false;
+        }
+
         // Consent radios live in .apm-consent-box, not .apm-field.
         const consentGroup = panel.querySelectorAll('input[name="apmConsent"]');
         if (consentGroup.length) {
@@ -104,6 +115,40 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         return valid;
+    }
+
+    // PhilHealth PIN auto-format: digits only, max 12, hyphens inserted as
+    // you type (00-000000000-0). Keeps the caret after the same digit so
+    // editing in the middle doesn't jump to the end.
+    function formatPhilhealthPin(digits) {
+        digits = digits.slice(0, 12);
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 11) return digits.slice(0, 2) + '-' + digits.slice(2);
+        return digits.slice(0, 2) + '-' + digits.slice(2, 11) + '-' + digits.slice(11);
+    }
+    const pinInput = document.getElementById('apmPhilhealthPin');
+    if (pinInput) {
+        pinInput.addEventListener('input', function () {
+            const caret = pinInput.selectionStart || 0;
+            const digitsBeforeCaret = pinInput.value.slice(0, caret).replace(/\D/g, '').length;
+            const formatted = formatPhilhealthPin(pinInput.value.replace(/\D/g, ''));
+            pinInput.value = formatted;
+
+            let pos = 0;
+            let seen = 0;
+            while (pos < formatted.length && seen < digitsBeforeCaret) {
+                if (/\d/.test(formatted[pos])) seen++;
+                pos++;
+            }
+            pinInput.setSelectionRange(pos, pos);
+
+            // Clear a previous error as soon as it becomes valid (or blank).
+            if (pinInput.classList.contains('is-invalid') && pinInput.checkValidity()) {
+                pinInput.classList.remove('is-invalid');
+                const fb = pinInput.closest('.apm-field').querySelector('.invalid-feedback');
+                if (fb) fb.style.display = 'none';
+            }
+        });
     }
 
     nextBtn.addEventListener('click', function () {
@@ -218,6 +263,9 @@ document.addEventListener('DOMContentLoaded', function () {
             prescribedByInput.value = window.APM_STAFF_NAME;
         }
         list.appendChild(node);
+        // Style this row's dropdowns (Severity / Frequency) like the rest
+        // of the form — assets/js/styled-select.js.
+        if (window.HCStyledSelect) window.HCStyledSelect.enhance(node);
         renumberRows(listId);
     }
 
@@ -326,6 +374,7 @@ document.addEventListener('DOMContentLoaded', function () {
             sex: document.getElementById('apmSex').value,
             civilStatus: document.getElementById('apmCivilStatus').value,
             occupation: document.getElementById('apmOccupation').value.trim(),
+            philhealthPin: document.getElementById('apmPhilhealthPin').value.trim(),
             phone: document.getElementById('apmPhone').value.trim(),
             email: document.getElementById('apmEmail').value.trim(),
             address: document.getElementById('apmAddress').value.trim(),

@@ -242,6 +242,11 @@ $staffNavItems = [
             <div class="adm-donut-wrap">
                 <div class="adm-donut-canvas-box">
                     <canvas id="resultStatusChart"></canvas>
+                    <!-- Total as HTML in the ring's hole — also makes assets/js/chart-center-label.js show the hover tooltip OUTSIDE the ring instead of on top of the total. -->
+                    <div class="adm-donut-center">
+                        <div class="adm-donut-total"><?= number_format($resultStatusTotal) ?></div>
+                        <div class="adm-donut-total-label">Results</div>
+                    </div>
                 </div>
             </div>
             <div class="mt-donut-legend">

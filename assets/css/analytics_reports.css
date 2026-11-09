@@ -281,6 +281,25 @@
   .arp-kpi-row{ grid-template-columns: 1fr; }
 }
 
+/* -- 4-card KPI row (doctor / medical-staff / medical-technician /
+      radiologic-technologist Analytics) — the base row is 5 columns
+      (sub-admin has 5 cards), which squeezed these 4 into 4/5 of the
+      width with a gap on the right and wrapped their labels/trends.
+      Equal 4 columns, equal-height cards, icon + text vertically
+      centered; 2-up on medium screens (never 3 + 1 orphan), 1-up on
+      phones. Same treatment pharmacist's .phm-kpi-row already had. -- */
+.arp-kpi-row.arp-kpi-row--4{ grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: stretch; }
+.arp-kpi-row--4 > .arp-kpi-card{ margin-bottom: 0; height: 100%; min-height: 118px; padding: 20px 22px; gap: 16px; }
+.arp-kpi-row--4 .arp-kpi-label{ line-height: 1.35; }
+.arp-kpi-row--4 .arp-kpi-trend{ align-items: flex-start; line-height: 1.35; }
+.arp-kpi-row--4 .arp-kpi-trend i{ flex-shrink: 0; }
+@media (max-width: 1199.98px){
+  .arp-kpi-row.arp-kpi-row--4{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 575.98px){
+  .arp-kpi-row.arp-kpi-row--4{ grid-template-columns: minmax(0, 1fr); }
+}
+
 /* -- Overview's Predictive Analytics preview (3 cards) — its own
       3-up grid so the cards fill the row at equal width instead of
       taking 3 of .arp-kpi-row's 5 columns; equal height, with icon and

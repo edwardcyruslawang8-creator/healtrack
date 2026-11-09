@@ -88,14 +88,33 @@
             items[activeIndex].scrollIntoView({ block: 'nearest' });
         }
 
+        // The visible area the list has to fit in: the viewport, narrowed
+        // by any scrolling/clipping ancestor (e.g. a Bootstrap
+        // .modal-dialog-scrollable's .modal-body) — otherwise a list near
+        // the bottom of a scrolling modal is cut off by it.
+        function visibleBounds() {
+            let top = 0;
+            let bottom = window.innerHeight;
+            for (let el = wrap.parentElement; el && el !== document.body; el = el.parentElement) {
+                const oy = getComputedStyle(el).overflowY;
+                if (oy === 'auto' || oy === 'scroll' || oy === 'hidden') {
+                    const r = el.getBoundingClientRect();
+                    top = Math.max(top, r.top);
+                    bottom = Math.min(bottom, r.bottom);
+                }
+            }
+            return { top: top, bottom: bottom };
+        }
+
         // Opens below the button, or above it when there isn't room; the
         // list's height is capped to the space actually left in the
-        // viewport (scrolls past that), and it's right-aligned to the
+        // visible area (scrolls past that), and it's right-aligned to the
         // button when left-aligning would run off the screen's edge.
         function place() {
             const rect = trigger.getBoundingClientRect();
-            const below = window.innerHeight - rect.bottom - 12;
-            const above = rect.top - 12;
+            const bounds = visibleBounds();
+            const below = bounds.bottom - rect.bottom - 12;
+            const above = rect.top - bounds.top - 12;
             const openUp = below < 200 && above > below;
             wrap.classList.toggle('opens-up', openUp);
             menu.style.maxHeight = Math.max(140, Math.min(300, openUp ? above : below)) + 'px';
@@ -148,7 +167,11 @@
             else if (e.key === 'Home') { e.preventDefault(); setActive(0); }
             else if (e.key === 'End') { e.preventDefault(); setActive(select.options.length - 1); }
             else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(activeIndex); }
-            else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+            else if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation(); // close just this list, not an enclosing Bootstrap modal
+                close(true);
+            }
             else if (e.key === 'Tab') { close(false); }
         });
 
@@ -166,12 +189,36 @@
         // 'change') still gets reflected on the button.
         select.addEventListener('change', sync);
 
+        // form.reset() changes the value without a 'change' event —
+        // re-sync once the reset has applied.
+        if (select.form) {
+            select.form.addEventListener('reset', function () { setTimeout(sync, 0); });
+        }
+
+        // Validation state set on the (hidden) select by a page script —
+        // .is-invalid — is mirrored onto the visible button.
+        function syncInvalid() {
+            trigger.classList.toggle('is-invalid', select.classList.contains('is-invalid'));
+        }
+        new MutationObserver(syncInvalid).observe(select, { attributes: true, attributeFilter: ['class'] });
+        syncInvalid();
+
         const api = { wrap: wrap, close: close, place: place };
+        select.dataset.hcEnhanced = '1';
         sync();
     }
 
+    // For selects added after page load (e.g. a cloned repeat-row
+    // template): HCStyledSelect.enhance(container) styles any
+    // select[data-styled-select] inside it not yet enhanced.
+    window.HCStyledSelect = {
+        enhance: function (root) {
+            (root || document).querySelectorAll('select[data-styled-select]:not([data-hc-enhanced])').forEach(enhanceSelect);
+        },
+    };
+
     document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('select[data-styled-select]').forEach(enhanceSelect);
+        window.HCStyledSelect.enhance(document);
 
         document.addEventListener('click', function (e) {
             if (openDropdown && !openDropdown.wrap.contains(e.target)) openDropdown.close(false);

@@ -1,0 +1,37 @@
+/* =============================================================
+   SUGGEST INPUT (shared — assets/js/suggest-input.js)
+   Styled replacement for a native <datalist> popup. Uses the staff
+   theme tokens (--adm-*, so it follows dark mode) with fallbacks.
+   ============================================================= */
+.hc-suggest-panel{
+  position: fixed;
+  z-index: 1080; /* above Bootstrap modals (1055) */
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  max-width: min(420px, calc(100vw - 16px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--adm-card, #fff);
+  border: 1px solid var(--adm-border, #ECEDF3);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(31, 36, 48, 0.16);
+  font-family: inherit;
+}
+.hc-suggest-panel[hidden]{ display: none; }
+.hc-suggest-option{
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--adm-text, #1F2430);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.hc-suggest-option strong{ color: var(--adm-red-bright, #5B0A0A); font-weight: 700; }
+.hc-suggest-option.is-active{
+  background: color-mix(in srgb, var(--adm-red-bright, #5B0A0A) 9%, var(--adm-card, #fff));
+  color: var(--adm-red-bright, #5B0A0A);
+}
+.hc-suggest-panel::-webkit-scrollbar{ width: 6px; }
+.hc-suggest-panel::-webkit-scrollbar-thumb{ background: var(--adm-border, #ECEDF3); border-radius: 3px; }

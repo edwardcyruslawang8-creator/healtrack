@@ -155,6 +155,9 @@ if (!function_exists('hc_get_patient_profile')) {
             'bloodType' => $doc['bloodType'] ?? '—',
             'civilStatus' => $doc['civilStatus'] ?? '—',
             'occupation' => $doc['occupation'] ?? '—',
+            // Optional PhilHealth Identification Number (00-000000000-0) —
+            // '' when not provided, so the profile can hide the row.
+            'philhealthPin' => (string) ($doc['philhealthPin'] ?? ''),
             'registeredOn' => isset($doc['dateRegistered']) ? date('M j, Y', strtotime($doc['dateRegistered'])) : '—',
             'lastVisit' => isset($doc['lastVisit']) ? date('M j, Y', strtotime($doc['lastVisit'])) : '—',
             'primaryPhysician' => $doc['primaryPhysician'] ?? '—',
@@ -181,7 +184,7 @@ if (!function_exists('hc_not_found_patient_profile')) {
             'id' => $requestedId !== '' ? $requestedId : '(none)',
             'name' => 'Patient Not Found', 'gender' => '—', 'age' => 0, 'birthDate' => '—',
             'phone' => '—', 'email' => '—', 'address' => '—', 'bloodType' => '—',
-            'civilStatus' => '—', 'occupation' => '—', 'registeredOn' => '—',
+            'civilStatus' => '—', 'occupation' => '—', 'philhealthPin' => '', 'registeredOn' => '—',
             'lastVisit' => '—', 'primaryPhysician' => '—', 'facility' => '',
         ];
     }

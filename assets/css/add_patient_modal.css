@@ -247,6 +247,15 @@
 .apm-allergy-row select[data-field="severity"][data-severity="mild"]{ color: #1E8E3E; font-weight: 600; }
 .apm-allergy-row select[data-field="severity"][data-severity="moderate"]{ color: #E8710A; font-weight: 600; }
 .apm-allergy-row select[data-field="severity"][data-severity="severe"]{ color: #D93025; font-weight: 600; }
+/* Same colors on the styled dropdown's visible button (the real select
+   is hidden behind it — assets/js/styled-select.js). */
+.apm-allergy-row .hc-select:has(select[data-severity="mild"]) .hc-select-trigger{ color: #1E8E3E; font-weight: 600; }
+.apm-allergy-row .hc-select:has(select[data-severity="moderate"]) .hc-select-trigger{ color: #E8710A; font-weight: 600; }
+.apm-allergy-row .hc-select:has(select[data-severity="severe"]) .hc-select-trigger{ color: #D93025; font-weight: 600; }
+
+/* Styled dropdowns fill their field, like the plain selects did. */
+#addPatientModal .hc-select{ display: block; width: 100%; }
+#addPatientModal .hc-select-trigger{ width: 100%; }
 
 .apm-row-remove{
   display: flex;

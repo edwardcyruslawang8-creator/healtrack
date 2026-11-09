@@ -227,15 +227,30 @@ $scheduleStatusMeta = $consultationStatusMetaDash;
 $priorityMeta = $consultationPriorityMetaDash;
 
 // ---------------------------------------------------------------------
-// Recent Notifications
+// Recent Notifications — this user's REAL latest notifications, from the
+// exact same source as medical-staff/notifications.php
+// (hc_medstaff_notification_list()), in the same order. Archived ones
+// are left out (same session state the Notifications page uses);
+// 'unread' marks ones not yet read. Replaces a hardcoded placeholder
+// list ("Juan D. Cruz – 10 minutes ago", …) that never changed.
 // ---------------------------------------------------------------------
-$recentNotifications = [
-    ['icon' => 'bi-person-plus-fill',     'iconBg' => '#FCE4E4', 'iconColor' => '#D93025', 'title' => 'New consultation assigned', 'desc' => 'Juan D. Cruz',       'timeAgo' => '10 minutes ago'],
-    ['icon' => 'bi-bell-fill',            'iconBg' => '#FDECDD', 'iconColor' => '#E8710A', 'title' => 'Follow-up reminder',        'desc' => 'Maria S. Reyes',     'timeAgo' => '1 hour ago'],
-    ['icon' => 'bi-file-earmark-text-fill','iconBg' => '#E8F0FE', 'iconColor' => '#1A73E8', 'title' => 'Patient record updated',    'desc' => 'Pedro L. Santos',    'timeAgo' => '2 hours ago'],
-    ['icon' => 'bi-calendar2-x-fill',     'iconBg' => '#EFE7FB', 'iconColor' => '#7C3AED', 'title' => 'Consultation rescheduled',  'desc' => 'Nina P. Garcia',     'timeAgo' => '3 hours ago'],
-    ['icon' => 'bi-person-check-fill',    'iconBg' => '#E4F7EA', 'iconColor' => '#1E8E3E', 'title' => 'New patient added',         'desc' => 'Ramon T. Dela Cruz', 'timeAgo' => '4 hours ago'],
-];
+require_once __DIR__ . '/medstaff_notifications_source.php';
+$ntfReadIdsDash = $_SESSION['ntfReadIds'] ?? [];
+$ntfArchivedIdsDash = $_SESSION['ntfDismissedIds'] ?? [];
+$recentNotifications = array_map(function ($n) use ($ntfReadIdsDash) {
+    return [
+        'icon' => $n['icon'] ?? 'bi-bell-fill',
+        'iconBg' => $n['iconBg'] ?? '#FDECDD',
+        'iconColor' => $n['iconColor'] ?? '#E8710A',
+        'title' => $n['title'] ?? 'Notification',
+        'desc' => $n['description'] ?? '',
+        'timeAgo' => trim(($n['date'] ?? '') . ' · ' . ($n['time'] ?? ''), ' ·'),
+        'unread' => !in_array($n['id'], $ntfReadIdsDash, true),
+    ];
+}, array_slice(array_values(array_filter(
+    hc_medstaff_notification_list($myUid, $myDoc ?? []),
+    fn ($n) => !in_array($n['id'], $ntfArchivedIdsDash, true)
+)), 0, 5));
 
 // ---------------------------------------------------------------------
 // Recently Registered Patients — the 5 most recently registered real

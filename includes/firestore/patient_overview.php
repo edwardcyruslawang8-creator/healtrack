@@ -13,6 +13,7 @@
  */
 
 require_once __DIR__ . '/medical_records.php';
+require_once __DIR__ . '/../shared/lab_test_names.php'; // hc_lab_test_display_name() — official lab test names
 require_once __DIR__ . '/vaccination_records.php';
 require_once __DIR__ . '/lab_results.php';
 require_once __DIR__ . '/xray_results.php';
@@ -26,7 +27,7 @@ if (!function_exists('hc_get_patient_overview')) {
      *   activeMedicalConditions: array,
      *   latestConsultation: array{date: string, time: string, chiefComplaint: string, diagnosis: string, physician: string},
      *   recentLabResults: array,
-     *   recentXray: array{name: string, date: string, status: string, findings: string},
+     *   recentXray: array{name: string, date: string, status: string, findings: string}|null (null = no x-ray on record),
      *   vaccinationHistory: array,
      * }
      */
@@ -87,7 +88,7 @@ if (!function_exists('hc_get_patient_overview')) {
 
         $labDocs = hc_get_lab_result_docs_for_patient($patientId); // newest-completed-first
         $recentLabResults = array_map(fn ($doc) => [
-            'name' => $doc['fields']['testName'],
+            'name' => hc_lab_test_display_name($doc['fields']['testName']),
             'date' => date('M j, Y', strtotime($doc['fields']['completedDate'])),
             'status' => str_contains(strtolower($doc['fields']['resultBadgeLabel'] ?? ''), 'normal') ? 'normal' : 'abnormal',
         ], array_slice($labDocs, 0, 4));
@@ -99,7 +100,7 @@ if (!function_exists('hc_get_patient_overview')) {
             'date' => date('M j, Y', strtotime($latestXrayDoc['fields']['completedDate'])),
             'status' => hc_xray_impression_is_normal($latestXrayDoc['fields']['impression'] ?? '') ? 'normal' : 'abnormal',
             'findings' => $latestXrayDoc['fields']['impression'] ?? '—',
-        ] : ['name' => 'No x-ray on record.', 'date' => '—', 'status' => 'normal', 'findings' => '—'];
+        ] : null; // no x-ray yet — the card shows a plain empty message, never a status badge
 
         $vaccinationHistory = array_map(fn ($v) => [
             'name' => $v['name'],

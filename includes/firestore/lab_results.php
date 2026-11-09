@@ -13,6 +13,7 @@ require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/xray_results.php'; // hc_get_all_xray_result_docs()
 require_once __DIR__ . '/patients.php'; // hc_get_all_patients_summary()
 require_once __DIR__ . '/../shared/xray_result_storage.php'; // hc_format_file_size(), reused for lab test templates
+require_once __DIR__ . '/../shared/lab_test_names.php'; // hc_lab_test_display_name(), hc_lab_test_official_names()
 
 if (!function_exists('hc_seed_lab_test_catalog')) {
     /**
@@ -36,13 +37,14 @@ if (!function_exists('hc_seed_lab_test_catalog')) {
         global $firestore;
 
         $defaults = [
-            'Bacteriology' => ['Gram Stain', 'Wet Mount'],
-            'Clinical Microscopy' => ['Urinalysis', 'Stool Exam', 'Fecal Occult Blood (FBOT)'],
-            'Serology' => ['HBSAG', 'Syphilis', 'HIV', 'CD4', 'Viral Load', 'Dengue NS1', 'IGM and IGG'],
-            'Hematology' => ['CBC'],
-            'Clinical Chemistry' => ['Fasting Blood Sugar', 'Blood Urea Nitrogen', 'Creatinine', 'Blood Uric Acid', 'Total Cholesterol', 'Triglycerides', 'HDL/LDL', 'SGOT', 'SGPT', 'HBA1C'],
+            // Official names — includes/shared/lab_test_names.php.
+            'Bacteriology' => hc_lab_test_official_names()['Bacteriology'],
+            'Clinical Microscopy' => hc_lab_test_official_names()['Clinical Microscopy'],
+            'Serology' => hc_lab_test_official_names()['Serology'],
+            'Hematology' => hc_lab_test_official_names()['Hematology'],
+            'Clinical Chemistry' => hc_lab_test_official_names()['Clinical Chemistry'],
         ];
-        $builtIn = ['HBSAG' => true, 'Syphilis' => true, 'HIV' => true, 'Urinalysis' => true, 'CD4' => true, 'Gram Stain' => true];
+        $builtIn = ['HBsAg' => true, 'Syphilis' => true, 'HIV' => true, 'Urinalysis' => true, 'CD4' => true, 'Gram Stain' => true];
         $now = date('c');
 
         foreach ($defaults as $category => $tests) {
@@ -108,7 +110,7 @@ if (!function_exists('hc_lab_test_catalog')) {
         foreach (hc_get_lab_test_catalog_docs() as $doc) {
             $f = $doc['fields'];
             $category = $f['category'] ?? 'Other';
-            $catalog[$category][] = $f['testName'] ?? '';
+            $catalog[$category][] = hc_lab_test_display_name($f['testName'] ?? '');
         }
 
         return $catalog;
@@ -134,7 +136,7 @@ if (!function_exists('hc_get_lab_test_template')) {
     {
         foreach (hc_get_lab_test_catalog_docs() as $doc) {
             $f = $doc['fields'];
-            if (($f['testName'] ?? '') !== $testName) {
+            if (!hc_lab_test_names_match($f['testName'] ?? '', $testName)) {
                 continue;
             }
             $fileName = $f['templateFileName'] ?? null;
@@ -162,15 +164,17 @@ if (!function_exists('hc_serology_rapid_test_catalog')) {
      * medical_technician/print_serology_rapid_test.php). Keys are the
      * exact testName values used everywhere else (hc_lab_test_catalog(),
      * the lab_results docs api/complete-consultation.php creates);
-     * values are the display label the paper form actually prints
-     * ("HBsAg", not the catalog's all-caps "HBSAG").
+     * values are the display label the paper form actually prints.
+     * Keyed by the OFFICIAL name (includes/shared/lab_test_names.php) —
+     * older records saved as "HBSAG" are matched via
+     * hc_lab_test_display_name() in hc_get_serology_rapid_docs_for_patient().
      *
      * @return array<string, string>
      */
     function hc_serology_rapid_test_catalog(): array
     {
         return [
-            'HBSAG' => 'HBsAg',
+            'HBsAg' => 'HBsAg',
             'Syphilis' => 'Syphilis',
             'HIV' => 'HIV',
         ];
@@ -193,7 +197,8 @@ if (!function_exists('hc_get_serology_rapid_docs_for_patient')) {
         $wanted = array_keys(hc_serology_rapid_test_catalog());
         $out = [];
         foreach (hc_get_lab_result_docs_for_patient($patientId) as $doc) {
-            $testName = $doc['fields']['testName'] ?? '';
+            // Official spelling, so an old "HBSAG" record is found as "HBsAg".
+            $testName = hc_lab_test_display_name($doc['fields']['testName'] ?? '');
             if (in_array($testName, $wanted, true) && !isset($out[$testName])) {
                 $out[$testName] = $doc;
             }
@@ -257,7 +262,7 @@ if (!function_exists('hc_get_urinalysis_docs_for_patient')) {
     {
         return array_values(array_filter(
             hc_get_lab_result_docs_for_patient($patientId),
-            fn ($doc) => ($doc['fields']['testName'] ?? '') === 'Urinalysis'
+            fn ($doc) => hc_lab_test_names_match($doc['fields']['testName'] ?? '', 'Urinalysis')
         ));
     }
 }
@@ -298,7 +303,7 @@ if (!function_exists('hc_get_cd4_count_docs_for_patient')) {
     {
         return array_values(array_filter(
             hc_get_lab_result_docs_for_patient($patientId),
-            fn ($doc) => ($doc['fields']['testName'] ?? '') === 'CD4'
+            fn ($doc) => hc_lab_test_names_match($doc['fields']['testName'] ?? '', 'CD4')
         ));
     }
 }
@@ -319,7 +324,7 @@ if (!function_exists('hc_get_gram_stain_docs_for_patient')) {
     {
         return array_values(array_filter(
             hc_get_lab_result_docs_for_patient($patientId),
-            fn ($doc) => ($doc['fields']['testName'] ?? '') === 'Gram Stain'
+            fn ($doc) => hc_lab_test_names_match($doc['fields']['testName'] ?? '', 'Gram Stain')
         ));
     }
 }
@@ -356,7 +361,7 @@ if (!function_exists('hc_get_pending_lab_xray_notifications')) {
             $rows[] = [
                 'collection' => 'lab_results',
                 'docId' => $doc['id'],
-                'testName' => $f['testName'] ?? 'Lab test',
+                'testName' => hc_lab_test_display_name($f['testName'] ?? 'Lab test'),
                 'patientId' => $f['patientId'] ?? '',
                 'orderedDate' => $f['orderedDate'] ?? '',
                 'orderedTime' => $f['orderedTime'] ?? '',
@@ -506,7 +511,7 @@ if (!function_exists('hc_get_doctor_result_ready_notifications')) {
             $rows[] = [
                 'collection' => 'lab_results',
                 'docId' => $doc['id'],
-                'testName' => $f['testName'] ?? 'Lab test',
+                'testName' => hc_lab_test_display_name($f['testName'] ?? 'Lab test'),
                 'patientId' => $f['patientId'] ?? '',
                 'completedDate' => $f['completedDate'] ?? '',
                 'completedTime' => $f['completedTime'] ?? '',
@@ -608,7 +613,7 @@ if (!function_exists('hc_get_lab_results_for_patient')) {
                 'id' => $doc['id'],
                 'datetime' => date('M j, Y', strtotime($f['orderedDate'])),
                 'time' => $f['orderedTime'],
-                'testName' => $f['testName'],
+                'testName' => hc_lab_test_display_name($f['testName']),
                 'testType' => $f['testType'],
                 'orderedBy' => $f['orderedBy'],
                 'facility' => $f['facility'],
@@ -695,7 +700,7 @@ if (!function_exists('hc_resolve_lab_result')) {
 
         $lf = $selected['fields'];
         $labTest = [
-            'testName' => $lf['testName'],
+            'testName' => hc_lab_test_display_name($lf['testName']),
             'testType' => $lf['testType'],
             'orderedDate' => date('M j, Y', strtotime($lf['orderedDate'])), 'orderedTime' => $lf['orderedTime'],
             // A still-"pending" order (api/complete-consultation.php's

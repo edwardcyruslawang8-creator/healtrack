@@ -40,6 +40,7 @@
 session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
+require_once __DIR__ . '/../includes/shared/lab_test_names.php'; // hc_lab_test_display_name() — official lab test names
 require_once __DIR__ . '/../includes/firestore/patients.php';
 require_once __DIR__ . '/../includes/firestore/lab_results.php';
 require_once __DIR__ . '/../includes/firestore/consultations.php';
@@ -140,7 +141,7 @@ switch ($testType) {
         $testLabel = 'Laboratory Result';
         foreach (hc_get_lab_result_docs_for_patient($patientId) as $doc) {
             if ($doc['id'] === $recordId && ($doc['fields']['status'] ?? '') === 'completed') {
-                $testLabel = $doc['fields']['testName'] ?? $testLabel;
+                $testLabel = hc_lab_test_display_name($doc['fields']['testName'] ?? $testLabel);
                 $completedDocs[] = $doc;
                 break;
             }
@@ -175,7 +176,7 @@ if ($assignedPersonnel === '' || $assignedPersonnel === 'Not specified') {
 $resultSummary = implode('; ', array_map(
     fn ($doc) => $resultCollection === 'xray_results'
         ? ($doc['fields']['examName'] ?? '') . ': ' . ($doc['fields']['impression'] ?? '')
-        : ($doc['fields']['testName'] ?? '') . ': ' . ($doc['fields']['resultBadgeLabel'] ?? ''),
+        : hc_lab_test_display_name($doc['fields']['testName'] ?? '') . ': ' . ($doc['fields']['resultBadgeLabel'] ?? ''),
     $completedDocs
 ));
 

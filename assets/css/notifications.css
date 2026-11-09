@@ -263,5 +263,6 @@
   .ntf-tabs-row{ flex-direction: column; align-items: stretch; }
   .ntf-toolbar{ flex-direction: column; align-items: stretch; }
   .ntf-filter-select{ min-width: 0; width: 100%; }
+  .ntf-toolbar .hc-select{ display: block; width: 100%; } /* styled dropdown (assets/js/styled-select.js) fills the row */
   .ntf-details-grid{ grid-template-columns: 1fr; }
 }

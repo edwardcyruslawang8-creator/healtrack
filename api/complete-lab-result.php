@@ -23,6 +23,7 @@
 session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
+require_once __DIR__ . '/../includes/shared/lab_test_names.php'; // hc_lab_test_display_name() — official lab test names
 require_once __DIR__ . '/../includes/firestore/patients.php';
 require_once __DIR__ . '/../includes/firestore/lab_results.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
@@ -100,7 +101,7 @@ if ($pendingDoc === null) {
 }
 
 $existing = $pendingDoc['fields'];
-$testName = $existing['testName'] ?? 'Lab Test';
+$testName = hc_lab_test_display_name($existing['testName'] ?? 'Lab Test');
 
 $badgeLabel = $interpretation !== '' ? $interpretation : 'Completed';
 $badgeColor = ($interpretation === '' || in_array(strtolower($interpretation), ['normal', 'negative'], true))

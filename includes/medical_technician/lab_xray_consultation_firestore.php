@@ -31,6 +31,7 @@
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
+require_once __DIR__ . '/../shared/lab_test_names.php'; // hc_lab_test_display_name() — official lab test names
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/lab_results.php';
 require_once __DIR__ . '/../firestore/consultations.php'; // hc_referral_priority_resolver()
@@ -95,7 +96,7 @@ foreach (hc_get_all_lab_result_docs() as $doc) {
         'patientId' => $f['patientId'] ?? '',
         'patientName' => $patient['name'] ?? 'Unknown Patient',
         'patientAge' => $patient['age'] ?? 0,
-        'examination' => $f['testName'] ?? '—',
+        'examination' => hc_lab_test_display_name($f['testName'] ?? '—'),
         'requestedBy' => $f['orderedBy'] ?? '—',
         'facility' => $f['facility'] ?? '—',
         'orderedDateRaw' => $f['orderedDate'] ?? '',
@@ -106,16 +107,16 @@ foreach (hc_get_all_lab_result_docs() as $doc) {
         // Office "SEROLOGY / RAPID IMMUNOCHROMATOGRAPHIC TESTS" paper
         // form's tests (hc_serology_rapid_test_catalog()) — drives the
         // "Fill Serology Form" action link below.
-        'isSerologyRapid' => array_key_exists($f['testName'] ?? '', hc_serology_rapid_test_catalog()),
+        'isSerologyRapid' => array_key_exists(hc_lab_test_display_name($f['testName'] ?? ''), hc_serology_rapid_test_catalog()),
         // Same idea for the real "URINALYSIS" paper form — drives the
         // "Fill Urinalysis Form" action link below.
-        'isUrinalysis' => ($f['testName'] ?? '') === 'Urinalysis',
+        'isUrinalysis' => hc_lab_test_names_match($f['testName'] ?? '', 'Urinalysis'),
         // Same idea for the real "CD4 COUNT" paper form — drives the
         // "Fill CD4 Count Form" action link below.
-        'isCD4Count' => ($f['testName'] ?? '') === 'CD4',
+        'isCD4Count' => hc_lab_test_names_match($f['testName'] ?? '', 'CD4'),
         // Same idea for the real "GRAM STAIN" paper form — drives the
         // "Fill Gram Stain Form" action link below.
-        'isGramStain' => ($f['testName'] ?? '') === 'Gram Stain',
+        'isGramStain' => hc_lab_test_names_match($f['testName'] ?? '', 'Gram Stain'),
         // Real "who the doctor sent this to" — api/complete-consultation.php's
         // Laboratory staff picker. Null for every referral sent before
         // that existed (and for one nobody was assigned, by choice or

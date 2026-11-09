@@ -73,6 +73,7 @@
 session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
+require_once __DIR__ . '/../includes/shared/lab_test_names.php'; // hc_lab_test_display_name() — official lab test names
 require_once __DIR__ . '/../includes/firestore/consultations.php';
 require_once __DIR__ . '/../includes/firestore/lab_results.php'; // hc_lab_test_catalog()
 require_once __DIR__ . '/../includes/firestore/xray_results.php'; // hc_xray_exam_catalog(), hc_get_xray_result_docs_for_patient()
@@ -445,7 +446,7 @@ if ($nextRouting === 'laboratory' && count($labTests) > 0) {
     $alreadyOrderedTestNames = [];
     foreach (hc_get_lab_result_docs_for_patient($existing['patientId'] ?? '') as $doc) {
         if (($doc['fields']['sourceConsultationId'] ?? '') === $id) {
-            $alreadyOrderedTestNames[] = $doc['fields']['testName'] ?? '';
+            $alreadyOrderedTestNames[] = hc_lab_test_display_name($doc['fields']['testName'] ?? ''); // official spelling, so an old "HBSAG" order still counts as "HBsAg"
         }
     }
 

@@ -262,6 +262,9 @@ $adminNavItems = [
             <div class="ppf-info-item"><span class="ppf-info-label">Blood Type</span><span class="ppf-info-value"><?= htmlspecialchars($patient['bloodType']) ?></span></div>
             <div class="ppf-info-item"><span class="ppf-info-label">Civil Status</span><span class="ppf-info-value"><?= htmlspecialchars($patient['civilStatus']) ?></span></div>
             <div class="ppf-info-item"><span class="ppf-info-label">Occupation</span><span class="ppf-info-value"><?= htmlspecialchars($patient['occupation']) ?></span></div>
+            <?php if (($patient['philhealthPin'] ?? '') !== ''): // optional — only shown when on file ?>
+            <div class="ppf-info-item"><span class="ppf-info-label">PhilHealth PIN</span><span class="ppf-info-value"><?= htmlspecialchars($patient['philhealthPin']) ?></span></div>
+            <?php endif; ?>
         </div>
 
         <div class="ppf-info-col">

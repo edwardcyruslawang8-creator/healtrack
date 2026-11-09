@@ -303,6 +303,9 @@ $staffNavItems = [
             <div class="ppf-info-item"><span class="ppf-info-label">Blood Type</span><span class="ppf-info-value"><?= htmlspecialchars($patient['bloodType']) ?></span></div>
             <div class="ppf-info-item"><span class="ppf-info-label">Civil Status</span><span class="ppf-info-value"><?= htmlspecialchars($patient['civilStatus']) ?></span></div>
             <div class="ppf-info-item"><span class="ppf-info-label">Occupation</span><span class="ppf-info-value"><?= htmlspecialchars($patient['occupation']) ?></span></div>
+            <?php if (($patient['philhealthPin'] ?? '') !== ''): // optional — only shown when on file ?>
+            <div class="ppf-info-item"><span class="ppf-info-label">PhilHealth PIN</span><span class="ppf-info-value"><?= htmlspecialchars($patient['philhealthPin']) ?></span></div>
+            <?php endif; ?>
         </div>
 
         <div class="ppf-info-col">
@@ -428,6 +431,7 @@ $staffNavItems = [
                         <div><i class="bi bi-lungs-fill"></i> <h3>Recent X-ray Results</h3></div>
                         <a href="patient_laboratory_xray.php?id=<?= urlencode($patient['id']) ?>" class="ppf-view-all">View All</a>
                     </div>
+                    <?php if (!empty($recentXray)): ?>
                     <div class="ppf-xray-row">
                         <div class="ppf-xray-thumb"><i class="bi bi-lungs"></i></div>
                         <div>
@@ -438,6 +442,9 @@ $staffNavItems = [
                         </div>
                     </div>
                     <p class="ppf-consult-line"><span>Findings:</span><br><?= htmlspecialchars($recentXray['findings']) ?></p>
+                    <?php else: // no x-ray yet — no status badge, no empty Findings ?>
+                    <p class="ppf-consult-line">No x-ray on record.</p>
+                    <?php endif; ?>
                     <a href="patient_laboratory_xray.php?id=<?= urlencode($patient['id']) ?>" class="ppf-card-link">Go to Laboratory &amp; X-ray <i class="bi bi-arrow-right"></i></a>
                 </div>
 

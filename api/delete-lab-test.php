@@ -26,6 +26,7 @@
 session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
+require_once __DIR__ . '/../includes/shared/lab_test_names.php'; // hc_lab_test_display_name() — official lab test names
 require_once __DIR__ . '/../includes/firestore/lab_results.php';
 require_once __DIR__ . '/../includes/shared/lab_test_template_storage.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
@@ -73,7 +74,7 @@ if (!empty($target['fields']['isBuiltIn'])) {
     exit;
 }
 
-$testName = $target['fields']['testName'] ?? 'Laboratory test';
+$testName = hc_lab_test_display_name($target['fields']['testName'] ?? 'Laboratory test');
 
 if (!$firestore->deleteDocument('lab_test_catalog', $id)) {
     http_response_code(500);

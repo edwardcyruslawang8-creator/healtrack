@@ -22,6 +22,7 @@
 session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
+require_once __DIR__ . '/../includes/shared/lab_test_names.php'; // hc_lab_test_display_name() — official lab test names
 require_once __DIR__ . '/../includes/firestore/lab_results.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 
@@ -50,7 +51,7 @@ if ($testName === '' || $category === '') {
 }
 
 foreach (hc_get_lab_test_catalog_docs() as $doc) {
-    if (strcasecmp($doc['fields']['testName'] ?? '', $testName) === 0) {
+    if (hc_lab_test_names_match($doc['fields']['testName'] ?? '', $testName)) {
         http_response_code(422);
         echo json_encode(['success' => false, 'error' => 'A laboratory test with this name already exists.']);
         exit;

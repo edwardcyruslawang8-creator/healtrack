@@ -88,6 +88,7 @@ $staffNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/medical_staff_dashboard.css') ?>">
 <!-- Consultations page styles (stat cards, filter toolbar, table cells, modals) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/consultations.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/styled-select.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -243,13 +244,13 @@ $staffNavItems = [
             <input type="text" name="q" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Search by patient name, ID, or phone...">
         </div>
 
-        <select class="form-select cns-filter-select" name="type" aria-label="Filter by consultation type" onchange="this.form.submit()">
+        <select class="form-select cns-filter-select" data-styled-select name="type" aria-label="Filter by consultation type" onchange="this.form.submit()">
             <?php foreach ($consultationTypeOptions as $key => $label): ?>
             <option value="<?= htmlspecialchars($key) ?>" <?= $key === $typeFilter ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
             <?php endforeach; ?>
         </select>
 
-        <select class="form-select cns-filter-select" name="status" aria-label="Filter by status" onchange="this.form.submit()">
+        <select class="form-select cns-filter-select" data-styled-select name="status" aria-label="Filter by status" onchange="this.form.submit()">
             <?php foreach ($consultationStatusOptions as $key => $label): ?>
             <option value="<?= htmlspecialchars($key) ?>" <?= $key === $statusFilter ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
             <?php endforeach; ?>
@@ -637,5 +638,6 @@ $staffNavItems = [
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/consultations_medstaff.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/styled-select.js') ?>"></script>
 </body>
 </html>

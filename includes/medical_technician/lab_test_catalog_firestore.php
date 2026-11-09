@@ -22,6 +22,7 @@
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
+require_once __DIR__ . '/../shared/lab_test_names.php'; // hc_lab_test_display_name() — official lab test names
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/lab_results.php';
 require_once __DIR__ . '/../firestore/xray_results.php'; // hc_get_pending_lab_count() (sidebar badge) needs both collections
@@ -50,7 +51,7 @@ foreach (hc_get_lab_test_catalog_docs() as $doc) {
     $templateFileName = $f['templateFileName'] ?? null;
     $catalogByCategory[$f['category'] ?? 'Other'][] = [
         'id' => $doc['id'],
-        'testName' => $f['testName'] ?? '—',
+        'testName' => hc_lab_test_display_name($f['testName'] ?? '—'),
         'isBuiltIn' => !empty($f['isBuiltIn']),
         'hasTemplate' => $templateFileName !== null && $templateFileName !== '',
         'templateFileName' => $templateFileName,

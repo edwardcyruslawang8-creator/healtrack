@@ -100,6 +100,7 @@ $adminNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/subadmin_dashboard.css') ?>">
 <!-- Patient Management page styles (stat cards, filter toolbar, table) — shared verbatim with subadmin/doctor/medical-staff's Patient Management -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_management.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/styled-select.css') ?>">
 <!-- Quick Search dropdown under the search box (live typeahead, shared with subadmin/doctor/medical-staff's Patient Management) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/quick-search.css') ?>">
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
@@ -263,13 +264,13 @@ $adminNavItems = [
             <input type="text" name="q" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Search by name or contact number..." autocomplete="off" data-quick-search="<?= BASE_URL ?>/api/quick-search-patients.php?facility=<?= urlencode($selectedFacility) ?>">
         </div>
 
-        <select class="form-select pmg-filter-select" name="gender" aria-label="Filter by gender" onchange="this.form.submit()">
+        <select class="form-select pmg-filter-select" data-styled-select name="gender" aria-label="Filter by gender" onchange="this.form.submit()">
             <?php foreach ($genderOptions as $g): ?>
             <option <?= $g === $genderFilter ? 'selected' : '' ?>><?= htmlspecialchars($g) ?></option>
             <?php endforeach; ?>
         </select>
 
-        <select class="form-select pmg-filter-select" name="ageGroup" aria-label="Filter by age group" onchange="this.form.submit()">
+        <select class="form-select pmg-filter-select" data-styled-select name="ageGroup" aria-label="Filter by age group" onchange="this.form.submit()">
             <?php foreach ($ageGroupOptions as $a): ?>
             <option <?= $a === $ageGroupFilter ? 'selected' : '' ?>><?= htmlspecialchars($a) ?></option>
             <?php endforeach; ?>
@@ -380,5 +381,6 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/styled-select.js') ?>"></script>
 </body>
 </html>
