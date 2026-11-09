@@ -26,6 +26,7 @@
  */
 
 require_once __DIR__ . '/../shared/query_helpers.php';
+require_once __DIR__ . '/../shared/lab_test_names.php'; // hc_lab_test_display_name() — official lab test names
 require_once __DIR__ . '/../shared/pagination_helpers.php';
 require_once __DIR__ . '/../shared/date_range_filter.php';
 require_once __DIR__ . '/predictive_analytics_firestore.php'; // $facility, $facilityName, $facilityPatients — locked to THIS sub-admin's own real facility
@@ -78,7 +79,7 @@ foreach (hc_get_all_lab_result_docs() as $doc) {
         'id' => $doc['id'],
         'type' => 'lab',
         'patientId' => $f['patientId'] ?? '',
-        'name' => trim((string) ($f['testName'] ?? '')),
+        'name' => hc_lab_test_display_name((string) ($f['testName'] ?? '')), // groups old + new spellings together
         'category' => trim((string) ($f['testType'] ?? '')),
         'orderedBy' => $f['orderedBy'] ?? '—',
         'orderedDate' => (string) ($f['orderedDate'] ?? ''),

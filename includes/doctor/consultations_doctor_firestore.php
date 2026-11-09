@@ -108,8 +108,13 @@ if (!array_key_exists($typeFilter, $consultationTypeOptions)) {
 }
 $statusFilter = $_GET['status'] ?? 'All Status';
 $today = date('Y-m-d');
-$dateFrom = trim($_GET['from'] ?? $today);
-$dateTo = trim($_GET['to'] ?? $today);
+// No date range by default — the Consultation Logs cover ALL dates
+// unless the doctor picks one. (It used to default to today only, so
+// choosing e.g. "Completed" showed nothing whenever no consultation
+// happened to be scheduled today, even with 1,500+ completed ones.)
+$dateFrom = trim($_GET['from'] ?? '');
+$dateTo = trim($_GET['to'] ?? '');
+$dateRangeChosen = $dateFrom !== '' || $dateTo !== '';
 
 $filteredConsultations = array_values(array_filter($myConsultations, function ($c) use ($searchTerm, $typeFilter, $statusFilter, $dateFrom, $dateTo) {
     if ($searchTerm !== '' && !hc_fuzzy_match($c['patientName'] . ' ' . $c['patientId'] . ' ' . $c['chiefComplaint'], $searchTerm)) {
@@ -148,12 +153,20 @@ $labRoutedConsultations = [];
 $nonLabConsultations = [];
 foreach ($filteredConsultations as $c) {
     if ($c['status'] === 'ongoing' && $c['nextRouting'] === 'laboratory') {
+        // This table isn't paginated, so with no date range chosen it
+        // keeps its previous default of TODAY's lab-routed visits only;
+        // a chosen range applies to it as before.
+        if (!$dateRangeChosen && substr($c['dateTime'], 0, 10) !== $today) {
+            continue;
+        }
         $c['awaitingLab'] = hc_consultation_is_awaiting_lab_results($c);
         $labRoutedConsultations[] = $c;
     } else {
         $nonLabConsultations[] = $c;
     }
 }
+// Consultation Logs: newest first, so page 1 is the most recent visits.
+usort($nonLabConsultations, fn ($a, $b) => strcmp($b['dateTime'], $a['dateTime']));
 $filteredConsultations = $nonLabConsultations;
 
 // ---------------------------------------------------------------------

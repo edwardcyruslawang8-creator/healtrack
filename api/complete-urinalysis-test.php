@@ -20,6 +20,7 @@
 session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
+require_once __DIR__ . '/../includes/shared/lab_test_names.php'; // hc_lab_test_display_name() — official lab test names
 require_once __DIR__ . '/../includes/firestore/patients.php';
 require_once __DIR__ . '/../includes/firestore/lab_results.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
@@ -134,7 +135,7 @@ if (!$saved) {
 $firestore->addDocument('medical_records', [
     'patientId' => $patientId,
     'type' => 'laboratory',
-    'title' => 'Laboratory — ' . $existing['testName'],
+    'title' => 'Laboratory — ' . hc_lab_test_display_name($existing['testName']),
     'date' => date('Y-m-d'),
     'time' => date('g:i A'),
     'provider' => $_SESSION['name'] ?? null,

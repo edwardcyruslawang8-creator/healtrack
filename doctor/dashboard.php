@@ -343,6 +343,11 @@ $doctorNavItems = [
             <div class="adm-donut-wrap">
                 <div class="adm-donut-canvas-box">
                     <canvas id="consultationStatusChart"></canvas>
+                    <!-- Total as HTML in the ring's hole — also makes assets/js/chart-center-label.js show the hover tooltip OUTSIDE the ring instead of on top of the total. -->
+                    <div class="adm-donut-center">
+                        <div class="adm-donut-total"><?= number_format($consultationStatusTotal) ?></div>
+                        <div class="adm-donut-total-label">Consultations</div>
+                    </div>
                 </div>
             </div>
             <div class="doc-donut-legend">

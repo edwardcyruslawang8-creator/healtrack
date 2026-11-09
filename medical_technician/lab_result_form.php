@@ -34,6 +34,7 @@
 session_start();
 
 require_once __DIR__ . '/../config/constants.php'; // BASE_URL, asset_url()
+require_once __DIR__ . '/../includes/shared/lab_test_names.php'; // hc_lab_test_display_name() — official lab test names
 
 if (($_SESSION['role'] ?? null) !== 'medical_technician') {
     header('Location: ' . BASE_URL . '/login.php');
@@ -63,7 +64,7 @@ $staffNavItems = [
 ];
 
 $docFields = $currentDoc['fields'] ?? [];
-$testName = $docFields['testName'] ?? '—';
+$testName = hc_lab_test_display_name($docFields['testName'] ?? '—');
 $savedSpecimen = $docFields['specimenType'] ?? '';
 $savedSpecimen = $savedSpecimen === 'Not specified' ? '' : $savedSpecimen;
 $savedRow = $docFields['resultGroups']['group1_rows'][0] ?? [];

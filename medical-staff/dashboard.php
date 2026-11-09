@@ -339,6 +339,11 @@ $staffNavItems = [
             <div class="adm-donut-wrap">
                 <div class="adm-donut-canvas-box">
                     <canvas id="consultationStatusChart"></canvas>
+                    <!-- Total as HTML in the ring's hole — also makes assets/js/chart-center-label.js show the hover tooltip OUTSIDE the ring instead of on top of the total. -->
+                    <div class="adm-donut-center">
+                        <div class="adm-donut-total"><?= number_format($consultationStatusTotal) ?></div>
+                        <div class="adm-donut-total-label">Consultations</div>
+                    </div>
                 </div>
             </div>
             <div class="mst-donut-legend">
@@ -395,18 +400,27 @@ $staffNavItems = [
                 <h2>Recent Notifications</h2>
                 <a href="notifications.php" class="adm-card-footer-link" style="margin-top:0;">View All <i class="bi bi-arrow-right"></i></a>
             </div>
+            <!-- Real latest notifications (same source as notifications.php —
+                 includes/medical-staff/medstaff_notifications_source.php).
+                 Each row opens the Notifications page. -->
             <div class="mst-notif-list">
+                <?php if (empty($recentNotifications)): ?>
+                <p class="mst-notif-empty">You're all caught up — no new notifications.</p>
+                <?php endif; ?>
                 <?php foreach ($recentNotifications as $n): ?>
-                <div class="mst-notif-row">
+                <a href="notifications.php" class="mst-notif-row<?= $n['unread'] ? ' is-unread' : '' ?>">
                     <div class="mst-notif-icon" style="background:<?= htmlspecialchars($n['iconBg']) ?>; color:<?= htmlspecialchars($n['iconColor']) ?>;">
                         <i class="bi <?= htmlspecialchars($n['icon']) ?>"></i>
                     </div>
                     <div class="mst-notif-body">
-                        <div class="mst-notif-title"><?= htmlspecialchars($n['title']) ?></div>
-                        <div class="mst-notif-desc"><?= htmlspecialchars($n['desc']) ?></div>
+                        <div class="mst-notif-title">
+                            <?= htmlspecialchars($n['title']) ?>
+                            <?php if ($n['unread']): ?><span class="mst-notif-unread-dot" aria-label="Unread"></span><?php endif; ?>
+                        </div>
+                        <?php if ($n['desc'] !== ''): ?><div class="mst-notif-desc"><?= htmlspecialchars($n['desc']) ?></div><?php endif; ?>
                         <div class="mst-notif-time"><?= htmlspecialchars($n['timeAgo']) ?></div>
                     </div>
-                </div>
+                </a>
                 <?php endforeach; ?>
             </div>
         </div>

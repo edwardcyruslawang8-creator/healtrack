@@ -66,12 +66,10 @@ $ntfReadIds = $_SESSION['ntfReadIds'] ?? [];
 $ntfArchivedIds = $_SESSION['ntfDismissedIds'] ?? [];
 // Real gating — see includes/shared/notification_preferences.php's
 // header comment for which key covers which real source here.
-$rawNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'system') ? array_merge(
-    array_filter([hc_get_2fa_reminder_notification($myUid, $myDoc ?? [])]),
-    array_filter([hc_get_phone_reminder_notification($myUid, $myDoc ?? [])]),
-    array_filter([hc_my_email_verification_notification()]),
-    hc_notification_preference_enabled_for_doc($myDoc ?? [], 'consultation') ? hc_get_followup_notifications() : []
-) : [];
+// Shared with the dashboard's "Recent Notifications" panel — see
+// includes/medical-staff/medstaff_notifications_source.php.
+require_once __DIR__ . '/medstaff_notifications_source.php';
+$rawNotifications = hc_medstaff_notification_list($myUid, $myDoc ?? []);
 // Which real page a notification's "Go to details" button (the
 // Notification Details modal's own primary action, assets/js/notifications.js)
 // should open — keyed by the same real 'type' string each source

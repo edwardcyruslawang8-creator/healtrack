@@ -1,0 +1,94 @@
+/* =============================================================
+   HC DATEPICKER — HEALTrack maroon theme for flatpickr
+   (assets/js/hc-datepicker.js). Staff theme tokens with fallbacks,
+   so it follows dark mode too.
+   ============================================================= */
+.flatpickr-calendar{
+  font-family: inherit;
+  background: var(--adm-card, #fff);
+  border: 1px solid var(--adm-border, #ECEDF3);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(31, 36, 48, .16);
+  padding: 6px;
+  width: 308px;
+}
+.flatpickr-calendar.arrowTop::before,
+.flatpickr-calendar.arrowTop::after,
+.flatpickr-calendar.arrowBottom::before,
+.flatpickr-calendar.arrowBottom::after{ display: none; }
+
+/* Month header */
+.flatpickr-months{ align-items: center; padding: 4px 2px 6px; }
+.flatpickr-months .flatpickr-month{ color: var(--adm-text, #1F2430); fill: currentColor; height: 36px; }
+.flatpickr-current-month{ font-size: 14px; font-weight: 700; padding-top: 8px; }
+.flatpickr-current-month .cur-month{ font-weight: 700; }
+.flatpickr-current-month input.cur-year{ font-weight: 700; color: var(--adm-text, #1F2430); }
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month{
+  color: var(--adm-text-muted, #6B7280);
+  padding: 8px 10px;
+  top: 8px;
+  border-radius: 8px;
+  line-height: 1;
+}
+.flatpickr-months .flatpickr-prev-month:hover,
+.flatpickr-months .flatpickr-next-month:hover{
+  color: var(--adm-red-bright, #5B0A0A);
+  background: color-mix(in srgb, var(--adm-red-bright, #5B0A0A) 8%, transparent);
+}
+.flatpickr-months .flatpickr-prev-month.flatpickr-disabled,
+.flatpickr-months .flatpickr-next-month.flatpickr-disabled{ opacity: .3; }
+
+/* Weekday row */
+span.flatpickr-weekday{ color: var(--adm-text-muted, #6B7280); font-weight: 600; font-size: 12px; }
+
+/* Days */
+.flatpickr-day{
+  color: var(--adm-text, #1F2430);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+.flatpickr-day:hover,
+.flatpickr-day:focus{
+  background: color-mix(in srgb, var(--adm-red-bright, #5B0A0A) 9%, var(--adm-card, #fff));
+  border-color: transparent;
+  color: var(--adm-red-bright, #5B0A0A);
+}
+.flatpickr-day.today{ border-color: var(--adm-red-bright, #5B0A0A); color: var(--adm-red-bright, #5B0A0A); font-weight: 700; }
+.flatpickr-day.today:hover{ background: color-mix(in srgb, var(--adm-red-bright, #5B0A0A) 9%, var(--adm-card, #fff)); color: var(--adm-red-bright, #5B0A0A); }
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover,
+.flatpickr-day.selected:focus{
+  background: var(--adm-red-bright, #5B0A0A);
+  border-color: var(--adm-red-bright, #5B0A0A);
+  color: #fff;
+  font-weight: 700;
+}
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay{ color: var(--adm-text-soft, #9AA0AC); }
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.flatpickr-disabled:hover{
+  color: var(--adm-text-soft, #9AA0AC);
+  opacity: .45;
+  background: transparent;
+  cursor: not-allowed;
+}
+
+/* The visible text box flatpickr creates looks like the original
+   input (it copies its classes) — just show a pointer + calendar cue. */
+input.flatpickr-input.form-control[readonly]{
+  background-color: var(--adm-card, #fff);
+  cursor: pointer;
+  padding-right: 34px;
+  /* calendar icon (bootstrap-icons "calendar3"), muted grey */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%239AA0AC' viewBox='0 0 16 16'%3E%3Cpath d='M14 0H2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2M1 3.857C1 3.384 1.448 3 2 3h12c.552 0 1 .384 1 .857v10.286c0 .473-.448.857-1 .857H2c-.552 0-1-.384-1-.857z'/%3E%3Cpath d='M6.5 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2m3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2m3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2m-9 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2m3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2m3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2m3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2m-9 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2m3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2m3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px 14px;
+}
+input.flatpickr-input.form-control[readonly]:focus{
+  border-color: var(--adm-red-bright, #5B0A0A);
+  box-shadow: 0 0 0 3px rgba(91, 10, 10, .12);
+}

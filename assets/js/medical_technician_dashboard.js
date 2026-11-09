@@ -112,6 +112,8 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             options: {
                 cutout: '68%',
+                // Room for hoverOffset, so a hovered slice isn't clipped at the canvas edge.
+                layout: { padding: 8 },
                 animation: { duration: 700, easing: 'easeOutQuart' },
                 plugins: {
                     legend: { display: false }, // custom legend rendered in HTML instead

@@ -21,6 +21,7 @@
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
+require_once __DIR__ . '/../shared/lab_test_names.php'; // hc_lab_test_display_name() — official lab test names
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/lab_results.php';
 require_once __DIR__ . '/../firestore/xray_results.php';
@@ -104,13 +105,13 @@ $xrayImpression = $xrayBundle['xrayImpression'];
 // its own tab). Only these 4 tests have a real paper template; every
 // other test falls back to the plain field list below instead.
 $paperFormUrl = null;
-if ($labTest['testName'] === 'Urinalysis') {
+if (hc_lab_test_names_match($labTest['testName'], 'Urinalysis')) {
     $paperFormUrl = '../medical_technician/print_urinalysis.php';
-} elseif ($labTest['testName'] === 'CD4') {
+} elseif (hc_lab_test_names_match($labTest['testName'], 'CD4')) {
     $paperFormUrl = '../medical_technician/print_cd4_count.php';
-} elseif ($labTest['testName'] === 'Gram Stain') {
+} elseif (hc_lab_test_names_match($labTest['testName'], 'Gram Stain')) {
     $paperFormUrl = '../medical_technician/print_gram_stain.php';
-} elseif (array_key_exists($labTest['testName'], hc_serology_rapid_test_catalog())) {
+} elseif (array_key_exists(hc_lab_test_display_name($labTest['testName']), hc_serology_rapid_test_catalog())) {
     $paperFormUrl = '../medical_technician/print_serology_rapid_test.php';
 }
 if ($paperFormUrl !== null) {

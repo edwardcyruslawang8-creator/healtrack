@@ -98,6 +98,21 @@ if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
     exit;
 }
 
+// PhilHealth Identification Number — optional, like Email: blank is fine
+// and never blocks registration; when provided it must be exactly 12
+// digits (hyphens optional on input) and is stored normalized as
+// 00-000000000-0.
+$philhealthPin = trim((string) ($body['philhealthPin'] ?? ''));
+if ($philhealthPin !== '') {
+    if (!preg_match('/^\d{2}-?\d{9}-?\d$/', $philhealthPin)) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => 'PhilHealth Identification Number must be 12 digits in the format 00-000000000-0, or left blank.']);
+        exit;
+    }
+    $pinDigits = preg_replace('/\D/', '', $philhealthPin);
+    $philhealthPin = substr($pinDigits, 0, 2) . '-' . substr($pinDigits, 2, 9) . '-' . substr($pinDigits, 11, 1);
+}
+
 if ($firstName === '' || $lastName === '' || $birthDate === '' || $sex === '' || $civilStatus === ''
     || $phone === '' || $address === '' || $barangay === '' || $city === '' || $consent === '') {
     http_response_code(422);
@@ -172,6 +187,7 @@ $patientFields = [
     'gender' => $sex,
     'civilStatus' => $civilStatus,
     'occupation' => $occupation !== '' ? $occupation : null,
+    'philhealthPin' => $philhealthPin !== '' ? $philhealthPin : null,
     'contact' => $phone,
     'email' => $email !== '' ? $email : null,
     'address' => $address,

@@ -124,6 +124,7 @@ $adminNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/subadmin_dashboard.css') ?>">
 <!-- Notifications page styles (tabs, toolbar, notification cell, modal) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/notifications.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/styled-select.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -274,7 +275,7 @@ $adminNavItems = [
             <i class="bi bi-search"></i>
             <input type="text" id="ntfSearchInput" placeholder="Search notifications...">
         </div>
-        <select class="form-select ntf-filter-select" id="ntfTypeFilter" aria-label="Filter by type">
+        <select class="form-select ntf-filter-select" data-styled-select id="ntfTypeFilter" aria-label="Filter by type">
             <?php foreach ($notificationTypeOptions as $opt): ?>
             <option><?= htmlspecialchars($opt) ?></option>
             <?php endforeach; ?>
@@ -392,5 +393,6 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/notifications.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/styled-select.js') ?>"></script>
 </body>
 </html>

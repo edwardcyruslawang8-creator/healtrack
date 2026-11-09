@@ -107,6 +107,10 @@
   box-shadow: 0 0 0 3px rgba(91, 10, 10, 0.12);
 }
 
+/* Gender / age-group filters use the styled dropdown
+   (assets/js/styled-select.js) — its staff-theme colors live in
+   assets/css/styled-select.css (.adm-body rules). */
+
 /* -- Patient table card -- */
 .pmg-table-card{ padding: 24px; }
 .pmg-table-title{ font-size: 15.5px; font-weight: 700; color: var(--adm-text); margin: 0 0 16px; }
@@ -175,4 +179,5 @@
   .pmg-stats-row{ grid-template-columns: 1fr; }
   .pmg-toolbar{ flex-direction: column; align-items: stretch; }
   .pmg-filter-select{ width: 100%; }
+  .pmg-toolbar .hc-select{ display: block; width: 100%; }
 }

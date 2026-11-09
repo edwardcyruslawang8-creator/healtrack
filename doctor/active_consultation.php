@@ -225,7 +225,6 @@ $doctorNavItems = [
     <div class="adm-card acv-patient-card">
         <div class="acv-patient-top">
             <div class="acv-patient-identity">
-                <div class="acv-patient-avatar"><i class="bi bi-person-fill"></i></div>
                 <div>
                     <div class="acv-patient-name-row">
                         <span class="acv-patient-name"><?= htmlspecialchars($patient['name']) ?></span>
@@ -367,7 +366,22 @@ $doctorNavItems = [
                     <button type="button" class="acv-rte-btn" data-cmd="createLink"><i class="bi bi-link-45deg"></i></button>
                 </div>
                 <div class="acv-rte-editor" id="acvPrescription" contenteditable="true" data-placeholder="Type prescription or treatment plan here..."><?= $consultation['prescriptionHtml'] !== '' ? $consultation['prescriptionHtml'] : '' ?></div>
-                <div class="acv-char-count" data-for="acvPrescription">0/2000</div>
+                <!-- Print Prescription — prints ONLY a standalone prescription
+                     document (facility, patient, attending doctor, and this
+                     editor's content) via assets/js/print-prescription.js;
+                     never the page itself, never any other consultation field.
+                     Names/facility come from this consultation's own records:
+                     the patient behind it, its assigned doctor, and the
+                     patient's facility (the doctor's as a fallback). -->
+                <div class="acv-rte-footer">
+                    <button type="button" class="acv-btn-print" id="acvPrintPrescriptionBtn"
+                        data-patient-name="<?= htmlspecialchars($patient['name']) ?>"
+                        data-doctor-name="<?= htmlspecialchars($consultation['assignedPersonnel']) ?>"
+                        data-facility="<?= htmlspecialchars(($patient['facility'] ?? '') !== '' ? $patient['facility'] : $doctorProfile['facility']) ?>">
+                        <i class="bi bi-printer"></i> Print Prescription
+                    </button>
+                    <div class="acv-char-count" data-for="acvPrescription">0/2000</div>
+                </div>
             </div>
 
             <!-- Hidden until "Patient Will Be Next In" (right column,
@@ -451,17 +465,9 @@ $doctorNavItems = [
                         <div class="input-group input-group-sm"><input type="text" class="form-control" id="acvVitalBmi" value="<?= htmlspecialchars((string) $vitalsPrefill['bmi']) ?>" readonly><span class="input-group-text">kg/m&sup2;</span></div>
                     </div>
                 </div>
-                <!-- Opens in a new tab deliberately — this form has no
-                     autosave/draft, so navigating away in the SAME tab
-                     would silently lose everything typed so far
-                     (HPI/ROS/diagnosis/prescription/medications/vitals/
-                     notes), with no way back via the sidebar (this
-                     workspace isn't a nav item, only reachable via
-                     "Proceed with Consultation"). -->
-                <a href="patient_profile.php?id=<?= urlencode($patient['id']) ?>" class="acv-view-full-link" target="_blank" rel="noopener">View Full Vital Signs <i class="bi bi-box-arrow-up-right"></i></a>
             </div>
 
-            <div class="adm-card">
+            <div class="adm-card acv-routing-card">
                 <div class="acv-field-label">Patient Will Be Next In</div>
                 <div class="acv-field-help">Select where the patient will proceed next.</div>
                 <div class="acv-routing-list">
@@ -683,7 +689,7 @@ $doctorNavItems = [
                          follow-up with no date can't be reminded about. -->
                     <div class="acv-followup-date-panel <?= $consultation['needsFollowUp'] ? '' : 'd-none' ?>" id="acvFollowUpDatePanel">
                         <label class="acv-field-label" for="acvFollowUpDate">Follow-up Date</label>
-                        <input type="date" class="form-control form-control-sm acv-followup-date-input" id="acvFollowUpDate" min="<?= date('Y-m-d') ?>" value="<?= htmlspecialchars($consultation['nextFollowUp'] !== '' ? substr($consultation['nextFollowUp'], 0, 10) : '') ?>">
+                        <input type="date" class="form-control form-control-sm acv-followup-date-input" data-hc-datepicker id="acvFollowUpDate" min="<?= date('Y-m-d') ?>" value="<?= htmlspecialchars($consultation['nextFollowUp'] !== '' ? substr($consultation['nextFollowUp'], 0, 10) : '') ?>">
                         <div class="acv-followup-date-error text-danger small d-none" id="acvFollowUpDateError">Please select a follow-up date.</div>
                     </div>
                 </div>
@@ -782,5 +788,16 @@ $doctorNavItems = [
     window.ACV_CHIEF_COMPLAINT_MENTIONS_ALLERGY = <?= json_encode($chiefComplaintMentionsAllergy) ?>;
 </script>
 <script src="<?= asset_url('/assets/js/active_consultation.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/print-prescription.js') ?>"></script>
+<!-- Styled suggestions for the Medicine / Vaccine name fields instead of
+     the browser's own <datalist> popup (assets/js/suggest-input.js). -->
+<link rel="stylesheet" href="<?= asset_url('/assets/css/suggest-input.css') ?>">
+<script src="<?= asset_url('/assets/js/suggest-input.js') ?>"></script>
+<!-- Maroon-themed calendar for the Follow-up Date (the browser's own date
+     popup can't be recolored) — flatpickr + assets/js/hc-datepicker.js. -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-datepicker.css') ?>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<script src="<?= asset_url('/assets/js/hc-datepicker.js') ?>"></script>
 </body>
 </html>

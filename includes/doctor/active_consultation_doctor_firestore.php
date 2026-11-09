@@ -48,6 +48,7 @@
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
+require_once __DIR__ . '/../shared/lab_test_names.php'; // hc_lab_test_display_name() — official lab test names
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/consultations.php';
 require_once __DIR__ . '/../firestore/allergies.php';
@@ -225,7 +226,7 @@ foreach ($resultIdsToShow as $resultId) {
         $linkedLabResults[] = [
             'id' => $resultId,
             'type' => 'lab',
-            'testName' => $labDoc['testName'] ?? '—',
+            'testName' => hc_lab_test_display_name($labDoc['testName'] ?? '—'),
             'resultBadgeLabel' => $labDoc['resultBadgeLabel'] ?? '—',
             'resultBadgeColor' => $badgeColor,
             // Same light-background mapping every other role's lab badge
@@ -281,7 +282,7 @@ $labTestsAlreadyOrdered = [];
 foreach ($labDocsForPatient as $doc) {
     $f = $doc['fields'];
     if (($f['sourceConsultationId'] ?? '') === $consultation['id']) {
-        $labTestsAlreadyOrdered[$f['testName'] ?? ''] = $f['status'] ?? 'pending';
+        $labTestsAlreadyOrdered[hc_lab_test_display_name($f['testName'] ?? '')] = $f['status'] ?? 'pending'; // keyed by official name, same as the catalog checkboxes
     }
 }
 

@@ -97,6 +97,7 @@ $doctorNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_profile.css') ?>">
 <!-- Consultations page styles (filter toolbar, "Next to Consult" card, table badges) — shared verbatim with medical-staff/consultations.php -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/consultations.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/styled-select.css') ?>">
 <!-- "Starting Consultation" modal styles — doctor-only, no other role has this modal -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/start_consultation_modal.css') ?>">
 </head>
@@ -343,13 +344,13 @@ $doctorNavItems = [
             <input type="date" name="to" value="<?= htmlspecialchars($dateTo) ?>" aria-label="To date" onchange="this.form.submit()">
         </div>
 
-        <select class="form-select cns-filter-select" name="type" aria-label="Filter by consultation type" onchange="this.form.submit()">
+        <select class="form-select cns-filter-select" data-styled-select name="type" aria-label="Filter by consultation type" onchange="this.form.submit()">
             <?php foreach ($consultationTypeOptions as $key => $label): ?>
             <option value="<?= htmlspecialchars($key) ?>" <?= $key === $typeFilter ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
             <?php endforeach; ?>
         </select>
 
-        <select class="form-select cns-filter-select" name="status" aria-label="Filter by status" onchange="this.form.submit()">
+        <select class="form-select cns-filter-select" data-styled-select name="status" aria-label="Filter by status" onchange="this.form.submit()">
             <?php foreach ($consultationStatusOptions as $key => $label): ?>
             <option value="<?= htmlspecialchars($key) ?>" <?= $key === $statusFilter ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
             <?php endforeach; ?>
@@ -360,7 +361,11 @@ $doctorNavItems = [
             <input type="text" name="q" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Search patient name, ID or reason...">
         </div>
 
-        <button type="submit" class="cns-btn-search"><i class="bi bi-search"></i></button>
+        <!-- Invisible default button: keeps Enter-to-search working (a form
+             with several fields needs a submit button for Enter to submit)
+             now that the visible search icon button is gone — same as
+             medical-staff/consultations.php. -->
+        <button type="submit" class="visually-hidden" tabindex="-1" aria-hidden="true">Search</button>
     </form>
 
     <!-- ============ CONSULTATION RECORDS TABLE ============ -->
@@ -562,5 +567,6 @@ $doctorNavItems = [
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/doctor_consultations.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/styled-select.js') ?>"></script>
 </body>
 </html>

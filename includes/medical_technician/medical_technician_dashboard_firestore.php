@@ -33,6 +33,7 @@
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
+require_once __DIR__ . '/../shared/lab_test_names.php'; // hc_lab_test_display_name() — official lab test names
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/lab_results.php';
 require_once __DIR__ . '/../shared/query_helpers.php'; // hc_url_with_params(), hc_matches_date_range_key()
@@ -74,7 +75,7 @@ foreach (hc_get_all_lab_result_docs() as $doc) {
         'id' => $doc['id'],
         'type' => 'Lab',
         'patientName' => $patient['name'] ?? 'Unknown Patient',
-        'examination' => $f['testName'] ?? '—',
+        'examination' => hc_lab_test_display_name($f['testName'] ?? '—'),
         'orderedBy' => $f['orderedBy'] ?? '—',
         'orderedDateRaw' => $f['orderedDate'] ?? '',
         'orderedDate' => isset($f['orderedDate']) ? date('M j, Y', strtotime($f['orderedDate'])) : '—',

@@ -114,7 +114,7 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
                 </div>
                 <div class="apm-field">
                   <label for="apmSex">Sex<span class="req">*</span></label>
-                  <select class="form-select" id="apmSex" required>
+                  <select class="form-select" data-styled-select id="apmSex" required>
                     <option value="" selected disabled>Select sex</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -122,10 +122,10 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
                   <div class="invalid-feedback">Required.</div>
                 </div>
               </div>
-              <div class="apm-grid apm-grid-2">
+              <div class="apm-grid apm-grid-3">
                 <div class="apm-field">
                   <label for="apmCivilStatus">Civil Status<span class="req">*</span></label>
-                  <select class="form-select" id="apmCivilStatus" required>
+                  <select class="form-select" data-styled-select id="apmCivilStatus" required>
                     <option value="" selected disabled>Select civil status</option>
                     <option value="Single">Single</option>
                     <option value="Married">Married</option>
@@ -137,6 +137,15 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
                 <div class="apm-field">
                   <label for="apmOccupation">Occupation</label>
                   <input type="text" class="form-control" id="apmOccupation" placeholder="Enter occupation">
+                </div>
+                <!-- Optional. 12 digits shown as 00-000000000-0 — assets/js/add-patient.js
+                     inserts the hyphens as you type; the pattern only applies once
+                     something is entered (empty stays valid). Re-checked server-side
+                     in api/create-patient.php. -->
+                <div class="apm-field">
+                  <label for="apmPhilhealthPin">PhilHealth Identification Number <span class="text-muted fw-normal">(Optional)</span></label>
+                  <input type="text" class="form-control" id="apmPhilhealthPin" placeholder="00-000000000-0" inputmode="numeric" autocomplete="off" maxlength="14" pattern="\d{2}-\d{9}-\d">
+                  <div class="invalid-feedback">Enter all 12 digits (00-000000000-0), or leave it blank.</div>
                 </div>
               </div>
             </div>
@@ -168,7 +177,7 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
               <div class="apm-grid apm-grid-2">
                 <div class="apm-field">
                   <label for="apmBarangay">Barangay<span class="req">*</span></label>
-                  <select class="form-select" id="apmBarangay" required>
+                  <select class="form-select" data-styled-select id="apmBarangay" required>
                     <option value="" selected disabled>Select barangay</option>
                     <?php foreach (['Balintawak', 'Bugtong', 'Bulacnin', 'Dagatan', 'Inosluban', 'Lumbang', 'Marawoy', 'Plaridel', 'Pusil', 'San Lucas', 'Talisay'] as $bgy): ?>
                     <option value="<?= $bgy ?>"><?= $bgy ?></option>
@@ -262,7 +271,7 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
                 </div>
                 <div class="apm-field">
                   <label for="apmBloodType">Blood Type <span class="text-muted fw-normal">(Optional)</span></label>
-                  <select class="form-select" id="apmBloodType">
+                  <select class="form-select" data-styled-select id="apmBloodType">
                     <option value="" selected>Not specified</option>
                     <option value="A+">A+</option>
                     <option value="A-">A-</option>
@@ -424,7 +433,7 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
       <div class="invalid-feedback">Required.</div>
     </div>
     <div class="apm-cell">
-      <select class="form-select" data-field="severity">
+      <select class="form-select" data-styled-select data-field="severity">
         <option value="" selected>Select…</option>
         <option value="mild">Mild</option>
         <option value="moderate">Moderate</option>
@@ -450,7 +459,7 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
       <input type="text" class="form-control" placeholder="e.g. 10 mg" data-field="dosage">
     </div>
     <div class="apm-cell">
-      <select class="form-select" data-field="frequency">
+      <select class="form-select" data-styled-select data-field="frequency">
         <option value="" selected>Select…</option>
         <option value="Once daily">Once daily</option>
         <option value="Twice daily">Twice daily</option>

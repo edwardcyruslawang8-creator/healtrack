@@ -7,6 +7,32 @@
    needs to look like that select, plus the open list itself.
    ============================================================= */
 .hc-select{ position: relative; }
+
+/* Staff pages (<body class="adm-body">) — this file speaks the public
+   site's color tokens; map them to the staff theme's --adm-* tokens
+   (which also switch for dark mode). */
+.adm-body .hc-select{
+  --maroon: var(--adm-red-bright);
+  --maroon-tint: color-mix(in srgb, var(--adm-red-bright) 10%, var(--adm-card));
+  --bg-light: var(--adm-hover-bg);
+  --text-dark: var(--adm-text);
+  --text-soft: var(--adm-text-soft);
+  --border-soft: var(--adm-border);
+}
+.adm-body .hc-select-menu{ background: var(--adm-card); }
+/* A trigger copying Bootstrap's .form-select would also get its
+   background arrow — keep only this component's chevron. */
+.hc-select-trigger.form-select{ background-image: none; }
+/* Invalid state mirrored from the hidden select (styled-select.js):
+   red border like Bootstrap's, without its stacked background icons. */
+.hc-select > .hc-select-trigger.form-select.is-invalid:not([multiple]):not([size]){
+  background-image: none;
+  border-color: var(--bs-form-invalid-border-color, #dc3545);
+  padding-right: 32px;
+}
+.hc-select > .hc-select-trigger.form-select.is-invalid:focus-visible{
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, .2);
+}
 .hc-select-own-wrap{ display: inline-block; }
 
 .hc-select-trigger{

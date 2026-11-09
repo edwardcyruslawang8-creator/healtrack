@@ -18,6 +18,7 @@
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
+require_once __DIR__ . '/../shared/lab_test_names.php'; // hc_lab_test_display_name() — official lab test names
 require_once __DIR__ . '/../firestore/patients.php';
 require_once __DIR__ . '/../firestore/lab_results.php';
 require_once __DIR__ . '/../shared/analytics_comparison.php'; // hc_facility_growth_pct()
@@ -96,7 +97,7 @@ $referralStatusTotal = array_sum(array_column($referralStatus, 'value'));
 // ---------------------------------------------------------------------
 $testNameCounts = [];
 foreach ($completedLab as $d) {
-    $name = trim((string) ($d['fields']['testName'] ?? ''));
+    $name = hc_lab_test_display_name((string) ($d['fields']['testName'] ?? '')); // groups old + new spellings together
     if ($name === '') {
         continue;
     }
