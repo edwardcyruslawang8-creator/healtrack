@@ -125,4 +125,5 @@
 @media (max-width: 991.98px){
   .plx-filter-row{ flex-direction: column; align-items: stretch; }
   .plx-daterange-btn, .plx-filter-select, .plx-btn-filter{ width: 100%; justify-content: center; }
+  .plx-filter-row .hc-select{ display: block; width: 100%; } /* styled dropdowns fill the row */
 }

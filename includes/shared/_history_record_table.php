@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/consultation_details_view.php'; // hc_render_consultation_details() — complete View Details content ?>
 <!-- =============================================================
      CONSULTATION HISTORY TABLE (shared fragment)
      -------------------------------------------------------------
@@ -63,17 +64,15 @@
                     <td class="his-details-cell"><?= htmlspecialchars($rec['detail']) ?></td>
                     <td class="his-strong"><?= htmlspecialchars($rec['assignedPersonnel']) ?></td>
                     <td>
-                        <button type="button" class="vdm-trigger"
-                            data-vdm-title="<?= htmlspecialchars($rec['consultationCode']) ?>"
-                            data-vdm-fields="<?= htmlspecialchars(json_encode([
-                                'Date & Time' => $rec['date'] . ' ' . $rec['time'],
-                                'Type' => $type['label'],
-                                'Chief Complaint' => $rec['chiefComplaint'],
-                                'Diagnosis' => $rec['diagnosis'],
-                                'Attended By' => $rec['assignedPersonnel'],
-                                'Notes' => $rec['notes'],
-                            ])) ?>"
+                        <!-- Complete consultation (every section the doctor
+                             recorded) in a hidden <template> right next to its
+                             button, so it travels with this AJAX-swapped row;
+                             assets/js/consultation-details-modal.js shows it in
+                             #consultationDetailsModal. -->
+                        <button type="button" class="his-cons-trigger"
+                            data-cons-title="<?= htmlspecialchars($rec['consultationCode']) ?>"
                         ><i class="bi bi-eye"></i> View Details</button>
+                        <template class="his-cons-details"><?= hc_render_consultation_details($rec['full'] ?? []) ?></template>
                     </td>
                 </tr>
                 <?php endforeach; ?>

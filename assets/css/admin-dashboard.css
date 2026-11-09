@@ -810,7 +810,8 @@ body.adm-body{
   font-size: 13px;
   transition: background .15s ease;
 }
-.adm-action-btn.view{ color: var(--adm-blue); }
+.adm-action-btn.view{ color: var(--adm-red-bright); } /* brand maroon — the eye "View" action, app-wide */
+.adm-action-btn.view:hover{ color: var(--adm-red-bright); border-color: var(--adm-red-bright); background: color-mix(in srgb, var(--adm-red-bright) 7%, var(--adm-card)); }
 .adm-action-btn.edit{ color: var(--adm-text-muted); }
 .adm-action-btn.delete{ color: var(--adm-red); }
 .adm-action-btn:hover{ background: var(--adm-hover-bg); }

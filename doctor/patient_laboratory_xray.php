@@ -91,6 +91,7 @@ $doctorNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_profile.css') ?>">
 <!-- Laboratory & X-ray page styles (filter toolbars, result tables) — shared verbatim with every other role's version -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_laboratory_xray.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/styled-select.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -312,19 +313,19 @@ $doctorNavItems = [
                     <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['labRange' => 'this_month', 'labPage' => 1])) ?>">This Month</a></li>
                 </ul>
             </div>
-            <select class="form-select plx-filter-select" aria-label="Filter by test type">
+            <select class="form-select plx-filter-select" data-styled-select data-plx-param="labType" aria-label="Filter by test type">
                 <?php foreach ($labTestTypeOptions as $opt): ?>
-                <option><?= htmlspecialchars($opt) ?></option>
+                <option <?= $opt === $labTypeFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
                 <?php endforeach; ?>
             </select>
-            <select class="form-select plx-filter-select" aria-label="Filter by status">
+            <select class="form-select plx-filter-select" data-styled-select data-plx-param="labStatus" aria-label="Filter by status">
                 <?php foreach ($labStatusOptions as $opt): ?>
-                <option><?= htmlspecialchars($opt) ?></option>
+                <option <?= $opt === $labStatusFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
                 <?php endforeach; ?>
             </select>
             <div class="plx-search">
                 <i class="bi bi-search"></i>
-                <input type="text" placeholder="Search laboratory test...">
+                <input type="text" data-plx-param="labQ" value="<?= htmlspecialchars($labSearch) ?>" placeholder="Search laboratory test..." aria-label="Search laboratory tests" enterkeyhint="search">
             </div>
         </div>
 
@@ -388,19 +389,19 @@ $doctorNavItems = [
                     <li><a class="dropdown-item" href="<?= htmlspecialchars(hc_url_with_params(['xrayRange' => 'this_month', 'xrayPage' => 1])) ?>">This Month</a></li>
                 </ul>
             </div>
-            <select class="form-select plx-filter-select" aria-label="Filter by body part">
+            <select class="form-select plx-filter-select" data-styled-select data-plx-param="xrayPart" aria-label="Filter by body part">
                 <?php foreach ($xrayBodyPartOptions as $opt): ?>
-                <option><?= htmlspecialchars($opt) ?></option>
+                <option <?= $opt === $xrayPartFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
                 <?php endforeach; ?>
             </select>
-            <select class="form-select plx-filter-select" aria-label="Filter by status">
+            <select class="form-select plx-filter-select" data-styled-select data-plx-param="xrayStatus" aria-label="Filter by status">
                 <?php foreach ($xrayStatusOptions as $opt): ?>
-                <option><?= htmlspecialchars($opt) ?></option>
+                <option <?= $opt === $xrayStatusFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
                 <?php endforeach; ?>
             </select>
             <div class="plx-search">
                 <i class="bi bi-search"></i>
-                <input type="text" placeholder="Search x-ray exam...">
+                <input type="text" data-plx-param="xrayQ" value="<?= htmlspecialchars($xraySearch) ?>" placeholder="Search x-ray exam..." aria-label="Search x-ray exams" enterkeyhint="search">
             </div>
         </div>
 
@@ -454,5 +455,7 @@ $doctorNavItems = [
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-tab-nav.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/styled-select.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/plx-filters.js') ?>"></script>
 </body>
 </html>
