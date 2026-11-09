@@ -44,6 +44,9 @@ $allRecordHistory = array_map(function ($c) {
 
     return [
         'consultationCode' => $c['consultationCode'],
+        // The whole consultation, for the complete View Details view
+        // (includes/shared/consultation_details_view.php).
+        'full' => $c,
         'rawDate' => $timestamp !== false ? date('Y-m-d', $timestamp) : '',
         'date' => $timestamp !== false ? date('M j, Y', $timestamp) : '—',
         'time' => $timestamp !== false ? date('g:i A', $timestamp) : '—',

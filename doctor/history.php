@@ -86,6 +86,8 @@ $doctorNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/history.css') ?>">
 <!-- Generic "View Details" modal, for each Consultation History row's only action -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/view_details_modal.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/consultation_details_modal.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/styled-select.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -308,7 +310,7 @@ $doctorNavItems = [
             <label for="hisTo">To</label>
             <input type="date" id="hisTo" name="hisTo" value="<?= htmlspecialchars($historyDateTo) ?>" aria-label="To date">
         </div>
-        <select class="form-select his-filter-select" name="hisType" aria-label="Filter by consultation type">
+        <select class="form-select his-filter-select" data-styled-select name="hisType" aria-label="Filter by consultation type">
             <?php foreach ($recordTypeOptions as $opt): ?>
             <option <?= $opt === $historyRecordTypeFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
             <?php endforeach; ?>
@@ -318,6 +320,7 @@ $doctorNavItems = [
     <?php require __DIR__ . '/../includes/shared/_history_record_table.php'; ?>
 
     <?php require __DIR__ . '/../includes/shared/view_details_modal.php'; ?>
+    <?php require __DIR__ . '/../includes/shared/consultation_details_modal.php'; // complete consultation View Details ?>
 
 </main>
 
@@ -329,5 +332,7 @@ $doctorNavItems = [
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/patient-history-filters.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/view-details-action.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/consultation-details-modal.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/styled-select.js') ?>"></script>
 </body>
 </html>

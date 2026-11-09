@@ -16,6 +16,7 @@ require_once __DIR__ . '/patient_profile_medstaff_firestore.php';
 // $staffProfile, $dashboardDateLabel, $facilityOptions, $patient, $profileTabs
 require_once __DIR__ . '/../firestore/lab_results.php';
 require_once __DIR__ . '/../firestore/xray_results.php';
+require_once __DIR__ . '/../shared/patient_lab_xray_filters.php'; // hc_plx_filter_rows()
 require_once __DIR__ . '/../shared/pagination_helpers.php'; // hc_paginate(), hc_render_pagination_nav(), hc_matches_date_range_key()
 
 // Re-mark which tab is active — this page shows "Laboratory & X-ray"
@@ -35,7 +36,6 @@ $statusMeta = [
 // This Week / This Month / All Time) is real now (used to be an
 // unwired button showing a hardcoded "All time" label).
 // ---------------------------------------------------------------------
-$labTestTypeOptions = ['All Test Types', 'Hematology', 'Chemistry', 'Urinalysis', 'Microbiology', 'Serology'];
 $labStatusOptions = ['All Status', 'Completed', 'Pending'];
 
 $dateRangeOptionLabels = ['all' => 'All Time', 'today' => 'Today', 'this_week' => 'This Week', 'this_month' => 'This Month'];
@@ -44,6 +44,8 @@ $labRangeFilter = array_key_exists($_GET['labRange'] ?? '', $dateRangeOptionLabe
 $labRangeLabel = $dateRangeOptionLabels[$labRangeFilter];
 $allLabResults = hc_get_lab_results_for_patient($patient['id']);
 $filteredLabResults = array_values(array_filter($allLabResults, fn ($r) => hc_matches_date_range_key($r['datetime'] ?? '', $labRangeFilter)));
+// Type / Status / search filters — includes/shared/patient_lab_xray_filters.php
+[$filteredLabResults, $labTestTypeOptions, $labTypeFilter, $labStatusFilter, $labSearch] = hc_plx_filter_rows($filteredLabResults, $allLabResults, 'testType', 'All Test Types', 'labType', 'labStatus', 'labQ', ['testName', 'testType', 'orderedBy', 'facility']);
 
 $labResultsPerPage = 5;
 $labResultsPagination = hc_paginate($filteredLabResults, 'labPage', $labResultsPerPage);
@@ -55,13 +57,14 @@ $labResultsCurrentPage = $labResultsPagination['page'];
 // ---------------------------------------------------------------------
 // Real x-ray results for this patient — same real date range filter.
 // ---------------------------------------------------------------------
-$xrayBodyPartOptions = ['All Body Part', 'Chest', 'Lower Back', 'Knee (Right)', 'Knee (Left)', 'Skull', 'Abdomen'];
 $xrayStatusOptions = ['All Status', 'Completed', 'Pending'];
 
 $xrayRangeFilter = array_key_exists($_GET['xrayRange'] ?? '', $dateRangeOptionLabels) ? $_GET['xrayRange'] : 'all';
 $xrayRangeLabel = $dateRangeOptionLabels[$xrayRangeFilter];
 $allXrayResults = hc_get_xray_results_for_patient($patient['id']);
 $filteredXrayResults = array_values(array_filter($allXrayResults, fn ($r) => hc_matches_date_range_key($r['datetime'] ?? '', $xrayRangeFilter)));
+// Type / Status / search filters — includes/shared/patient_lab_xray_filters.php
+[$filteredXrayResults, $xrayBodyPartOptions, $xrayPartFilter, $xrayStatusFilter, $xraySearch] = hc_plx_filter_rows($filteredXrayResults, $allXrayResults, 'bodyPart', 'All Body Part', 'xrayPart', 'xrayStatus', 'xrayQ', ['examName', 'bodyPart', 'orderedBy', 'facility']);
 
 $xrayResultsPerPage = 10;
 $xrayResultsPagination = hc_paginate($filteredXrayResults, 'xrayPage', $xrayResultsPerPage);
