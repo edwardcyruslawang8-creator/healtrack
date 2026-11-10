@@ -450,7 +450,8 @@ $staffNavItems = [
                                         data-intake-hr="<?= htmlspecialchars((string) ($pIntakeVitals['heartRate'] ?? '')) ?>"
                                         data-intake-weight="<?= htmlspecialchars((string) ($pIntakeVitals['weight'] ?? '')) ?>"
                                         data-intake-height="<?= htmlspecialchars((string) ($pIntakeVitals['height'] ?? '')) ?>"
-                                        data-intake-bmi="<?= htmlspecialchars((string) ($pIntakeVitals['bmi'] ?? '')) ?>">
+                                        data-intake-bmi="<?= htmlspecialchars((string) ($pIntakeVitals['bmi'] ?? '')) ?>"
+                                        data-intake-complaint="<?= htmlspecialchars((string) ($p['initialReasonForVisit'] ?? '')) ?>">
                                         <?= htmlspecialchars($p['name']) ?>
                                     </button>
                                 </li>
