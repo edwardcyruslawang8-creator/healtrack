@@ -60,7 +60,7 @@ require_once __DIR__ . '/includes/shared/sidebar.php';
     <div class="col-main">
 
         <!-- HERO -->
-        <div class="hero-panel">
+        <div class="hero-panel home-area-hero">
             <div class="hero-inner">
                 <div class="hero-text">
                     <p class="eyebrow">Welcome to</p>
@@ -82,7 +82,7 @@ require_once __DIR__ . '/includes/shared/sidebar.php';
         </div>
 
         <!-- STATISTICS -->
-        <div class="row g-3 mb-1">
+        <div class="row g-3 home-area-stats">
             <?php foreach ($dashboardStats as $s): ?>
             <div class="col-md-4">
                 <div class="stat-mini-card">
@@ -95,10 +95,10 @@ require_once __DIR__ . '/includes/shared/sidebar.php';
             </div>
             <?php endforeach; ?>
         </div>
-        <div class="mb-3"></div>
+        <div class="mb-3 home-spacer"></div>
 
         <!-- MEDICINE & VACCINE AVAILABILITY -->
-        <div class="panel">
+        <div class="panel home-area-meds">
             <div class="card-header-bar">
                 <h2 class="section-title"><i class="bi bi-capsule"></i> Medicine &amp; Vaccine Availability</h2>
                 <a href="<?= BASE_URL ?>/patient/medicine.php" class="view-all">View All <i class="bi bi-chevron-right"></i></a>
@@ -125,7 +125,7 @@ require_once __DIR__ . '/includes/shared/sidebar.php';
         </div>
 
         <!-- LATEST ANNOUNCEMENTS -->
-        <div class="panel">
+        <div class="panel home-area-ann">
             <div class="card-header-bar">
                 <h2 class="section-title"><i class="bi bi-megaphone-fill"></i> Latest Announcements</h2>
                 <a href="<?= BASE_URL ?>/patient/announcements.php" class="view-all">View All <i class="bi bi-chevron-right"></i></a>
@@ -151,7 +151,7 @@ require_once __DIR__ . '/includes/shared/sidebar.php';
     <div class="col-side">
 
         <!-- GIS MAPPING -->
-        <div class="gis-panel">
+        <div class="gis-panel home-area-gis">
             <div class="card-header-bar">
                 <h2 class="section-title"><i class="bi bi-geo-alt-fill"></i> GIS Mapping: Disease Cases Overview</h2>
             </div>

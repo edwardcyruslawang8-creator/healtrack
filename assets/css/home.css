@@ -7,12 +7,48 @@
    chatbot widget, and the Medicine/Announcements list widgets.
    ============================================================= */
 
+/* Home dashboard layout. The column wrappers (.col-main / .col-side)
+   are layout-transparent (display: contents), so each section is placed
+   on this grid directly:
+     desktop  hero  hero      ← hero banner across the full width
+              stats gis       ← GIS starts level with the summary cards
+              meds  gis       ← Medicine & Vaccine beside the GIS map
+              ann   ann       ← Latest Announcements across the full width
+   GIS and Medicine stretch to the same height, so there's no leftover
+   empty area beside either. Tablet/phone: one column (see below). */
 .dashboard-grid{
   display: grid;
-  grid-template-columns: 3fr 1.1fr;
-  gap: 24px;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 1.1fr);
+  grid-template-areas:
+    "hero  hero"
+    "stats gis"
+    "meds  gis"
+    "ann   ann";
+  column-gap: 24px;
+  row-gap: 24px;
   align-items: start;
 }
+.dashboard-grid > .col-main,
+.dashboard-grid > .col-side{ display: contents; }
+.dashboard-grid .home-spacer{ display: none; } /* old spacer — the grid's row-gap does this now */
+.home-area-hero{ grid-area: hero; }
+.home-area-stats{ grid-area: stats; }
+.home-area-meds{ grid-area: meds; }
+.home-area-ann{ grid-area: ann; }
+.home-area-gis{ grid-area: gis; }
+/* Spacing comes from the grid gap, not each card's own bottom margin. */
+.dashboard-grid .home-area-hero,
+.dashboard-grid .home-area-meds,
+.dashboard-grid .home-area-ann,
+.dashboard-grid .home-area-gis{ margin-bottom: 0; }
+/* Equal heights: GIS fills the stats + medicine rows (its map grows to
+   take the extra height), and the Medicine card fills its row with its
+   "updated in real-time" note kept at the bottom. */
+.home-area-gis{ align-self: stretch; display: flex; flex-direction: column; }
+.home-area-gis .gis-map-area{ flex: 1 1 auto; height: auto; min-height: 280px; }
+.home-area-gis #homeGisMap{ position: absolute; inset: 0; height: auto; }
+.home-area-meds{ align-self: stretch; display: flex; flex-direction: column; }
+.home-area-meds .med-notice{ margin-top: auto; }
 
 /* -- Shared white panel shell (Medicine & Vaccine / Announcements cards) -- */
 .section-title{
@@ -525,10 +561,15 @@
 .card-header-bar{ flex-wrap: wrap; gap: 6px 12px; }
 
 @media (max-width: 1199.98px){
-  .dashboard-grid{ grid-template-columns: 1fr; }
-  /* Single column now — the GIS preview has the full width to itself,
-     so give the map a bit more height to match. */
-  .gis-map-area{ height: 340px; }
+  /* Tablet/phone: everything stacked in one column, same order as before
+     (GIS preview last, with the full width to itself). */
+  .dashboard-grid{
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "hero" "stats" "meds" "ann" "gis";
+  }
+  .home-area-gis{ align-self: start; }
+  .home-area-gis .gis-map-area{ flex: none; height: 340px; min-height: 0; }
+  .home-area-meds{ align-self: start; }
 }
 @media (max-width: 991.98px){
   .hero-inner{ flex-direction: column; }
@@ -546,7 +587,8 @@
   .hero-text .eyebrow{ font-size: 16px; }
   .card-header-bar{ padding: 12px 16px; }
   .stat-mini-card{ padding: 16px 18px; }
-  .gis-map-area{ height: 260px; }
+  .gis-map-area,
+  .home-area-gis .gis-map-area{ height: 260px; }
   .gis-legend-strip, .gis-panel .panel-footer{ padding-left: 16px; padding-right: 16px; }
 
   /* Date drops under the title/description instead of squeezing them

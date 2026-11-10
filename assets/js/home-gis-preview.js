@@ -99,13 +99,20 @@ document.addEventListener('DOMContentLoaded', function () {
             // stay centered instead of clipped. Debounced: resize fires
             // continuously while dragging a window edge.
             let resizeTimer = null;
-            window.addEventListener('resize', function () {
+            function refit() {
                 clearTimeout(resizeTimer);
                 resizeTimer = setTimeout(function () {
                     map.invalidateSize();
                     map.fitBounds(fitBounds, { padding: [10, 10] });
                 }, 150);
-            });
+            }
+            window.addEventListener('resize', refit);
+            // The map's height now follows the cards beside it on the Home
+            // grid (assets/css/home.css), which can settle a moment after
+            // load (fonts, data) — re-fit whenever its own box changes size.
+            if (typeof ResizeObserver !== 'undefined') {
+                new ResizeObserver(refit).observe(document.getElementById('homeGisMap'));
+            }
 
             // Name-only label per barangay (no icon/case-count — this card
             // is too small for the full page's house-icon markers) so
