@@ -732,10 +732,10 @@ $adminNavItems = [
                                         <option value="90" selected>Last 90 Days</option>
                                         <option value="custom">Custom Range</option>
                                     </select>
-                                    <div class="pnd-custom-range" id="faPredPNDCustomRange" hidden>
-                                        <input type="date" data-hc-datepicker id="faPredPNDStartDate" aria-label="Start date">
-                                        <span>&ndash;</span>
-                                        <input type="date" data-hc-datepicker id="faPredPNDEndDate" aria-label="End date">
+                                    <div class="pnd-custom-range hc-daterange hc-daterange--sm" id="faPredPNDCustomRange" hidden>
+                                        <label class="hc-date-field"><input type="date" data-hc-datepicker data-hc-range-start="faPredPND" id="faPredPNDStartDate" aria-label="Start date"><i class="bi bi-calendar3" aria-hidden="true"></i></label>
+                                        <span class="hc-date-sep" aria-hidden="true">–</span>
+                                        <label class="hc-date-field"><input type="date" data-hc-datepicker data-hc-range-end="faPredPND" id="faPredPNDEndDate" aria-label="End date"><i class="bi bi-calendar3" aria-hidden="true"></i></label>
                                         <button type="button" class="pnd-apply-btn" id="faPredPNDApplyRange">Apply</button>
                                     </div>
                                 </div>

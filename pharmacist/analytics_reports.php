@@ -418,10 +418,10 @@ $staffNavItems = [
                         <option value="90">Last 90 Days</option>
                         <option value="custom">Custom Range</option>
                     </select>
-                    <div class="ir-custom-range" id="irMovementCustomRange" hidden>
-                        <input type="date" data-hc-datepicker id="irMovementStartDate" aria-label="Start date">
-                        <span>&ndash;</span>
-                        <input type="date" data-hc-datepicker id="irMovementEndDate" aria-label="End date">
+                    <div class="ir-custom-range hc-daterange hc-daterange--sm" id="irMovementCustomRange" hidden>
+                        <label class="hc-date-field"><input type="date" data-hc-datepicker data-hc-range-start="irMovement" id="irMovementStartDate" aria-label="Start date"><i class="bi bi-calendar3" aria-hidden="true"></i></label>
+                        <span class="hc-date-sep" aria-hidden="true">–</span>
+                        <label class="hc-date-field"><input type="date" data-hc-datepicker data-hc-range-end="irMovement" id="irMovementEndDate" aria-label="End date"><i class="bi bi-calendar3" aria-hidden="true"></i></label>
                         <button type="button" class="ir-apply-btn" id="irMovementApplyRange">Apply</button>
                     </div>
                 </div>

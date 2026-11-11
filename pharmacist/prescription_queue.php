@@ -240,11 +240,10 @@ function hc_rxq_query(array $overrides = []): string
                 <option value="vaccine" <?= $typeFilter === 'vaccine' ? 'selected' : '' ?>>Vaccine</option>
             </select>
 
-            <div class="rxq-daterange">
-                <i class="bi bi-calendar3"></i>
-                <input type="date" data-hc-datepicker name="from" value="<?= htmlspecialchars($dateFrom) ?>" aria-label="From date">
-                <span class="rxq-dot"></span>
-                <input type="date" data-hc-datepicker name="to" value="<?= htmlspecialchars($dateTo) ?>" aria-label="To date">
+            <div class="rxq-daterange hc-daterange">
+                <label class="hc-date-field"><input type="date" data-hc-datepicker data-hc-range-start="range-prescription_queue" name="from" value="<?= htmlspecialchars($dateFrom) ?>" aria-label="From date"><i class="bi bi-calendar3" aria-hidden="true"></i></label>
+                <span class="hc-date-sep" aria-hidden="true">–</span>
+                <label class="hc-date-field"><input type="date" data-hc-datepicker data-hc-range-end="range-prescription_queue" name="to" value="<?= htmlspecialchars($dateTo) ?>" aria-label="To date"><i class="bi bi-calendar3" aria-hidden="true"></i></label>
             </div>
 
             <button type="submit" class="rxq-btn-filter"><i class="bi bi-funnel"></i> Filter</button>

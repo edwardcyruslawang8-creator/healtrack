@@ -10,7 +10,10 @@
   border-radius: 12px;
   box-shadow: 0 12px 30px rgba(31, 36, 48, .16);
   padding: 6px;
-  width: 308px;
+  /* flatpickr's day grid is a fixed 307.875px — the calendar has to fit
+     it PLUS this padding and border, or the Saturday column is clipped. */
+  width: 322px;
+  max-width: calc(100vw - 16px);
 }
 .flatpickr-calendar.arrowTop::before,
 .flatpickr-calendar.arrowTop::after,
@@ -78,7 +81,7 @@ span.flatpickr-weekday{ color: var(--adm-text-muted, #6B7280); font-weight: 600;
 
 /* The visible text box flatpickr creates looks like the original
    input (it copies its classes) — just show a pointer + calendar cue. */
-input.flatpickr-input.form-control[readonly]{
+input.hc-date-alt.form-control{
   background-color: var(--adm-card, #fff);
   cursor: pointer;
   padding-right: 34px;
@@ -88,7 +91,97 @@ input.flatpickr-input.form-control[readonly]{
   background-position: right 12px center;
   background-size: 14px 14px;
 }
-input.flatpickr-input.form-control[readonly]:focus{
+input.hc-date-alt.form-control:focus{
   border-color: var(--adm-red-bright, #5B0A0A);
   box-shadow: 0 0 0 3px rgba(91, 10, 10, .12);
 }
+
+/* =============================================================
+   STANDARD FROM–TO DATE RANGE (every date-range filter in the app)
+   ---------------------------------------------------------------
+   <div class="… hc-daterange">
+     <label class="hc-date-field"><input type="date" data-hc-datepicker data-hc-range-start="key" …><i class="bi bi-calendar3"></i></label>
+     <span class="hc-date-sep">–</span>
+     <label class="hc-date-field"><input type="date" data-hc-datepicker data-hc-range-end="key" …><i class="bi bi-calendar3"></i></label>
+   </div>
+   Two equal boxes (MM/DD/YYYY, calendar icon inside on the right — the
+   icon lets clicks through, so it opens the calendar too). The wrapper
+   may still carry a page's old bordered-box class (.aud-daterange etc.);
+   that border/padding is dropped here so the two boxes stand alone.
+   Height: --hc-date-h (40px; .hc-daterange--sm = 34px for compact bars;
+   a page can set its own to match its neighbours).
+   ============================================================= */
+.hc-daterange.hc-daterange{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  height: auto;
+  min-height: 0;
+  --hc-date-h: 40px;
+}
+.hc-daterange.hc-daterange--sm{ --hc-date-h: 34px; }
+.hc-daterange:focus-within{ box-shadow: none; }
+.hc-date-field{
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+  width: 148px;
+  margin: 0;
+}
+.hc-daterange--sm .hc-date-field{ width: 136px; }
+.hc-date-field > i{
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--adm-text-soft, #9AA0AC);
+  font-size: 14px;
+  line-height: 1;
+  pointer-events: none;
+}
+.hc-date-field:focus-within > i{ color: var(--adm-red-bright, #5B0A0A); }
+.hc-date-input{
+  display: block;
+  width: 100%;
+  height: var(--hc-date-h, 40px);
+  margin: 0;
+  border: 1px solid var(--adm-border, #ECEDF3);
+  border-radius: 10px;
+  background: var(--adm-card, #fff);
+  box-shadow: var(--adm-shadow, none);
+  padding: 0 34px 0 12px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--adm-text, #1F2430);
+  cursor: pointer;
+}
+.hc-daterange--sm .hc-date-input{ border-radius: 8px; font-size: 12.5px; box-shadow: none; }
+.hc-date-input::placeholder{ color: var(--adm-text-soft, #9AA0AC); font-weight: 500; letter-spacing: .02em; opacity: 1; }
+.hc-date-input:hover{ border-color: color-mix(in srgb, var(--adm-red-bright, #5B0A0A) 40%, var(--adm-border, #ECEDF3)); }
+.hc-date-input:focus,
+.hc-date-input.active{
+  outline: none;
+  border-color: var(--adm-red-bright, #5B0A0A);
+  box-shadow: 0 0 0 3px rgba(91, 10, 10, .12);
+}
+.hc-date-sep{ color: var(--adm-text-soft, #9AA0AC); font-weight: 600; flex-shrink: 0; line-height: 1; }
+
+/* Phones: the range takes the full row and the two boxes share it equally. */
+@media (max-width: 767.98px){
+  .hc-daterange.hc-daterange{ width: 100%; }
+  .hc-date-field,
+  .hc-daterange--sm .hc-date-field{ flex: 1 1 0; width: auto; min-width: 0; }
+}
+/* A range box that starts hidden (e.g. an analytics "Custom Range") stays
+   hidden until its page script un-hides it — display:flex above would
+   otherwise override the hidden attribute. */
+.hc-daterange[hidden]{ display: none !important; }
+/* The wrapper itself never shows a focus ring — each box has its own. */
+.hc-daterange.hc-daterange:focus-within,
+.hc-daterange.hc-daterange:hover{ box-shadow: none; border-color: transparent; }

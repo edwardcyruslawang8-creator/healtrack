@@ -262,13 +262,10 @@ $adminNavItems = [
              Week/This Month bucket. Always visible, not a dropdown.
              Auto-submits on change, carrying every other active filter
              via hidden inputs so picking a date never drops them. -->
-        <form class="aud-daterange" method="get" action="audit_logs.php">
-            <i class="bi bi-calendar3"></i>
-            <label for="auditDateFrom">From</label>
-            <input type="date" data-hc-datepicker id="auditDateFrom" name="dateRangeFrom" value="<?= htmlspecialchars($auditDateFrom) ?>" onchange="this.form.submit()">
-            <span class="aud-dot"></span>
-            <label for="auditDateTo">To</label>
-            <input type="date" data-hc-datepicker id="auditDateTo" name="dateRangeTo" value="<?= htmlspecialchars($auditDateTo) ?>" onchange="this.form.submit()">
+        <form class="aud-daterange hc-daterange" method="get" action="audit_logs.php">
+            <label class="hc-date-field"><input aria-label="From date" type="date" data-hc-datepicker data-hc-range-start="range-audit_logs" id="auditDateFrom" name="dateRangeFrom" value="<?= htmlspecialchars($auditDateFrom) ?>" onchange="this.form.submit()"><i class="bi bi-calendar3" aria-hidden="true"></i></label>
+            <span class="hc-date-sep" aria-hidden="true">–</span>
+            <label class="hc-date-field"><input aria-label="To date" type="date" data-hc-datepicker data-hc-range-end="range-audit_logs" id="auditDateTo" name="dateRangeTo" value="<?= htmlspecialchars($auditDateTo) ?>" onchange="this.form.submit()"><i class="bi bi-calendar3" aria-hidden="true"></i></label>
             <input type="hidden" name="q" value="<?= htmlspecialchars($auditSearchTerm) ?>">
             <input type="hidden" name="user" value="<?= htmlspecialchars($auditUserFilter) ?>">
             <input type="hidden" name="module" value="<?= htmlspecialchars($auditModuleFilter) ?>">

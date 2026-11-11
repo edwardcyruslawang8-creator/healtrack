@@ -337,11 +337,21 @@ $doctorNavItems = [
 
     <!-- ============ FILTER TOOLBAR ============ -->
     <form class="cns-filter-row" method="get" action="consultations.php">
-        <div class="cns-daterange">
-            <i class="bi bi-calendar3"></i>
-            <input type="date" data-hc-datepicker name="from" value="<?= htmlspecialchars($dateFrom) ?>" aria-label="From date" onchange="this.form.submit()">
-            <span class="cns-dot"></span>
-            <input type="date" data-hc-datepicker name="to" value="<?= htmlspecialchars($dateTo) ?>" aria-label="To date" onchange="this.form.submit()">
+        <!-- Start / End date filter: two equal boxes, MM/DD/YYYY, maroon
+             calendar — the shared range in assets/js/hc-datepicker.js /
+             assets/css/hc-datepicker.css (End can't be before Start, etc.). -->
+        <div class="cns-daterange hc-daterange">
+            <label class="hc-date-field">
+                <input type="date" data-hc-datepicker data-hc-range-start="cnsLogDates"
+                       name="from" value="<?= htmlspecialchars($dateFrom) ?>" aria-label="Start date" onchange="this.form.submit()">
+                <i class="bi bi-calendar3" aria-hidden="true"></i>
+            </label>
+            <span class="hc-date-sep" aria-hidden="true">–</span>
+            <label class="hc-date-field">
+                <input type="date" data-hc-datepicker data-hc-range-end="cnsLogDates"
+                       name="to" value="<?= htmlspecialchars($dateTo) ?>" aria-label="End date" onchange="this.form.submit()">
+                <i class="bi bi-calendar3" aria-hidden="true"></i>
+            </label>
         </div>
 
         <select class="form-select cns-filter-select" data-styled-select name="type" aria-label="Filter by consultation type" onchange="this.form.submit()">
