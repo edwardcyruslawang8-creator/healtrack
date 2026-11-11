@@ -96,13 +96,24 @@
   border-radius: 7px;
   border: 1px solid var(--adm-border);
   background: var(--adm-card);
-  color: var(--adm-blue);
+  /* Brand maroon, like every other "View" action in the app
+     (.adm-action-btn.view) — not the old blue. */
+  color: var(--adm-red-bright);
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
-  transition: background .15s ease;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
 }
-.mdc-view-details-btn:hover{ background: var(--adm-hover-bg); }
+.mdc-view-details-btn:hover{
+  border-color: var(--adm-red-bright);
+  background: color-mix(in srgb, var(--adm-red-bright) 7%, var(--adm-card));
+}
+.mdc-view-details-btn:focus-visible{
+  outline: none;
+  border-color: var(--adm-red-bright);
+  box-shadow: 0 0 0 3px rgba(91, 10, 10, .12);
+}
 
 /* =============================================================
    RESPONSIVE
