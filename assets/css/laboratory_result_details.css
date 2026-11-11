@@ -121,6 +121,8 @@
   transition: background .15s ease, color .15s ease;
 }
 .lrd-download-btn:hover{ background: #1A73E8; color: #fff; border-color: #1A73E8; }
+.lrd-download-btn:disabled{ opacity: .45; cursor: not-allowed; }
+.lrd-download-btn:disabled:hover{ background: var(--adm-card); color: var(--adm-text-muted); border-color: var(--adm-border); }
 
 /* -- Laboratory Results table -- */
 .lrd-results-table .lrd-group-row td{

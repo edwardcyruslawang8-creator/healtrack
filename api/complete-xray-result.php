@@ -38,6 +38,7 @@ require_once __DIR__ . '/../includes/firestore/xray_results.php';
 require_once __DIR__ . '/../includes/shared/xray_result_storage.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
+require_once __DIR__ . '/../includes/shared/xray_result_attachment.php'; // hc_file_xray_result_in_documents() — auto-filing a copy into Documents
 
 header('Content-Type: application/json');
 
@@ -208,5 +209,19 @@ write_audit_log(
 );
 hc_record_patient_history($patientId, 'laboratory_result', 'added', 'Entered X-ray result (' . $examName . ').');
 hc_record_patient_activity($patientId, 'X-ray result entered (' . $examName . ').');
+
+// Auto-file a copy into the patient's Documents tab (category
+// "imaging") so doctor/healthcare_staff/subadmin can find this result
+// there too, with no manual upload — see
+// includes/shared/xray_result_attachment.php's own header comment.
+// Best-effort: a failed copy never turns an otherwise-successful "Save
+// Result" into an error response, since the x-ray result itself (and
+// its own Attached File on Laboratory Result Details) was already
+// saved successfully above.
+hc_file_xray_result_in_documents($patientId, array_merge($existing, [
+    'examName' => $examName,
+    'attachedFileName' => $originalName,
+    'storedFileName' => $storedFileName,
+]), $_SESSION['name'] ?? 'Radiologic Technologist');
 
 echo json_encode(['success' => true]);

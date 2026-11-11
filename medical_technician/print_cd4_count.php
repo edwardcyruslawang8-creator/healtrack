@@ -5,21 +5,22 @@
  * Print: CD4 Count Form (medical_technician/print_cd4_count.php)
  * ---------------------------------------------------------------------
  * Opened in a new tab from cd4_count_form.php's "Print Form" button.
- * Standalone print layout (no sidebar/topbar) matching the real Lipa
- * City Health Office "CD4 COUNT" paper form as closely as this app can
- * reproduce without the office's actual seal artwork (no image asset
- * for it exists anywhere in this project — the header prints as text
- * only; drop the seal image into assets/images/ and add an <img> tag
- * here if one becomes available).
+ * Uses the one uniform lab report template every test shares
+ * (includes/shared/lab_result_report.php's hc_lab_result_report_css()/
+ * hc_lab_result_report_body_html() — same template
+ * api/download-lab-result-attachment.php serves for a completed test's
+ * stored "Attached File") — only the Results table's own row is
+ * specific to CD4 Count (one "CD4 Count" row, fixed Specimen/Reference
+ * Range constants — hc_cd4_specimen_label()/hc_cd4_reference_range(),
+ * not per-patient data), same reasoning as the other 3 built-in tests'
+ * own copy of this page.
  *
  * Reads whatever's really in Firestore right now for this patient's
  * CD4 doc (includes/medical_technician/cd4_count_form_firestore.php,
  * same data file cd4_count_form.php uses) — a completed test prints
- * its real saved result, a still-pending one prints blank, exactly
- * like handing over a partially-filled paper slip. Specimen and
- * reference range are the paper form's own fixed constants
- * (hc_cd4_specimen_label()/hc_cd4_reference_range()), not per-patient
- * data.
+ * its real saved result; a still-pending one prints the same "CD4
+ * Count" row blank, exactly like handing over a partially-filled paper
+ * slip.
  *
  * ?embed=1 — doctor/laboratory_result_details.php embeds this exact
  * page in an <iframe> on its left column so a doctor sees the real
@@ -40,11 +41,30 @@ if (!in_array($_SESSION['role'] ?? null, ['medical_technician', 'doctor'], true)
 
 require_once __DIR__ . '/../includes/medical_technician/cd4_count_form_firestore.php';
 // $patient, $currentDoc
+require_once __DIR__ . '/../includes/shared/lab_result_report.php';
 
 $isEmbedded = ($_GET['embed'] ?? '') === '1';
-$todayLabel = date('F j, Y');
 $referenceRange = hc_cd4_reference_range();
 $savedResult = hc_cd4_saved_result($currentDoc);
+
+// The Results table's row for THIS test — real value once completed,
+// blank with the right row label/fixed range while still pending.
+$labFieldsForPrint = [
+    'testName' => 'CD4 Count',
+    'interpretation' => $savedResult !== '' ? $savedResult . ' c/uL (reference ' . $referenceRange['label'] . ')' : '',
+    'resultGroups' => [
+        'group1_name' => 'CD4 Count',
+        'group1_rows' => [[
+            'test' => 'CD4 Count',
+            'result' => $savedResult,
+            'unit' => 'c/uL',
+            'range' => $referenceRange['label'],
+            'interpretation' => '',
+        ]],
+        'group2_name' => null,
+        'group2_rows' => [],
+    ],
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -53,42 +73,7 @@ $savedResult = hc_cd4_saved_result($currentDoc);
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" href="<?= asset_url('/assets/images/main_logo.png') ?>">
 <title>CD4 Count Form — Print</title>
-<style>
-  * { box-sizing: border-box; }
-  body {
-    font-family: 'Arial', 'Helvetica', sans-serif;
-    color: #111;
-    max-width: 720px;
-    margin: 32px auto;
-    padding: 0 24px;
-  }
-  .prt-toolbar { text-align: center; margin-bottom: 24px; }
-  .prt-toolbar button {
-    background: #7a0d0d; color: #fff; border: none; border-radius: 8px;
-    padding: 10px 22px; font-size: 14px; font-weight: 600; cursor: pointer;
-  }
-  .prt-header { text-align: center; margin-bottom: 22px; }
-  .prt-header h1 { font-size: 20px; font-weight: 800; margin: 0 0 2px; letter-spacing: 0.5px; }
-  .prt-header h2 { font-size: 13px; font-weight: 600; margin: 0; letter-spacing: 0.5px; }
-  .prt-info-table { width: 100%; border-collapse: collapse; margin-bottom: 22px; }
-  .prt-info-table td {
-    border: 1px solid #111; padding: 8px 10px; font-size: 13px; vertical-align: bottom;
-  }
-  .prt-info-table td span { display: block; font-size: 10px; color: #444; margin-bottom: 10px; }
-  .prt-title { text-align: center; margin-bottom: 22px; }
-  .prt-title .main { font-size: 17px; font-weight: 800; text-decoration: underline; }
-  .prt-result-table { width: 100%; border-collapse: collapse; margin-bottom: 60px; }
-  .prt-result-table td { border: 1px solid #111; padding: 12px; font-size: 13px; vertical-align: top; }
-  .prt-result-table td.label { font-weight: 700; width: 30%; }
-  .prt-result-value { font-size: 16px; font-weight: 700; border-bottom: 1px solid #111; display: inline-block; min-width: 160px; padding-bottom: 4px; margin-bottom: 6px; }
-  .prt-range { font-size: 11.5px; color: #444; }
-  .prt-sign { text-align: right; }
-  .prt-sign .line { display: inline-block; width: 220px; border-top: 1px solid #111; padding-top: 4px; font-size: 12.5px; }
-  @media print {
-    .prt-toolbar { display: none; }
-    body { margin: 0; }
-  }
-</style>
+<style><?= hc_lab_result_report_css() ?></style>
 </head>
 <body>
 
@@ -99,52 +84,7 @@ $savedResult = hc_cd4_saved_result($currentDoc);
 <?php if ($patient === null || $currentDoc === null): ?>
 <p style="text-align:center;">No CD4 Count order found for this patient.</p>
 <?php else: ?>
-
-<div class="prt-header">
-    <h1>LIPA CITY HEALTH OFFICE</h1>
-    <h2>LABORATORY DEPARTMENT</h2>
-</div>
-
-<table class="prt-info-table">
-    <tr>
-        <td style="width:65%;"><span>Name</span><?= htmlspecialchars($patient['name']) ?></td>
-        <td><span>Date</span><?= htmlspecialchars($todayLabel) ?></td>
-    </tr>
-    <tr>
-        <td><span>Address</span><?= htmlspecialchars($patient['address']) ?></td>
-        <td>
-            <table style="width:100%; border-collapse:collapse;">
-                <tr>
-                    <td style="border:none; padding:0;"><span>Age</span><?= (int) $patient['age'] ?></td>
-                    <td style="border:none; padding:0;"><span>Sex</span><?= htmlspecialchars($patient['gender']) ?></td>
-                </tr>
-            </table>
-        </td>
-    </tr>
-</table>
-
-<div class="prt-title">
-    <div class="main">CD4 COUNT</div>
-</div>
-
-<table class="prt-result-table">
-    <tr>
-        <td class="label">SPECIMEN:</td>
-        <td><?= htmlspecialchars(hc_cd4_specimen_label()) ?></td>
-    </tr>
-    <tr>
-        <td class="label">RESULT:</td>
-        <td>
-            <div class="prt-result-value"><?= $savedResult !== '' ? htmlspecialchars($savedResult) . ' c/uL' : '' ?></div>
-            <div class="prt-range">( <?= htmlspecialchars($referenceRange['label']) ?> )</div>
-        </td>
-    </tr>
-</table>
-
-<div class="prt-sign">
-    <span class="line">Medical Technologist</span>
-</div>
-
+<?= hc_lab_result_report_body_html($patient, $labFieldsForPrint, $currentDoc['fields']['assignedToName'] ?? 'Medical Technologist') ?>
 <?php endif; ?>
 
 <?php if (!$isEmbedded): ?>

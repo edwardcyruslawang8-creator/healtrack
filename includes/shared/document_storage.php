@@ -54,6 +54,7 @@ if (!function_exists('hc_document_mime_for_extension')) {
             'pdf' => 'application/pdf',
             'jpg' => 'image/jpeg',
             'png' => 'image/png',
+            'html' => 'text/html',
             default => 'application/octet-stream',
         };
     }

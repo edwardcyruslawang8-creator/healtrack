@@ -284,15 +284,20 @@ $staffNavItems = [
                     <p><?= htmlspecialchars($labTest['clinicalNotes']) ?></p>
                 </div>
 
+                <?php $labHasAttachment = !empty($labTest['attachedFile']['name']) && $labTest['attachedFile']['name'] !== '—'; ?>
                 <div class="lrd-attached">
                     <div class="lrd-attached-title">Attached File</div>
                     <div class="lrd-file-row">
                         <span class="lrd-file-icon"><i class="bi bi-file-earmark-pdf-fill"></i></span>
                         <div class="lrd-file-info">
-                            <span class="lrd-file-name"><?= htmlspecialchars($labTest['attachedFile']['name']) ?></span>
-                            <span class="lrd-file-size"><?= htmlspecialchars($labTest['attachedFile']['size']) ?></span>
+                            <span class="lrd-file-name"><?= htmlspecialchars($labHasAttachment ? $labTest['attachedFile']['name'] : '—') ?></span>
+                            <span class="lrd-file-size"><?= htmlspecialchars($labHasAttachment ? $labTest['attachedFile']['size'] : '—') ?></span>
                         </div>
-                        <button type="button" class="lrd-download-btn" aria-label="Download"><i class="bi bi-download"></i></button>
+                        <?php if ($labHasAttachment): ?>
+                        <a href="<?= BASE_URL ?>/api/download-lab-result-attachment.php?id=<?= urlencode($labTest['id']) ?>&view=1" target="_blank" rel="noopener" class="lrd-download-btn" aria-label="View or print this attachment"><i class="bi bi-download"></i></a>
+                        <?php else: ?>
+                        <button type="button" class="lrd-download-btn" aria-label="Download" disabled><i class="bi bi-download"></i></button>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -401,15 +406,20 @@ $staffNavItems = [
                     <?php $xrayStatus = $statusMeta[$xrayExam['status']] ?? $statusMeta['completed']; ?>
                     <div class="lrd-field"><span class="lrd-field-label">Status</span><span class="lrd-badge" style="background:<?= htmlspecialchars($xrayStatus['bg']) ?>; color:<?= htmlspecialchars($xrayStatus['color']) ?>;"><?= htmlspecialchars($xrayStatus['label']) ?></span></div>
 
+                    <?php $xrayHasAttachment = !empty($xrayExam['attachedFile']['name']) && $xrayExam['attachedFile']['name'] !== '—'; ?>
                     <div class="lrd-attached">
                         <div class="lrd-attached-title">Attached File</div>
                         <div class="lrd-file-row">
                             <span class="lrd-file-icon"><i class="bi bi-file-earmark-pdf-fill"></i></span>
                             <div class="lrd-file-info">
-                                <span class="lrd-file-name"><?= htmlspecialchars($xrayExam['attachedFile']['name']) ?></span>
-                                <span class="lrd-file-size"><?= htmlspecialchars($xrayExam['attachedFile']['size']) ?></span>
+                                <span class="lrd-file-name"><?= htmlspecialchars($xrayHasAttachment ? $xrayExam['attachedFile']['name'] : '—') ?></span>
+                                <span class="lrd-file-size"><?= htmlspecialchars($xrayHasAttachment ? $xrayExam['attachedFile']['size'] : '—') ?></span>
                             </div>
-                            <button type="button" class="lrd-download-btn" aria-label="Download"><i class="bi bi-download"></i></button>
+                            <?php if ($xrayHasAttachment): ?>
+                            <a href="<?= BASE_URL ?>/api/download-xray-result.php?id=<?= urlencode($xrayExam['id']) ?>&view=1" target="_blank" rel="noopener" class="lrd-download-btn" aria-label="View or print this attachment"><i class="bi bi-download"></i></a>
+                            <?php else: ?>
+                            <button type="button" class="lrd-download-btn" aria-label="Download" disabled><i class="bi bi-download"></i></button>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

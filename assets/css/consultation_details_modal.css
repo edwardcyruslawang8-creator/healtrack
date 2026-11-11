@@ -108,7 +108,17 @@
   font-weight: 600;
   background: color-mix(in srgb, var(--adm-red-bright) 8%, var(--adm-card));
   color: var(--adm-red-bright);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
+.cdv-chip-link{
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  opacity: .75;
+}
+.cdv-chip-link:hover{ opacity: 1; }
 
 .cdv-empty{ margin: 18px 0; text-align: center; color: var(--adm-text-soft); font-size: 13px; }
 

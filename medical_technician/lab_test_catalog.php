@@ -71,16 +71,16 @@ $staffNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/medical_history.css') ?>">
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 <style>
-.ltc-badge{ display:inline-flex; align-items:center; font-size:11.5px; font-weight:700; border-radius:6px; padding:3px 10px; white-space:nowrap; }
-.ltc-badge.builtin{ background:var(--adm-blue-bg); color:var(--adm-blue); }
 .ltc-locked{ color:#C4C8CE; cursor:not-allowed; }
 .ltc-template-name{ font-weight:600; color:var(--adm-text); }
 .ltc-template-size{ color:var(--adm-text-muted); font-size:12px; margin-left:6px; }
-.ltc-template-empty{ color:var(--adm-text-muted); font-size:12.5px; }
 .ltc-dropzone{ border:2px dashed #D7DBE0; border-radius:10px; padding:24px; text-align:center; color:var(--adm-text-muted); cursor:pointer; transition:border-color .15s, background .15s; }
 .ltc-dropzone:hover, .ltc-dropzone.ltc-dropzone-active{ border-color:var(--adm-red-bright); background:#FFF7F6; }
 .ltc-dropzone i{ font-size:28px; color:var(--adm-red-bright); display:block; margin-bottom:8px; }
 .ltc-dropzone-filename{ font-weight:600; color:var(--adm-text); margin-top:8px; }
+/* Upload/Replace Template and Preview, in the Actions column — labeled instead of this row's other bare-icon .adm-action-btn buttons (View Template/Delete), since neither "upload" nor "preview" is as self-explanatory as a plain icon alone. Same height/corner radius/border as .adm-action-btn (admin-dashboard.css) so it reads as one consistent row of actions, just wider to fit a label. */
+.ltc-pill-btn{ display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:8px; border:1px solid var(--adm-border); color:var(--adm-red-bright); background:var(--adm-card); font-size:12.5px; font-weight:600; white-space:nowrap; text-decoration:none; transition:background .15s ease, border-color .15s ease; }
+.ltc-pill-btn:hover{ border-color:var(--adm-red-bright); background:color-mix(in srgb, var(--adm-red-bright) 7%, var(--adm-card)); }
 </style>
 </head>
 <body class="adm-body">
@@ -184,24 +184,23 @@ $staffNavItems = [
                     <tr>
                         <td class="mhx-cond-label">
                             <?= htmlspecialchars($r['testName']) ?>
-                            <?php if ($r['isBuiltIn']): ?>
-                            <span class="ltc-badge builtin" style="margin-left:6px;">Built-in form</span>
-                            <?php endif; ?>
                         </td>
                         <td>
                             <?php if ($r['hasTemplate']): ?>
                             <span class="ltc-template-name"><i class="bi bi-file-earmark-text"></i> <?= htmlspecialchars($r['templateFileName']) ?></span>
                             <span class="ltc-template-size">(<?= htmlspecialchars($r['templateFileSizeLabel']) ?>)</span>
                             <?php else: ?>
-                            <span class="ltc-template-empty">No template uploaded yet</span>
+                            <span class="ltc-template-name"><i class="bi bi-file-earmark-check"></i> Print template</span>
                             <?php endif; ?>
                         </td>
                         <td>
                             <div class="adm-action-btns">
-                                <button type="button" class="adm-action-btn edit" aria-label="<?= $r['hasTemplate'] ? 'Replace Template' : 'Upload Template' ?>" title="<?= $r['hasTemplate'] ? 'Replace reference template' : 'Upload reference template' ?>" data-ltc-upload data-id="<?= htmlspecialchars($r['id']) ?>" data-test-name="<?= htmlspecialchars($r['testName']) ?>"><i class="bi bi-upload"></i></button>
+                                <button type="button" class="ltc-pill-btn" aria-label="<?= $r['hasTemplate'] ? 'Replace Template' : 'Upload Template' ?>" title="<?= $r['hasTemplate'] ? 'Replace reference template' : 'Upload reference template' ?>" data-ltc-upload data-id="<?= htmlspecialchars($r['id']) ?>" data-test-name="<?= htmlspecialchars($r['testName']) ?>"><i class="bi bi-upload"></i> <?= $r['hasTemplate'] ? 'Replace Template' : 'Upload Template' ?></button>
                                 <?php if ($r['hasTemplate']): ?>
                                 <a href="<?= BASE_URL ?>/api/view-lab-test-template.php?id=<?= urlencode($r['id']) ?>" target="_blank" rel="noopener" class="adm-action-btn view" aria-label="View Template" title="View reference template"><i class="bi bi-eye"></i></a>
                                 <button type="button" class="adm-action-btn delete" aria-label="Remove Template" title="Remove reference template" data-ltc-delete-template data-id="<?= htmlspecialchars($r['id']) ?>" data-label="the template for &quot;<?= htmlspecialchars($r['testName']) ?>&quot;"><i class="bi bi-file-earmark-x"></i></button>
+                                <?php else: ?>
+                                <a href="<?= BASE_URL ?>/api/preview-lab-template.php?testName=<?= urlencode($r['testName']) ?>" target="_blank" rel="noopener" class="ltc-pill-btn" title="Preview this test's print template"><i class="bi bi-eye"></i> Preview</a>
                                 <?php endif; ?>
                                 <?php if ($r['isBuiltIn']): ?>
                                 <span class="adm-action-btn ltc-locked" aria-label="Built-in test, can't be removed" title="This test has a built-in result form"><i class="bi bi-trash"></i></span>

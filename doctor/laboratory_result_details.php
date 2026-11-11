@@ -300,6 +300,23 @@ $backHref = $backConsultationId !== ''
                     <div class="lrd-notes-title">Clinical Notes (if any)</div>
                     <p><?= htmlspecialchars($labTest['clinicalNotes']) ?></p>
                 </div>
+
+                <?php $labHasAttachment = !empty($labTest['attachedFile']['name']) && $labTest['attachedFile']['name'] !== '—'; ?>
+                <div class="lrd-attached">
+                    <div class="lrd-attached-title">Attached File</div>
+                    <div class="lrd-file-row">
+                        <span class="lrd-file-icon"><i class="bi bi-file-earmark-pdf-fill"></i></span>
+                        <div class="lrd-file-info">
+                            <span class="lrd-file-name"><?= htmlspecialchars($labHasAttachment ? $labTest['attachedFile']['name'] : '—') ?></span>
+                            <span class="lrd-file-size"><?= htmlspecialchars($labHasAttachment ? $labTest['attachedFile']['size'] : '—') ?></span>
+                        </div>
+                        <?php if ($labHasAttachment): ?>
+                        <a href="<?= BASE_URL ?>/api/download-lab-result-attachment.php?id=<?= urlencode($labTest['id']) ?>&view=1" target="_blank" rel="noopener" class="lrd-download-btn" aria-label="View or print this attachment"><i class="bi bi-download"></i></a>
+                        <?php else: ?>
+                        <button type="button" class="lrd-download-btn" aria-label="Download" disabled><i class="bi bi-download"></i></button>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -334,6 +351,23 @@ $backHref = $backConsultationId !== ''
                 <div class="lrd-notes-box">
                     <div class="lrd-notes-title">Clinical Notes (if any)</div>
                     <p><?= htmlspecialchars($labTest['clinicalNotes']) ?></p>
+                </div>
+
+                <?php $labHasAttachment = !empty($labTest['attachedFile']['name']) && $labTest['attachedFile']['name'] !== '—'; ?>
+                <div class="lrd-attached">
+                    <div class="lrd-attached-title">Attached File</div>
+                    <div class="lrd-file-row">
+                        <span class="lrd-file-icon"><i class="bi bi-file-earmark-pdf-fill"></i></span>
+                        <div class="lrd-file-info">
+                            <span class="lrd-file-name"><?= htmlspecialchars($labHasAttachment ? $labTest['attachedFile']['name'] : '—') ?></span>
+                            <span class="lrd-file-size"><?= htmlspecialchars($labHasAttachment ? $labTest['attachedFile']['size'] : '—') ?></span>
+                        </div>
+                        <?php if ($labHasAttachment): ?>
+                        <a href="<?= BASE_URL ?>/api/download-lab-result-attachment.php?id=<?= urlencode($labTest['id']) ?>&view=1" target="_blank" rel="noopener" class="lrd-download-btn" aria-label="View or print this attachment"><i class="bi bi-download"></i></a>
+                        <?php else: ?>
+                        <button type="button" class="lrd-download-btn" aria-label="Download" disabled><i class="bi bi-download"></i></button>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
 

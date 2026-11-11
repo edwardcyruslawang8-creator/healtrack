@@ -166,12 +166,44 @@ if (!function_exists('hc_render_consultation_details')) {
             $sections[] = ['Medications & Vaccines', 'bi-capsule', $body];
         }
 
-        // --- Lab / X-ray orders ---------------------------------------
+        // --- Lab / X-ray orders -----------------------------------------
+        // Each chip also links to that test/exam's real completed
+        // attachment when one exists — looked up live by this
+        // consultation's own id (lab_results'/xray_results'
+        // sourceConsultationId, set at ordering time by
+        // api/complete-consultation.php) rather than carried on $c
+        // itself, since $c is this consultation's own doc and never
+        // changes retroactively once a lab/x-ray result is completed
+        // later. A still-pending test, or one with no attachment on
+        // file, renders as a plain chip exactly as before.
+        $consultationId = (string) ($c['id'] ?? '');
+        $labAttachmentIdByTest = [];
+        $xrayAttachmentIdByExam = [];
+        if ($consultationId !== '') {
+            global $firestore;
+            foreach ($firestore->listDocumentsWhere('lab_results', 'sourceConsultationId', $consultationId) as $doc) {
+                $lf = $doc['fields'];
+                if (($lf['status'] ?? '') === 'completed' && !empty($lf['attachedFileName'])) {
+                    $labAttachmentIdByTest[$lf['testName'] ?? ''] = $doc['id'];
+                }
+            }
+            foreach ($firestore->listDocumentsWhere('xray_results', 'sourceConsultationId', $consultationId) as $doc) {
+                $xf = $doc['fields'];
+                if (($xf['status'] ?? '') === 'completed' && !empty($xf['attachedFileName'])) {
+                    $xrayAttachmentIdByExam[$xf['examName'] ?? ''] = $doc['id'];
+                }
+            }
+        }
+
         $labs = array_values(array_filter(is_array($c['labTests'] ?? null) ? $c['labTests'] : [], fn ($t) => $has((string) $t)));
         if ($labs) {
             $chips = '';
             foreach ($labs as $t) {
-                $chips .= '<span class="cdv-chip">' . $e(hc_lab_test_display_name((string) $t)) . '</span>';
+                $chips .= '<span class="cdv-chip">' . $e(hc_lab_test_display_name((string) $t));
+                if (isset($labAttachmentIdByTest[(string) $t])) {
+                    $chips .= ' <a href="' . BASE_URL . '/api/download-lab-result-attachment.php?id=' . urlencode($labAttachmentIdByTest[(string) $t]) . '&view=1" target="_blank" rel="noopener" class="cdv-chip-link" title="View result report"><i class="bi bi-file-earmark-text"></i></a>';
+                }
+                $chips .= '</span>';
             }
             $sections[] = ['Laboratory Tests Ordered', 'bi-droplet', '<div class="cdv-chips">' . $chips . '</div>'];
         }
@@ -179,7 +211,12 @@ if (!function_exists('hc_render_consultation_details')) {
         if ($xrays) {
             $chips = '';
             foreach ($xrays as $t) {
-                $chips .= '<span class="cdv-chip">' . $e(is_array($t) ? ($t['name'] ?? '') : $t) . '</span>';
+                $examName = is_array($t) ? ($t['name'] ?? '') : $t;
+                $chips .= '<span class="cdv-chip">' . $e($examName);
+                if (isset($xrayAttachmentIdByExam[$examName])) {
+                    $chips .= ' <a href="' . BASE_URL . '/api/download-xray-result.php?id=' . urlencode($xrayAttachmentIdByExam[$examName]) . '&view=1" target="_blank" rel="noopener" class="cdv-chip-link" title="View result file"><i class="bi bi-file-earmark-text"></i></a>';
+                }
+                $chips .= '</span>';
             }
             $sections[] = ['X-ray Examinations Ordered', 'bi-lungs', '<div class="cdv-chips">' . $chips . '</div>'];
         }
