@@ -77,11 +77,11 @@ $drBtnIcon = $drBtnIcon ?? '';
                 <div class="hc-custom-range-fields">
                     <label class="hc-custom-range-field">
                         <span>From</span>
-                        <input type="date" class="form-control form-control-sm" name="<?= htmlspecialchars($range['param']) ?>From" value="<?= htmlspecialchars($range['customFrom']) ?>" required>
+                        <input type="date" data-hc-datepicker class="form-control form-control-sm" name="<?= htmlspecialchars($range['param']) ?>From" value="<?= htmlspecialchars($range['customFrom']) ?>" required>
                     </label>
                     <label class="hc-custom-range-field">
                         <span>To</span>
-                        <input type="date" class="form-control form-control-sm" name="<?= htmlspecialchars($range['param']) ?>To" value="<?= htmlspecialchars($range['customTo']) ?>" required>
+                        <input type="date" data-hc-datepicker class="form-control form-control-sm" name="<?= htmlspecialchars($range['param']) ?>To" value="<?= htmlspecialchars($range['customTo']) ?>" required>
                     </label>
                 </div>
                 <button type="submit" class="btn btn-sm btn-danger w-100">Apply</button>

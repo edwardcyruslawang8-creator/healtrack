@@ -220,9 +220,9 @@ $staffNavItems = [
 
             <div class="lxr-daterange">
                 <i class="bi bi-calendar3"></i>
-                <input type="date" name="from" value="<?= htmlspecialchars($dateFrom) ?>" aria-label="From date">
+                <input type="date" data-hc-datepicker name="from" value="<?= htmlspecialchars($dateFrom) ?>" aria-label="From date">
                 <span class="lxr-dot"></span>
-                <input type="date" name="to" value="<?= htmlspecialchars($dateTo) ?>" aria-label="To date">
+                <input type="date" data-hc-datepicker name="to" value="<?= htmlspecialchars($dateTo) ?>" aria-label="To date">
             </div>
 
             <button type="submit" class="lxr-btn-filter"><i class="bi bi-funnel"></i> Filter</button>
@@ -243,5 +243,11 @@ $staffNavItems = [
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/radiotech_xray_consultation.js') ?>"></script>
+<!-- Maroon-themed calendar for every date input (the browser's own date
+     popup can't be recolored) -- flatpickr + assets/js/hc-datepicker.js. -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-datepicker.css') ?>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<script src="<?= asset_url('/assets/js/hc-datepicker.js') ?>"></script>
 </body>
 </html>

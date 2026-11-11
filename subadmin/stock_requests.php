@@ -406,5 +406,11 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/new-stock-request.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
+<!-- Maroon-themed calendar for every date input (the browser's own date
+     popup can't be recolored) -- flatpickr + assets/js/hc-datepicker.js. -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-datepicker.css') ?>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<script src="<?= asset_url('/assets/js/hc-datepicker.js') ?>"></script>
 </body>
 </html>

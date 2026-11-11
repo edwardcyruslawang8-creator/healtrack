@@ -45,7 +45,7 @@
             <div class="row mt-3">
               <div class="col-md-6">
                 <label class="am-form-label" for="rsNewExpiry">Expiry Date<span class="text-danger">*</span></label>
-                <input type="date" class="form-control am-form-control" id="rsNewExpiry" min="<?= date('Y-m-d') ?>" required>
+                <input type="date" data-hc-datepicker class="form-control am-form-control" id="rsNewExpiry" min="<?= date('Y-m-d') ?>" required>
               </div>
             </div>
           </div>
@@ -171,7 +171,7 @@
                all. -->
           <div class="mb-0 mt-3 d-none" id="asExpiryWrap">
             <label class="am-form-label" for="asExpiryDate">Expiry Date for this stock<span class="text-danger">*</span></label>
-            <input type="date" class="form-control am-form-control" id="asExpiryDate" min="<?= date('Y-m-d') ?>">
+            <input type="date" data-hc-datepicker class="form-control am-form-control" id="asExpiryDate" min="<?= date('Y-m-d') ?>">
           </div>
         </div>
         <div class="modal-footer">

@@ -419,9 +419,9 @@ $staffNavItems = [
                         <option value="custom">Custom Range</option>
                     </select>
                     <div class="ir-custom-range" id="irMovementCustomRange" hidden>
-                        <input type="date" id="irMovementStartDate" aria-label="Start date">
+                        <input type="date" data-hc-datepicker id="irMovementStartDate" aria-label="Start date">
                         <span>&ndash;</span>
-                        <input type="date" id="irMovementEndDate" aria-label="End date">
+                        <input type="date" data-hc-datepicker id="irMovementEndDate" aria-label="End date">
                         <button type="button" class="ir-apply-btn" id="irMovementApplyRange">Apply</button>
                     </div>
                 </div>
@@ -750,5 +750,11 @@ $staffNavItems = [
     });
 })();
 </script>
+<!-- Maroon-themed calendar for every date input (the browser's own date
+     popup can't be recolored) -- flatpickr + assets/js/hc-datepicker.js. -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-datepicker.css') ?>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<script src="<?= asset_url('/assets/js/hc-datepicker.js') ?>"></script>
 </body>
 </html>

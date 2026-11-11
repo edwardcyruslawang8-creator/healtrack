@@ -249,10 +249,10 @@ $adminNavItems = [
         <form class="aud-daterange" method="get" action="audit_logs.php">
             <i class="bi bi-calendar3"></i>
             <label for="auditDateFrom">From</label>
-            <input type="date" id="auditDateFrom" name="dateRangeFrom" value="<?= htmlspecialchars($auditDateFrom) ?>" onchange="this.form.submit()">
+            <input type="date" data-hc-datepicker id="auditDateFrom" name="dateRangeFrom" value="<?= htmlspecialchars($auditDateFrom) ?>" onchange="this.form.submit()">
             <span class="aud-dot"></span>
             <label for="auditDateTo">To</label>
-            <input type="date" id="auditDateTo" name="dateRangeTo" value="<?= htmlspecialchars($auditDateTo) ?>" onchange="this.form.submit()">
+            <input type="date" data-hc-datepicker id="auditDateTo" name="dateRangeTo" value="<?= htmlspecialchars($auditDateTo) ?>" onchange="this.form.submit()">
             <input type="hidden" name="q" value="<?= htmlspecialchars($auditSearchTerm) ?>">
             <input type="hidden" name="user" value="<?= htmlspecialchars($auditUserFilter) ?>">
             <input type="hidden" name="module" value="<?= htmlspecialchars($auditModuleFilter) ?>">
@@ -374,5 +374,11 @@ $adminNavItems = [
      (assets/js/ajax-report-nav.js) — same mechanism the Analytics &
      Reports pages already use. -->
 <script src="<?= asset_url('/assets/js/ajax-report-nav.js') ?>"></script>
+<!-- Maroon-themed calendar for every date input (the browser's own date
+     popup can't be recolored) -- flatpickr + assets/js/hc-datepicker.js. -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-datepicker.css') ?>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<script src="<?= asset_url('/assets/js/hc-datepicker.js') ?>"></script>
 </body>
 </html>

@@ -37,9 +37,15 @@
     }
 
     window.HCDatepicker = { init: init };
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
+    // Registered unconditionally (not just when readyState === 'loading')
+    // and left attached — assets/js/ajax-tab-nav.js/ajax-report-nav.js
+    // dispatch a SYNTHETIC 'DOMContentLoaded' every time they swap in a
+    // new page fragment via AJAX, specifically so every page script
+    // written this way (this one included) re-runs and picks up that
+    // fragment's own date inputs, not just the ones present on first
+    // real page load.
+    document.addEventListener('DOMContentLoaded', init);
+    if (document.readyState !== 'loading') {
+        init(); // DOMContentLoaded already fired before this script ran
     }
 })();

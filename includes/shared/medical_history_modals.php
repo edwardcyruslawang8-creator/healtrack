@@ -33,7 +33,7 @@
           </div>
           <div class="mb-3">
             <label for="mhxConditionDiagnosedOn" class="form-label">Date Diagnosed</label>
-            <input type="date" class="form-control" id="mhxConditionDiagnosedOn" max="<?= date('Y-m-d') ?>" required>
+            <input type="date" data-hc-datepicker class="form-control" id="mhxConditionDiagnosedOn" max="<?= date('Y-m-d') ?>" required>
           </div>
           <div class="mb-3">
             <label for="mhxConditionStatus" class="form-label">Status</label>
@@ -77,7 +77,7 @@
           </div>
           <div class="mb-3">
             <label for="mhxSurgeryDate" class="form-label">Date <span class="text-muted fw-normal">(Optional)</span></label>
-            <input type="date" class="form-control" id="mhxSurgeryDate" max="<?= date('Y-m-d') ?>">
+            <input type="date" data-hc-datepicker class="form-control" id="mhxSurgeryDate" max="<?= date('Y-m-d') ?>">
           </div>
           <div class="mb-3">
             <label for="mhxSurgeryFacility" class="form-label">Surgeon / Facility <span class="text-muted fw-normal">(Optional)</span></label>

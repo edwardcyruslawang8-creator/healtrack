@@ -336,10 +336,10 @@ $adminNavItems = [
         <div class="his-daterange">
             <i class="bi bi-calendar3"></i>
             <label for="hisFrom">From</label>
-            <input type="date" id="hisFrom" name="hisFrom" value="<?= htmlspecialchars($historyDateFrom) ?>" aria-label="From date">
+            <input type="date" data-hc-datepicker id="hisFrom" name="hisFrom" value="<?= htmlspecialchars($historyDateFrom) ?>" aria-label="From date">
             <span class="his-dot"></span>
             <label for="hisTo">To</label>
-            <input type="date" id="hisTo" name="hisTo" value="<?= htmlspecialchars($historyDateTo) ?>" aria-label="To date">
+            <input type="date" data-hc-datepicker id="hisTo" name="hisTo" value="<?= htmlspecialchars($historyDateTo) ?>" aria-label="To date">
         </div>
         <select class="form-select his-filter-select" data-styled-select name="hisType" aria-label="Filter by consultation type">
             <?php foreach ($recordTypeOptions as $opt): ?>
@@ -366,5 +366,11 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/view-details-action.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/consultation-details-modal.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/styled-select.js') ?>"></script>
+<!-- Maroon-themed calendar for every date input (the browser's own date
+     popup can't be recolored) -- flatpickr + assets/js/hc-datepicker.js. -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-datepicker.css') ?>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<script src="<?= asset_url('/assets/js/hc-datepicker.js') ?>"></script>
 </body>
 </html>

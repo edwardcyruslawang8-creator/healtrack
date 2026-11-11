@@ -44,8 +44,8 @@
                 <input type="hidden" name="<?= htmlspecialchars($k) ?>" value="<?= htmlspecialchars($v) ?>">
                 <?php endforeach; ?>
                 <input type="hidden" name="<?= htmlspecialchars($drfState['optionParam']) ?>" value="custom">
-                <input type="date" class="form-control form-control-sm" name="<?= htmlspecialchars($drfState['fromParam']) ?>" value="<?= htmlspecialchars($drfState['fromRaw']) ?>" required>
-                <input type="date" class="form-control form-control-sm" name="<?= htmlspecialchars($drfState['toParam']) ?>" value="<?= htmlspecialchars($drfState['toRaw']) ?>" required>
+                <input type="date" data-hc-datepicker class="form-control form-control-sm" name="<?= htmlspecialchars($drfState['fromParam']) ?>" value="<?= htmlspecialchars($drfState['fromRaw']) ?>" required>
+                <input type="date" data-hc-datepicker class="form-control form-control-sm" name="<?= htmlspecialchars($drfState['toParam']) ?>" value="<?= htmlspecialchars($drfState['toRaw']) ?>" required>
                 <button type="submit" class="btn btn-sm btn-danger">Apply</button>
             </form>
         </li>

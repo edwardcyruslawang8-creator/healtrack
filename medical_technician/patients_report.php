@@ -209,8 +209,8 @@ $staffNavItems = [
         <p class="adm-page-subtitle">Every patient whose test you personally completed, filtered by date — export or print for your records.</p>
 
         <form class="arp-report-filter" method="get">
-            <label>From <input type="date" name="from" value="<?= htmlspecialchars($myReportRange['from']) ?>"></label>
-            <label>To <input type="date" name="to" value="<?= htmlspecialchars($myReportRange['to']) ?>"></label>
+            <label>From <input type="date" data-hc-datepicker name="from" value="<?= htmlspecialchars($myReportRange['from']) ?>"></label>
+            <label>To <input type="date" data-hc-datepicker name="to" value="<?= htmlspecialchars($myReportRange['to']) ?>"></label>
             <button type="submit" class="arp-report-filter-btn">Apply</button>
             <a href="patients_report.php" class="arp-report-today-link">Today</a>
             <?php $sfdOptions = $myReportTestOptions; $sfdParam = 'test'; $sfdCurrent = $myReportTestFilter; $sfdBtnClass = 'arp-filter-select'; include __DIR__ . '/../includes/shared/simple_filter_dropdown.php'; ?>
@@ -263,5 +263,11 @@ $staffNavItems = [
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/analytics_reports.js') ?>"></script>
+<!-- Maroon-themed calendar for every date input (the browser's own date
+     popup can't be recolored) -- flatpickr + assets/js/hc-datepicker.js. -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-datepicker.css') ?>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<script src="<?= asset_url('/assets/js/hc-datepicker.js') ?>"></script>
 </body>
 </html>

@@ -66,11 +66,11 @@ require_once __DIR__ . '/risk_alerts.php'; // hc_risk_types(), hc_risk_barangay_
                     </label>
                     <label>
                         <span>Detected from</span>
-                        <input type="date" name="from" class="form-control form-control-sm">
+                        <input type="date" data-hc-datepicker name="from" class="form-control form-control-sm">
                     </label>
                     <label>
                         <span>Detected to</span>
-                        <input type="date" name="to" class="form-control form-control-sm">
+                        <input type="date" data-hc-datepicker name="to" class="form-control form-control-sm">
                     </label>
                     <button type="reset" class="rah-reset">Clear filters</button>
                 </form>

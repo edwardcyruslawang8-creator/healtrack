@@ -404,9 +404,9 @@ $adminNavItems = [
                                 <option value="custom">Custom Range</option>
                             </select>
                             <div class="pnd-custom-range" id="faPredPNDCustomRange" hidden>
-                                <input type="date" id="faPredPNDStartDate" aria-label="Start date">
+                                <input type="date" data-hc-datepicker id="faPredPNDStartDate" aria-label="Start date">
                                 <span>&ndash;</span>
-                                <input type="date" id="faPredPNDEndDate" aria-label="End date">
+                                <input type="date" data-hc-datepicker id="faPredPNDEndDate" aria-label="End date">
                                 <button type="button" class="pnd-apply-btn" id="faPredPNDApplyRange">Apply</button>
                             </div>
                         </div>
@@ -920,5 +920,11 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-tab-nav.js') ?>"></script>
+<!-- Maroon-themed calendar for every date input (the browser's own date
+     popup can't be recolored) -- flatpickr + assets/js/hc-datepicker.js. -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-datepicker.css') ?>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<script src="<?= asset_url('/assets/js/hc-datepicker.js') ?>"></script>
 </body>
 </html>

@@ -109,6 +109,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (typeof window.initReportPageCharts === 'function') window.initReportPageCharts();
                 if (typeof window.initSortableTables === 'function') window.initSortableTables();
                 if (typeof window.initAuditLogsSearch === 'function') window.initAuditLogsSearch();
+                // Maroon-themed calendar (assets/js/hc-datepicker.js) for any
+                // freshly swapped-in date input (e.g. a report's own date
+                // filters) — already idempotent, so safe to call again even
+                // when nothing new needing it came in with this swap.
+                if (window.HCDatepicker) window.HCDatepicker.init();
 
                 if (pushHistory) window.history.replaceState({}, '', url);
                 window.scrollTo({ top: 0, behavior: 'smooth' });

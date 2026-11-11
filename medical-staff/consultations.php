@@ -258,9 +258,9 @@ $staffNavItems = [
 
         <div class="cns-daterange">
             <i class="bi bi-calendar3"></i>
-            <input type="date" name="from" value="<?= htmlspecialchars($dateFrom) ?>" aria-label="From date" onchange="this.form.submit()">
+            <input type="date" data-hc-datepicker name="from" value="<?= htmlspecialchars($dateFrom) ?>" aria-label="From date" onchange="this.form.submit()">
             <span class="cns-dot"></span>
-            <input type="date" name="to" value="<?= htmlspecialchars($dateTo) ?>" aria-label="To date" onchange="this.form.submit()">
+            <input type="date" data-hc-datepicker name="to" value="<?= htmlspecialchars($dateTo) ?>" aria-label="To date" onchange="this.form.submit()">
         </div>
 
         <!-- Invisible default button: keeps Enter-to-search working (the
@@ -640,5 +640,11 @@ $staffNavItems = [
 <script src="<?= asset_url('/assets/js/consultations_medstaff.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/styled-select.js') ?>"></script>
+<!-- Maroon-themed calendar for every date input (the browser's own date
+     popup can't be recolored) -- flatpickr + assets/js/hc-datepicker.js. -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-datepicker.css') ?>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<script src="<?= asset_url('/assets/js/hc-datepicker.js') ?>"></script>
 </body>
 </html>

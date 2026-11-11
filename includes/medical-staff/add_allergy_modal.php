@@ -61,7 +61,7 @@
 
             <div class="col-md-6">
               <label for="aalOnsetDate" class="form-label">Onset Date <span class="text-danger">*</span></label>
-              <input type="date" class="form-control" id="aalOnsetDate" min="<?= htmlspecialchars($algBirthDateRaw) ?>" max="<?= date('Y-m-d') ?>" aria-describedby="aalOnsetHelp" required>
+              <input type="date" data-hc-datepicker class="form-control" id="aalOnsetDate" min="<?= htmlspecialchars($algBirthDateRaw) ?>" max="<?= date('Y-m-d') ?>" aria-describedby="aalOnsetHelp" required>
               <div class="form-text" id="aalOnsetHelp">When it was first identified or reported.</div>
               <div class="invalid-feedback">Enter a date between the patient's birth date and today.</div>
             </div>

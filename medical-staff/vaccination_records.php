@@ -328,10 +328,10 @@ $staffNavItems = [
             <input type="hidden" name="id" value="<?= htmlspecialchars($patient['id']) ?>">
             <i class="bi bi-calendar3"></i>
             <label for="vrcFrom">From</label>
-            <input type="date" id="vrcFrom" name="vrcFrom" value="<?= htmlspecialchars($vrcDateFrom) ?>" onchange="this.form.submit()">
+            <input type="date" data-hc-datepicker id="vrcFrom" name="vrcFrom" value="<?= htmlspecialchars($vrcDateFrom) ?>" onchange="this.form.submit()">
             <span class="vrc-dot"></span>
             <label for="vrcTo">To</label>
-            <input type="date" id="vrcTo" name="vrcTo" value="<?= htmlspecialchars($vrcDateTo) ?>" onchange="this.form.submit()">
+            <input type="date" data-hc-datepicker id="vrcTo" name="vrcTo" value="<?= htmlspecialchars($vrcDateTo) ?>" onchange="this.form.submit()">
         </form>
         </div>
     </div>
@@ -412,5 +412,11 @@ $staffNavItems = [
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-tab-nav.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/add-vaccination.js') ?>"></script>
+<!-- Maroon-themed calendar for every date input (the browser's own date
+     popup can't be recolored) -- flatpickr + assets/js/hc-datepicker.js. -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/hc-datepicker.css') ?>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<script src="<?= asset_url('/assets/js/hc-datepicker.js') ?>"></script>
 </body>
 </html>

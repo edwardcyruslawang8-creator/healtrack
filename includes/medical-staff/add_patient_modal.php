@@ -104,7 +104,7 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
               <div class="apm-grid apm-grid-3">
                 <div class="apm-field">
                   <label for="apmBirthDate">Date of Birth<span class="req">*</span></label>
-                  <input type="date" class="form-control" id="apmBirthDate" max="<?= date('Y-m-d') ?>" required>
+                  <input type="date" data-hc-datepicker class="form-control" id="apmBirthDate" max="<?= date('Y-m-d') ?>" required>
                   <div class="invalid-feedback">Please enter a valid birth date.</div>
                 </div>
                 <div class="apm-field">
@@ -469,7 +469,7 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
       </select>
     </div>
     <div class="apm-cell">
-      <input type="date" class="form-control" data-field="startDate" max="<?= date('Y-m-d') ?>">
+      <input type="date" data-hc-datepicker class="form-control" data-field="startDate" max="<?= date('Y-m-d') ?>">
     </div>
     <div class="apm-cell">
       <input type="text" class="form-control" placeholder="Prescribed by" data-field="prescribedBy">

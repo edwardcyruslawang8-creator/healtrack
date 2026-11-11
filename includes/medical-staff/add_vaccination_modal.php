@@ -101,7 +101,7 @@
           <div class="row">
             <div class="col-md-4 mb-3">
               <label for="avxDateAdministered" class="form-label">Date Administered <span class="text-danger">*</span></label>
-              <input type="date" class="form-control" id="avxDateAdministered" min="<?= htmlspecialchars($avxBirthDateRaw) ?>" max="<?= date('Y-m-d') ?>" required>
+              <input type="date" data-hc-datepicker class="form-control" id="avxDateAdministered" min="<?= htmlspecialchars($avxBirthDateRaw) ?>" max="<?= date('Y-m-d') ?>" required>
               <div class="form-text" id="avxDateHelp">The actual date the vaccine was given.</div>
               <div class="invalid-feedback" id="avxDateFeedback">Please enter a valid date administered.</div>
             </div>
@@ -120,7 +120,7 @@
             </div>
             <div class="col-md-4 mb-3">
               <label for="avxNextDoseDue" class="form-label">Next Dose Due <span class="text-muted fw-normal">(Optional)</span></label>
-              <input type="date" class="form-control" id="avxNextDoseDue">
+              <input type="date" data-hc-datepicker class="form-control" id="avxNextDoseDue">
               <div class="invalid-feedback">Must be after the date administered.</div>
             </div>
           </div>

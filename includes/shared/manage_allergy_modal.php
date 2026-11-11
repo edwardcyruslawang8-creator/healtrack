@@ -73,7 +73,7 @@
 
             <div class="col-md-6">
               <label for="malAssessmentDate" class="form-label">Assessment Date <span class="text-danger">*</span></label>
-              <input type="date" class="form-control" id="malAssessmentDate" required>
+              <input type="date" data-hc-datepicker class="form-control" id="malAssessmentDate" required>
               <div class="invalid-feedback">Enter a date between the allergy's onset date and today.</div>
             </div>
             <div class="col-md-6">

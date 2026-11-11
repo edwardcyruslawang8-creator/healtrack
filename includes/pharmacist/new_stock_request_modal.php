@@ -83,7 +83,7 @@ window.NSR_ITEM_UNITS = <?= json_encode((object) $nsrItemUnits, JSON_HEX_TAG | J
             </div>
             <div class="col-md-6 mb-3">
               <label class="am-form-label" for="nsrDateNeeded">Date Needed<span class="text-danger">*</span></label>
-              <input type="date" class="form-control am-form-control" id="nsrDateNeeded" min="<?= date('Y-m-d') ?>" required>
+              <input type="date" data-hc-datepicker class="form-control am-form-control" id="nsrDateNeeded" min="<?= date('Y-m-d') ?>" required>
             </div>
           </div>
 
