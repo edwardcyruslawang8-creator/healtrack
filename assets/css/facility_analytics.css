@@ -1237,3 +1237,67 @@
   /* 3 + 2 rather than 2 + 2 + 1, so the last pill isn't stranded alone */
   .an-inv-pills{ grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
 }
+
+/* Facility analytics tabs use the Analytics & Reports two-row nav
+   (.arp-nav, assets/css/analytics_reports.css) but as <button>s that
+   switch panes in place — reset the browser's own button look so they
+   match those links exactly. */
+button.arp-nav-tab{
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+  width: 100%;
+}
+.arp-nav-primary > button.arp-nav-tab{ width: auto; }
+
+/* -- Services tab: one card per service (Consultation / Pharmacy /
+      Laboratory / X-ray) + per-service breakdown bars -- */
+.an-service-grid{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.an-service-card{
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-md, 14px);
+  box-shadow: var(--adm-shadow);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.an-service-head{ display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.an-service-icon{
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+.an-service-name{ font-size: 14px; font-weight: 700; color: var(--adm-text); }
+.an-service-total{ font-size: 26px; font-weight: 800; color: var(--adm-text); line-height: 1.1; }
+.an-service-sub{ font-size: 12px; color: var(--adm-text-muted); margin-top: 2px; }
+.an-service-bar{
+  height: 6px; border-radius: 6px; background: var(--adm-hover-bg, #F2F3F7);
+  margin: 12px 0 8px; overflow: hidden;
+}
+.an-service-bar > span{ display: block; height: 100%; border-radius: 6px; }
+.an-service-split{ display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--adm-text-muted); flex-wrap: wrap; }
+.an-service-split b{ color: var(--adm-text); font-weight: 700; }
+.an-service-split .is-waiting b{ color: #E8710A; }
+
+.an-service-section-title{ font-size: 15px; font-weight: 700; color: var(--adm-text); margin: 4px 0 12px; }
+.an-charts-row.an-service-breakdowns{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.an-service-bars{ display: flex; flex-direction: column; gap: 10px; }
+.an-service-bar-row{ display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; align-items: center; gap: 10px; font-size: 12.5px; }
+.an-service-bar-label{ color: var(--adm-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.an-service-bar-track{ height: 8px; border-radius: 8px; background: var(--adm-hover-bg, #F2F3F7); overflow: hidden; }
+.an-service-bar-track > span{ display: block; height: 100%; border-radius: 8px; }
+.an-service-bar-value{ font-weight: 700; color: var(--adm-text); min-width: 28px; text-align: right; }
+
+@media (max-width: 1199.98px){
+  .an-service-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .an-charts-row.an-service-breakdowns{ grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 575.98px){
+  .an-service-grid{ grid-template-columns: minmax(0, 1fr); }
+}

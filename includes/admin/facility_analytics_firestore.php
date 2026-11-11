@@ -557,6 +557,63 @@ foreach ($allServiceTallies as $type => $count) {
 }
 
 // ---------------------------------------------------------------------
+// SERVICES TAB — every service this facility provides, not only
+// consultations: Pharmacy (pharmacy_orders), Laboratory (lab_results)
+// and X-ray (xray_results). Scoped exactly like consultations above —
+// by this facility's own patients — so every number on the tab is
+// this facility's. "Done" = dispensed / completed; anything else is
+// still waiting.
+// ---------------------------------------------------------------------
+require_once __DIR__ . '/../firestore/lab_results.php';   // hc_get_all_lab_result_docs()
+require_once __DIR__ . '/../firestore/xray_results.php';  // hc_get_all_xray_result_docs()
+$facilityPatientIdSet = array_fill_keys($facilityPatientIds, true);
+$hcFacilityDocs = fn (array $docs) => array_values(array_filter($docs, fn ($d) => isset($facilityPatientIdSet[$d['fields']['patientId'] ?? ''])));
+$facilityLabDocs = $hcFacilityDocs(hc_get_all_lab_result_docs());
+$facilityXrayDocs = $hcFacilityDocs(hc_get_all_xray_result_docs());
+$facilityPharmacyDocs = $hcFacilityDocs(hc_get_all_pharmacy_order_docs());
+
+/** total / this month / done / waiting for one service's docs */
+$hcServiceStats = function (array $docs, string $doneStatus) use ($thisMonth): array {
+    $done = count(array_filter($docs, fn ($d) => ($d['fields']['status'] ?? '') === $doneStatus));
+    $total = count($docs);
+    return [
+        'total' => $total,
+        'thisMonth' => count(array_filter($docs, fn ($d) => str_starts_with((string) ($d['fields']['orderedDate'] ?? ''), $thisMonth))),
+        'done' => $done,
+        'waiting' => $total - $done,
+        'donePct' => $total > 0 ? (int) round($done / $total * 100) : 0,
+    ];
+};
+$serviceOverview = [
+    ['key' => 'consultation', 'label' => 'Consultation', 'icon' => 'bi-clipboard2-pulse-fill', 'color' => '#5B0A0A', 'bg' => '#FCE4E4',
+     'doneLabel' => 'Completed', 'waitingLabel' => 'Pending', // ongoing/cancelled are in neither
+     'total' => $consultationsTotal, 'thisMonth' => $consultationsThisMonth, 'done' => $consultationsCompleted,
+     'waiting' => $consultationsPending,
+     'donePct' => $consultationsTotal > 0 ? (int) round($consultationsCompleted / $consultationsTotal * 100) : 0],
+    ['key' => 'pharmacy', 'label' => 'Pharmacy', 'icon' => 'bi-capsule', 'color' => '#1E8E3E', 'bg' => '#E4F7EA',
+     'doneLabel' => 'Dispensed', 'waitingLabel' => 'Pending'] + $hcServiceStats($facilityPharmacyDocs, 'dispensed'),
+    ['key' => 'laboratory', 'label' => 'Laboratory', 'icon' => 'bi-droplet-fill', 'color' => '#1A73E8', 'bg' => '#E8F0FE',
+     'doneLabel' => 'Completed', 'waitingLabel' => 'Pending'] + $hcServiceStats($facilityLabDocs, 'completed'),
+    ['key' => 'xray', 'label' => 'X-ray', 'icon' => 'bi-radioactive', 'color' => '#8B5CF6', 'bg' => '#F1E8FD',
+     'doneLabel' => 'Completed', 'waitingLabel' => 'Pending'] + $hcServiceStats($facilityXrayDocs, 'completed'),
+];
+
+/** [label => count] for one field across docs, busiest first */
+$hcTallyBy = function (array $docs, callable $labelOf): array {
+    $t = [];
+    foreach ($docs as $d) {
+        $label = trim((string) $labelOf($d['fields']));
+        $label = $label !== '' ? $label : 'Unspecified';
+        $t[$label] = ($t[$label] ?? 0) + 1;
+    }
+    arsort($t);
+    return $t;
+};
+$labByType = $hcTallyBy($facilityLabDocs, fn ($f) => $f['testType'] ?? '');
+$xrayByExam = $hcTallyBy($facilityXrayDocs, fn ($f) => $f['examName'] ?? '');
+$pharmacyByItem = array_slice($hcTallyBy($facilityPharmacyDocs, fn ($f) => $f['itemName'] ?? ''), 0, 8, true); // top 8 items
+
+// ---------------------------------------------------------------------
 // STAFF TAB — real users/{uid} docs whose "facility" matches this one
 // (same field $facilityStaffCount above already counts by).
 // ---------------------------------------------------------------------
