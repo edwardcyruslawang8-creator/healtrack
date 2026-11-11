@@ -37,7 +37,7 @@
           </div>
           <div class="mb-3">
             <label for="mhxConditionStatus" class="form-label">Status</label>
-            <select class="form-select" id="mhxConditionStatus">
+            <select class="form-select" data-styled-select id="mhxConditionStatus">
               <option value="Active">Active</option>
               <option value="Controlled">Controlled</option>
               <option value="Resolved">Resolved</option>

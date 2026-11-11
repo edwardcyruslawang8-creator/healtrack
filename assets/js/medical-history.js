@@ -28,22 +28,51 @@ document.addEventListener('DOMContentLoaded', function () {
         const titleEl = document.getElementById(opts.modalId + 'Label');
         const idField = document.getElementById(opts.idFieldId);
 
+        // Fields shown read-only when editing an existing row (e.g. a
+        // chronic condition's name/date are fixed once recorded — only
+        // its status changes). Still editable when adding a new one.
+        function setLocked(locked) {
+            (opts.editLockedIds || []).forEach(function (elId) {
+                const el = document.getElementById(elId);
+                if (el) el.readOnly = locked;
+            });
+        }
+
         function resetForm() {
             form.reset();
             form.classList.remove('was-validated');
+            setLocked(false);
             idField.value = '';
             if (errorBox) errorBox.classList.add('d-none');
             opts.fields.forEach(function (f) {
                 const el = document.getElementById(f.elId);
-                if (el) el.value = '';
+                if (!el) return;
+                if (el.tagName === 'SELECT') {
+                    el.selectedIndex = 0; // a select has no blank option — back to its first one
+                    syncSelect(el);
+                } else {
+                    el.value = '';
+                }
             });
+        }
+
+        // Styled dropdowns (assets/js/styled-select.js) only refresh
+        // their button on a 'change' event — fire one after setting a
+        // select's value from here.
+        function syncSelect(el) {
+            el.dispatchEvent(new Event('change'));
         }
 
         function fillForm(row) {
             idField.value = row.id || '';
             opts.fields.forEach(function (f) {
                 const el = document.getElementById(f.elId);
-                if (el) el.value = row[f.rowKey] || '';
+                if (!el) return;
+                el.value = row[f.rowKey] || '';
+                if (el.tagName === 'SELECT') {
+                    if (el.selectedIndex === -1) el.selectedIndex = 0;
+                    syncSelect(el);
+                }
             });
         }
 
@@ -62,6 +91,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 row.id = btn.dataset.id || row.id;
                 resetForm();
                 fillForm(row);
+                setLocked(true);
                 if (titleEl) titleEl.textContent = opts.editTitle;
                 modal.show();
             });
@@ -152,7 +182,10 @@ document.addEventListener('DOMContentLoaded', function () {
         idFieldId: 'mhxConditionId',
         patientIdFieldId: 'mhxConditionPatientId',
         addTitle: 'Add Chronic Condition',
-        editTitle: 'Edit Chronic Condition',
+        editTitle: 'Edit Condition Status',
+        // Editing only changes the status (api/update-condition.php
+        // enforces this too); condition, date and notes stay as recorded.
+        editLockedIds: ['mhxConditionLabel', 'mhxConditionDiagnosedOn', 'mhxConditionDetails'],
         addEndpoint: 'add-condition.php',
         updateEndpoint: 'update-condition.php',
         deleteEndpoint: 'delete-condition.php',

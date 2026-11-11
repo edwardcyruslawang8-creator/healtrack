@@ -64,3 +64,38 @@
 .mhx-status-badge.resolved{ background: #EEF0F3; color: #6B7280; }
 
 .mhx-footer-text{ padding: 10px 2px 0; font-size: 12px; color: var(--adm-text-muted); }
+
+/* Chronic Conditions row: "Edit Status" text button (replaces the
+   pencil — only the status can be changed once a condition is recorded). */
+.mhx-status-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--adm-border);
+  background: var(--adm-card);
+  color: var(--adm-red-bright);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background .15s ease, border-color .15s ease;
+}
+.mhx-status-btn:hover{
+  border-color: var(--adm-red-bright);
+  background: color-mix(in srgb, var(--adm-red-bright) 7%, var(--adm-card));
+}
+
+/* Fields locked while editing a condition's status (medical-history.js). */
+#mhxConditionModal .form-control[readonly]{
+  background: var(--adm-hover-bg);
+  color: var(--adm-text-muted);
+  cursor: not-allowed;
+}
+#mhxConditionModal .form-control[readonly]:focus{ box-shadow: none; border-color: var(--adm-border); }
+
+/* Status uses the styled dropdown (assets/js/styled-select.js) instead
+   of the browser's native list — full width like the other fields. */
+#mhxConditionModal .hc-select{ display: block; width: 100%; }
+#mhxConditionModal .hc-select-trigger{ width: 100%; }

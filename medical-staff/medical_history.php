@@ -79,6 +79,7 @@ $staffNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_profile.css') ?>">
 <!-- Medical History page styles (section headers, status badges) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/medical_history.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/styled-select.css') ?>">
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 </head>
 <body class="adm-body">
@@ -320,8 +321,7 @@ $staffNavItems = [
                         <td><span class="mhx-status-badge <?= strtolower($c['status']) ?>"><?= htmlspecialchars($c['status']) ?></span></td>
                         <td>
                             <div class="adm-action-btns">
-                                <button type="button" class="adm-action-btn edit" aria-label="Edit" data-mhx-edit="condition" data-id="<?= htmlspecialchars($c['id']) ?>" data-row='<?= $rowJson ?>'><i class="bi bi-pencil"></i></button>
-                                <button type="button" class="adm-action-btn delete" aria-label="Delete" data-mhx-delete="condition" data-id="<?= htmlspecialchars($c['id']) ?>" data-label="&quot;<?= htmlspecialchars($c['label']) ?>&quot;"><i class="bi bi-trash"></i></button>
+                                <button type="button" class="mhx-status-btn" data-mhx-edit="condition" data-id="<?= htmlspecialchars($c['id']) ?>" data-row='<?= $rowJson ?>'><i class="bi bi-arrow-repeat"></i> Edit Status</button>
                             </div>
                         </td>
                     </tr>
@@ -343,23 +343,17 @@ $staffNavItems = [
         <div class="adm-table-wrap">
             <table class="adm-table mhx-table">
                 <thead>
-                    <tr><th>Procedure</th><th>Date</th><th>Surgeon / Facility</th><th>Actions</th></tr>
+                    <tr><th>Procedure</th><th>Date</th><th>Surgeon / Facility</th></tr>
                 </thead>
                 <tbody>
                     <?php if (empty($surgicalHistory)): ?>
-                    <tr><td colspan="4" class="adm-table-empty">No past surgeries or procedures on record.</td></tr>
+                    <tr><td colspan="3" class="adm-table-empty">No past surgeries or procedures on record.</td></tr>
                     <?php endif; ?>
                     <?php foreach ($surgicalHistory as $s): $rowJson = htmlspecialchars(json_encode($s), ENT_QUOTES); ?>
                     <tr>
                         <td class="mhx-cond-label"><?= htmlspecialchars($s['procedure']) ?></td>
                         <td><?= htmlspecialchars($s['date']) ?></td>
                         <td><?= htmlspecialchars($s['surgeonFacility'] ?? '—') ?></td>
-                        <td>
-                            <div class="adm-action-btns">
-                                <button type="button" class="adm-action-btn edit" aria-label="Edit" data-mhx-edit="surgery" data-id="<?= htmlspecialchars($s['id']) ?>" data-row='<?= $rowJson ?>'><i class="bi bi-pencil"></i></button>
-                                <button type="button" class="adm-action-btn delete" aria-label="Delete" data-mhx-delete="surgery" data-id="<?= htmlspecialchars($s['id']) ?>" data-label="&quot;<?= htmlspecialchars($s['procedure']) ?>&quot;"><i class="bi bi-trash"></i></button>
-                            </div>
-                        </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -379,22 +373,16 @@ $staffNavItems = [
         <div class="adm-table-wrap">
             <table class="adm-table mhx-table">
                 <thead>
-                    <tr><th>Condition</th><th>Relation</th><th>Actions</th></tr>
+                    <tr><th>Condition</th><th>Relation</th></tr>
                 </thead>
                 <tbody>
                     <?php if (empty($familyHistory)): ?>
-                    <tr><td colspan="3" class="adm-table-empty">No family history on record.</td></tr>
+                    <tr><td colspan="2" class="adm-table-empty">No family history on record.</td></tr>
                     <?php endif; ?>
                     <?php foreach ($familyHistory as $f): $rowJson = htmlspecialchars(json_encode($f), ENT_QUOTES); ?>
                     <tr>
                         <td class="mhx-cond-label"><?= htmlspecialchars($f['condition']) ?></td>
                         <td><?= htmlspecialchars($f['relation']) ?></td>
-                        <td>
-                            <div class="adm-action-btns">
-                                <button type="button" class="adm-action-btn edit" aria-label="Edit" data-mhx-edit="family" data-id="<?= htmlspecialchars($f['id']) ?>" data-row='<?= $rowJson ?>'><i class="bi bi-pencil"></i></button>
-                                <button type="button" class="adm-action-btn delete" aria-label="Delete" data-mhx-delete="family" data-id="<?= htmlspecialchars($f['id']) ?>" data-label="&quot;<?= htmlspecialchars($f['condition']) ?>&quot;"><i class="bi bi-trash"></i></button>
-                            </div>
-                        </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -414,6 +402,7 @@ $staffNavItems = [
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-tab-nav.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/styled-select.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/medical-history.js') ?>"></script>
 </body>
 </html>
