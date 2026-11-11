@@ -51,6 +51,7 @@ session_start();
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/firestore/medicines.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
+require_once __DIR__ . '/../includes/shared/medicine_name_reference.php'; // hc_medicine_name_spelling_check()
 
 header('Content-Type: application/json');
 
@@ -90,6 +91,14 @@ if ($name === '' || $category === '' || $unit === ''
     || !is_numeric($minLevel) || !is_numeric($reorderLevel) || !is_numeric($maxLevel)) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Please fill out every required field.']);
+    exit;
+}
+// Same spelling backstop as api/create-medicine.php — see
+// includes/shared/medicine_name_reference.php's header comment.
+$nameSpellcheck = hc_medicine_name_spelling_check($name);
+if ($nameSpellcheck['status'] === 'suggest') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => '"' . $name . '" looks misspelled. Did you mean "' . $nameSpellcheck['suggestion'] . '"?', 'suggestion' => $nameSpellcheck['suggestion']]);
     exit;
 }
 if ((float) $minLevel < 0 || (float) $reorderLevel < 0 || (float) $maxLevel < 0) {

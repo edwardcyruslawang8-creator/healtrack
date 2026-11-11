@@ -42,6 +42,7 @@ require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/firestore/medicines.php';
 require_once __DIR__ . '/../includes/firestore/medicine_batches.php'; // hc_create_medicine_batch()
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
+require_once __DIR__ . '/../includes/shared/medicine_name_reference.php'; // hc_medicine_name_spelling_check()
 
 header('Content-Type: application/json');
 
@@ -112,6 +113,16 @@ if (!in_array($type, ['medicine', 'vaccine'], true)) {
 if ($name === '' || $category === '' || $unit === '') {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Please fill out every required field.']);
+    exit;
+}
+// Blocks a likely misspelling of a well-known medicine/vaccine name —
+// see includes/shared/medicine_name_reference.php's header comment.
+// The modal already checks this live and won't let a pharmacist submit
+// with an unresolved suggestion; this is the server-side backstop.
+$nameSpellcheck = hc_medicine_name_spelling_check($name);
+if ($nameSpellcheck['status'] === 'suggest') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => '"' . $name . '" looks misspelled. Did you mean "' . $nameSpellcheck['suggestion'] . '"?', 'suggestion' => $nameSpellcheck['suggestion']]);
     exit;
 }
 if ((float) $currentStock < 0 || (float) $minLevel < 0 || (float) $reorderLevel < 0 || (float) $maxLevel < 0) {

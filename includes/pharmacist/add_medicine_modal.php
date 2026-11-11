@@ -61,7 +61,19 @@
 
           <div class="mb-3">
             <label class="am-form-label" for="amName"><span id="amNameLabel">Medicine Name</span><span class="text-danger">*</span></label>
-            <input type="text" class="form-control am-form-control" id="amName" placeholder="e.g. Amoxicillin 500 mg Capsule" required>
+            <input type="text" class="form-control am-form-control" id="amName" placeholder="e.g. Amoxicillin 500 mg Capsule" required autocomplete="off">
+            <!-- Live spelling check against includes/shared/medicine_name_reference.php's
+                 known drug/vaccine names (api/check-medicine-name.php) — see
+                 this file's own script below. Only ever suggests a
+                 correction for a likely typo of a well-known name; a name
+                 it doesn't recognize at all is left alone. -->
+            <div class="am-form-help text-danger d-none" id="amNameSpellWarning">
+                Checking spelling…
+            </div>
+            <div class="am-name-suggestion d-none" id="amNameSuggestionBox">
+                Did you mean <strong id="amNameSuggestionText"></strong>?
+                <button type="button" class="am-name-suggestion-btn" id="amNameUseSuggestion">Use this spelling</button>
+            </div>
           </div>
 
           <div class="row">
@@ -122,7 +134,7 @@
               </div>
               <div class="col-md-6 mb-3">
                 <label class="am-form-label" for="amIsExpiry">Expiry Date<span class="text-danger">*</span></label>
-                <input type="date" class="form-control am-form-control" id="amIsExpiry" min="<?= date('Y-m-d') ?>" required>
+                <input type="date" data-hc-datepicker class="form-control am-form-control" id="amIsExpiry" min="<?= date('Y-m-d') ?>" required>
               </div>
             </div>
             <div class="mb-3">
@@ -152,7 +164,7 @@
           <div class="row" id="amStockExpiryRow">
             <div class="col-md-6 mb-3">
               <label class="am-form-label" for="amExpiryDate">Expiry Date<span class="text-danger">*</span></label>
-              <input type="date" class="form-control am-form-control" id="amExpiryDate" min="<?= date('Y-m-d') ?>" required>
+              <input type="date" data-hc-datepicker class="form-control am-form-control" id="amExpiryDate" min="<?= date('Y-m-d') ?>" required>
             </div>
             <div class="col-md-6 mb-3">
               <label class="am-form-label" for="amCurrentStock">Current Stock<span class="text-danger">*</span></label>
@@ -354,6 +366,114 @@
         unitSelect.value = current === '' ? '' : (match ? match.value : '__other');
         unitOther.value = current !== '' && !match ? current : '';
         applySelection();
+    });
+})();
+
+// "Medicine Name" live spelling check — api/check-medicine-name.php,
+// backed by includes/shared/medicine_name_reference.php's known
+// generic drug/vaccine names. Only ever flags a likely TYPO of a
+// well-known name (never "this drug doesn't exist") and only blocks
+// submission while that suggestion is unresolved — accepting it (or
+// editing the name into something that no longer looks like a typo)
+// clears the block immediately. api/create-medicine.php and
+// api/update-medicine.php re-run the exact same check server-side, so
+// this can't be bypassed by skipping the live check.
+(function () {
+    const nameInput = document.getElementById('amName');
+    const warningEl = document.getElementById('amNameSpellWarning');
+    const suggestionBox = document.getElementById('amNameSuggestionBox');
+    const suggestionText = document.getElementById('amNameSuggestionText');
+    const useSuggestionBtn = document.getElementById('amNameUseSuggestion');
+    const form = document.getElementById('addMedicineForm');
+    const submitBtn = document.getElementById('amSubmitBtn');
+    if (!nameInput || !form || !suggestionBox) return;
+
+    let checkTimer = null;
+    let lastCheckedValue = null;
+    let hasUnresolvedSuggestion = false;
+
+    function setBlocked(blocked) {
+        hasUnresolvedSuggestion = blocked;
+        if (submitBtn) submitBtn.disabled = blocked;
+    }
+
+    function clearSuggestion() {
+        suggestionBox.classList.add('d-none');
+        setBlocked(false);
+    }
+
+    function showSuggestion(suggestion) {
+        suggestionText.textContent = suggestion;
+        suggestionBox.classList.remove('d-none');
+        setBlocked(true);
+    }
+
+    function runCheck() {
+        const value = nameInput.value.trim();
+        if (value === '' || value === lastCheckedValue) {
+            if (value === '') clearSuggestion();
+            return;
+        }
+        lastCheckedValue = value;
+        warningEl.textContent = 'Checking spelling…';
+        warningEl.classList.remove('d-none', 'text-danger');
+        warningEl.classList.add('text-muted');
+        fetch('../api/check-medicine-name.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: value }),
+        })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                warningEl.classList.add('d-none');
+                // A newer keystroke may have started a fresher check
+                // since this request went out — never apply a stale result.
+                if (nameInput.value.trim() !== value) return;
+                if (data.success && data.status === 'suggest' && data.suggestion) {
+                    showSuggestion(data.suggestion);
+                } else {
+                    clearSuggestion();
+                }
+            })
+            .catch(function () { warningEl.classList.add('d-none'); /* best-effort — never blocks the form on a network hiccup */ });
+    }
+
+    nameInput.addEventListener('input', function () {
+        clearSuggestion();
+        lastCheckedValue = null;
+        if (checkTimer) clearTimeout(checkTimer);
+        checkTimer = setTimeout(runCheck, 500);
+    });
+    nameInput.addEventListener('blur', function () {
+        if (checkTimer) clearTimeout(checkTimer);
+        runCheck();
+    });
+    useSuggestionBtn.addEventListener('click', function () {
+        nameInput.value = suggestionText.textContent;
+        lastCheckedValue = nameInput.value;
+        clearSuggestion();
+        nameInput.focus();
+    });
+
+    // Never carry a stale suggestion from a previous open of this shared
+    // modal (Add or Edit, medicine or vaccine) into the next one.
+    const modalEl = document.getElementById('addMedicineModal');
+    if (modalEl) {
+        modalEl.addEventListener('show.bs.modal', function () {
+            lastCheckedValue = null;
+            clearSuggestion();
+        });
+    }
+
+    // Registered here, inline — parsed (and so attached to #addMedicineForm)
+    // before any external script's own DOMContentLoaded submit listener,
+    // which is what lets stopImmediatePropagation() here actually stop
+    // those listeners from building/sending a payload at all.
+    form.addEventListener('submit', function (e) {
+        if (hasUnresolvedSuggestion) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+        }
     });
 })();
 </script>
