@@ -21,6 +21,7 @@
 session_start();
 
 require_once __DIR__ . '/../config/constants.php'; // BASE_URL, asset_url()
+require_once __DIR__ . '/../includes/shared/lab_test_names.php'; // hc_lab_test_required_specimen()
 
 if (($_SESSION['role'] ?? null) !== 'medical_technician') {
     header('Location: ' . BASE_URL . '/login.php');
@@ -174,6 +175,11 @@ $currentOverall = $currentDoc['fields']['resultBadgeLabel'] ?? '';
             <div><div class="adm-page-subtitle" style="margin-bottom:4px;">Age</div><strong><?= (int) $patient['age'] ?></strong></div>
             <div><div class="adm-page-subtitle" style="margin-bottom:4px;">Sex</div><strong><?= htmlspecialchars($patient['gender']) ?></strong></div>
         </div>
+    </div>
+
+    <div class="adm-card" style="padding:24px; margin-bottom:22px;">
+        <div class="adm-page-subtitle" style="margin-bottom:4px;">Specimen</div>
+        <strong><?= htmlspecialchars(hc_lab_test_required_specimen('Urinalysis')) ?></strong>
     </div>
 
     <form id="urinalysisForm">

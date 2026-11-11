@@ -65,6 +65,13 @@ $staffNavItems = [
 
 $docFields = $currentDoc['fields'] ?? [];
 $testName = hc_lab_test_display_name($docFields['testName'] ?? '—');
+// The real, fixed specimen this specific test needs in standard
+// clinical practice (e.g. routine chemistry = venous blood serum, CBC
+// = whole blood EDTA) — non-null for every official test except Gram
+// Stain/Wet Mount, where the real specimen genuinely depends on the
+// clinical indication, and any custom test added beyond the official
+// 23 — those keep the free-text Specimen input below.
+$requiredSpecimen = hc_lab_test_required_specimen($testName);
 $savedSpecimen = $docFields['specimenType'] ?? '';
 $savedSpecimen = $savedSpecimen === 'Not specified' ? '' : $savedSpecimen;
 $savedRow = $docFields['resultGroups']['group1_rows'][0] ?? [];
@@ -202,8 +209,10 @@ $savedRemarks = $docFields['remarks'] ?? '';
             <input type="hidden" name="recordId" value="<?= htmlspecialchars($recordId) ?>">
 
             <div style="margin-bottom:18px;">
-                <label for="f_specimen" style="display:block; font-size:12.5px; font-weight:600; color:var(--adm-text-muted); margin-bottom:6px;">Specimen Type</label>
-                <?php if ($isEditable): ?>
+                <label for="f_specimen" style="display:block; font-size:12.5px; font-weight:600; color:var(--adm-text-muted); margin-bottom:6px;">Specimen</label>
+                <?php if ($requiredSpecimen !== null && $isEditable): ?>
+                <div><strong><?= htmlspecialchars($requiredSpecimen) ?></strong></div>
+                <?php elseif ($isEditable): ?>
                 <input type="text" class="form-control" id="f_specimen" name="specimen" value="<?= htmlspecialchars($savedSpecimen) ?>" placeholder="e.g. Whole Blood, Serum, Urine" style="max-width:420px;">
                 <?php else: ?>
                 <div><strong><?= htmlspecialchars($savedSpecimen ?: '—') ?></strong></div>
@@ -306,7 +315,7 @@ $savedRemarks = $docFields['remarks'] ?? '';
                 body: JSON.stringify({
                     patientId: patientId,
                     recordId: recordId,
-                    specimen: form.querySelector('input[name="specimen"]').value.trim(),
+                    specimen: (function () { var el = form.querySelector('input[name="specimen"]'); return el ? el.value.trim() : ''; })(),
                     result: result,
                     unit: form.querySelector('input[name="unit"]').value.trim(),
                     range: form.querySelector('input[name="range"]').value.trim(),

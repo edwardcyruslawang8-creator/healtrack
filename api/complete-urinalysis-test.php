@@ -25,6 +25,7 @@ require_once __DIR__ . '/../includes/firestore/patients.php';
 require_once __DIR__ . '/../includes/firestore/lab_results.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
+require_once __DIR__ . '/../includes/shared/lab_result_attachment.php'; // hc_attach_lab_result_report()
 
 header('Content-Type: application/json');
 
@@ -106,10 +107,11 @@ $buildRows = function (array $fieldLabels) use ($rawValues): array {
 };
 
 $existing = $pendingDoc['fields'];
-$saved = $firestore->setDocument('lab_results', $pendingDoc['id'], array_merge($existing, [
+$mergedFields = array_merge($existing, [
     'status' => 'completed',
     'completedDate' => date('Y-m-d'),
     'completedTime' => date('g:i A'),
+    'specimenType' => hc_lab_test_required_specimen('Urinalysis'),
     'interpretation' => 'Urinalysis result: ' . $overallResult . '.',
     'resultBadgeLabel' => $overallResult,
     'resultBadgeColor' => $overallResult === 'Normal' ? '#1E8E3E' : '#D93025',
@@ -119,13 +121,16 @@ $saved = $firestore->setDocument('lab_results', $pendingDoc['id'], array_merge($
         'group2_name' => 'Microscopic Examination',
         'group2_rows' => $buildRows($microscopicFields),
     ],
-]));
+]);
+$saved = $firestore->setDocument('lab_results', $pendingDoc['id'], $mergedFields);
 
 if (!$saved) {
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Could not save the result. Please try again.']);
     exit;
 }
+
+hc_attach_lab_result_report($patientId, $pendingDoc['id'], $mergedFields, $_SESSION['name'] ?? 'Medical Technologist');
 
 // A real medical_records/{new-id} doc (type "laboratory") so this
 // result actually shows up on the patient's Medical Records tab

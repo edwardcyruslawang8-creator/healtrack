@@ -22,6 +22,7 @@
 session_start();
 
 require_once __DIR__ . '/../config/constants.php'; // BASE_URL, asset_url()
+require_once __DIR__ . '/../includes/shared/lab_test_names.php'; // hc_lab_test_required_specimen()
 
 // Only a signed-in medical technologist may view this page.
 if (($_SESSION['role'] ?? null) !== 'medical_technician') {
@@ -168,7 +169,11 @@ $staffNavItems = [
 
     <div class="adm-card" style="padding:24px;">
         <h2 style="font-size:16px; font-weight:700; margin-bottom:4px;">Serology — Rapid Immunochromatographic Tests</h2>
-        <p class="adm-page-subtitle" style="margin-bottom:18px;">Only tests actually ordered for this patient can be filled in.</p>
+        <p class="adm-page-subtitle" style="margin-bottom:12px;">Only tests actually ordered for this patient can be filled in.</p>
+        <div style="margin-bottom:18px;">
+            <div class="adm-page-subtitle" style="margin-bottom:4px;">Specimen</div>
+            <strong><?= htmlspecialchars(hc_lab_test_required_specimen('HBsAg')) ?></strong>
+        </div>
 
         <form id="serologyForm">
             <input type="hidden" name="patientId" value="<?= htmlspecialchars($patientId) ?>">

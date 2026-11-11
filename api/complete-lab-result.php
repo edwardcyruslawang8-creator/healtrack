@@ -28,6 +28,7 @@ require_once __DIR__ . '/../includes/firestore/patients.php';
 require_once __DIR__ . '/../includes/firestore/lab_results.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
+require_once __DIR__ . '/../includes/shared/lab_result_attachment.php'; // hc_attach_lab_result_report()
 
 header('Content-Type: application/json');
 
@@ -103,6 +104,17 @@ if ($pendingDoc === null) {
 $existing = $pendingDoc['fields'];
 $testName = hc_lab_test_display_name($existing['testName'] ?? 'Lab Test');
 
+// The real, fixed specimen this specific test needs in standard
+// clinical practice — authoritative whenever one is known, never
+// trusting whatever the client submitted for it (medical_technician/lab_result_form.php
+// itself no longer even offers a free-text input in that case). Only a
+// test with no single fixed answer (Gram Stain, Wet Mount — the real
+// specimen genuinely depends on the clinical indication) or a custom
+// test added beyond the official 23 falls back to what was actually
+// submitted.
+$requiredSpecimen = hc_lab_test_required_specimen($testName);
+$specimenType = $requiredSpecimen ?? ($specimen !== '' ? $specimen : 'Not specified');
+
 $badgeLabel = $interpretation !== '' ? $interpretation : 'Completed';
 $badgeColor = ($interpretation === '' || in_array(strtolower($interpretation), ['normal', 'negative'], true))
     ? '#1E8E3E'
@@ -111,11 +123,11 @@ $badgeColor = ($interpretation === '' || in_array(strtolower($interpretation), [
 $summary = $testName . ': ' . $result . ($unit !== '' ? ' ' . $unit : '') . ($interpretation !== '' ? ' (' . $interpretation . ')' : '') . '.';
 $panelText = $remarks !== '' ? $remarks : $summary;
 
-$saved = $firestore->setDocument('lab_results', $pendingDoc['id'], array_merge($existing, [
+$mergedFields = array_merge($existing, [
     'status' => 'completed',
     'completedDate' => date('Y-m-d'),
     'completedTime' => date('g:i A'),
-    'specimenType' => $specimen !== '' ? $specimen : 'Not specified',
+    'specimenType' => $specimenType,
     'remarks' => $remarks !== '' ? $remarks : null,
     'interpretation' => $panelText,
     'resultBadgeLabel' => $badgeLabel,
@@ -132,13 +144,16 @@ $saved = $firestore->setDocument('lab_results', $pendingDoc['id'], array_merge($
         'group2_name' => null,
         'group2_rows' => [],
     ],
-]));
+]);
+$saved = $firestore->setDocument('lab_results', $pendingDoc['id'], $mergedFields);
 
 if (!$saved) {
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Could not save the result. Please try again.']);
     exit;
 }
+
+hc_attach_lab_result_report($patientId, $pendingDoc['id'], $mergedFields, $_SESSION['name'] ?? 'Medical Technologist');
 
 // A real medical_records/{new-id} doc (type "laboratory") so this
 // result actually shows up on the patient's Medical Records tab — same

@@ -75,6 +75,11 @@ if ($patient !== null) {
             'docId' => $doc['id'],
             'result' => ($f['status'] ?? '') === 'completed' ? ($f['resultBadgeLabel'] ?? '') : null,
             'labTemplate' => $labTemplate,
+            // Who this specific test is assigned to — print_serology_rapid_test.php's
+            // own copy of this comment: used as the printed report's
+            // signature line, since whoever is VIEWING the page (a
+            // doctor, say) isn't necessarily who performed it.
+            'assignedToName' => $f['assignedToName'] ?? null,
         ];
     }
 }

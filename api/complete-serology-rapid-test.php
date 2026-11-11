@@ -20,10 +20,12 @@
 session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
+require_once __DIR__ . '/../includes/shared/lab_test_names.php'; // hc_lab_test_required_specimen()
 require_once __DIR__ . '/../includes/firestore/patients.php';
 require_once __DIR__ . '/../includes/firestore/lab_results.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
+require_once __DIR__ . '/../includes/shared/lab_result_attachment.php'; // hc_attach_lab_result_report()
 
 header('Content-Type: application/json');
 
@@ -92,10 +94,11 @@ foreach ($rawResults as $testName => $value) {
 
     $displayLabel = $catalog[$testName];
     $existing = $doc['fields'];
-    $saved = $firestore->setDocument('lab_results', $doc['id'], array_merge($existing, [
+    $mergedFields = array_merge($existing, [
         'status' => 'completed',
         'completedDate' => date('Y-m-d'),
         'completedTime' => date('g:i A'),
+        'specimenType' => hc_lab_test_required_specimen($testName),
         'interpretation' => $displayLabel . ': ' . $value,
         'resultBadgeLabel' => $value,
         'resultBadgeColor' => $value === 'Reactive' ? '#D93025' : '#1E8E3E',
@@ -111,10 +114,12 @@ foreach ($rawResults as $testName => $value) {
             'group2_name' => null,
             'group2_rows' => [],
         ],
-    ]));
+    ]);
+    $saved = $firestore->setDocument('lab_results', $doc['id'], $mergedFields);
 
     if ($saved) {
         $updatedTests[] = $displayLabel;
+        hc_attach_lab_result_report($patientId, $doc['id'], $mergedFields, $_SESSION['name'] ?? 'Medical Technologist');
 
         // A real medical_records/{new-id} doc (type "laboratory") per
         // completed test, so each one shows up on the patient's
