@@ -50,7 +50,7 @@ $staffProfile = [
 $dashboardDateLabel = date('F j, Y');
 $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'West Super Health Center'];
 
-$notificationTypeOptions = ['All Types', 'Consultation', 'Reminder'];
+$notificationTypeOptions = ['All Types', 'Consultation', 'Consent', 'Reminder'];
 
 // ---------------------------------------------------------------------
 // Notifications List — real, one row per upcoming/overdue follow-up
@@ -77,6 +77,7 @@ $rawNotifications = hc_medstaff_notification_list($myUid, $myDoc ?? []);
 // here just gets no button at all, not a wrong link.
 $notificationTypeLinks = [
     'Consultation' => ['url' => 'consultations.php', 'label' => 'Go to Consultations'],
+    'Consent' => ['url' => 'patient_management.php', 'label' => 'Go to Patient Management'],
     'Reminder' => ['url' => 'profile_settings.php', 'label' => 'Go to Security Settings'],
 ];
 
