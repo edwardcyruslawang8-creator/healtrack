@@ -271,19 +271,38 @@ $adminNavItems = [
     </div>
 
     <!-- ============ ANALYTICS TABS ============ -->
-    <ul class="nav adm-tabs" role="tablist">
-        <?php foreach ($analyticsTabs as $tab): ?>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link <?= !empty($tab['active']) ? 'active' : '' ?>"
-                    id="tab-<?= htmlspecialchars($tab['key']) ?>-btn"
-                    data-bs-toggle="tab"
-                    data-bs-target="#tab-<?= htmlspecialchars($tab['key']) ?>"
-                    type="button" role="tab">
-                <i class="bi <?= htmlspecialchars($tab['icon']) ?>"></i> <?= htmlspecialchars($tab['label']) ?>
-            </button>
-        </li>
+    <!-- Same two-row look as the sub-admin's Analytics & Reports nav
+         (includes/subadmin/_analytics_tabs.php, .arp-nav styles in
+         assets/css/analytics_reports.css): main sections on top, every
+         report category below. These stay Bootstrap tab BUTTONS switching
+         panes on this page (not links); role="tablist" on the outer <nav>
+         makes it the one tab group, so picking a tab in either row
+         deactivates the active one in the other. -->
+    <?php
+    $faPrimaryTabKeys = ['overview', 'predictive'];
+    $faTabRows = [
+        ['label' => 'Analytics &amp; Reports', 'primary' => true, 'tabs' => array_filter($analyticsTabs, fn ($t) => in_array($t['key'], $faPrimaryTabKeys, true))],
+        ['label' => 'Report Categories', 'primary' => false, 'tabs' => array_filter($analyticsTabs, fn ($t) => !in_array($t['key'], $faPrimaryTabKeys, true))],
+    ];
+    ?>
+    <nav class="arp-nav" role="tablist" aria-label="Facility analytics sections">
+        <?php foreach ($faTabRows as $row): ?>
+        <div class="arp-nav-row<?= $row['primary'] ? '' : ' arp-nav-row-reports' ?>">
+            <span class="arp-nav-label"><?= $row['label'] ?></span>
+            <div class="<?= $row['primary'] ? 'arp-nav-primary' : 'arp-nav-reports' ?>">
+                <?php foreach ($row['tabs'] as $tab): ?>
+                <button class="arp-nav-tab<?= $row['primary'] ? ' arp-nav-tab-primary' : '' ?> <?= !empty($tab['active']) ? 'active' : '' ?>"
+                        id="tab-<?= htmlspecialchars($tab['key']) ?>-btn"
+                        data-bs-toggle="tab"
+                        data-bs-target="#tab-<?= htmlspecialchars($tab['key']) ?>"
+                        aria-controls="tab-<?= htmlspecialchars($tab['key']) ?>"
+                        aria-selected="<?= !empty($tab['active']) ? 'true' : 'false' ?>"
+                        type="button" role="tab"><?= htmlspecialchars($tab['label']) ?></button>
+                <?php endforeach; ?>
+            </div>
+        </div>
         <?php endforeach; ?>
-    </ul>
+    </nav>
 
     <div class="tab-content an-tab-content">
         <?php foreach ($analyticsTabs as $tab): ?>
@@ -1268,12 +1287,28 @@ $adminNavItems = [
 
         <?php elseif ($tab['key'] === 'services'): ?>
 
-            <div class="an-summary-tiles" style="margin-bottom:20px;">
-                <div class="an-summary-tile"><span class="an-tile-label">Total Consultations</span><span class="an-tile-value"><?= number_format($consultationsTotal) ?></span></div>
-                <div class="an-summary-tile"><span class="an-tile-label">This Month</span><span class="an-tile-value"><?= number_format($consultationsThisMonth) ?></span></div>
-                <div class="an-summary-tile good"><span class="an-tile-label">Completed</span><span class="an-tile-value"><?= number_format($consultationsCompleted) ?></span></div>
-                <div class="an-summary-tile warn"><span class="an-tile-label">Pending</span><span class="an-tile-value"><?= number_format($consultationsPending) ?></span></div>
+            <!-- Every service this facility provides — Consultation,
+                 Pharmacy, Laboratory and X-ray ($serviceOverview,
+                 includes/admin/facility_analytics_firestore.php). -->
+            <div class="an-service-grid">
+                <?php foreach ($serviceOverview as $svc): ?>
+                <div class="an-service-card">
+                    <div class="an-service-head">
+                        <span class="an-service-icon" style="background:<?= htmlspecialchars($svc['bg']) ?>; color:<?= htmlspecialchars($svc['color']) ?>;"><i class="bi <?= htmlspecialchars($svc['icon']) ?>"></i></span>
+                        <span class="an-service-name"><?= htmlspecialchars($svc['label']) ?></span>
+                    </div>
+                    <div class="an-service-total"><?= number_format($svc['total']) ?></div>
+                    <div class="an-service-sub"><?= number_format($svc['thisMonth']) ?> this month</div>
+                    <div class="an-service-bar" title="<?= (int) $svc['donePct'] ?>% <?= htmlspecialchars(strtolower($svc['doneLabel'])) ?>"><span style="width:<?= (int) $svc['donePct'] ?>%; background:<?= htmlspecialchars($svc['color']) ?>;"></span></div>
+                    <div class="an-service-split">
+                        <span><b><?= number_format($svc['done']) ?></b> <?= htmlspecialchars($svc['doneLabel']) ?></span>
+                        <span class="<?= $svc['waiting'] > 0 ? 'is-waiting' : '' ?>"><b><?= number_format($svc['waiting']) ?></b> <?= htmlspecialchars($svc['waitingLabel']) ?></span>
+                    </div>
+                </div>
+                <?php endforeach; ?>
             </div>
+
+            <h3 class="an-service-section-title">Consultations</h3>
 
             <div class="an-charts-row" style="grid-template-columns:1fr 1.6fr;">
                 <div class="an-card">
@@ -1320,6 +1355,35 @@ $adminNavItems = [
                     </div>
                     <?php endif; ?>
                 </div>
+            </div>
+
+            <!-- Laboratory / X-ray / Pharmacy breakdowns — bar per row, share of that service's total. -->
+            <h3 class="an-service-section-title">Laboratory, X-ray &amp; Pharmacy</h3>
+            <div class="an-charts-row an-service-breakdowns">
+                <?php foreach ([
+                    ['title' => 'Laboratory Tests by Type', 'rows' => $labByType, 'color' => '#1A73E8', 'empty' => 'No laboratory tests at this facility yet.'],
+                    ['title' => 'X-ray Exams', 'rows' => $xrayByExam, 'color' => '#8B5CF6', 'empty' => 'No X-ray exams at this facility yet.'],
+                    ['title' => 'Most Ordered Pharmacy Items', 'rows' => $pharmacyByItem, 'color' => '#1E8E3E', 'empty' => 'No pharmacy orders at this facility yet.'],
+                ] as $breakdown):
+                    $bdMax = $breakdown['rows'] === [] ? 1 : max($breakdown['rows']);
+                ?>
+                <div class="an-card">
+                    <div class="an-card-header"><h3><?= htmlspecialchars($breakdown['title']) ?></h3></div>
+                    <?php if ($breakdown['rows'] === []): ?>
+                    <p class="adm-table-empty"><?= htmlspecialchars($breakdown['empty']) ?></p>
+                    <?php else: ?>
+                    <div class="an-service-bars">
+                        <?php foreach ($breakdown['rows'] as $label => $count): ?>
+                        <div class="an-service-bar-row">
+                            <span class="an-service-bar-label" title="<?= htmlspecialchars($label) ?>"><?= htmlspecialchars($label) ?></span>
+                            <span class="an-service-bar-track"><span style="width:<?= round($count / $bdMax * 100, 1) ?>%; background:<?= $breakdown['color'] ?>;"></span></span>
+                            <span class="an-service-bar-value"><?= number_format($count) ?></span>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <?php endforeach; ?>
             </div>
 
         <?php elseif ($tab['key'] === 'staff'): ?>
