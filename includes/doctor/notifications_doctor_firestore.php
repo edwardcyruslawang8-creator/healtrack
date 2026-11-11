@@ -48,6 +48,7 @@ require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_
 require_once __DIR__ . '/../shared/phone_reminder.php'; // hc_get_phone_reminder_notification()
 require_once __DIR__ . '/../shared/email_verification_reminder.php'; // hc_my_email_verification_notification()
 require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
+require_once __DIR__ . '/../shared/consent_notifications.php'; // hc_get_consent_decision_notifications()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -61,7 +62,7 @@ $doctorProfile = [
 $dashboardDateLabel = date('F j, Y');
 $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'West Super Health Center'];
 
-$notificationTypeOptions = ['All Types', 'Consultation', 'Medicine', 'Vaccine', 'Reminder'];
+$notificationTypeOptions = ['All Types', 'Consultation', 'Medicine', 'Vaccine', 'Consent', 'Reminder'];
 
 // ---------------------------------------------------------------------
 // Notifications List — real, merging live sources scoped to this
@@ -81,7 +82,8 @@ $rawNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'sy
     array_filter([hc_my_email_verification_notification()]),
     hc_notification_preference_enabled_for_doc($myDoc ?? [], 'consultation') ? hc_get_followup_notifications($doctorProfile['name']) : [],
     hc_get_doctor_result_ready_notifications($doctorProfile['name']),
-    hc_get_dispensed_prescription_notifications($doctorProfile['name'])
+    hc_get_dispensed_prescription_notifications($doctorProfile['name']),
+    hc_get_consent_decision_notifications($myUid)
 ) : [];
 // Which real page a notification's "Go to details" button (the
 // Notification Details modal's own primary action, assets/js/notifications.js)
@@ -94,6 +96,7 @@ $notificationTypeLinks = [
     'X-ray' => ['url' => 'patient_laboratory_xray.php', 'label' => 'Go to Lab & X-ray'],
     'Medicine' => ['url' => 'medications.php', 'label' => 'Go to Medications'],
     'Vaccine' => ['url' => 'medications.php', 'label' => 'Go to Medications'],
+    'Consent' => ['url' => 'patient_management.php', 'label' => 'Go to Patient Management'],
     'Reminder' => ['url' => 'profile_settings.php', 'label' => 'Go to Security Settings'],
 ];
 

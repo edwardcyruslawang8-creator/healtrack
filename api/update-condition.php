@@ -36,21 +36,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $body = json_decode(file_get_contents('php://input'), true) ?? [];
 
+// Only the STATUS of a recorded condition can change. The condition
+// name, date diagnosed and notes are kept from the existing doc below;
+// any values the client sends for them are ignored.
 $id = trim((string) ($body['id'] ?? ''));
-$label = trim((string) ($body['label'] ?? ''));
-$diagnosedOn = trim((string) ($body['diagnosedOn'] ?? ''));
-$details = trim((string) ($body['details'] ?? '')) ?: null;
 $status = trim((string) ($body['status'] ?? ''));
-$status = in_array($status, ['Active', 'Controlled', 'Resolved'], true) ? $status : 'Active';
 
-if ($id === '' || $label === '' || $diagnosedOn === '') {
+if ($id === '') {
     http_response_code(422);
-    echo json_encode(['success' => false, 'error' => 'Please enter the condition and date diagnosed.']);
+    echo json_encode(['success' => false, 'error' => 'This condition could not be found.']);
     exit;
 }
-if (strtotime($diagnosedOn) === false) {
+if (!in_array($status, ['Active', 'Controlled', 'Resolved'], true)) {
     http_response_code(422);
-    echo json_encode(['success' => false, 'error' => 'Please enter a valid date diagnosed.']);
+    echo json_encode(['success' => false, 'error' => 'Please choose a valid status.']);
     exit;
 }
 
@@ -75,12 +74,13 @@ if (!hc_user_can_access_patient_document($patient)) {
     exit;
 }
 
+$label = (string) ($existing['label'] ?? '');
 $updated = $firestore->setDocument('medical_conditions', $id, [
     'patientId' => $patientId,
     'label' => $label,
-    'details' => $details,
+    'details' => $existing['details'] ?? null,
     'status' => $status,
-    'diagnosedOn' => date('Y-m-d', strtotime($diagnosedOn)),
+    'diagnosedOn' => $existing['diagnosedOn'] ?? null,
 ]);
 
 if (!$updated) {

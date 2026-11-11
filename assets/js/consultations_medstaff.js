@@ -147,13 +147,21 @@ document.addEventListener('DOMContentLoaded', function () {
         // this consultation's own already-saved priority right after
         // calling setPatientCard(), which correctly overrides this.
         const ageNum = parseInt(age, 10);
-        if (!isNaN(ageNum) && ageNum >= 60) {
+        const isSenior = !isNaN(ageNum) && ageNum >= 60;
+        // "Senior" can't be picked for a patient under 60 (or before a
+        // patient is chosen) — greyed out in the dropdown, and
+        // api/create-consultation.php / update-consultation.php refuse it.
+        const seniorOption = prioritySelect.querySelector('option[value="senior"]');
+        if (seniorOption) seniorOption.disabled = !isSenior;
+        if (isSenior) {
             setSelect(prioritySelect, 'senior');
         } else if (prioritySelect.value === 'senior') {
             // Switching from a previously-picked senior to a different,
             // younger patient — clear the stale auto-set value instead
             // of leaving an inapplicable "Senior" priority behind.
             setSelect(prioritySelect, '');
+        } else {
+            setSelect(prioritySelect, prioritySelect.value); // refresh the greyed-out state
         }
 
         patientCardBtn.classList.remove('is-invalid');

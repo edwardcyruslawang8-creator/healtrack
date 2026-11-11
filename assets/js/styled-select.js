@@ -76,6 +76,12 @@
                 const selected = Number(li.dataset.index) === select.selectedIndex;
                 li.classList.toggle('is-selected', selected);
                 li.setAttribute('aria-selected', selected ? 'true' : 'false');
+                // A page script can disable an option at any time (then
+                // fire 'change') — mirror that so it can't be chosen.
+                const opt = select.options[Number(li.dataset.index)];
+                const disabled = !!(opt && opt.disabled);
+                li.classList.toggle('is-disabled', disabled);
+                li.setAttribute('aria-disabled', disabled ? 'true' : 'false');
             });
         }
 
@@ -129,6 +135,7 @@
             if (openDropdown && openDropdown !== api) openDropdown.close(false);
             wrap.classList.add('is-open');
             trigger.setAttribute('aria-expanded', 'true');
+            sync(); // pick up any option enabled/disabled since last time
             place();
             setActive(select.selectedIndex);
             openDropdown = api;
@@ -143,6 +150,7 @@
         }
 
         function choose(index) {
+            if (select.options[index] && select.options[index].disabled) return; // greyed-out option
             const changed = select.selectedIndex !== index;
             select.selectedIndex = index;
             sync();

@@ -119,6 +119,14 @@
   transform: translateY(-50%);
   font-size: 13px;
 }
+/* A disabled <option> (e.g. "Senior" priority for a patient under 60):
+   shown greyed out and can't be chosen. */
+.hc-select-option.is-disabled{
+  color: var(--text-soft);
+  opacity: .5;
+  cursor: not-allowed;
+}
+.hc-select-option.is-disabled.is-active{ background: transparent; }
 .hc-select-menu::-webkit-scrollbar{ width: 6px; }
 .hc-select-menu::-webkit-scrollbar-thumb{ background: var(--border-soft); border-radius: 3px; }
 

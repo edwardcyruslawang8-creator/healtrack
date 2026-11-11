@@ -188,7 +188,15 @@
 .acv-tabs .nav-link:hover:not(.active){ color: var(--adm-red-bright); }
 .acv-med-table td{ vertical-align: middle; }
 /* Quantity is a Medications-only column — hidden on the Vaccines tab. */
-.acv-med-table input.acv-med-quantity{ min-width: 64px; }
+.acv-med-table input.acv-med-quantity{ min-width: 80px; }
+/* Each field keeps a readable width (placeholder + typed text visible)
+   instead of being squeezed by the table — the table's wrapper scrolls
+   sideways when they don't all fit. */
+.acv-med-table input.acv-med-name{ min-width: 220px; }
+.acv-med-table input.acv-med-dosage{ min-width: 110px; }
+.acv-med-table input.acv-med-frequency{ min-width: 150px; }
+.acv-med-table input.acv-med-duration{ min-width: 120px; }
+.acv-med-table input.acv-med-route{ min-width: 110px; }
 .acv-med-table--vaccine .acv-col-qty{ display: none; }
 .acv-med-table input, .acv-med-table select{
   width: 100%;
@@ -204,7 +212,7 @@
    assets/js/active_consultation.js's addMedRow(). */
 .acv-med-table textarea.acv-med-instructions{
   width: 100%;
-  min-width: 160px;
+  min-width: 220px;
   border: 1px solid var(--adm-border);
   border-radius: 7px;
   padding: 6px 8px;

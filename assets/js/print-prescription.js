@@ -81,6 +81,15 @@
         '.rx-followup { margin-top: 22pt; padding-top: 10pt; border-top: 1px solid #000; font-size: 12pt; }',
         '.rx-followup .rx-label { display: inline; margin-right: 6pt; }',
         '.rx-followup strong { font-size: 13pt; }',
+        // Signature line, bottom-right. The body is at least one page
+        // tall (A4 297mm minus the 2 x 20mm page margins, with a little
+        // slack so it never spills a blank page), and the signature's
+        // margin-top:auto pushes it to the bottom of that; a longer
+        // prescription just flows it in after the content instead.
+        'body { display: flex; flex-direction: column; min-height: 250mm; }',
+        '.rx-sign { margin-top: auto; padding-top: 36pt; align-self: flex-end; width: 62mm; text-align: center; break-inside: avoid; }',
+        '.rx-sign-line { border-top: 1px solid #000; padding-top: 4pt; font-size: 12pt; font-weight: 700; }',
+        '.rx-sign .rx-label { margin: 2pt 0 0; }',
     ].join('\n');
 
     // The follow-up date the doctor set on this consultation ("Also needs
@@ -130,6 +139,8 @@
             + (followUp !== ''
                 ? '<section class="rx-followup"><span class="rx-label">Follow-up Visit:</span> <strong>' + escapeHtml(followUp) + '</strong></section>'
                 : '')
+            + '<section class="rx-sign"><div class="rx-sign-line">' + escapeHtml(doctorName) + '</div>'
+            + '<span class="rx-label">Signature over Printed Name</span></section>'
             + '</body></html>');
         doc.close();
 

@@ -16,6 +16,7 @@ session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/firestore/consultations.php';
+require_once __DIR__ . '/../includes/firestore/patients.php'; // hc_get_patient_profile() — Senior priority age check
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 require_once __DIR__ . '/../includes/shared/vitals_validation.php'; // hc_validate_vitals()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
@@ -86,6 +87,15 @@ if ($priority !== '' && !in_array($priority, $validPriorities, true)) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Please choose a valid priority, or leave it blank.']);
     exit;
+}
+// "Senior" priority (RA 9994) is only for patients 60 and older.
+if ($priority === 'senior') {
+    $seniorCheckPatient = hc_get_patient_profile($patientId);
+    if ($seniorCheckPatient === null || (int) $seniorCheckPatient['age'] < 60) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => 'Senior priority is only for patients 60 years old and above.']);
+        exit;
+    }
 }
 if (strtotime($dateTime) < time()) {
     http_response_code(422);

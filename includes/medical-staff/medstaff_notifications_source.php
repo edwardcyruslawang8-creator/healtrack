@@ -19,6 +19,7 @@ require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_
 require_once __DIR__ . '/../shared/phone_reminder.php'; // hc_get_phone_reminder_notification()
 require_once __DIR__ . '/../shared/email_verification_reminder.php'; // hc_my_email_verification_notification()
 require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
+require_once __DIR__ . '/../shared/consent_notifications.php'; // hc_get_consent_decision_notifications()
 
 if (!function_exists('hc_medstaff_notification_list')) {
     /**
@@ -36,6 +37,7 @@ if (!function_exists('hc_medstaff_notification_list')) {
             array_filter([hc_get_2fa_reminder_notification($uid, $doc)]),
             array_filter([hc_get_phone_reminder_notification($uid, $doc)]),
             array_filter([hc_my_email_verification_notification()]),
+            hc_get_consent_decision_notifications($uid),
             hc_notification_preference_enabled_for_doc($doc, 'consultation') ? hc_get_followup_notifications() : []
         );
     }

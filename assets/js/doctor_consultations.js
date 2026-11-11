@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const d = startBtn.dataset;
 
         document.getElementById('scmPatientName').textContent = d.patientName;
-        document.getElementById('scmPatientMeta').textContent = d.patientAge + ' years old (' + d.patientGender + ') • ' + d.patientId;
+        document.getElementById('scmPatientMeta').textContent = d.patientAge + ' years old (' + d.patientGender + ')';
 
         const typeBadge = document.getElementById('scmTypeBadge');
         typeBadge.textContent = d.typeLabel;
