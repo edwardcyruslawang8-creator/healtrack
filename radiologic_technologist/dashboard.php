@@ -81,7 +81,7 @@ $staffNavItems = [
 <!-- Medical Technologist Dashboard styles, reused here verbatim — already role-agnostic (DOM ids only) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/medical_technician_dashboard.css') ?>">
 </head>
-<body class="adm-body">
+<body class="adm-body radtech-dashboard-page">
 
 <!-- Mobile sidebar trigger -->
 <button class="adm-mobile-menu-btn" id="admSidebarToggle" aria-label="Open menu">
@@ -291,8 +291,11 @@ $staffNavItems = [
     <!-- ============ PENDING EXAMS + RECENT NOTIFICATIONS ============ -->
     <div class="mt-row-4">
 
-        <div class="adm-card mt-chart-card" style="grid-column: span 2;">
-            <div class="mt-card-header"><h2>Pending Exams (Facility-wide)</h2></div>
+        <div class="adm-card mt-chart-card">
+            <div class="mt-card-header">
+                <h2>Pending Exams (Facility-wide)</h2>
+                <a href="xray_consultation.php" class="adm-card-footer-link" style="margin-top:0;">View All <i class="bi bi-arrow-right"></i></a>
+            </div>
             <div class="adm-table-wrap">
                 <table class="mt-schedule-table">
                     <thead>
@@ -324,13 +327,13 @@ $staffNavItems = [
             </div>
         </div>
 
-        <div class="adm-card mt-chart-card" style="grid-column: span 2;">
+        <div class="adm-card mt-chart-card">
             <div class="mt-card-header">
                 <h2>Pending X-ray Results (Facility-wide)</h2>
                 <a href="xray_consultation.php" class="adm-card-footer-link" style="margin-top:0;">View All <i class="bi bi-arrow-right"></i></a>
             </div>
             <div class="adm-table-wrap">
-                <table class="adm-table">
+                <table class="mt-schedule-table">
                     <thead>
                         <tr>
                             <th>Exam</th>

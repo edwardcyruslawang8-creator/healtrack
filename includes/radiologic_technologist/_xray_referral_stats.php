@@ -17,7 +17,7 @@
  * =====================================================================
  */
 ?>
-<div class="mt-stats-row lxr-stats-row lxc-stats-row">
+<div class="mt-stats-row lxr-stats-row lxc-stats-row mt-stats-compact">
     <div class="mt-stat-card">
         <div class="mt-stat-icon" style="background:#E8F0FE; color:#1A73E8;"><i class="bi bi-inboxes-fill"></i></div>
         <div class="mt-stat-label">Pending X-ray Referrals</div>
