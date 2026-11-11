@@ -92,6 +92,7 @@ $doctorNavItems = [
 <!-- Laboratory & X-ray page styles (filter toolbars, result tables) — shared verbatim with every other role's version -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_laboratory_xray.css') ?>">
 <link rel="stylesheet" href="<?= asset_url('/assets/css/styled-select.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/view_details_modal.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -358,7 +359,7 @@ $doctorNavItems = [
                         <td><span class="plx-badge" style="background:<?= htmlspecialchars($status['bg']) ?>; color:<?= htmlspecialchars($status['color']) ?>;"><?= htmlspecialchars($status['label']) ?></span></td>
                         <td>
                             <div class="adm-action-btns">
-                                <a href="laboratory_result_details.php?id=<?= urlencode($patient['id']) ?>&type=lab&recordId=<?= urlencode($lab['id']) ?>" class="adm-action-btn view" aria-label="View"><i class="bi bi-eye"></i></a>
+                                <a href="laboratory_result_details.php?id=<?= urlencode($patient['id']) ?>&type=lab&recordId=<?= urlencode($lab['id']) ?>" class="adm-view-link-btn">View Details</a>
                             </div>
                         </td>
                     </tr>
@@ -434,7 +435,7 @@ $doctorNavItems = [
                         <td><span class="plx-badge" style="background:<?= htmlspecialchars($status['bg']) ?>; color:<?= htmlspecialchars($status['color']) ?>;"><?= htmlspecialchars($status['label']) ?></span></td>
                         <td>
                             <div class="adm-action-btns">
-                                <a href="laboratory_result_details.php?id=<?= urlencode($patient['id']) ?>&type=xray&recordId=<?= urlencode($xray['id']) ?>" class="adm-action-btn view" aria-label="View"><i class="bi bi-eye"></i></a>
+                                <a href="laboratory_result_details.php?id=<?= urlencode($patient['id']) ?>&type=xray&recordId=<?= urlencode($xray['id']) ?>" class="adm-view-link-btn">View Details</a>
                             </div>
                         </td>
                     </tr>

@@ -453,12 +453,16 @@ $backHref = $backConsultationId !== ''
             <div class="lrd-field"><span class="lrd-field-label">Date &amp; Time Ordered</span><span class="lrd-field-value"><?= htmlspecialchars($xrayExam['orderedDate']) ?> <span class="lrd-dot"></span> <?= htmlspecialchars($xrayExam['orderedTime']) ?></span></div>
             <div class="lrd-field"><span class="lrd-field-label">Date &amp; Time Completed</span><span class="lrd-field-value"><?= htmlspecialchars($xrayExam['completedDate']) ?> <span class="lrd-dot"></span> <?= htmlspecialchars($xrayExam['completedTime']) ?></span></div>
             <div class="lrd-field"><span class="lrd-field-label">Ordered By</span><span class="lrd-field-value"><?= htmlspecialchars($xrayExam['orderedBy']) ?></span></div>
-            <div class="lrd-field"><span class="lrd-field-label">Facility / Department</span><span class="lrd-field-value"><?= htmlspecialchars($xrayExam['facility']) ?></span></div>
-            <?php $xrayStatus = $statusMeta[$xrayExam['status']] ?? $statusMeta['completed']; ?>
-            <div class="lrd-field"><span class="lrd-field-label">Status</span><span class="lrd-badge" style="background:<?= htmlspecialchars($xrayStatus['bg']) ?>; color:<?= htmlspecialchars($xrayStatus['color']) ?>;"><?= htmlspecialchars($xrayStatus['label']) ?></span></div>
         </div>
     </div>
 
+    <!-- ============ X-RAY FINDINGS (full width) ============
+         Same layout as every other role's copy of this page (subadmin/
+         medical-staff/medical_technician's laboratory_result_details.php) —
+         this used to be its own narrower card with no side column at
+         all, so unlike those 3, it never showed an Attached File row for
+         an X-ray result (only the inline preview above), with no working
+         fallback when that inline preview itself couldn't render. -->
     <div class="adm-card lrd-detail-card lrd-xray-findings-card">
         <div class="lrd-card-header"><h3>X-ray Findings</h3></div>
 
@@ -476,6 +480,29 @@ $backHref = $backConsultationId !== ''
 
                     <div class="lrd-findings-title">Impression</div>
                     <p class="lrd-impression"><?= htmlspecialchars($xrayImpression) ?></p>
+                </div>
+
+                <div class="lrd-xray-details-side">
+                    <div class="lrd-field"><span class="lrd-field-label">Facility / Department</span><span class="lrd-field-value"><?= htmlspecialchars($xrayExam['facility']) ?></span></div>
+                    <?php $xrayStatus = $statusMeta[$xrayExam['status']] ?? $statusMeta['completed']; ?>
+                    <div class="lrd-field"><span class="lrd-field-label">Status</span><span class="lrd-badge" style="background:<?= htmlspecialchars($xrayStatus['bg']) ?>; color:<?= htmlspecialchars($xrayStatus['color']) ?>;"><?= htmlspecialchars($xrayStatus['label']) ?></span></div>
+
+                    <?php $xrayHasAttachment = !empty($xrayExam['attachedFile']['name']) && $xrayExam['attachedFile']['name'] !== '—'; ?>
+                    <div class="lrd-attached">
+                        <div class="lrd-attached-title">Attached File</div>
+                        <div class="lrd-file-row">
+                            <span class="lrd-file-icon"><i class="bi bi-file-earmark-pdf-fill"></i></span>
+                            <div class="lrd-file-info">
+                                <span class="lrd-file-name"><?= htmlspecialchars($xrayHasAttachment ? $xrayExam['attachedFile']['name'] : '—') ?></span>
+                                <span class="lrd-file-size"><?= htmlspecialchars($xrayHasAttachment ? $xrayExam['attachedFile']['size'] : '—') ?></span>
+                            </div>
+                            <?php if ($xrayHasAttachment): ?>
+                            <a href="<?= BASE_URL ?>/api/download-xray-result.php?id=<?= urlencode($xrayExam['id']) ?>&view=1" target="_blank" rel="noopener" class="lrd-download-btn" aria-label="View or print this attachment"><i class="bi bi-download"></i></a>
+                            <?php else: ?>
+                            <button type="button" class="lrd-download-btn" aria-label="Download" disabled><i class="bi bi-download"></i></button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
