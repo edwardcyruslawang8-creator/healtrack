@@ -94,6 +94,82 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             map.fitBounds(fitBounds, { padding: [10, 10] });
 
+            // Name-only label per barangay (no icon/case-count — this card
+            // is too small for the full page's house-icon markers) so it's
+            // at least clear which shape is which, same real centroid
+            // api/gis-data.php computed for the full map. ~10 barangays
+            // packed into one 280px-tall card means their centroids often
+            // sit too close together for every label to fit at its exact
+            // spot without overlapping its neighbors — declutterLabels()
+            // below nudges only the colliding ones apart (a classic
+            // force-separation label-placement pass), with a thin dashed
+            // leader line back to the real shape whenever a label actually
+            // had to move, so every barangay keeps a legible label without
+            // losing which shape it belongs to.
+            let labelLayer = null;
+            function declutterLabels(items) {
+                const padding = 3;
+                for (let iter = 0; iter < 80; iter++) {
+                    let moved = false;
+                    for (let i = 0; i < items.length; i++) {
+                        for (let j = i + 1; j < items.length; j++) {
+                            const a = items[i];
+                            const b = items[j];
+                            const overlapX = Math.min(a.x + a.w / 2, b.x + b.w / 2) - Math.max(a.x - a.w / 2, b.x - b.w / 2) + padding;
+                            const overlapY = Math.min(a.y + a.h / 2, b.y + b.h / 2) - Math.max(a.y - a.h / 2, b.y - b.h / 2) + padding;
+                            if (overlapX <= padding || overlapY <= padding) continue;
+                            moved = true;
+                            if (overlapX < overlapY) {
+                                const shift = overlapX / 2;
+                                if (a.x <= b.x) { a.x -= shift; b.x += shift; } else { a.x += shift; b.x -= shift; }
+                            } else {
+                                const shift = overlapY / 2;
+                                if (a.y <= b.y) { a.y -= shift; b.y += shift; } else { a.y += shift; b.y -= shift; }
+                            }
+                        }
+                    }
+                    if (!moved) break;
+                }
+            }
+            function renderLabels() {
+                if (labelLayer) map.removeLayer(labelLayer);
+                labelLayer = L.layerGroup().addTo(map);
+
+                const items = geojson.features.map(function (feature) {
+                    const [lng, lat] = feature.properties.centroid;
+                    const anchor = map.latLngToContainerPoint([lat, lng]);
+                    const name = feature.properties.name;
+                    return {
+                        feature: feature, lat: lat, lng: lng,
+                        x: anchor.x, y: anchor.y, origX: anchor.x, origY: anchor.y,
+                        // Rough rendered size of the label pill itself —
+                        // ~6.2px per character at .home-gis-label's 10px/
+                        // 700-weight font, plus its own padding.
+                        w: name.length * 6.2 + 10, h: 16,
+                    };
+                });
+                declutterLabels(items);
+
+                items.forEach(function (item) {
+                    const dx = item.x - item.origX;
+                    const dy = item.y - item.origY;
+                    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                        L.polyline([[item.lat, item.lng], map.containerPointToLatLng([item.x, item.y])], {
+                            color: '#5C0A0A', weight: 1, opacity: 0.5, dashArray: '2,3', interactive: false,
+                        }).addTo(labelLayer);
+                    }
+                    L.marker([item.lat, item.lng], { icon: L.divIcon({ className: 'home-gis-label-icon', html: '', iconSize: [0, 0] }) })
+                        .bindTooltip(item.feature.properties.name, {
+                            permanent: true,
+                            direction: 'center',
+                            className: 'home-gis-label',
+                            offset: [dx, dy],
+                        })
+                        .addTo(labelLayer);
+                });
+            }
+            renderLabels();
+
             // The preview's height changes at home.css's breakpoints (and
             // on phone rotation) — re-measure and re-fit so the barangays
             // stay centered instead of clipped. Debounced: resize fires
@@ -104,6 +180,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 resizeTimer = setTimeout(function () {
                     map.invalidateSize();
                     map.fitBounds(fitBounds, { padding: [10, 10] });
+                    renderLabels();
                 }, 150);
             }
             window.addEventListener('resize', refit);
@@ -113,21 +190,6 @@ document.addEventListener('DOMContentLoaded', function () {
             if (typeof ResizeObserver !== 'undefined') {
                 new ResizeObserver(refit).observe(document.getElementById('homeGisMap'));
             }
-
-            // Name-only label per barangay (no icon/case-count — this card
-            // is too small for the full page's house-icon markers) so
-            // it's at least clear which shape is which, same real
-            // centroid api/gis-data.php computed for the full map.
-            geojson.features.forEach(function (feature) {
-                const [lng, lat] = feature.properties.centroid;
-                L.marker([lat, lng], { icon: L.divIcon({ className: 'home-gis-label-icon', html: '', iconSize: [0, 0] }) })
-                    .bindTooltip(feature.properties.name, {
-                        permanent: true,
-                        direction: 'center',
-                        className: 'home-gis-label',
-                    })
-                    .addTo(map);
-            });
         })
         .catch(function (err) {
             console.error('Could not load barangay GeoJSON for the home preview map:', err);

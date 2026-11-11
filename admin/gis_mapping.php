@@ -238,26 +238,14 @@ $adminNavItems = [
                 <?php endforeach; ?>
             </ul>
         </div>
-
-        <!-- Real, server-side classification filter — same mechanism as
-             the Date Range dropdown above (includes/public/gis_data_firestore.php's
-             header comment); options built from real, currently
-             public-eligible registry entries. -->
-        <div class="dropdown gis-daterange-dropdown">
-            <button type="button" class="gis-daterange-btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-funnel"></i> <?= htmlspecialchars($classificationFilterOptions[$gisClassification] ?? 'All Classifications') ?>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-                <?php foreach ($classificationFilterOptions as $key => $label): ?>
-                <li><a class="dropdown-item <?= $key === $gisClassification ? 'active' : '' ?>" href="?<?= hc_gis_admin_query(['classification' => $key]) ?>"><?= htmlspecialchars($label) ?></a></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
     </form>
     <script>
         window.GIS_RANGE = "<?= htmlspecialchars($gisRange, ENT_QUOTES) ?>";
         window.GIS_RANGE_LABEL = "<?= htmlspecialchars(strtolower($selectedDateRange), ENT_QUOTES) ?>";
-        window.GIS_CLASSIFICATION = "<?= htmlspecialchars($gisClassification, ENT_QUOTES) ?>";
+        // No classification filter UI on this page (removed per request) —
+        // assets/js/gis.js's own `window.GIS_CLASSIFICATION || 'all'`
+        // fallback already covers this being unset, same as every other
+        // page that never defines it either.
     </script>
 
     <!-- TWO-COLUMN LAYOUT: ~30% INFO PANEL / ~70% MAP -->

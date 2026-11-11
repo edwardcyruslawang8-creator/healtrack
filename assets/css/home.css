@@ -248,9 +248,10 @@
    a visitor might try to interact with. */
 #homeGisMap{ width: 100%; height: 100%; background: #FBF6EC; }
 .gis-map-area .leaflet-control-container{ display: none; }
-/* Name-only label per barangay hexagon (home-gis-preview.js) — no icon/
-   case-count, this card is too small for the full page's house-icon
-   markers + two-line tooltip. */
+/* Name-only label per barangay (home-gis-preview.js's own renderLabels() —
+   only placed where the shape is actually big enough to hold it, so
+   these never overlap). No icon/case-count, this card is too small for
+   the full page's house-icon markers + two-line tooltip. */
 .home-gis-label{
   background: rgba(255,255,255,0.88);
   border: none;
