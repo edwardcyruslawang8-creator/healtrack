@@ -115,6 +115,7 @@ $adminNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/subadmin_dashboard.css') ?>">
 <!-- Consent Management page styles (summary cards, toolbar, table, modals) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/consent_management.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/styled-select.css') ?>">
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 </head>
 <body class="adm-body">
@@ -292,7 +293,7 @@ $adminNavItems = [
             <i class="bi bi-search"></i>
             <input type="search" name="q" id="csmSearchInput" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Search by patient name or ID..." enterkeyhint="search" aria-label="Search consent records by patient name or ID">
         </div>
-        <select class="form-select csm-filter-btn csm-status-select" name="status" aria-label="Filter by status" onchange="this.form.submit()">
+        <select class="form-select csm-filter-btn csm-status-select" data-styled-select name="status" aria-label="Filter by status" onchange="this.form.submit()">
             <?php foreach ($consentStatusOptions as $opt): ?>
             <option <?= $opt === $statusFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
             <?php endforeach; ?>
@@ -433,6 +434,7 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <!-- jsPDF — builds the Consent Details modal's "Download PDF" file (text-based, no screenshot) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="<?= asset_url('/assets/js/styled-select.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/consent_management.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/search-form-guard.js') ?>"></script>

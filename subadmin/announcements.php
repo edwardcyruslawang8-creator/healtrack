@@ -110,6 +110,7 @@ $adminNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/subadmin_dashboard.css') ?>">
 <!-- User Management page styles, reused here for the summary cards/toolbar/table/badges — this page is visually identical (same "usm-" prefixed atoms), no new CSS needed -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/user_management.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/styled-select.css') ?>">
 <!-- "+ New Announcement" modal styles, reused from Medicine & Vaccine Inventory's Add modal -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/add_medicine_modal.css') ?>">
 <!-- "Notes from Admin" list styling, reused from admin/announcements.php's own note list (.ann-adm-note-*) -->
@@ -301,7 +302,7 @@ $adminNavItems = [
             <i class="bi bi-search"></i>
             <input type="text" name="q" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Search by title or description...">
         </div>
-        <select class="form-select usm-filter-select" name="category" aria-label="Filter by category" onchange="this.form.submit()">
+        <select class="form-select usm-filter-select" data-styled-select name="category" aria-label="Filter by category" onchange="this.form.submit()">
             <?php foreach ($categoryOptions as $opt): ?>
             <option <?= $opt === $categoryFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
             <?php endforeach; ?>
@@ -370,6 +371,7 @@ $adminNavItems = [
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/styled-select.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/announcements_subadmin.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>

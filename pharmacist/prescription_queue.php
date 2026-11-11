@@ -85,6 +85,7 @@ function hc_rxq_query(array $overrides = []): string
 <link rel="stylesheet" href="<?= asset_url('/assets/css/pharmacist_dashboard.css') ?>">
 <!-- Prescription Queue page styles (filter toolbar, queue table) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/prescription_queue.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/styled-select.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -234,7 +235,7 @@ function hc_rxq_query(array $overrides = []): string
                 <input type="text" name="q" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Search by patient name, ID, or item...">
             </div>
 
-            <select class="form-select rxq-filter-select" name="type" aria-label="Filter by type">
+            <select class="form-select rxq-filter-select" data-styled-select name="type" aria-label="Filter by type">
                 <option value="all" <?= $typeFilter === 'all' ? 'selected' : '' ?>>All Types</option>
                 <option value="medication" <?= $typeFilter === 'medication' ? 'selected' : '' ?>>Medicine</option>
                 <option value="vaccine" <?= $typeFilter === 'vaccine' ? 'selected' : '' ?>>Vaccine</option>
@@ -496,6 +497,7 @@ function hc_rxq_query(array $overrides = []): string
     ]) ?>;
 </script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/styled-select.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/prescription-queue.js') ?>"></script>
 <!-- Maroon-themed calendar for every date input (the browser's own date
      popup can't be recolored) -- flatpickr + assets/js/hc-datepicker.js. -->
