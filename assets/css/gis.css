@@ -83,6 +83,13 @@
   gap: 12px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+  /* The date-range dropdown's open menu hangs down over the map, whose
+     Leaflet zoom/locate buttons sit at z-index 1000 — the same level as
+     Bootstrap's dropdown menu, so the map buttons were drawn ON TOP of
+     the menu. Lifting the toolbar to 1001 keeps its menus above the map,
+     while staying below the mobile sidebar (1025 backdrop / 1030 drawer). */
+  position: relative;
+  z-index: 1001;
 }
 .gis-search-field-wrap{
   flex: 1 1 260px;
