@@ -173,6 +173,17 @@ if (array_key_exists('priority', $body)) {
         echo json_encode(['success' => false, 'error' => 'Invalid priority.']);
         exit;
     }
+    // "Senior" priority (RA 9994) is only for patients 60 and older. A
+    // record that already had it saved is left alone (so it can still be
+    // edited); this only blocks newly setting it.
+    if ($priority === 'senior' && ($existing['priority'] ?? null) !== 'senior') {
+        $seniorCheckPatient = hc_get_patient_profile($updated['patientId'] ?? '');
+        if ($seniorCheckPatient === null || (int) $seniorCheckPatient['age'] < 60) {
+            http_response_code(422);
+            echo json_encode(['success' => false, 'error' => 'Senior priority is only for patients 60 years old and above.']);
+            exit;
+        }
+    }
     $updated['priority'] = $priority !== '' ? $priority : null;
 }
 if (array_key_exists('nextFollowUp', $body)) {
