@@ -44,9 +44,10 @@ if (!function_exists('hc_lab_result_report_css')) {
             'body { font-family: "Arial", "Helvetica", sans-serif; color: #111; max-width: 720px; margin: 32px auto; padding: 0 24px; background: #fff; }',
             '.prt-toolbar { text-align: center; margin-bottom: 24px; }',
             '.prt-toolbar button { background: #7a0d0d; color: #fff; border: none; border-radius: 8px; padding: 10px 22px; font-size: 14px; font-weight: 600; cursor: pointer; }',
-            '.prt-header { text-align: center; margin-bottom: 22px; }',
+            '.prt-header { display: flex; align-items: center; justify-content: center; gap: 14px; text-align: center; margin-bottom: 22px; }',
             '.prt-header h1 { font-size: 20px; font-weight: 800; margin: 0 0 2px; letter-spacing: .5px; }',
             '.prt-header h2 { font-size: 13px; font-weight: 600; margin: 0; letter-spacing: .5px; }',
+            '.prt-seal { width: 64px; height: 64px; flex-shrink: 0; }',
             '.prt-info-table { width: 100%; border-collapse: collapse; margin-bottom: 22px; }',
             '.prt-info-table td { border: 1px solid #111; padding: 8px 10px; font-size: 13px; vertical-align: bottom; }',
             '.prt-info-table td span { display: block; font-size: 10px; color: #444; margin-bottom: 10px; }',
@@ -62,6 +63,31 @@ if (!function_exists('hc_lab_result_report_css')) {
             '.prt-sign .line { display: inline-block; width: 240px; border-top: 1px solid #111; padding-top: 4px; font-size: 12.5px; }',
             '@media print { .prt-toolbar { display: none; } @page { margin: 18mm 16mm; } body { margin: 0; } }',
         ]);
+    }
+}
+
+if (!function_exists('hc_lab_result_report_seal_html')) {
+    /**
+     * The real City of Lipa official seal, top-left of the header —
+     * embedded as a base64 data: URI (not a plain asset_url() <img>)
+     * so this still renders correctly in the STANDALONE generated
+     * attachment file (includes/shared/lab_result_attachment.php),
+     * which has no web server context of its own once downloaded/
+     * opened outside the app — same reasoning as every other
+     * self-contained choice in this template. '' (no <img> at all,
+     * never a broken-image icon) if the asset file is ever missing.
+     */
+    function hc_lab_result_report_seal_html(): string
+    {
+        static $html = null;
+        if ($html === null) {
+            $path = __DIR__ . '/../../assets/images/lipa_city_seal.jpg';
+            $html = is_file($path)
+                ? '<img class="prt-seal" src="data:image/jpeg;base64,' . base64_encode((string) file_get_contents($path)) . '" alt="City of Lipa official seal">'
+                : '';
+        }
+
+        return $html;
     }
 }
 
@@ -107,7 +133,7 @@ if (!function_exists('hc_lab_result_report_body_html')) {
             $rowsHtml = '<tr><td colspan="5" style="text-align:center; color:#666;">No structured result values on this test.</td></tr>';
         }
 
-        return '<div class="prt-header"><h1>LIPA CITY HEALTH OFFICE</h1><h2>LABORATORY DEPARTMENT</h2></div>'
+        return '<div class="prt-header">' . hc_lab_result_report_seal_html() . '<div><h1>LIPA CITY HEALTH OFFICE</h1><h2>LABORATORY DEPARTMENT</h2></div></div>'
             . '<table class="prt-info-table">'
             . '<tr><td style="width:65%;"><span>Name</span>' . htmlspecialchars($patient['name'] ?? '—') . '</td><td><span>Date</span>' . htmlspecialchars($todayLabel) . '</td></tr>'
             . '<tr><td><span>Address</span>' . htmlspecialchars((string) ($patient['address'] ?? '—')) . '</td><td><table style="width:100%; border-collapse:collapse;"><tr>'

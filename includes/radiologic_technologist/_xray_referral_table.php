@@ -56,7 +56,7 @@
                     <td><?= $r['assignedToName'] !== null ? htmlspecialchars($r['assignedToName']) : '<span class="lxr-report-none">Unassigned</span>' ?></td>
                     <td>
                         <div class="adm-action-btns">
-                            <a href="xray_result_form.php?patientId=<?= urlencode($r['patientId']) ?>&recordId=<?= urlencode($r['id']) ?>" class="lxr-consult-btn">Consult</a>
+                            <a href="xray_result_form.php?patientId=<?= urlencode($r['patientId']) ?>&recordId=<?= urlencode($r['id']) ?>" class="lxr-consult-btn lxr-btn-maroon">Consult</a>
                         </div>
                     </td>
                 </tr>
