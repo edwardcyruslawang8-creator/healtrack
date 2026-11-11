@@ -44,6 +44,7 @@ require_once __DIR__ . '/../firestore/stock_requests.php'; // hc_get_pending_sto
 require_once __DIR__ . '/../shared/two_fa_reminder.php'; // hc_get_2fa_reminder_notification()
 require_once __DIR__ . '/../shared/email_verification_reminder.php'; // hc_my_email_verification_notification()
 require_once __DIR__ . '/../shared/notification_preferences.php'; // hc_notification_preference_enabled_for_doc()
+require_once __DIR__ . '/../shared/consent_notifications.php'; // hc_get_pending_consent_request_notifications()
 
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
@@ -61,7 +62,7 @@ $adminProfile = [
 $dashboardDateLabel = date('F j, Y');
 $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'West Super Health Center'];
 
-$notificationTypeOptions = ['All Types', 'Patient', 'Inventory', 'System', 'Reminder', 'Stock', 'User'];
+$notificationTypeOptions = ['All Types', 'Consent', 'Patient', 'Inventory', 'System', 'Reminder', 'Stock', 'User'];
 
 // ---------------------------------------------------------------------
 // Placeholder rows — Future: SELECT ... FROM notifications. 'unread' is
@@ -139,7 +140,19 @@ foreach ($decidedStockRequestNotifications as &$decidedStockRequestNotification)
 }
 unset($decidedStockRequestNotification);
 
-$notifications = array_merge($pendingAccountNotifications, $pendingStockRequestNotifications, $decidedStockRequestNotifications, $expiryNotifications, $notifications);
+// Real patient details access requests (api/request-patient-consent.php)
+// waiting for this sub-admin at their facility — before this nothing told
+// them a request had come in. Gated by their "Consent Alerts" toggle
+// (Profile Settings), which until now had no real source to control.
+$pendingConsentNotifications = hc_notification_preference_enabled_for_doc($myDoc ?? [], 'consent')
+    ? hc_get_pending_consent_request_notifications()
+    : [];
+foreach ($pendingConsentNotifications as &$pendingConsentNotification) {
+    $pendingConsentNotification['unread'] = true;
+}
+unset($pendingConsentNotification);
+
+$notifications = array_merge($pendingConsentNotifications, $pendingAccountNotifications, $pendingStockRequestNotifications, $decidedStockRequestNotifications, $expiryNotifications, $notifications);
 
 // The real 2FA reminder (see config/constants.php's
 // subadmin_unread_notification_count(), which already counts this toward
@@ -188,6 +201,7 @@ if ($emailVerificationNotification !== null) {
 $notificationTypeLinks = [
     'User' => ['url' => 'user_management.php', 'label' => 'Go to User Management'],
     'Stock Request' => ['url' => 'stock_requests.php', 'label' => 'Go to Stock Requests'],
+    'Consent' => ['url' => 'consent_management.php', 'label' => 'Go to Consent Management'],
     'Inventory' => ['url' => 'medicine_vaccine_inventory.php', 'label' => 'Go to Inventory'],
     'Reminder' => ['url' => 'profile_settings.php', 'label' => 'Go to Security Settings'],
 ];

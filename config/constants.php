@@ -214,6 +214,7 @@ function subadmin_seed_unread_notification_ids(): array
  */
 function subadmin_all_notification_ids(): array
 {
+    require_once __DIR__ . '/../includes/shared/consent_notifications.php'; // hc_get_pending_consent_request_notifications()
     require_once __DIR__ . '/../includes/firestore/medicines.php'; // hc_get_medicine_expiry_notifications()
     require_once __DIR__ . '/../includes/firestore/accounts.php'; // hc_get_pending_account_notifications()
     require_once __DIR__ . '/../includes/firestore/stock_requests.php'; // hc_get_pending_stock_request_notifications(), hc_get_decided_stock_request_notifications_for_subadmin()
@@ -242,6 +243,7 @@ function subadmin_all_notification_ids(): array
         array_column(hc_get_pending_account_notifications(), 'id'),
         array_column(hc_get_pending_stock_request_notifications(), 'id'),
         array_column(hc_get_decided_stock_request_notifications_for_subadmin(), 'id'),
+        hc_notification_preference_enabled('consent') ? array_column(hc_get_pending_consent_request_notifications(), 'id') : [],
         array_column(array_filter([hc_my_2fa_reminder_notification()]), 'id'),
         array_column(array_filter([hc_my_email_verification_notification()]), 'id')
     );
