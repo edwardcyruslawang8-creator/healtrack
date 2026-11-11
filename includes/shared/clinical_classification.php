@@ -434,6 +434,45 @@ if (!function_exists('hc_condition_registry_meta_by_name')) {
     }
 }
 
+if (!function_exists('hc_gis_eligible_confirmed_cases')) {
+    /**
+     * The one real "is this case eligible for GIS-style geographic
+     * aggregation" filter — originally inline inside
+     * includes/public/gis_data_firestore.php's hc_gis_disease_overview()
+     * (the public GIS map's own data), extracted here so a second,
+     * internal-dashboard consumer (subadmin/predictive_analytics.php's
+     * Disease Outbreak Monitoring & Forecasting card) can apply the
+     * EXACT same rule without a second, copy-pasted filter that could
+     * silently drift out of sync with GIS Mapping over time. Behavior is
+     * unchanged from that original inline block — a case counts only
+     * when:
+     *   1. hc_is_publicly_visible() on its registry entry (classified +
+     *      gisEligible + publicVisibility all true).
+     *   2. Its caseClassification is 'confirmed' — 'probable'/'suspected'/
+     *      'symptom_only' never count here, even though every one of
+     *      those still counts for internal-surveillance-only callers
+     *      elsewhere (hc_disease_demand_forecast() itself, etc.).
+     *   3. Its classification matches $classificationFilter, when the
+     *      caller asked for one specific classification rather than 'all'.
+     *
+     * @param array $cases hc_disease_demand_forecast()'s own 'notifiableCases' list (or any subset of it).
+     * @return array Same shape, filtered.
+     */
+    function hc_gis_eligible_confirmed_cases(array $cases, string $classificationFilter = 'all'): array
+    {
+        $registryByName = hc_condition_registry_meta_by_name();
+
+        return array_values(array_filter($cases, function ($c) use ($registryByName, $classificationFilter) {
+            $entry = $registryByName[$c['category']] ?? null;
+            if (($c['caseClassification'] ?? '') !== 'confirmed' || !hc_is_publicly_visible($entry)) {
+                return false;
+            }
+
+            return $classificationFilter === 'all' || ($entry['classification'] ?? null) === $classificationFilter;
+        }));
+    }
+}
+
 if (!function_exists('hc_is_publicly_visible')) {
     /**
      * The one place that decides whether a condition's real cases may

@@ -530,6 +530,54 @@
 .med-item .icon-circle i{ font-size: 22px; color: var(--maroon); }
 .med-item .med-name{ font-size: 13.5px; font-weight: 600; color: var(--text-dark); margin-bottom: 10px; }
 
+/* Medicine & Vaccine Availability slider — cycles through sets of 4
+   instead of only ever showing one fixed set (assets/js/med-availability-slider.js). */
+.med-slider{ display: flex; align-items: center; }
+.med-slider-viewport{ flex: 1 1 auto; min-width: 0; overflow: hidden; }
+.med-slider-track{ display: flex; transition: transform .35s ease; }
+.med-slide{ flex: 0 0 100%; min-width: 0; }
+.med-slider-btn{
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border-soft);
+  background: #fff;
+  color: var(--maroon);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.med-slider-btn:hover{ background: var(--maroon); color: #fff; border-color: var(--maroon); }
+.med-slider-btn.prev{ margin-left: 10px; }
+.med-slider-btn.next{ margin-right: 10px; }
+/* Dots viewport shows at most 4 fixed 14px slots — with dozens of real
+   medicines/vaccines there can be dozens of slides, and a dot per slide
+   would be unreadably wide, so med-availability-slider.js's own
+   updateDotsWindow() slides ".med-slider-dots" (the track) within this
+   so only a small window around the current slide is ever visible. */
+.med-slider-dots-viewport{ overflow: hidden; margin: 0 auto; }
+.med-slider-dots{ display: flex; transition: transform .25s ease; padding: 2px 0 4px; }
+.med-slider-dot{
+  flex: 0 0 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.med-slider-dot::before{
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-soft);
+  transition: all .15s ease;
+}
+.med-slider-dot.active::before{ background: var(--maroon); width: 16px; border-radius: 3px; }
+
 /* -- Announcements widget -- */
 .announcement-item{
   display: flex;

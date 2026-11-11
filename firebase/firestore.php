@@ -93,7 +93,13 @@ function getDashboardStats(): array
     ];
 }
 
-function getMedicines(int $limit = 4): array
+/**
+ * $limit = null (index.php's own call) returns EVERY real medicine/
+ * vaccine, not just a handful — the Home widget now slides through
+ * them 4 at a time (assets/js/med-availability-slider.js) rather than
+ * ever only showing one fixed, capped set.
+ */
+function getMedicines(?int $limit = 4): array
 {
     global $firestore;
 
@@ -108,7 +114,7 @@ function getMedicines(int $limit = 4): array
 
     usort($medicines, fn ($a, $b) => $a['name'] <=> $b['name']);
 
-    return array_slice($medicines, 0, $limit);
+    return $limit === null ? $medicines : array_slice($medicines, 0, $limit);
 }
 
 function getAnnouncements(int $limit = 3): array

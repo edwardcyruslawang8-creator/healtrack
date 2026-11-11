@@ -126,6 +126,7 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                             <th>Medicine Name</th>
                             <th>Category</th>
                             <th>Form</th>
+                            <th>Availability</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -142,6 +143,13 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                             </td>
                             <td data-label="Category"><?= htmlspecialchars($m['category']) ?></td>
                             <td data-label="Form"><?= htmlspecialchars($m['form']) ?></td>
+                            <td data-label="Availability">
+                                <?php if ($m['status'] !== 'unavailable'): ?>
+                                <span class="status-badge available"><i class="bi bi-check-lg"></i> Available</span>
+                                <?php else: ?>
+                                <span class="status-badge unavailable"><i class="bi bi-x-lg"></i> Not Available</span>
+                                <?php endif; ?>
+                            </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -207,12 +215,13 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                         <tr>
                             <th>Vaccine Name</th>
                             <th>Form</th>
+                            <th>Availability</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($vaccineResults)): ?>
                         <tr>
-                            <td colspan="2" style="text-align:center; padding:28px; color:var(--text-muted);">No vaccines match your search/filters.</td>
+                            <td colspan="3" style="text-align:center; padding:28px; color:var(--text-muted);">No vaccines match your search/filters.</td>
                         </tr>
                         <?php endif; ?>
                         <?php foreach ($vaccineResults as $v): ?>
@@ -227,6 +236,13 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                                 </div>
                             </td>
                             <td data-label="Form"><?= htmlspecialchars($v['form']) ?></td>
+                            <td data-label="Availability">
+                                <?php if ($v['status'] !== 'unavailable'): ?>
+                                <span class="status-badge available"><i class="bi bi-check-lg"></i> Available</span>
+                                <?php else: ?>
+                                <span class="status-badge unavailable"><i class="bi bi-x-lg"></i> Not Available</span>
+                                <?php endif; ?>
+                            </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>

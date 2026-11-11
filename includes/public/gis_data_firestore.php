@@ -176,14 +176,12 @@ if (!function_exists('hc_gis_disease_overview')) {
         //      filtering backing the dynamic classification dropdown).
         // ---------------------------------------------------------------
         $registryByName = hc_condition_registry_meta_by_name(); // also the preventiveMeasures source for $topDiseases below
-        $notifiableCases = array_values(array_filter($notifiableCases, function ($c) use ($registryByName, $classificationFilter) {
-            $entry = $registryByName[$c['category']] ?? null;
-            if (($c['caseClassification'] ?? '') !== 'confirmed' || !hc_is_publicly_visible($entry)) {
-                return false;
-            }
-
-            return $classificationFilter === 'all' || ($entry['classification'] ?? null) === $classificationFilter;
-        }));
+        // hc_gis_eligible_confirmed_cases() (includes/shared/clinical_classification.php) —
+        // extracted from this exact inline block so a second consumer
+        // (subadmin/predictive_analytics.php's Disease Outbreak Monitoring
+        // & Forecasting card) can apply the identical rule without a
+        // copy that could drift. Same inputs/output as before.
+        $notifiableCases = hc_gis_eligible_confirmed_cases($notifiableCases, $classificationFilter);
 
         $cutoffCurrent = $spec['cutoffCurrent'];
         $cutoffPrior = $spec['cutoffPrior'];

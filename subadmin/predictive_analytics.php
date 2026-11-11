@@ -119,6 +119,11 @@ $adminNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/facility_analytics.css') ?>">
 <!-- Predictive Analytics styles (the 4 additional 6.3.1–6.3.4 categories, "pn-" prefixed) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/predictive_analytics.css') ?>">
+<!-- Themed dropdown (assets/js/styled-select.js) for the Disease Outbreak
+     card's Range/Barangay selects, same real component every other
+     themed dropdown in this app already uses — this page didn't load
+     it before this card needed it. -->
+<link rel="stylesheet" href="<?= asset_url('/assets/css/styled-select.css') ?>">
 </head>
 <body class="adm-body">
 
@@ -417,6 +422,99 @@ $adminNavItems = [
                             <button type="button" class="opf-viewall-btn" id="faPredPNDViewTrendsBtn" data-bs-toggle="modal" data-bs-target="#faPredPNDTrendsModal"><i class="bi bi-graph-up"></i> View Trends</button>
                             <button type="button" class="opf-viewall-btn" id="faPredPNDViewAllBtn" data-bs-toggle="modal" data-bs-target="#faPredPNDAllModal"><i class="bi bi-table"></i> View All</button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- ===== Disease Outbreak Monitoring & Forecasting ===== -->
+                <div class="an-card dof-card">
+                    <div class="an-card-header">
+                        <h3>Disease Outbreak Monitoring &amp; Forecasting</h3>
+                    </div>
+                    <p class="pn-note">The real last 14 days of GIS-eligible notifiable-disease cases at <?= htmlspecialchars($facilityName) ?>, followed by a real 7-day-ahead forecast — the same disease set and confirmed-case rule GIS Mapping itself uses, continuously shifting forward as today's real date changes. A "Potential Outbreak" flag is a signal to investigate, never an automatic official outbreak declaration; forecasted values are estimates, never confirmed cases.</p>
+
+                    <div class="dof-toolbar">
+                        <!-- Searchable multi-select (built by assets/js/disease-outbreak-forecast.js —
+                             no existing single-select component in this app supports
+                             multi-pick), resolved to real registry IDs server-side
+                             (api/get-disease-outbreak-forecast.php), never trusted
+                             by name. Themed to match assets/css/styled-select.css's
+                             own trigger-button + floating-listbox shape. -->
+                        <div class="dof-multiselect hc-select" id="faPredDOFDiseaseMulti">
+                            <button type="button" class="hc-select-trigger dof-multiselect-btn" id="faPredDOFDiseaseBtn" aria-haspopup="listbox" aria-expanded="false" aria-controls="faPredDOFDiseaseList">
+                                <i class="bi bi-virus dof-trigger-icon"></i>
+                                <span class="hc-select-label" id="faPredDOFDiseaseLabel">All Diseases</span>
+                            </button>
+                            <i class="bi bi-chevron-down chevron"></i>
+                            <div class="hc-select-menu dof-multiselect-panel" id="faPredDOFDiseasePanel">
+                                <div class="dof-multiselect-search">
+                                    <i class="bi bi-search"></i>
+                                    <input type="text" id="faPredDOFDiseaseSearch" placeholder="Search disease..." autocomplete="off">
+                                </div>
+                                <div class="dof-multiselect-actions">
+                                    <button type="button" class="dof-multiselect-quick" data-quick="all">All Diseases</button>
+                                </div>
+                                <ul class="dof-multiselect-list" id="faPredDOFDiseaseList" role="listbox" aria-multiselectable="true"></ul>
+                            </div>
+                        </div>
+                        <div class="filter-select-wrap dof-select-wrap">
+                            <i class="bi bi-geo-alt-fill leading-icon"></i>
+                            <select class="form-select dof-select" id="faPredDOFBarangay" aria-label="Barangay" data-styled-select>
+                                <option value="all">All Barangays</option>
+                                <?php foreach (HC_COVERED_BARANGAYS as $bgy): ?>
+                                <option value="<?= htmlspecialchars($bgy) ?>"><?= htmlspecialchars($bgy) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <i class="bi bi-chevron-down chevron"></i>
+                        </div>
+                    </div>
+
+                    <div class="an-forecast-tiles" id="faPredDOFSummary">
+                        <div class="an-forecast-tile">
+                            <span class="an-forecast-tile-label">Total Recorded Cases</span>
+                            <span class="an-forecast-tile-value" data-dof-field="totalRecordedCases">—</span>
+                            <span class="an-forecast-tile-sub" id="faPredDOFRangeLabel">Last 14 Days</span>
+                        </div>
+                        <div class="an-forecast-tile">
+                            <span class="an-forecast-tile-label">Diseases Monitored</span>
+                            <span class="an-forecast-tile-value" data-dof-field="diseasesMonitored">—</span>
+                            <span class="an-forecast-tile-sub">GIS-eligible, with real recent cases</span>
+                        </div>
+                        <div class="an-forecast-tile">
+                            <span class="an-forecast-tile-label">Diseases with Elevated Activity</span>
+                            <span class="an-forecast-tile-value" data-dof-field="elevatedActivity">—</span>
+                            <span class="an-forecast-tile-sub">Above their own historical baseline</span>
+                        </div>
+                        <div class="an-forecast-tile">
+                            <span class="an-forecast-tile-label">Potential Outbreak Signals</span>
+                            <span class="an-forecast-tile-value" data-dof-field="outbreakSignals">—</span>
+                            <span class="an-forecast-tile-sub">Disease + barangay combinations, all 11 barangays</span>
+                        </div>
+                    </div>
+
+                    <div class="an-forecast-legend dof-legend">
+                        <span><span class="dot" style="background:#9CA3AF;"></span> Actual (solid)</span>
+                        <span><span class="dot dashed" style="color:#9CA3AF;"></span> Forecast (dashed)</span>
+                        <span class="dof-band-note"><span class="dof-band-swatch"></span> Uncertainty range</span>
+                        <span class="dof-boundary-note"><span class="dof-boundary-swatch"></span> Forecast Begins</span>
+                    </div>
+                    <p class="pn-note dof-cap-note" id="faPredDOFCapNote" style="display:none;">Showing every disease with recent cases or an active outbreak signal. For a clearer view of one or a few, pick them from the Disease filter above.</p>
+                    <div class="an-trend-canvas-box"><canvas id="faPredDOFChart"></canvas></div>
+                    <p class="pn-note dof-forecast-note" id="faPredDOFForecastNote" style="display:none;"></p>
+                    <div class="pn-empty" id="faPredDOFEmpty" style="display:none;"><i class="bi bi-info-circle-fill"></i><p>No GIS-eligible disease cases for this filter.</p></div>
+
+                    <div class="adm-table-wrap dof-table-wrap">
+                        <table class="adm-table">
+                            <thead>
+                                <tr>
+                                    <th>Disease</th>
+                                    <th>Current Cases</th>
+                                    <th>Previous Period</th>
+                                    <th>Trend</th>
+                                    <th>Monitoring Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="faPredDOFTableBody"></tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -825,6 +923,11 @@ $adminNavItems = [
 <script src="<?= asset_url('/assets/js/order-frequency.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/stock-projection.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/notifiable-diseases.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/disease-outbreak-forecast.js') ?>"></script>
+<!-- Themed dropdown for the Range/Barangay selects above — same real
+     component patient/medicine.php/patient/gis.php already use
+     (assets/css/styled-select.css, included in <head>). -->
+<script src="<?= asset_url('/assets/js/styled-select.js') ?>"></script>
 <!-- Exposed as window.initReportPageCharts() — same name
      assets/js/analytics_reports.js and its 5 siblings each define — so
      assets/js/ajax-tab-nav.js's fixed list of re-init hooks picks this
@@ -905,6 +1008,16 @@ $adminNavItems = [
                 defaultSummary: <?= json_encode($pndDefaultSummary) ?>,
                 defaultTrend: <?= json_encode($pndDefaultTrend) ?>,
                 apiUrl: '<?= BASE_URL ?>/api/get-disease-trends.php',
+            });
+        }
+        if (window.HCDiseaseOutbreakForecast) {
+            window.HCDiseaseOutbreakForecast.init('faPred', {
+                monitoredDiseases: <?= json_encode($outbreakDefault['monitoredDiseases']) ?>,
+                defaultSummary: <?= json_encode($outbreakDefault['summary']) ?>,
+                defaultChart: <?= json_encode($outbreakDefault['chart']) ?>,
+                defaultTable: <?= json_encode($outbreakDefault['table']) ?>,
+                defaultCurrentPeriodLabel: <?= json_encode($outbreakDefault['currentPeriodLabel']) ?>,
+                apiUrl: '<?= BASE_URL ?>/api/get-disease-outbreak-forecast.php',
             });
         }
     };

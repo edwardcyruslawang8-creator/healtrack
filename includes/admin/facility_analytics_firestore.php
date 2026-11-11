@@ -874,6 +874,15 @@ $pndDefaultEnd = date('Y-m-d');
 $pndDefaultSummary = hc_notifiable_disease_summary($pt1['notifiableCases'], $pndDefaultStart, $pndDefaultEnd);
 $pndDefaultTrend = hc_notifiable_disease_trend_aggregated($pt1['notifiableCases'], $pndDefaultStart, $pndDefaultEnd, 'week');
 
+// "Disease Outbreak Monitoring & Forecasting" card — same real
+// pipeline api/get-disease-outbreak-forecast.php's own filters re-run,
+// computed once here so the card isn't empty on first paint (same
+// "default + live re-fetch" convention as $pndDefault... above).
+require_once __DIR__ . '/../shared/disease_outbreak_forecast.php'; // hc_disease_outbreak_monitoring()
+$outbreakDefault = hc_disease_outbreak_monitoring($pt1['notifiableCases'], [
+    'disease' => 'all', 'barangay' => 'all',
+]);
+
 $allPharmacyOrderDocsForShortage = hc_get_all_pharmacy_order_docs(); // system-wide — see comment above
 $allMedicationDocsForShortage = $firestore->listDocuments('medications');
 $allInventoryItemsForShortage = array_merge(

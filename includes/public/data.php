@@ -14,7 +14,11 @@ require_once __DIR__ . '/../../config/constants.php'; // BASE_URL — used by $n
 require_once __DIR__ . '/../../firebase/firestore.php';
 
 $dashboardStats = getDashboardStats();
-$medicines = getMedicines();
+// null (every real medicine/vaccine) rather than getMedicines()'s own
+// 4-item default — the Home widget now slides between sets of 4
+// instead of only ever showing one fixed set (index.php's own
+// Medicine & Vaccine Availability card).
+$medicines = getMedicines(null);
 $announcements = getAnnouncements();
 
 // Sidebar navigation. Hrefs are BASE_URL-anchored (see config/constants.php)

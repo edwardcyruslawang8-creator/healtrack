@@ -68,6 +68,227 @@
 
 .pn-note{ font-size: 11.5px; color: var(--adm-text-soft); margin: 0 0 12px; }
 
+/* -- Disease Outbreak Monitoring & Forecasting card -- */
+.dof-forecast-note{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #FFF8E6;
+  color: #8A6D1C;
+  font-size: 11.5px;
+}
+.dof-forecast-note i{ flex-shrink: 0; }
+.dof-toolbar{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0 16px;
+}
+/* Barangay — a native <select> reusing the system's own .filter-select-wrap
+   + leading-icon convention (same recipe assets/css/gis.css's
+   .gis-toolbar uses on patient/gis.php, translated to the staff --adm-*
+   tokens) rather than a bare, unshadowed Bootstrap select, so it reads
+   as one themed pill alongside the Disease multi-select. */
+.dof-select-wrap{ position: relative; flex: 0 0 auto; }
+.dof-select-wrap .dof-select{
+  width: auto;
+  min-width: 170px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 10px 34px 10px 36px;
+  box-shadow: var(--adm-shadow);
+  font-size: 13px;
+  color: var(--adm-text);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+.dof-select-wrap i.leading-icon{
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: var(--adm-text-soft);
+  pointer-events: none;
+}
+.dof-select-wrap i.chevron{
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--adm-text-soft);
+  pointer-events: none;
+}
+.dof-custom-range{ display: flex; align-items: center; gap: 8px; }
+.dof-custom-range input[type="date"]{
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  color: var(--adm-text);
+  background: var(--adm-card);
+}
+.dof-legend{ margin-bottom: 4px; }
+.dof-band-note{ display: inline-flex; align-items: center; gap: 6px; }
+.dof-band-swatch{
+  display: inline-block;
+  width: 16px;
+  height: 10px;
+  border-radius: 3px;
+  background: rgba(107, 114, 128, 0.25);
+}
+.dof-boundary-note{ display: inline-flex; align-items: center; gap: 6px; }
+.dof-boundary-swatch{
+  display: inline-block;
+  width: 0;
+  height: 12px;
+  border-left: 2px dashed var(--adm-red-bright);
+}
+.dof-cap-note{ margin-top: -4px; }
+
+/* Disease multi-select — built from scratch (no existing multi-pick
+   component in this app), themed to match assets/css/styled-select.css's
+   own trigger-button + floating-listbox shape (.hc-select* classes,
+   reused directly) rather than inventing a new visual language. Only
+   what that file doesn't already cover — the search box, quick-select
+   actions, and checkbox rows — lives here. */
+.dof-multiselect{ position: relative; display: inline-flex; align-items: center; min-width: 220px; }
+.dof-multiselect-btn{
+  width: 100%;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 10px 32px 10px 14px;
+  box-shadow: var(--adm-shadow);
+  font-size: 13px;
+  color: var(--adm-text);
+  gap: 8px;
+}
+.dof-trigger-icon{ color: var(--adm-text-soft); font-size: 13px; flex-shrink: 0; }
+/* The multi-select's own chevron (a plain sibling of the trigger
+   button, not auto-positioned by styled-select.js — that only happens
+   for a native <select> it enhances) — positioned exactly like
+   .dof-select-wrap's, so both toolbar pills line up identically. */
+.dof-multiselect > i.chevron{
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--adm-text-soft);
+  pointer-events: none;
+}
+/* Flex column so the search box + quick actions stay pinned while only
+   the checkbox list itself scrolls within .hc-select-menu's own
+   max-height. */
+.dof-multiselect-panel{ display: flex; flex-direction: column; padding: 10px; gap: 8px; }
+.dof-multiselect-search{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.dof-multiselect-search i{ color: var(--adm-text-soft); font-size: 12.5px; }
+.dof-multiselect-search input{
+  border: none;
+  outline: none;
+  flex: 1;
+  font-size: 12.5px;
+  color: var(--adm-text);
+  background: transparent;
+  min-width: 0;
+}
+.dof-multiselect-actions{ display: flex; gap: 6px; flex-shrink: 0; }
+.dof-multiselect-quick{
+  flex: 1;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--adm-red-bright);
+  background: color-mix(in srgb, var(--adm-red-bright) 8%, var(--adm-card));
+  border: 1px solid var(--adm-red-bright);
+  border-radius: 7px;
+  padding: 6px 8px;
+  transition: background .15s ease, color .15s ease;
+}
+.dof-multiselect-quick:hover{ background: var(--adm-red-bright); color: #fff; }
+.dof-multiselect-list{
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  max-height: 180px;
+}
+.dof-multiselect-item{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: var(--adm-text);
+  cursor: pointer;
+}
+.dof-multiselect-item:hover{ background: var(--adm-hover-bg); }
+.dof-multiselect-item input[type="checkbox"]{ accent-color: var(--adm-red-bright); pointer-events: none; }
+.dof-multiselect-empty{ padding: 10px 8px; font-size: 12px; color: var(--adm-text-soft); text-align: center; }
+
+/* Loading state — a light dimming veil + spinner over the chart box
+   while a filter change's fetch() is in flight (assets/js/disease-outbreak-forecast.js's
+   own setLoading()). */
+.an-trend-canvas-box.dof-loading{ position: relative; }
+.an-trend-canvas-box.dof-loading::before{
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.6);
+  z-index: 2;
+  border-radius: inherit;
+}
+.an-trend-canvas-box.dof-loading::after{
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 28px; height: 28px;
+  margin: -14px 0 0 -14px;
+  border: 3px solid var(--adm-border);
+  border-top-color: var(--adm-red-bright);
+  border-radius: 50%;
+  z-index: 3;
+  animation: dofSpin .7s linear infinite;
+}
+@keyframes dofSpin{ to{ transform: rotate(360deg); } }
+.dof-table-wrap{ margin-top: 14px; }
+
+/* Monitoring Status badge — same pill shape as .pn-severity, but its
+   bg/color come straight from hc_disease_outbreak_status_meta()'s own
+   computed hex pair (inline style), same "badge meta" convention this
+   app's lab/inventory/medicine status pills already follow, rather than
+   a 4th set of fixed modifier classes to keep in sync with that PHP map. */
+.dof-status-badge{
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+.dof-trend-up{ color: var(--adm-red); }
+.dof-trend-down{ color: var(--adm-green); }
+.dof-trend-flat{ color: var(--adm-text-soft); }
+
 /* -- Spacing/alignment inside the 6.3.1–6.3.4 sub-tabs --
    Full-width .an-card blocks stacked directly in a tab pane (Projected
    Stock Decline, Order/Prescription Frequency, ...) have no margin of

@@ -283,13 +283,21 @@ if (!function_exists('hc_notifiable_cases_from_records')) {
      * always take priority over a chief-complaint-only hit even from a
      * different category).
      *
-     * @return array<int, array{date: string, category: string, barangay: string, patientId: string, caseClassification: string}>
+     * @return array<int, array{date: string, category: string, categoryId: string, barangay: string, patientId: string, caseClassification: string}>
      */
     function hc_notifiable_cases_from_records(array $medicalRecordDocs, array $patientBarangayById = []): array
     {
         $keywordCategories = hc_notifiable_disease_categories();
         $probableTerms = hc_clinical_qualifier_terms_probable();
         $suspectedTerms = hc_clinical_qualifier_terms_suspected();
+        // name -> real registry doc id — 'category' stays the display
+        // NAME (unchanged shape, every existing caller keeps working),
+        // but 'categoryId' (added below) is the STABLE identifier a
+        // renamed/reclassified disease never loses, used wherever
+        // identity needs to survive a rename (chart color assignment,
+        // disease-filter selection) rather than a display string that
+        // can change at any time an admin edits the registry.
+        $registryIdByName = array_map(fn ($entry) => $entry['id'] ?? '', hc_condition_registry_meta_by_name());
 
         $notifiableCases = [];
         foreach ($medicalRecordDocs as $doc) {
@@ -348,6 +356,7 @@ if (!function_exists('hc_notifiable_cases_from_records')) {
             $notifiableCases[] = [
                 'date' => substr((string) ($f['date'] ?? ''), 0, 10),
                 'category' => $category,
+                'categoryId' => $registryIdByName[$category] ?? '',
                 'barangay' => $patientBarangayById[$f['patientId'] ?? ''] ?? '',
                 'patientId' => $f['patientId'] ?? '',
                 'caseClassification' => $caseClassification,
@@ -615,23 +624,68 @@ if (!function_exists('hc_notifiable_disease_summary')) {
     }
 }
 
+if (!function_exists('hc_iso_week_range_label')) {
+    /**
+     * Real Monday–Sunday calendar range for the ISO-8601 week $monday
+     * starts (Asia/Manila — config/constants.php's own default timezone
+     * applies here same as everywhere else) — "Nov 2–8" within one
+     * month, "Nov 30 – Dec 6" when the real week crosses a month (or
+     * year) boundary. Shared by hc_notifiable_disease_trend_aggregated()'s
+     * own historical bucket labels and hc_disease_outbreak_forecast_labels()'s
+     * (disease_outbreak_forecast.php) future ones, so a forecasted
+     * week's label is formatted identically to a real historical one.
+     */
+    function hc_iso_week_range_label(DateTime $monday): string
+    {
+        $sunday = (clone $monday)->modify('+6 days');
+
+        return $monday->format('M') === $sunday->format('M')
+            ? $monday->format('M j') . '–' . $sunday->format('j')
+            : $monday->format('M j') . ' – ' . $sunday->format('M j');
+    }
+}
+
 if (!function_exists('hc_notifiable_disease_trend_aggregated')) {
     /**
-     * Weekly or monthly aggregated trend (not daily — too many real days
-     * have zero cases, which clutters a daily line chart with mostly-flat
-     * overlapping lines) for the top $topN categories by total case
-     * count within [$startDate, $endDate]. $granularity is 'week'
-     * (ISO-8601 week) or 'month'. Zero-case buckets stay in the
+     * Daily, weekly, or monthly aggregated trend for the top $topN
+     * categories by total case count within [$startDate, $endDate].
+     * $granularity is 'day', 'week' (ISO-8601 week), or 'month'. Daily
+     * was deliberately left out originally — too many real days have
+     * zero cases, which clutters a daily line chart with mostly-flat
+     * overlapping lines — but subadmin/predictive_analytics.php's
+     * Disease Outbreak Monitoring & Forecasting card offers it as an
+     * explicit user choice (the spec it was built from asks for it),
+     * so it's supported here rather than as a second, drifting copy of
+     * this same bucketing logic. Zero-case buckets stay in the
      * underlying data (so totals/averages downstream are still
      * correct) — only the chart's own point MARKERS are hidden for
      * them client-side (assets/js/notifiable-diseases.js), not the data
      * point itself.
      *
+     * $barangayFilter: when given, cases are narrowed to that one real
+     * barangay (patientBarangayById's own values, e.g. HC_COVERED_BARANGAYS
+     * entries) before anything else below runs — every existing caller
+     * omits this (null = no narrowing, unchanged behavior from before
+     * this parameter existed).
+     *
+     * $forceCategories: when given, these exact category NAMES are shown
+     * — unranked, regardless of real case count in this window (even 0)
+     * — instead of the usual "top $topN by count" selection. Needed so
+     * a caller that lets a user EXPLICITLY pick specific diseases (e.g.
+     * subadmin/predictive_analytics.php's Disease Outbreak Monitoring
+     * multi-select) always shows every one of them, including one with
+     * zero real cases right now (a flat zero line, same "empty data,
+     * not an error" honesty this app already applies everywhere else) —
+     * without this, a 0-case disease would simply vanish from the
+     * chart's own top-N ranking even though the user asked for it by
+     * name, while every OTHER caller (which never pre-selects specific
+     * diseases) keeps its existing top-N-by-count behavior unchanged.
+     *
      * @return array{labels: array<int, string>, datasets: array<int, array{label: string, data: array<int, int>, color: string}>}
      */
-    function hc_notifiable_disease_trend_aggregated(array $notifiableCases, ?string $startDate, ?string $endDate, string $granularity, int $topN = 5): array
+    function hc_notifiable_disease_trend_aggregated(array $notifiableCases, ?string $startDate, ?string $endDate, string $granularity, int $topN = 5, ?string $barangayFilter = null, ?array $forceCategories = null, bool $fullRange = false): array
     {
-        $filtered = array_values(array_filter($notifiableCases, function ($c) use ($startDate, $endDate) {
+        $filtered = array_values(array_filter($notifiableCases, function ($c) use ($startDate, $endDate, $barangayFilter) {
             if ($c['date'] === '') {
                 return false;
             }
@@ -641,39 +695,78 @@ if (!function_exists('hc_notifiable_disease_trend_aggregated')) {
             if ($endDate !== null && $c['date'] > $endDate) {
                 return false;
             }
+            if ($barangayFilter !== null && ($c['barangay'] ?? '') !== $barangayFilter) {
+                return false;
+            }
 
             return true;
         }));
 
-        if ($filtered === []) {
+        if ($filtered === [] && $forceCategories === null) {
             return ['labels' => [], 'datasets' => []];
         }
 
-        $totals = [];
-        foreach ($filtered as $c) {
-            $totals[$c['category']] = ($totals[$c['category']] ?? 0) + 1;
+        if ($forceCategories !== null) {
+            $topCategories = $forceCategories;
+        } else {
+            $totals = [];
+            foreach ($filtered as $c) {
+                $totals[$c['category']] = ($totals[$c['category']] ?? 0) + 1;
+            }
+            arsort($totals);
+            $topCategories = array_slice(array_keys($totals), 0, $topN);
         }
-        arsort($totals);
-        $topCategories = array_slice(array_keys($totals), 0, $topN);
 
         $bucketKey = function (string $date) use ($granularity) {
-            return $granularity === 'month' ? substr($date, 0, 7) : date('o-\WW', strtotime($date));
+            return match ($granularity) {
+                'day' => $date,
+                'month' => substr($date, 0, 7),
+                default => date('o-\WW', strtotime($date)),
+            };
         };
         $bucketLabel = function (string $key) use ($granularity) {
+            if ($granularity === 'day') {
+                return date('M j', strtotime($key));
+            }
             if ($granularity === 'month') {
                 return date('M Y', strtotime($key . '-01'));
             }
+            // Real Monday–Sunday calendar range (hc_iso_week_range_label())
+            // rather than a single "Wk of <date>" start-date label.
             [$y, $w] = explode('-W', $key);
-            $dto = new DateTime();
-            $dto->setISODate((int) $y, (int) $w);
+            $monday = new DateTime();
+            $monday->setISODate((int) $y, (int) $w);
 
-            return 'Wk of ' . $dto->format('M j');
+            return hc_iso_week_range_label($monday);
         };
 
         $dates = array_column($filtered, 'date');
         sort($dates);
-        $minDate = $dates[0];
-        $maxDate = $dates[count($dates) - 1];
+        // $filtered can be genuinely empty here even though a result is
+        // still required (a forced category — one explicitly selected
+        // by the user — with zero real cases anywhere in this window):
+        // there's no real data to derive a bucket range from, so fall
+        // back to the window's own requested bounds instead of an
+        // undefined index/false strtotime() crashing the bucket loop
+        // below. $startDate/$endDate are always real, concrete dates
+        // from every caller that can legitimately hit this path
+        // (hc_disease_outbreak_monitoring() always supplies both).
+        //
+        // $fullRange=true (hc_disease_outbreak_monitoring()'s own fixed
+        // 14-day display window) always anchors the bucket range to the
+        // REQUESTED $startDate/$endDate instead of trimming to wherever
+        // real cases happen to fall — the chart must always show the
+        // same fixed number of real calendar days/weeks regardless of
+        // which of them have zero cases. Every other caller (the
+        // pre-existing "Potential Notifiable Disease Cases" card) keeps
+        // its original data-trimmed range unchanged.
+        if ($fullRange && $startDate !== null && $endDate !== null) {
+            $minDate = $startDate;
+            $maxDate = $endDate;
+        } else {
+            $minDate = $dates[0] ?? $startDate ?? date('Y-m-d');
+            $maxDate = $dates[count($dates) - 1] ?? $endDate ?? $minDate;
+        }
 
         $bucketKeys = [];
         $cursor = $minDate;
@@ -685,6 +778,20 @@ if (!function_exists('hc_notifiable_disease_trend_aggregated')) {
             $cursor = date('Y-m-d', strtotime($cursor . ' +1 day'));
         }
 
+        // name -> real registry doc id, from this same already-filtered
+        // case list (every case already carries its own 'categoryId' —
+        // see hc_notifiable_cases_from_records()) — so a dataset's
+        // identity can be tracked by a stable id, not just its (possibly
+        // renamed later) display name. '' when genuinely never matched
+        // to a live registry doc (shouldn't happen on real data, but
+        // never fatal either way).
+        $categoryIdByName = [];
+        foreach ($filtered as $c) {
+            if (!isset($categoryIdByName[$c['category']])) {
+                $categoryIdByName[$c['category']] = $c['categoryId'] ?? '';
+            }
+        }
+
         $colors = ['#D93025', '#E8710A', '#7C3AED', '#1A73E8', '#0E9CA8'];
         $datasets = [];
         $colorIdx = 0;
@@ -694,7 +801,7 @@ if (!function_exists('hc_notifiable_disease_trend_aggregated')) {
             foreach ($bucketKeys as $key) {
                 $data[] = count(array_filter($catDates, fn ($d) => $bucketKey($d) === $key));
             }
-            $datasets[] = ['label' => $category, 'data' => $data, 'color' => $colors[$colorIdx % count($colors)]];
+            $datasets[] = ['label' => $category, 'id' => $categoryIdByName[$category] ?? '', 'data' => $data, 'color' => $colors[$colorIdx % count($colors)]];
             $colorIdx++;
         }
 

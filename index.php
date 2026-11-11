@@ -41,7 +41,7 @@ $homepageSettings = hc_get_homepage_settings();
 
 $pageTitle   = 'Home';
 $pageCss     = ['home.css', 'quick-search.css'];
-$pageScripts = ['quick-search.js', 'home-gis-preview.js'];
+$pageScripts = ['quick-search.js', 'home-gis-preview.js', 'med-availability-slider.js'];
 // Leaflet, loaded only for this page's small GIS preview widget — same
 // library/version patient/gis.php's own full map uses, so the two stay
 // visually identical (real barangay shapes/colors, not a hand-drawn
@@ -103,21 +103,52 @@ require_once __DIR__ . '/includes/shared/sidebar.php';
                 <h2 class="section-title"><i class="bi bi-capsule"></i> Medicine &amp; Vaccine Availability</h2>
                 <a href="<?= BASE_URL ?>/patient/medicine.php" class="view-all">View All <i class="bi bi-chevron-right"></i></a>
             </div>
-            <div class="row g-0 px-2 pt-3">
-                <?php foreach ($medicines as $m): ?>
-                <div class="col-6 col-md-3">
-                    <div class="med-item">
-                        <div class="icon-circle"><i class="bi <?= htmlspecialchars($m['icon']) ?>"></i></div>
-                        <div class="med-name"><?= htmlspecialchars($m['name']) ?></div>
-                        <?php if ($m['status'] === 'available'): ?>
-                            <span class="status-badge available"><i class="bi bi-check-lg"></i> Available</span>
-                        <?php else: ?>
-                            <span class="status-badge unavailable"><i class="bi bi-x-lg"></i> Not Available</span>
-                        <?php endif; ?>
+            <?php $medicineSlides = array_chunk($medicines, 4); ?>
+            <div class="med-slider">
+                <?php if (count($medicineSlides) > 1): ?>
+                <button type="button" class="med-slider-btn prev" id="medSliderPrev" aria-label="Previous medicines"><i class="bi bi-chevron-left"></i></button>
+                <?php endif; ?>
+                <div class="med-slider-viewport">
+                    <div class="med-slider-track" id="medSliderTrack">
+                        <?php foreach ($medicineSlides as $slide): ?>
+                        <div class="med-slide">
+                            <div class="row g-0 px-2 pt-3">
+                                <?php foreach ($slide as $m): ?>
+                                <div class="col-6 col-md-3">
+                                    <div class="med-item">
+                                        <div class="icon-circle"><i class="bi <?= htmlspecialchars($m['icon']) ?>"></i></div>
+                                        <div class="med-name"><?= htmlspecialchars($m['name']) ?></div>
+                                        <?php if ($m['status'] === 'available'): ?>
+                                            <span class="status-badge available"><i class="bi bi-check-lg"></i> Available</span>
+                                        <?php else: ?>
+                                            <span class="status-badge unavailable"><i class="bi bi-x-lg"></i> Not Available</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
                     </div>
                 </div>
-                <?php endforeach; ?>
+                <?php if (count($medicineSlides) > 1): ?>
+                <button type="button" class="med-slider-btn next" id="medSliderNext" aria-label="Next medicines"><i class="bi bi-chevron-right"></i></button>
+                <?php endif; ?>
             </div>
+            <?php if (count($medicineSlides) > 1): ?>
+            <!-- Shows at most 4 dots at a time — with this many real
+                 medicines/vaccines, one dot per slide would be dozens
+                 wide and unreadable (assets/js/med-availability-slider.js's
+                 own updateDotsWindow() slides this small window along as
+                 the current slide changes, same idea as the main track). -->
+            <div class="med-slider-dots-viewport" style="width: <?= min(4, count($medicineSlides)) * 14 ?>px;">
+                <div class="med-slider-dots" id="medSliderDots">
+                    <?php foreach ($medicineSlides as $i => $slide): ?>
+                    <span class="med-slider-dot <?= $i === 0 ? 'active' : '' ?>" data-slide="<?= $i ?>" role="button" aria-label="Go to slide <?= $i + 1 ?>"></span>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
             <div class="med-notice">
                 <i class="bi bi-info-circle-fill"></i>
                 <span>Availability is updated in real-time.</span>
