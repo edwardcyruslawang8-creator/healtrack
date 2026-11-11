@@ -5,6 +5,14 @@
    verbatim rather than redefining them.
    ============================================================= */
 
+/* Brand maroon accents (header icon, avatar, info note, Proceed icon) —
+   --adm-red-bright already switches for dark mode. */
+.scm-modal{
+  --scm-maroon: var(--adm-red-bright);
+  --scm-maroon-tint: color-mix(in srgb, var(--adm-red-bright) 10%, var(--adm-card));
+}
+.scm-modal .cns-next-avatar{ color: var(--scm-maroon); }
+
 .scm-modal .modal-content{ border-radius: var(--adm-radius-lg); border: none; }
 .scm-modal .modal-header{ border-bottom: 1px solid var(--adm-border); padding: 20px 24px; }
 .scm-modal .modal-body{ padding: 22px 24px; }
@@ -15,8 +23,8 @@
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: var(--adm-blue-bg);
-  color: var(--adm-blue);
+  background: var(--scm-maroon-tint);
+  color: var(--scm-maroon);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -58,8 +66,8 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background: var(--adm-blue-bg);
-  color: var(--adm-blue);
+  background: var(--scm-maroon-tint);
+  color: var(--scm-maroon);
   border-radius: var(--adm-radius-md);
   padding: 12px 14px;
   font-size: 12.5px;
@@ -84,7 +92,7 @@
   cursor: pointer;
   transition: border-color .15s ease, box-shadow .15s ease;
 }
-.scm-choice-card:hover{ border-color: var(--adm-blue); box-shadow: var(--adm-shadow-hover); }
+.scm-choice-card:hover{ border-color: var(--scm-maroon); box-shadow: var(--adm-shadow-hover); }
 
 .scm-choice-icon{
   width: 40px;
@@ -96,7 +104,7 @@
   font-size: 17px;
   flex-shrink: 0;
 }
-.scm-choice-icon-blue{ background: var(--adm-blue-bg); color: var(--adm-blue); }
+.scm-choice-icon-blue{ background: var(--scm-maroon-tint); color: var(--scm-maroon); }
 .scm-choice-icon-purple{ background: var(--adm-purple-bg); color: var(--adm-purple); }
 
 .scm-choice-text{ flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
