@@ -254,14 +254,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 severitySelect.dataset.severity = severitySelect.value;
             });
         }
-        // New medication rows default "Prescribed By" to the staff
-        // member entering this intake (still editable — the patient's
-        // medication may have actually been prescribed by someone
-        // else, e.g. a prior doctor).
-        const prescribedByInput = node.querySelector('[data-field="prescribedBy"]');
-        if (prescribedByInput && window.APM_STAFF_NAME) {
-            prescribedByInput.value = window.APM_STAFF_NAME;
-        }
         list.appendChild(node);
         // Style this row's dropdowns (Severity / Frequency) like the rest
         // of the form — assets/js/styled-select.js.

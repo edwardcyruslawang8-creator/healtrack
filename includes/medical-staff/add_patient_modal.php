@@ -59,7 +59,6 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
     <option value="<?= htmlspecialchars($apmMedName) ?>"></option>
     <?php endforeach; ?>
 </datalist>
-<script>window.APM_STAFF_NAME = <?= json_encode($_SESSION['name'] ?? '') ?>;</script>
 <div class="modal fade apm-modal" id="addPatientModal" tabindex="-1" aria-labelledby="addPatientModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content">

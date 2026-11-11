@@ -74,6 +74,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // find someone). Patient ID isn't shown anywhere in this picker,
     // only tracked internally via the hidden #cnsFormPatientId input.
     // -----------------------------------------------------------
+    let autoFilledComplaint = '';
     function setPatientCard(id, name, gender, age, birthDate, registeredToday, intakeVitals) {
         patientIdInput.value = id;
         patientNameInput.value = name;
@@ -107,6 +108,17 @@ document.addEventListener('DOMContentLoaded', function () {
             vitalHeightInput.value = '';
         }
         recalcVitalBmi();
+
+        // Same rule for the Chief Complaint: a patient registered today
+        // already gave one at intake (Add Patient's "Chief Complaint /
+        // Primary Reason for Visit"), so it carries over, still editable.
+        // When switching patients, only text this function filled in is
+        // cleared — anything the staff member typed themselves is kept.
+        const intakeComplaint = (registeredToday && intakeVitals && intakeVitals.complaint) || '';
+        if (complaintInput.value === '' || complaintInput.value === autoFilledComplaint) {
+            complaintInput.value = intakeComplaint;
+        }
+        autoFilledComplaint = intakeComplaint;
 
         // RA 9994 (Expanded Senior Citizens Act) priority lane — a
         // patient 60 or older is automatically flagged "Senior" the
@@ -162,6 +174,7 @@ document.addEventListener('DOMContentLoaded', function () {
             hr: opt.dataset.intakeHr,
             weight: opt.dataset.intakeWeight,
             height: opt.dataset.intakeHeight,
+            complaint: opt.dataset.intakeComplaint,
         });
     });
 
