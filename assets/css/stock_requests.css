@@ -139,7 +139,8 @@
 .srq-dot{ width: 4px; height: 4px; border-radius: 50%; background: var(--adm-text-soft); display: inline-block; margin: 0 2px; }
 
 .srq-items-cell{ display: flex; flex-direction: column; gap: 2px; }
-.srq-view-items{ font-size: 12px; font-weight: 600; color: #1A73E8; }
+/* Brand maroon (was a hardcoded blue), like every other View action. */
+.srq-view-items{ font-size: 12px; font-weight: 600; color: var(--adm-red-bright); }
 .srq-view-items:hover{ text-decoration: underline; }
 
 .srq-badge{
@@ -152,7 +153,14 @@
   white-space: nowrap;
 }
 
-.srq-more-btn{ color: var(--adm-text-muted); }
+/* The row's eye (view) button — maroon like .adm-action-btn.view app-wide. */
+.srq-more-btn{ color: var(--adm-red-bright); }
+.srq-more-btn:hover,
+.srq-more-btn[aria-expanded="true"]{
+  color: var(--adm-red-bright);
+  border-color: var(--adm-red-bright);
+  background: color-mix(in srgb, var(--adm-red-bright) 7%, var(--adm-card));
+}
 .srq-page-ellipsis{ pointer-events: none; color: var(--adm-text-soft); }
 
 /* =============================================================

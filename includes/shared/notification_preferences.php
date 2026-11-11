@@ -33,11 +33,10 @@
  *     medical_technician's pending lab/x-ray notifications — neither is
  *     really "consent" or "consultation" specifically, so they're only
  *     gated by the master switch, not a more specific one.
- *   - 'consent' has NO real source to gate anywhere in this app yet —
- *     nothing currently creates an in-app "new consent request"
- *     notification (subadmin/consent_management.php's own consent
- *     records don't feed into the notification list at all). Left
- *     alone rather than faking a behavior for it.
+ *   - 'consent' — the sub-admin's "Consent Alerts" toggle: gates their
+ *     new patient-details access request notifications
+ *     (includes/shared/consent_notifications.php's
+ *     hc_get_pending_consent_request_notifications()).
  *
  * Security-alert emails (includes/shared/login_lockout.php) and
  * transactional emails (account approval/rejection, registration

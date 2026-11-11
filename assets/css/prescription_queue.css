@@ -345,3 +345,13 @@
   font-size: 12px;
   color: var(--adm-text-muted);
 }
+
+/* Type filter uses the styled dropdown (assets/js/styled-select.js) instead
+   of the browser's own blue list. Its wrapper takes over the select's
+   full-height stretch; the button inside fills it. */
+.rxq-filter-row > .hc-select{ align-self: stretch; display: flex; }
+.rxq-filter-row > .hc-select > .hc-select-trigger{ height: auto; min-height: 40px; }
+@media (max-width: 575.98px){
+  .rxq-filter-row > .hc-select{ flex: 1 1 100%; }
+  .rxq-filter-row > .hc-select > .hc-select-trigger{ width: 100%; }
+}

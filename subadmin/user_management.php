@@ -134,6 +134,7 @@ $adminNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/subadmin_dashboard.css') ?>">
 <!-- User Management page styles (summary cards, toolbar, avatars, role badges) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/user_management.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/styled-select.css') ?>">
 <!-- "am-" (Add Modal) shared modal styling, reused here for the Add User
      form and the read-only View Details modal — same reuse doctor/
      medications.php, medical-staff/medications.php, and
@@ -377,12 +378,12 @@ $adminNavItems = [
             <i class="bi bi-search"></i>
             <input type="text" name="q" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Search by name, email or role...">
         </div>
-        <select class="form-select usm-filter-select" name="role" aria-label="Filter by role" onchange="this.form.submit()">
+        <select class="form-select usm-filter-select" data-styled-select name="role" aria-label="Filter by role" onchange="this.form.submit()">
             <?php foreach ($roleOptions as $opt): ?>
             <option <?= $opt === $roleFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
             <?php endforeach; ?>
         </select>
-        <select class="form-select usm-filter-select" name="status" aria-label="Filter by status" onchange="this.form.submit()">
+        <select class="form-select usm-filter-select" data-styled-select name="status" aria-label="Filter by status" onchange="this.form.submit()">
             <?php foreach ($userStatusOptions as $opt): ?>
             <option <?= $opt === $statusFilter ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
             <?php endforeach; ?>
@@ -785,6 +786,7 @@ $adminNavItems = [
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/styled-select.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/add-user-subadmin.js') ?>"></script>
 <script>

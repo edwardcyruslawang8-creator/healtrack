@@ -228,6 +228,48 @@ document.addEventListener('DOMContentLoaded', function () {
     // server-side (hc_find_inventory_match(): name + form + strength,
     // strict), handed over as data-suggested-item-id/-matched-item-name.
     let matchState = { id: '', name: '', status: 'none' }; // status: matched | unavailable | none
+    let orderedItemName = ''; // the open order's own item name (what the doctor prescribed)
+
+    // Same rule as includes/shared/inventory_match.php's hc_item_names_match():
+    // either name's leading word (first two words when the first is only
+    // 1–2 letters, e.g. "B complex") appears in the other as a WHOLE word.
+    // Used only to WARN when a manually picked stock item looks like a
+    // different medicine from the one ordered — e.g. "B complex Tablet"
+    // picked for a "Paracetamol 500mg Tablet" order would reduce the wrong
+    // item's stock (it happened on Nov 6 under the old, looser auto-match).
+    // Not a block: a substitute/brand pick can be legitimate.
+    // Same synonym list as includes/shared/inventory_match.php's
+    // hc_canonical_medicine_text() — update both together.
+    const MEDICINE_SYNONYMS = [
+        ['vitamin b complex', 'b complex'], ['vit b complex', 'b complex'],
+        ['vitamin c', 'ascorbic'], ['vit c', 'ascorbic'], ['vit. c', 'ascorbic'],
+        ['acetaminophen', 'paracetamol'], ['albuterol', 'salbutamol'],
+    ];
+    function normalizeName(s) {
+        let text = String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+        MEDICINE_SYNONYMS.forEach(function (pair) {
+            const escaped = pair[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            text = text.replace(new RegExp('(^|[^a-z0-9])' + escaped + '(?![a-z0-9])', 'g'), '$1' + pair[1]);
+        });
+        return text;
+    }
+    function leadPhraseIn(source, target) {
+        const words = source.split(' ');
+        let phrase = words[0];
+        if (phrase.length <= 2 && words[1]) phrase += ' ' + words[1];
+        const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return new RegExp('(^|[^a-z0-9])' + escaped + '(e?s)?(?![a-z0-9])').test(target);
+    }
+    function namesLikelyMatch(inventoryName, orderedName) {
+        const a = normalizeName(inventoryName);
+        const b = normalizeName(orderedName);
+        if (a === '' || b === '') return true; // nothing to compare against — don't warn
+        return a === b || leadPhraseIn(a, b) || leadPhraseIn(b, a);
+    }
+    function selectedLooksWrong() {
+        const selected = itemSelect.options[itemSelect.selectedIndex];
+        return !!(selected && selected.value !== '' && !namesLikelyMatch(selected.dataset.name, orderedItemName));
+    }
 
     function populateItemSelect(typeLabel, matchedId, matchedName) {
         const items = currentInventoryList(typeLabel).slice().sort(function (a, b) {
@@ -283,14 +325,18 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 stockNote.textContent = 'Stock will not be adjusted for this dispense.';
             }
+            stockNote.style.color = '';
             qtyInput.required = false;
             if (qtyLabel) qtyLabel.textContent = 'Quantity';
             qtyInput.removeAttribute('max');
         } else {
             const unitPluralLabel = qtyUnit(2, selected.dataset.unit).replace(/^2\s+/, '');
             const auto = matchState.status === 'matched' && selected.value === matchState.id;
-            stockNote.textContent = (auto ? 'Automatically matched to inventory. ' : '')
+            const mismatch = !auto && selectedLooksWrong();
+            stockNote.textContent = (mismatch ? '⚠ “' + selected.dataset.name + '” doesn\'t look like the ordered “' + orderedItemName + '” — its stock will be reduced. Double-check before dispensing. ' : '')
+                + (auto ? 'Automatically matched to inventory. ' : '')
                 + qtyUnit(selected.dataset.stock, selected.dataset.unit) + ' currently in stock. Quantity is in ' + unitPluralLabel.toLowerCase() + '.';
+            stockNote.style.color = mismatch ? 'var(--adm-red)' : '';
             qtyInput.required = true;
             qtyInput.max = selected.dataset.stock;
             if (qtyLabel) qtyLabel.textContent = 'Quantity (' + unitPluralLabel + ')';
@@ -392,6 +438,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 dispenseFormWrap.style.display = '';
                 qtyInput.value = d.quantity || '';
+                orderedItemName = d.itemName || '';
                 populateItemSelect(d.typeLabel, d.suggestedItemId, d.matchedItemName);
             } else {
                 dispenseBtn.style.display = 'none';
@@ -403,7 +450,11 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     dispenseBtn.addEventListener('click', async function () {
-        const confirmed = await HCDialog.confirm('Mark this prescription as dispensed?');
+        const selected = itemSelect.options[itemSelect.selectedIndex];
+        const message = selectedLooksWrong()
+            ? 'The order is for “' + orderedItemName + '”, but you selected “' + selected.dataset.name + '” from inventory — “' + selected.dataset.name + '” stock will be reduced. Dispense anyway?'
+            : 'Mark this prescription as dispensed?';
+        const confirmed = await HCDialog.confirm(message);
         if (!confirmed) return;
         dispenseOrder(dispenseBtn.dataset.orderId, dispenseBtn);
     });

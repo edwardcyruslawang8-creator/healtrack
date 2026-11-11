@@ -65,8 +65,20 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /* ---------- Medicines by Category (bar) ---------- */
+    // Horizontal bars — every inventory category gets its own readable
+    // row (the old vertical bars could only fit a couple of labels). The
+    // chart's box is sized per category and scrolls inside the card
+    // (assets/css/pharmacist_dashboard.css .phm-category-scroll); the
+    // plugin below re-sizes it whenever the range filter swaps in new data.
     const categoryCanvas = document.getElementById('medicinesByCategoryChart');
     if (categoryCanvas) {
+        const ROW_HEIGHT = 26;
+        const categoryBox = categoryCanvas.parentNode;
+        function sizeCategoryBox(count) {
+            categoryBox.style.height = Math.max(200, count * ROW_HEIGHT + 30) + 'px';
+        }
+        sizeCategoryBox(data.medicinesByCategory.labels.length);
+
         window.HC_DASHBOARD_CHARTS.medicinesByCategory = new Chart(categoryCanvas, {
             type: 'bar',
             data: {
@@ -74,11 +86,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 datasets: [{
                     data: data.medicinesByCategory.values,
                     backgroundColor: '#D93025',
-                    borderRadius: 6,
-                    maxBarThickness: 34,
+                    borderRadius: 4,
+                    maxBarThickness: 14,
+                    minBarLength: 0,
                 }],
             },
             options: {
+                indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: { duration: 700, easing: 'easeOutQuart' },
@@ -87,10 +101,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     tooltip: { callbacks: { title: function (items) { return items[0].label; } } },
                 },
                 scales: {
-                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
-                    x: { grid: { display: false }, ticks: { color: tickColor } },
+                    x: { beginAtZero: true, position: 'top', grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
+                    y: { grid: { display: false }, ticks: { color: tickColor, autoSkip: false, font: { size: 11.5 } } },
                 },
             },
+            plugins: [{
+                id: 'hcCategoryBoxHeight',
+                beforeUpdate: function (chart) { sizeCategoryBox(chart.data.labels.length); },
+            }],
         });
     }
 

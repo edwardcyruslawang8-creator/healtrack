@@ -312,7 +312,7 @@ $staffNavItems = [
     <!-- ============ FOLLOW-UPS + CONSULTATION STATUS + SCHEDULE + NOTIFICATIONS ============ -->
     <div class="mst-row-4">
 
-        <div class="adm-card mst-chart-card">
+        <div class="adm-card mst-chart-card mst-area-follow">
             <div class="mst-card-header">
                 <h2>Upcoming Follow-up Patients</h2>
                 <a href="patient_management.php" class="adm-card-footer-link" style="margin-top:0;">View All <i class="bi bi-arrow-right"></i></a>
@@ -334,7 +334,7 @@ $staffNavItems = [
             </div>
         </div>
 
-        <div class="adm-card mst-chart-card">
+        <div class="adm-card mst-chart-card mst-area-status">
             <div class="mst-card-header"><h2>Consultation Status</h2></div>
             <div class="adm-donut-wrap">
                 <div class="adm-donut-canvas-box">
@@ -361,7 +361,7 @@ $staffNavItems = [
             </div>
         </div>
 
-        <div class="adm-card mst-chart-card">
+        <div class="adm-card mst-chart-card mst-area-sched">
             <div class="mst-card-header"><h2>Today's Consultation Schedule</h2></div>
             <div class="adm-table-wrap">
                 <table class="mst-schedule-table">
@@ -395,7 +395,7 @@ $staffNavItems = [
             </div>
         </div>
 
-        <div class="adm-card mst-chart-card">
+        <div class="adm-card mst-chart-card mst-area-notif">
             <div class="mst-card-header">
                 <h2>Recent Notifications</h2>
                 <a href="notifications.php" class="adm-card-footer-link" style="margin-top:0;">View All <i class="bi bi-arrow-right"></i></a>

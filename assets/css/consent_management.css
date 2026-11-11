@@ -277,3 +277,13 @@
   .csm-details-grid{ grid-template-columns: 1fr; }
   .csm-field-grid-2{ grid-template-columns: 1fr; }
 }
+
+/* Status filter uses the styled dropdown (assets/js/styled-select.js)
+   instead of the browser's own blue list. Its wrapper takes the select's
+   fixed 220px slot; the button inside fills it and drops Bootstrap's
+   caret image (the styled dropdown draws its own chevron). */
+.csm-toolbar > .hc-select{ flex: 0 0 220px; width: 220px; }
+.csm-toolbar > .hc-select > .hc-select-trigger.csm-status-select{ width: 100%; flex: none; background-image: none; }
+@media (max-width: 767.98px){
+  .csm-toolbar > .hc-select{ flex: none; width: 100%; }
+}

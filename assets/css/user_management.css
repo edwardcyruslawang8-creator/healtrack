@@ -284,3 +284,12 @@
   .usm-filter-select{ min-width: 0; width: 100%; }
   .usm-btn-add{ justify-content: center; }
 }
+
+/* Filter dropdowns (Announcements category, User Management role/status)
+   use the styled dropdown (assets/js/styled-select.js) instead of the
+   browser's own blue list; on phones its wrapper fills the row like the
+   old select did. */
+@media (max-width: 767.98px){
+  .usm-toolbar > .hc-select{ display: block; width: 100%; }
+  .usm-toolbar > .hc-select > .hc-select-trigger{ width: 100%; }
+}

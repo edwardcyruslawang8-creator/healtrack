@@ -320,7 +320,7 @@ $staffNavItems = [
             <p>View and manage vaccination records of the patient.</p>
         </div>
         <div class="vrc-section-actions">
-        <button type="button" class="vrc-btn-add" id="btnAddVaccination"><i class="bi bi-plus-lg"></i> Add Vaccination</button>
+        <!-- Date range on the left, "+ Add Vaccination" on the far right. -->
         <!-- Real From/To date range — any span, not a preset Today/This
              Week/This Month bucket. Always visible, not a dropdown.
              Auto-submits on change. -->
@@ -330,6 +330,7 @@ $staffNavItems = [
             <span class="hc-date-sep" aria-hidden="true">–</span>
             <label class="hc-date-field"><input aria-label="To date" type="date" data-hc-datepicker data-hc-range-end="range-vaccination_records" id="vrcTo" name="vrcTo" value="<?= htmlspecialchars($vrcDateTo) ?>" onchange="this.form.submit()"><i class="bi bi-calendar3" aria-hidden="true"></i></label>
         </form>
+        <button type="button" class="vrc-btn-add" id="btnAddVaccination"><i class="bi bi-plus-lg"></i> Add Vaccination</button>
         </div>
     </div>
 

@@ -35,6 +35,39 @@ if (!function_exists('hc_normalize_text')) {
     }
 }
 
+if (!function_exists('hc_canonical_medicine_text')) {
+    /**
+     * Rewrites well-known alternative names for the same medicine to the
+     * name this facility's inventory uses, so a prescription written one
+     * way still matches stock stored the other way — e.g. a doctor's
+     * "Vitamin C 500 mg Tablet" vs the inventory's "Ascorbic Tablet
+     * 500mg" (that mismatch once left a Vitamin C dispense unlinked to
+     * stock and "Not in inventory" on the pharmacist dashboard). Whole
+     * words only; input is lowercase. Kept deliberately short and
+     * certain: true synonyms of the SAME drug, never "similar" drugs.
+     * The dispense warning in assets/js/prescription-queue.js keeps the
+     * same list (MEDICINE_SYNONYMS) — update both together.
+     */
+    function hc_canonical_medicine_text(string $lowercaseText): string
+    {
+        static $synonyms = [
+            // longer phrases first so "vitamin b complex" wins over shorter ones
+            'vitamin b complex' => 'b complex',
+            'vit b complex' => 'b complex',
+            'vitamin c' => 'ascorbic',
+            'vit c' => 'ascorbic',
+            'vit. c' => 'ascorbic',
+            'acetaminophen' => 'paracetamol',
+            'albuterol' => 'salbutamol',
+        ];
+        foreach ($synonyms as $from => $to) {
+            $lowercaseText = preg_replace('/(?<![a-z0-9])' . preg_quote($from, '/') . '(?![a-z0-9])/', $to, $lowercaseText);
+        }
+
+        return $lowercaseText;
+    }
+}
+
 if (!function_exists('hc_parse_medicine_descriptor')) {
     /**
      * Breaks a medicine/vaccine name ("Amoxicillin 250 mg/5mL Oral
@@ -80,7 +113,7 @@ if (!function_exists('hc_parse_medicine_descriptor')) {
             'acid', 'hcl', 'hydrochloride', 'sodium', 'potassium', 'sulfate', 'sulphate', 'maleate', 'besylate',
         ];
 
-        $s = strtolower($text);
+        $s = hc_canonical_medicine_text(strtolower($text)); // "Vitamin C" → "ascorbic", etc.
 
         // Strengths first (then removed from the text so their numbers
         // don't become name tokens).
@@ -218,8 +251,9 @@ if (!function_exists('hc_find_inventory_match')) {
 if (!function_exists('hc_item_names_match')) {
     function hc_item_names_match(string $inventoryName, string $orderedName): bool
     {
-        $a = hc_normalize_text($inventoryName);
-        $b = hc_normalize_text($orderedName);
+        // Same synonym rewrite as the strict matcher ("Vitamin C" ↔ "Ascorbic").
+        $a = hc_canonical_medicine_text(hc_normalize_text($inventoryName));
+        $b = hc_canonical_medicine_text(hc_normalize_text($orderedName));
         if ($a === '' || $b === '') {
             return false;
         }
@@ -257,5 +291,37 @@ if (!function_exists('hc_lead_phrase_in')) {
         // Optional plural ending on the target word ("Multivitamins" ↔
         // "Multivitamin Drop"); still no match inside a longer word.
         return (bool) preg_match('/(?<![a-z0-9])' . preg_quote($phrase, '/') . '(?:e?s)?(?![a-z0-9])/', $target);
+    }
+}
+
+if (!function_exists('hc_inventory_category_for')) {
+    /**
+     * The real inventory category for a free-text medicine name — used
+     * when a medications/{id} record is created (api/complete-consultation.php,
+     * api/create-patient.php), which used to hardcode "General" for
+     * everything (e.g. "Paracetamol 500mg Tablet" showed as General
+     * instead of Analgesic). Strict match first (name + form + strength,
+     * hc_find_inventory_match()), then the looser generic-name match
+     * (hc_item_names_match() — a category doesn't depend on strength or
+     * form, so "Paracetamol 250mg Syrup" still resolves to Analgesic);
+     * "Uncategorized" when nothing in inventory matches at all.
+     *
+     * @param array $items hc_get_inventory_items() rows (each has id, name, category)
+     */
+    function hc_inventory_category_for(string $name, array $items): string
+    {
+        $strictId = hc_find_inventory_match($name, $items);
+        foreach ($items as $item) {
+            if ($strictId !== '' && $item['id'] === $strictId) {
+                return (string) $item['category'];
+            }
+        }
+        foreach ($items as $item) {
+            if (hc_item_names_match((string) $item['name'], $name)) {
+                return (string) $item['category'];
+            }
+        }
+
+        return 'Uncategorized';
     }
 }
