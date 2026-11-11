@@ -99,6 +99,7 @@ $adminNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/account_monitoring.css') ?>">
 <!-- Search/filter toolbar styling (.pmg-search/.pmg-filter-select/.pmg-btn-search), reused here for the All User Accounts table below the same way patient_management.php's own toolbar already looks -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_management.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('/assets/css/styled-select.css') ?>">
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 </head>
 <body class="adm-body">
@@ -351,13 +352,13 @@ $adminNavItems = [
                 <input type="text" name="acct_q" value="<?= htmlspecialchars($accountsSearchTerm) ?>" placeholder="Search by name, email, or facility..." autocomplete="off">
             </div>
 
-            <select class="form-select pmg-filter-select" name="acct_role" aria-label="Filter by role">
+            <select class="form-select pmg-filter-select" data-styled-select name="acct_role" aria-label="Filter by role">
                 <?php foreach ($accountRoleOptions as $r): ?>
                 <option <?= $r === $accountsRoleFilter ? 'selected' : '' ?>><?= htmlspecialchars($r) ?></option>
                 <?php endforeach; ?>
             </select>
 
-            <select class="form-select pmg-filter-select" name="acct_status" aria-label="Filter by status">
+            <select class="form-select pmg-filter-select" data-styled-select name="acct_status" aria-label="Filter by status">
                 <?php foreach ($accountStatusOptions as $s): ?>
                 <option <?= $s === $accountsStatusFilter ? 'selected' : '' ?>><?= htmlspecialchars($s) ?></option>
                 <?php endforeach; ?>
@@ -438,6 +439,7 @@ $adminNavItems = [
 </script>
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/account_monitoring.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/styled-select.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/account-monitoring-ajax.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
