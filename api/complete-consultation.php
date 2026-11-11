@@ -73,6 +73,8 @@
 session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
+require_once __DIR__ . '/../includes/firestore/medicines.php'; // hc_get_inventory_items() — medication category below
+require_once __DIR__ . '/../includes/shared/inventory_match.php'; // hc_inventory_category_for()
 require_once __DIR__ . '/../includes/shared/lab_test_names.php'; // hc_lab_test_display_name() — official lab test names
 require_once __DIR__ . '/../includes/firestore/consultations.php';
 require_once __DIR__ . '/../includes/firestore/lab_results.php'; // hc_lab_test_catalog()
@@ -333,14 +335,18 @@ if (!$saved) {
 // so it shows up on this patient's ongoing Medications list right
 // away, not just inside this one consultation's own record.
 $indication = $diagnosis !== '' ? $diagnosis : (($existing['chiefComplaint'] ?? '') !== '' ? $existing['chiefComplaint'] : 'Not specified');
+$medicineInventoryItems = null; // loaded once, only if there's a medication row
 foreach ($medications as $m) {
     if ($m['type'] !== 'medication') {
         continue;
     }
+    $medicineInventoryItems ??= hc_get_inventory_items('medicine');
     $firestore->addDocument('medications', [
         'patientId' => $existing['patientId'] ?? '',
         'name' => $m['name'],
-        'category' => 'General',
+        // The medicine's real inventory category (e.g. Analgesic), not a
+        // fixed "General" — see hc_inventory_category_for().
+        'category' => hc_inventory_category_for($m['name'], $medicineInventoryItems),
         'dosage' => $m['dosage'] !== '' ? $m['dosage'] : 'Not specified',
         'quantity' => $m['quantity'],
         'frequency' => $m['frequency'] !== '' ? $m['frequency'] : 'Not specified',

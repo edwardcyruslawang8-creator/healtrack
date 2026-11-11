@@ -34,6 +34,8 @@
 session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
+require_once __DIR__ . '/../includes/firestore/medicines.php'; // hc_get_inventory_items() — medication category below
+require_once __DIR__ . '/../includes/shared/inventory_match.php'; // hc_inventory_category_for()
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
 require_once __DIR__ . '/../includes/shared/vitals_validation.php'; // hc_validate_vitals()
@@ -343,10 +345,13 @@ foreach ($medications as $m) {
     }
     $startDate = trim((string) ($m['startDate'] ?? ''));
 
+    $medicineInventoryItems ??= hc_get_inventory_items('medicine'); // loaded once, only if there's a medication
     $firestore->addDocument('medications', [
         'patientId' => $patientId,
         'name' => $name,
-        'category' => 'General',
+        // The medicine's real inventory category (e.g. Analgesic), not a
+        // fixed "General" — see hc_inventory_category_for().
+        'category' => hc_inventory_category_for($name, $medicineInventoryItems),
         'dosage' => trim((string) ($m['dosage'] ?? '')) ?: 'Not specified',
         'frequency' => trim((string) ($m['frequency'] ?? '')) ?: 'Not specified',
         'route' => 'Oral',
