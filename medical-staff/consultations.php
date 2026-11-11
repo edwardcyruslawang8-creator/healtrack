@@ -526,7 +526,7 @@ $staffNavItems = [
 
                     <div class="mb-3">
                         <label class="cns-form-label" for="cnsFormPriority">Priority <span class="text-muted fw-normal">(Optional)</span></label>
-                        <select class="form-select cns-form-control" id="cnsFormPriority">
+                        <select class="form-select cns-form-control" data-styled-select id="cnsFormPriority">
                             <option value="" selected>None</option>
                             <?php foreach ($consultationPriorityMeta as $key => $meta): ?>
                             <option value="<?= htmlspecialchars($key) ?>"><?= htmlspecialchars($meta['label']) ?></option>
@@ -545,7 +545,7 @@ $staffNavItems = [
                                      Emergency/Scheduled/Teleconsultation for badge lookups
                                      elsewhere (existing/historical data, filters), just not
                                      offered here. -->
-                                <select class="form-select cns-form-control" id="cnsFormType" required>
+                                <select class="form-select cns-form-control" data-styled-select id="cnsFormType" required>
                                     <option value="walk_in" selected><?= htmlspecialchars($consultationTypeMeta['walk_in']['label']) ?></option>
                                 </select>
                             </div>
@@ -553,7 +553,7 @@ $staffNavItems = [
                         <div class="cns-form-col">
                             <div class="mb-3">
                                 <label class="cns-form-label" for="cnsFormPersonnel">Assigned Physician<span class="text-danger">*</span></label>
-                                <select class="form-select cns-form-control" id="cnsFormPersonnel" required>
+                                <select class="form-select cns-form-control" data-styled-select id="cnsFormPersonnel" required>
                                     <option value="" selected disabled>Select assigned physician</option>
                                     <?php foreach ($physicianOptions as $doc): ?>
                                     <option value="<?= htmlspecialchars($doc['name']) ?>"><?= htmlspecialchars($doc['name']) ?></option>
