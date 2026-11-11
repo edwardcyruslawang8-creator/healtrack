@@ -172,6 +172,16 @@
    having its own definite height, that creates a circular sizing loop. */
 .phm-canvas-box{ position: relative; width: 100%; height: 220px; flex: 1; }
 
+/* Medicines by Category: one horizontal bar per category. The inner box
+   gets a height per category (assets/js/pharmacist_dashboard.js), and
+   the outer one scrolls when that's taller than the card. */
+/* contain: size keeps the long bar list from stretching the card itself —
+   the box just fills whatever height the card has (min 220px) and scrolls. */
+.phm-category-scroll{ overflow-y: auto; overflow-x: hidden; flex: 1 1 0; height: auto; min-height: 220px; contain: size; }
+.phm-category-canvas{ position: relative; width: 100%; }
+.phm-category-scroll::-webkit-scrollbar{ width: 6px; }
+.phm-category-scroll::-webkit-scrollbar-thumb{ background: var(--adm-border); border-radius: 3px; }
+
 .phm-chart-legend{
   display: flex;
   align-items: center;

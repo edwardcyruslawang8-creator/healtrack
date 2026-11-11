@@ -257,8 +257,13 @@ $staffNavItems = [
                 <h2>Medicines by Category</h2>
                 <?php $range = $medicinesByCategoryRangeState; $drBtnClass = 'phm-range-btn'; require __DIR__ . '/../includes/shared/dashboard_range_dropdown.php'; ?>
             </div>
-            <div class="phm-canvas-box">
-                <canvas id="medicinesByCategoryChart"></canvas>
+            <!-- Horizontal bars, one row per category (every category, see
+                 includes/pharmacist/pharmacist_dashboard_firestore.php) —
+                 scrolls inside the card when the list is taller than it. -->
+            <div class="phm-canvas-box phm-category-scroll">
+                <div class="phm-category-canvas">
+                    <canvas id="medicinesByCategoryChart"></canvas>
+                </div>
             </div>
         </div>
 

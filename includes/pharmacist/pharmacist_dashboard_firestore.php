@@ -147,7 +147,10 @@ foreach (hc_get_all_pharmacy_order_docs() as $doc) {
     $category = $inventoryId !== '' ? ($categoryByInventoryId[$inventoryId] ?? null) : null;
     if ($category === null) {
         $itemName = (string) ($f['itemName'] ?? '');
-        $category = 'Uncategorized';
+        // Dispensed with "Not in inventory" and no inventory item by that
+        // name (e.g. a brand like "Solmux" that isn't stocked) — there's
+        // no category to take, so it's labelled for what it is.
+        $category = 'Not in inventory';
         if ($itemName !== '') {
             foreach ($allInventoryItems as $invItem) {
                 if (hc_item_names_match($invItem['name'], $itemName)) {
@@ -193,14 +196,22 @@ $medicinesByCategoryRange = $medicinesByCategoryRangeState['label'];
 
 $categoryRangeOrders = array_filter($allDispensedOrders, fn ($o) => hc_matches_date_range_key($o['dispensedDateRaw'], $medicinesByCategoryRangeKey, $medicinesByCategoryRangeState['customFrom'], $medicinesByCategoryRangeState['customTo']));
 
-$categoryCounts = [];
+// Every real inventory category is listed — at 0 when nothing in it was
+// dispensed in this range — instead of only the ones that were, so the
+// chart always shows the full category picture (previously a quiet month
+// showed just 1-2 bars and every other category was missing entirely).
+// Busiest first, then the rest alphabetically. "Not in inventory" (a
+// dispense that couldn't be matched to any inventory item) only appears
+// when it actually has dispenses.
+$categoryCounts = array_fill_keys(hc_medicine_categories($allInventoryItems), 0);
 foreach ($categoryRangeOrders as $o) {
     $categoryCounts[$o['category']] = ($categoryCounts[$o['category']] ?? 0) + 1;
 }
-arsort($categoryCounts);
+$categoryNames = array_keys($categoryCounts);
+usort($categoryNames, fn ($a, $b) => [$categoryCounts[$b], $a] <=> [$categoryCounts[$a], $b]);
 $medicinesByCategory = [
-    'labels' => array_keys($categoryCounts),
-    'values' => array_values($categoryCounts),
+    'labels' => $categoryNames,
+    'values' => array_map(fn ($c) => $categoryCounts[$c], $categoryNames),
 ];
 
 // ---------------------------------------------------------------------
