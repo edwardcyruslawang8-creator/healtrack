@@ -77,11 +77,11 @@ $drBtnIcon = $drBtnIcon ?? '';
                 <div class="hc-custom-range-fields">
                     <label class="hc-custom-range-field">
                         <span>From</span>
-                        <input type="date" data-hc-datepicker class="form-control form-control-sm" name="<?= htmlspecialchars($range['param']) ?>From" value="<?= htmlspecialchars($range['customFrom']) ?>" required>
+                        <input aria-label="From date" type="date" data-hc-datepicker data-hc-alt-class="form-control form-control-sm" data-hc-range-start="range-<?= htmlspecialchars($range['param']) ?>" class="form-control form-control-sm" name="<?= htmlspecialchars($range['param']) ?>From" value="<?= htmlspecialchars($range['customFrom']) ?>" required>
                     </label>
                     <label class="hc-custom-range-field">
                         <span>To</span>
-                        <input type="date" data-hc-datepicker class="form-control form-control-sm" name="<?= htmlspecialchars($range['param']) ?>To" value="<?= htmlspecialchars($range['customTo']) ?>" required>
+                        <input aria-label="To date" type="date" data-hc-datepicker data-hc-alt-class="form-control form-control-sm" data-hc-range-end="range-<?= htmlspecialchars($range['param']) ?>" class="form-control form-control-sm" name="<?= htmlspecialchars($range['param']) ?>To" value="<?= htmlspecialchars($range['customTo']) ?>" required>
                     </label>
                 </div>
                 <button type="submit" class="btn btn-sm btn-danger w-100">Apply</button>

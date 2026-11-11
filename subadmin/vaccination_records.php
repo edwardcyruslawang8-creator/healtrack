@@ -329,14 +329,11 @@ $adminNavItems = [
         <!-- Real From/To date range — any span, not a preset Today/This
              Week/This Month bucket. Always visible, not a dropdown.
              Auto-submits on change. -->
-        <form class="vrc-daterange" method="get" action="vaccination_records.php">
+        <form class="vrc-daterange hc-daterange" method="get" action="vaccination_records.php">
             <input type="hidden" name="id" value="<?= htmlspecialchars($patient['id']) ?>">
-            <i class="bi bi-calendar3"></i>
-            <label for="vrcFrom">From</label>
-            <input type="date" data-hc-datepicker id="vrcFrom" name="vrcFrom" value="<?= htmlspecialchars($vrcDateFrom) ?>" onchange="this.form.submit()">
-            <span class="vrc-dot"></span>
-            <label for="vrcTo">To</label>
-            <input type="date" data-hc-datepicker id="vrcTo" name="vrcTo" value="<?= htmlspecialchars($vrcDateTo) ?>" onchange="this.form.submit()">
+            <label class="hc-date-field"><input aria-label="From date" type="date" data-hc-datepicker data-hc-range-start="range-vaccination_records" id="vrcFrom" name="vrcFrom" value="<?= htmlspecialchars($vrcDateFrom) ?>" onchange="this.form.submit()"><i class="bi bi-calendar3" aria-hidden="true"></i></label>
+            <span class="hc-date-sep" aria-hidden="true">–</span>
+            <label class="hc-date-field"><input aria-label="To date" type="date" data-hc-datepicker data-hc-range-end="range-vaccination_records" id="vrcTo" name="vrcTo" value="<?= htmlspecialchars($vrcDateTo) ?>" onchange="this.form.submit()"><i class="bi bi-calendar3" aria-hidden="true"></i></label>
         </form>
     </div>
 

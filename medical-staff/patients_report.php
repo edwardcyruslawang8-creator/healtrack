@@ -205,8 +205,11 @@ $staffNavItems = [
         <p class="adm-page-subtitle">Every patient consultation you set, filtered by date — export or print for your records.</p>
 
         <form class="arp-report-filter" method="get">
-            <label>From <input type="date" data-hc-datepicker name="from" value="<?= htmlspecialchars($myReportRange['from']) ?>"></label>
-            <label>To <input type="date" data-hc-datepicker name="to" value="<?= htmlspecialchars($myReportRange['to']) ?>"></label>
+            <div class="hc-daterange hc-daterange--sm">
+                <label class="hc-date-field"><input aria-label="From date" type="date" data-hc-datepicker data-hc-range-start="myReport" name="from" value="<?= htmlspecialchars($myReportRange['from']) ?>"><i class="bi bi-calendar3" aria-hidden="true"></i></label>
+                <span class="hc-date-sep" aria-hidden="true">–</span>
+                <label class="hc-date-field"><input aria-label="To date" type="date" data-hc-datepicker data-hc-range-end="myReport" name="to" value="<?= htmlspecialchars($myReportRange['to']) ?>"><i class="bi bi-calendar3" aria-hidden="true"></i></label>
+            </div>
             <button type="submit" class="arp-report-filter-btn">Apply</button>
             <a href="patients_report.php" class="arp-report-today-link">Today</a>
             <div class="arp-filter-spacer"></div>

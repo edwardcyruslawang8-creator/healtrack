@@ -312,13 +312,10 @@ $staffNavItems = [
     <!-- ============ RECORD HISTORY FILTERS ============ -->
     <form class="his-filter-row" method="get" action="history.php">
         <input type="hidden" name="id" value="<?= htmlspecialchars($patient['id']) ?>">
-        <div class="his-daterange">
-            <i class="bi bi-calendar3"></i>
-            <label for="hisFrom">From</label>
-            <input type="date" data-hc-datepicker id="hisFrom" name="hisFrom" value="<?= htmlspecialchars($historyDateFrom) ?>" aria-label="From date">
-            <span class="his-dot"></span>
-            <label for="hisTo">To</label>
-            <input type="date" data-hc-datepicker id="hisTo" name="hisTo" value="<?= htmlspecialchars($historyDateTo) ?>" aria-label="To date">
+        <div class="his-daterange hc-daterange">
+            <label class="hc-date-field"><input type="date" data-hc-datepicker data-hc-range-start="range-history" id="hisFrom" name="hisFrom" value="<?= htmlspecialchars($historyDateFrom) ?>" aria-label="From date"><i class="bi bi-calendar3" aria-hidden="true"></i></label>
+            <span class="hc-date-sep" aria-hidden="true">–</span>
+            <label class="hc-date-field"><input type="date" data-hc-datepicker data-hc-range-end="range-history" id="hisTo" name="hisTo" value="<?= htmlspecialchars($historyDateTo) ?>" aria-label="To date"><i class="bi bi-calendar3" aria-hidden="true"></i></label>
         </div>
         <select class="form-select his-filter-select" data-styled-select name="hisType" aria-label="Filter by consultation type">
             <?php foreach ($recordTypeOptions as $opt): ?>

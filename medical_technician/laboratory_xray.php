@@ -271,11 +271,10 @@ function hc_medtech_lxr_query(array $overrides = []): string
                 <?php endforeach; ?>
             </select>
 
-            <div class="lxr-daterange">
-                <i class="bi bi-calendar3"></i>
-                <input type="date" data-hc-datepicker name="from" value="<?= htmlspecialchars($dateFrom) ?>" aria-label="From date">
-                <span class="lxr-dot"></span>
-                <input type="date" data-hc-datepicker name="to" value="<?= htmlspecialchars($dateTo) ?>" aria-label="To date">
+            <div class="lxr-daterange hc-daterange">
+                <label class="hc-date-field"><input type="date" data-hc-datepicker data-hc-range-start="range-laboratory_xray" name="from" value="<?= htmlspecialchars($dateFrom) ?>" aria-label="From date"><i class="bi bi-calendar3" aria-hidden="true"></i></label>
+                <span class="hc-date-sep" aria-hidden="true">–</span>
+                <label class="hc-date-field"><input type="date" data-hc-datepicker data-hc-range-end="range-laboratory_xray" name="to" value="<?= htmlspecialchars($dateTo) ?>" aria-label="To date"><i class="bi bi-calendar3" aria-hidden="true"></i></label>
             </div>
 
             <button type="submit" class="lxr-btn-filter"><i class="bi bi-funnel"></i> Filter</button>

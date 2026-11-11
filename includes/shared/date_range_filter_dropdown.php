@@ -44,8 +44,8 @@
                 <input type="hidden" name="<?= htmlspecialchars($k) ?>" value="<?= htmlspecialchars($v) ?>">
                 <?php endforeach; ?>
                 <input type="hidden" name="<?= htmlspecialchars($drfState['optionParam']) ?>" value="custom">
-                <input type="date" data-hc-datepicker class="form-control form-control-sm" name="<?= htmlspecialchars($drfState['fromParam']) ?>" value="<?= htmlspecialchars($drfState['fromRaw']) ?>" required>
-                <input type="date" data-hc-datepicker class="form-control form-control-sm" name="<?= htmlspecialchars($drfState['toParam']) ?>" value="<?= htmlspecialchars($drfState['toRaw']) ?>" required>
+                <input aria-label="From date" type="date" data-hc-datepicker data-hc-alt-class="form-control form-control-sm" data-hc-range-start="range-<?= htmlspecialchars($drfState['fromParam']) ?>" class="form-control form-control-sm" name="<?= htmlspecialchars($drfState['fromParam']) ?>" value="<?= htmlspecialchars($drfState['fromRaw']) ?>" required>
+                <input aria-label="To date" type="date" data-hc-datepicker data-hc-alt-class="form-control form-control-sm" data-hc-range-end="range-<?= htmlspecialchars($drfState['fromParam']) ?>" class="form-control form-control-sm" name="<?= htmlspecialchars($drfState['toParam']) ?>" value="<?= htmlspecialchars($drfState['toRaw']) ?>" required>
                 <button type="submit" class="btn btn-sm btn-danger">Apply</button>
             </form>
         </li>
