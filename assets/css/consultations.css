@@ -336,6 +336,10 @@
 .cns-modal .modal-header{ border-bottom: 1px solid var(--adm-border); padding: 18px 24px; }
 .cns-modal .modal-header .modal-title{ font-size: 17px; font-weight: 700; color: var(--adm-text); }
 .cns-modal .modal-body{ padding: 24px; }
+/* Styled dropdowns (Priority / Type / Assigned Physician) fill their
+   column like the other fields — assets/js/styled-select.js. */
+#consultationFormModal .hc-select{ display: block; width: 100%; }
+#consultationFormModal .hc-select-trigger{ width: 100%; }
 .cns-modal .modal-footer{ border-top: 1px solid var(--adm-border); padding: 16px 24px; }
 :root[data-bs-theme="dark"] .cns-modal .btn-close{ filter: invert(1); }
 

@@ -40,6 +40,22 @@ document.addEventListener('DOMContentLoaded', function () {
     const vitalHeightInput = document.getElementById('cnsFormVitalHeight');
     const vitalBmiInput = document.getElementById('cnsFormVitalBmi');
 
+    // Priority / Type / Assigned Physician are styled dropdowns
+    // (assets/js/styled-select.js): its button only updates on a
+    // 'change' event, so values set from here go through this. A value
+    // with no matching option (e.g. a staff name that isn't a physician)
+    // falls back to the placeholder instead of an empty button.
+    function setSelect(select, value) {
+        select.value = value || '';
+        if (select.selectedIndex === -1) select.value = '';
+        select.dispatchEvent(new Event('change'));
+    }
+    // The hidden select can't show :invalid styling, so the required
+    // physician pick is flagged with .is-invalid (mirrored on its button).
+    personnelInput.addEventListener('change', function () {
+        if (personnelInput.value) personnelInput.classList.remove('is-invalid');
+    });
+
     // Weight + Height -> BMI auto-calc, same formula as the "Add Patient"
     // modal's own Vital Signs step (assets/js/add-patient.js).
     function recalcVitalBmi() {
@@ -132,12 +148,12 @@ document.addEventListener('DOMContentLoaded', function () {
         // calling setPatientCard(), which correctly overrides this.
         const ageNum = parseInt(age, 10);
         if (!isNaN(ageNum) && ageNum >= 60) {
-            prioritySelect.value = 'senior';
+            setSelect(prioritySelect, 'senior');
         } else if (prioritySelect.value === 'senior') {
             // Switching from a previously-picked senior to a different,
             // younger patient — clear the stale auto-set value instead
             // of leaving an inapplicable "Senior" priority behind.
-            prioritySelect.value = '';
+            setSelect(prioritySelect, '');
         }
 
         patientCardBtn.classList.remove('is-invalid');
@@ -191,6 +207,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function resetForm(mode) {
         form.reset();
         form.classList.remove('was-validated');
+        personnelInput.classList.remove('is-invalid');
         formIdInput.value = '';
         dateTimeInput.min = dateTimeMinIso;
         setPatientCard('', '', '', '', '');
@@ -208,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // defaults to the signed-in staff member (still editable).
     document.getElementById('btnSetConsultation').addEventListener('click', function () {
         resetForm('create');
-        personnelInput.value = window.CNS_STAFF_NAME || '';
+        setSelect(personnelInput, window.CNS_STAFF_NAME || '');
         formModal.show();
     });
 
@@ -221,7 +238,7 @@ document.addEventListener('DOMContentLoaded', function () {
             resetForm('edit');
             formIdInput.value = row.dataset.id;
             setPatientCard(row.dataset.patientId, row.dataset.patientName, row.dataset.patientGender, row.dataset.patientAge, row.dataset.patientBirthdate);
-            typeSelect.value = row.dataset.type;
+            setSelect(typeSelect, row.dataset.type);
             const existingDateTime = row.dataset.datetime ? row.dataset.datetime.slice(0, 16) : '';
             // Already-past consultations (a real record can be edited well
             // after its own dateTime — e.g. fixing a typo in the complaint)
@@ -229,9 +246,9 @@ document.addEventListener('DOMContentLoaded', function () {
             // unchanged value.
             dateTimeInput.min = existingDateTime && existingDateTime < dateTimeMinIso ? existingDateTime : dateTimeMinIso;
             dateTimeInput.value = existingDateTime;
-            personnelInput.value = row.dataset.personnel;
+            setSelect(personnelInput, row.dataset.personnel);
             complaintInput.value = row.dataset.complaint;
-            prioritySelect.value = row.dataset.priority;
+            setSelect(prioritySelect, row.dataset.priority);
             notesInput.value = row.dataset.notes || '';
             vitalTempInput.value = row.dataset.vitalTemp || '';
             vitalBpSysInput.value = row.dataset.vitalBpsys || '';
@@ -290,6 +307,7 @@ document.addEventListener('DOMContentLoaded', function () {
         e.stopPropagation();
 
         const patientOk = validatePatientCard();
+        personnelInput.classList.toggle('is-invalid', !personnelInput.value);
         if (!form.checkValidity() || !patientOk) {
             form.classList.add('was-validated');
             return;
