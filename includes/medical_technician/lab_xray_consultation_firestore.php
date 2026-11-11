@@ -117,6 +117,12 @@ foreach (hc_get_all_lab_result_docs() as $doc) {
         // Same idea for the real "GRAM STAIN" paper form — drives the
         // "Fill Gram Stain Form" action link below.
         'isGramStain' => hc_lab_test_names_match($f['testName'] ?? '', 'Gram Stain'),
+        // Same idea for the real "SEROLOGY — DENGUE TEST" paper form —
+        // drives the "Fill Dengue Test Form" action link below.
+        'isDengueTest' => hc_lab_test_names_match($f['testName'] ?? '', 'Dengue Test'),
+        // Same idea for the real "HEMATOLOGY" CBC paper form — drives
+        // the "Fill CBC Form" action link below.
+        'isCBC' => hc_lab_test_names_match($f['testName'] ?? '', 'CBC'),
         // Real "who the doctor sent this to" — api/complete-consultation.php's
         // Laboratory staff picker. Null for every referral sent before
         // that existed (and for one nobody was assigned, by choice or

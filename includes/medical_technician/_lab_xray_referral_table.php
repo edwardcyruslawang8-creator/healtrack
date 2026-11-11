@@ -77,6 +77,10 @@
                         $consultHref = 'cd4_count_form.php?patientId=' . urlencode($r['patientId']);
                     } elseif ($r['isGramStain']) {
                         $consultHref = 'gram_stain_form.php?patientId=' . urlencode($r['patientId']);
+                    } elseif ($r['isDengueTest']) {
+                        $consultHref = 'dengue_test_form.php?patientId=' . urlencode($r['patientId']);
+                    } elseif ($r['isCBC']) {
+                        $consultHref = 'cbc_form.php?patientId=' . urlencode($r['patientId']);
                     } else {
                         $consultHref = 'lab_result_form.php?patientId=' . urlencode($r['patientId']) . '&recordId=' . urlencode($r['id']);
                     }

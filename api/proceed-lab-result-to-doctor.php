@@ -3,11 +3,11 @@
  * =====================================================================
  * Proceed Lab Result to Doctor (api/proceed-lab-result-to-doctor.php)
  * ---------------------------------------------------------------------
- * Called by the "Proceed to Doctor" button on all 6 result-entry pages
+ * Called by the "Proceed to Doctor" button on all 8 result-entry pages
  * (serology_rapid_test_form.php, urinalysis_form.php, cd4_count_form.php,
- * gram_stain_form.php, and the 2 generic forms — lab_result_form.php,
- * xray_result_form.php — covering every other test/exam) once a result
- * has been saved.
+ * gram_stain_form.php, dengue_test_form.php, cbc_form.php, and the 2
+ * generic forms — lab_result_form.php, xray_result_form.php — covering
+ * every other test/exam) once a result has been saved.
  *
  * PRIMARY path — resume the ORIGINAL consultation: routing a patient
  * to Laboratory no longer ends that consultation (api/complete-consultation.php
@@ -73,7 +73,7 @@ $testType = trim((string) ($body['testType'] ?? ''));
 // disambiguates which doc this button is actually for.
 $recordId = trim((string) ($body['recordId'] ?? ''));
 
-$validTestTypes = ['serology', 'urinalysis', 'cd4', 'gram_stain', 'lab_generic', 'xray_generic'];
+$validTestTypes = ['serology', 'urinalysis', 'cd4', 'gram_stain', 'dengue_test', 'cbc', 'lab_generic', 'xray_generic'];
 if ($patientId === '' || !in_array($testType, $validTestTypes, true)) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Missing or invalid request.']);
@@ -131,6 +131,24 @@ switch ($testType) {
     case 'gram_stain':
         $testLabel = 'Gram Stain';
         foreach (hc_get_gram_stain_docs_for_patient($patientId) as $doc) {
+            if (($doc['fields']['status'] ?? '') === 'completed') {
+                $completedDocs[] = $doc;
+                break;
+            }
+        }
+        break;
+    case 'dengue_test':
+        $testLabel = 'Dengue Test';
+        foreach (hc_get_dengue_test_docs_for_patient($patientId) as $doc) {
+            if (($doc['fields']['status'] ?? '') === 'completed') {
+                $completedDocs[] = $doc;
+                break;
+            }
+        }
+        break;
+    case 'cbc':
+        $testLabel = 'CBC';
+        foreach (hc_get_cbc_docs_for_patient($patientId) as $doc) {
             if (($doc['fields']['status'] ?? '') === 'completed') {
                 $completedDocs[] = $doc;
                 break;

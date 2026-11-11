@@ -99,11 +99,13 @@ $xrayFindings = $xrayBundle['xrayFindings'];
 $xrayImpression = $xrayBundle['xrayImpression'];
 
 // The real Lipa City Health Office paper-form URL for this test, if
-// one of the 4 exists (medical_technician/print_*.php — ?embed=1 has
-// both allow the doctor role and skip the auto window.print()/hide
-// the Print button, since this renders inside an <iframe> here, not
-// its own tab). Only these 4 tests have a real paper template; every
-// other test falls back to the plain field list below instead.
+// one of the built-in tests' own print_*.php exists
+// (medical_technician/print_*.php — ?embed=1 has both allow the doctor
+// role and skip the auto window.print()/hide the Print button, since
+// this renders inside an <iframe> here, not its own tab). Only
+// Urinalysis/CD4/Gram Stain/the 3 Serology Rapid tests/Dengue Test have
+// a real paper template; every other test falls back to the plain
+// field list below instead.
 $paperFormUrl = null;
 if (hc_lab_test_names_match($labTest['testName'], 'Urinalysis')) {
     $paperFormUrl = '../medical_technician/print_urinalysis.php';
@@ -113,6 +115,10 @@ if (hc_lab_test_names_match($labTest['testName'], 'Urinalysis')) {
     $paperFormUrl = '../medical_technician/print_gram_stain.php';
 } elseif (array_key_exists(hc_lab_test_display_name($labTest['testName']), hc_serology_rapid_test_catalog())) {
     $paperFormUrl = '../medical_technician/print_serology_rapid_test.php';
+} elseif (hc_lab_test_names_match($labTest['testName'], 'Dengue Test')) {
+    $paperFormUrl = '../medical_technician/print_dengue_test.php';
+} elseif (hc_lab_test_names_match($labTest['testName'], 'CBC')) {
+    $paperFormUrl = '../medical_technician/print_cbc.php';
 }
 if ($paperFormUrl !== null) {
     $paperFormUrl .= '?embed=1&patientId=' . urlencode($patient['id']);

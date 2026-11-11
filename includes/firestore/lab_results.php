@@ -44,7 +44,7 @@ if (!function_exists('hc_seed_lab_test_catalog')) {
             'Hematology' => hc_lab_test_official_names()['Hematology'],
             'Clinical Chemistry' => hc_lab_test_official_names()['Clinical Chemistry'],
         ];
-        $builtIn = ['HBsAg' => true, 'Syphilis' => true, 'HIV' => true, 'Urinalysis' => true, 'CD4' => true, 'Gram Stain' => true];
+        $builtIn = ['HBsAg' => true, 'Syphilis' => true, 'HIV' => true, 'Urinalysis' => true, 'CD4' => true, 'Gram Stain' => true, 'Dengue Test' => true, 'CBC (Complete Blood Count)' => true];
         $now = date('c');
 
         foreach ($defaults as $category => $tests) {
@@ -264,6 +264,79 @@ if (!function_exists('hc_get_urinalysis_docs_for_patient')) {
             hc_get_lab_result_docs_for_patient($patientId),
             fn ($doc) => hc_lab_test_names_match($doc['fields']['testName'] ?? '', 'Urinalysis')
         ));
+    }
+}
+
+if (!function_exists('hc_get_dengue_test_docs_for_patient')) {
+    /**
+     * This patient's real lab_results docs for "Dengue Test" (NS1 Ag/
+     * IgM/IgG together, one order/one result sheet — matching the real
+     * Lipa City Health Office "SEROLOGY — DENGUE TEST" paper form),
+     * newest completed first — same source data as
+     * hc_get_lab_result_docs_for_patient(), just narrowed to this one
+     * test name, same pattern as hc_get_urinalysis_docs_for_patient()
+     * above.
+     *
+     * @return array<int, array{id: string, fields: array}>
+     */
+    function hc_get_dengue_test_docs_for_patient(string $patientId): array
+    {
+        return array_values(array_filter(
+            hc_get_lab_result_docs_for_patient($patientId),
+            fn ($doc) => hc_lab_test_names_match($doc['fields']['testName'] ?? '', 'Dengue Test')
+        ));
+    }
+}
+
+if (!function_exists('hc_get_cbc_docs_for_patient')) {
+    /** This patient's real lab_results docs for "CBC", newest completed first — same pattern as hc_get_urinalysis_docs_for_patient() above. */
+    function hc_get_cbc_docs_for_patient(string $patientId): array
+    {
+        return array_values(array_filter(
+            hc_get_lab_result_docs_for_patient($patientId),
+            fn ($doc) => hc_lab_test_names_match($doc['fields']['testName'] ?? '', 'CBC')
+        ));
+    }
+}
+
+if (!function_exists('hc_cbc_hematology_fields')) {
+    /**
+     * The real Lipa City Health Office "HEMATOLOGY" CBC paper form's 8
+     * pre-printed hematology values, each with its own fixed real
+     * reference range/unit (same idea as hc_cd4_reference_range() — a
+     * constant printed on the form, not something the medtech chooses
+     * per patient) — used by medical_technician/cbc_form.php,
+     * api/complete-cbc-test.php, and print_cbc.php so all 3 stay in
+     * sync with exactly one source.
+     *
+     * @return array<string, array{label: string, unit: string, range: string, low: float, high: float}>
+     */
+    function hc_cbc_hematology_fields(): array
+    {
+        return [
+            'hemoglobin'     => ['label' => 'Hemoglobin',     'unit' => 'g/L',     'range' => '120 - 160',      'low' => 120,  'high' => 160],
+            'hematocrit'     => ['label' => 'Hematocrit',     'unit' => '%',       'range' => '37.0 - 54.0',    'low' => 37,   'high' => 54],
+            'rbcCount'       => ['label' => 'RBC Count',      'unit' => '10^12/L', 'range' => '3.50 - 5.50',    'low' => 3.5,  'high' => 5.5],
+            'wbcCount'       => ['label' => 'WBC Count',      'unit' => '10^9/L',  'range' => '5.0 - 10.0',     'low' => 5,    'high' => 10],
+            'plateletCount'  => ['label' => 'Platelet Count', 'unit' => '10^9/L',  'range' => '150 - 400',      'low' => 150,  'high' => 400],
+            'mcv'            => ['label' => 'MCV',            'unit' => 'fL',      'range' => '80.0 - 100.0',   'low' => 80,   'high' => 100],
+            'mch'            => ['label' => 'MCH',            'unit' => 'pg',      'range' => '27.0 - 34.0',    'low' => 27,   'high' => 34],
+            'mchc'           => ['label' => 'MCHC',           'unit' => 'g/L',     'range' => '320 - 360',      'low' => 320,  'high' => 360],
+        ];
+    }
+}
+
+if (!function_exists('hc_cbc_differential_fields')) {
+    /** The same real paper form's "Differential Count" 5 fields — see hc_cbc_hematology_fields()'s own header comment. */
+    function hc_cbc_differential_fields(): array
+    {
+        return [
+            'segmenters'   => ['label' => 'Segmenters',   'unit' => '%', 'range' => '50.0 - 70.0', 'low' => 50,  'high' => 70],
+            'lymphocytes'  => ['label' => 'Lymphocytes',  'unit' => '%', 'range' => '20.0 - 40.0', 'low' => 20,  'high' => 40],
+            'monocytes'    => ['label' => 'Monocytes',    'unit' => '%', 'range' => '3.0 - 15.0',  'low' => 3,   'high' => 15],
+            'eosinophils'  => ['label' => 'Eosinophils',  'unit' => '%', 'range' => '0.5 - 5.0',   'low' => 0.5, 'high' => 5],
+            'basophils'    => ['label' => 'Basophils',    'unit' => '%', 'range' => '0 - 1.0',     'low' => 0,   'high' => 1],
+        ];
     }
 }
 
@@ -700,6 +773,7 @@ if (!function_exists('hc_resolve_lab_result')) {
 
         $lf = $selected['fields'];
         $labTest = [
+            'id' => $selected['id'],
             'testName' => hc_lab_test_display_name($lf['testName']),
             'testType' => $lf['testType'],
             'orderedDate' => date('M j, Y', strtotime($lf['orderedDate'])), 'orderedTime' => $lf['orderedTime'],
