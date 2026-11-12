@@ -133,3 +133,79 @@
   .ald-field{ flex-direction: column; align-items: flex-start; gap: 4px; }
   .ald-field-label{ width: auto; }
 }
+
+/* =============================================================
+   Allergy Details MODAL (assets/js/allergy-details-modal.js) — the same
+   Overview / Detailed Information / History sections as the full page,
+   shown from the Allergies tab's View (eye) action.
+   ============================================================= */
+.ald-modal .modal-content{
+  border: none;
+  border-radius: var(--adm-radius-lg, 16px);
+  background: var(--adm-bg, #F6F7FB);
+  overflow: hidden;
+}
+.ald-modal .modal-header{
+  background: var(--adm-card, #fff);
+  border-bottom: 1px solid var(--adm-border, #ECEDF3);
+  padding: 16px 22px;
+  gap: 12px;
+}
+.ald-modal .modal-title{ font-size: 17px; font-weight: 700; color: var(--adm-text, #1F2430); margin-right: auto; }
+.ald-modal-fullpage{
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 600; color: var(--adm-red-bright, #5B0A0A); text-decoration: none; white-space: nowrap;
+}
+.ald-modal-fullpage:hover{ text-decoration: underline; color: var(--adm-red-bright, #5B0A0A); }
+.ald-modal .btn-close{ margin: 0; }
+.ald-modal .modal-body{ padding: 18px 22px; }
+.ald-modal .modal-body > .adm-card{ margin-bottom: 16px; }
+.ald-modal .modal-body > .adm-card:last-child{ margin-bottom: 0; }
+.ald-modal-loading{
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 60px 0; font-size: 13.5px; color: var(--adm-text-muted, #6B7280);
+}
+:root[data-bs-theme="dark"] .ald-modal .btn-close{ filter: invert(1); }
+
+/* =============================================================
+   Detailed Information — two columns of label/value pairs instead of
+   one long list beside a mostly-empty right side:
+     Allergen     | Type
+     Severity     | Reaction
+     Description (full width)
+     Onset Date   | Last Occurred
+     Status       | Verification
+   with Common Symptoms as a narrower panel on the right (and an
+   empty-state line when none are recorded). Every row the same height
+   so text rows and badge rows line up.
+   ============================================================= */
+.ald-detail-grid{ grid-template-columns: minmax(0, 2.2fr) minmax(220px, 1fr); gap: 24px; }
+.ald-detail-fields{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 28px;
+}
+.ald-detail-fields .ald-field{
+  align-items: center;
+  min-height: 46px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--adm-border);
+  gap: 12px;
+}
+.ald-detail-fields .ald-field-label{ width: 110px; }
+.ald-detail-fields .ald-field-value{ min-width: 0; overflow-wrap: anywhere; }
+.ald-detail-fields .ald-field-wide{ grid-column: 1 / -1; align-items: baseline; }
+.ald-detail-fields .ald-field-wide .ald-field-value{ font-weight: 600; line-height: 1.5; }
+/* last row (Status | Verification) has no divider under it */
+.ald-detail-fields .ald-field:nth-last-child(-n+2){ border-bottom: none; }
+
+.ald-symptoms-panel{ align-self: start; } /* sized to its content, not stretched to the fields' height */
+.ald-symptoms-empty{ margin: 0; font-size: 13px; color: var(--adm-text-muted); }
+
+@media (max-width: 991.98px){
+  .ald-detail-grid{ grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 575.98px){
+  .ald-detail-fields{ grid-template-columns: minmax(0, 1fr); }
+  .ald-detail-fields .ald-field:nth-last-child(2){ border-bottom: 1px solid var(--adm-border); }
+}

@@ -192,6 +192,29 @@ if (!function_exists('hc_get_doctor_queue_status')) {
         // hc_consultation_is_awaiting_lab_results()'s own comment.
         $ongoingAwaitingLab = $ongoingConsult !== null && hc_consultation_is_awaiting_lab_results($ongoingConsult);
 
+        // EVERY ongoing consultation this doctor has open, newest first —
+        // not just the latest one. A doctor can start a second patient
+        // while the first is still open (or waiting on results); showing
+        // only the newest left the older one with no way back from this
+        // page at all (it was "In Progress" in the logs, yet in neither
+        // the Ongoing nor the Next to Consult card). awaitingLabel says
+        // WHERE they're waiting — X-ray vs Laboratory — from the
+        // consultation's own routing.
+        $ongoingList = array_map(function ($c) use ($ongoingConsult, $ongoingPatient, $ongoingAwaitingLab) {
+            $isLatest = $ongoingConsult !== null && $c['id'] === $ongoingConsult['id'];
+            $awaiting = $isLatest ? $ongoingAwaitingLab : hc_consultation_is_awaiting_lab_results($c);
+            $atXray = ($c['nextRouting'] ?? '') === 'xray';
+            return [
+                'consult' => $c,
+                'patient' => $isLatest
+                    ? $ongoingPatient
+                    : (hc_get_patient_profile($c['patientId']) ?? hc_not_found_patient_profile($c['patientId'])),
+                'awaiting' => $awaiting,
+                'awaitingStatusLabel' => $atXray ? 'In X-ray' : 'In Laboratory',
+                'awaitingButtonLabel' => $atXray ? 'Waiting for X-ray Results' : 'Waiting for Laboratory Results',
+            ];
+        }, $ongoingConsultations);
+
         return [
             'myConsultations' => $myConsultations,
             'nextConsult' => $nextConsult,
@@ -199,6 +222,11 @@ if (!function_exists('hc_get_doctor_queue_status')) {
             'ongoingConsult' => $ongoingConsult,
             'ongoingPatient' => $ongoingPatient,
             'ongoingAwaitingLab' => $ongoingAwaitingLab,
+            'ongoingList' => $ongoingList,
+            // Changes whenever an ongoing consultation is added/finished OR
+            // flips between "waiting for results" and "ready to resume" —
+            // what assets/js/doctor_consultations.js's poll compares.
+            'ongoingSignature' => implode(',', array_map(fn ($o) => $o['consult']['id'] . ':' . ($o['awaiting'] ? 'w' : 'r'), $ongoingList)),
             'patient' => $nextPatient,
         ];
     }

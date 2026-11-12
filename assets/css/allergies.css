@@ -42,7 +42,15 @@
 
 /* Row actions beside Select / View — distinct colors so they don't
    read as another view/select icon. */
-.adm-action-btn.alg-action-manage{ color: var(--adm-blue); }
+/* Manage (clinical status) — brand maroon like the View (eye) beside it,
+   instead of the old blue; still a different icon, so the two don't read
+   as the same action. */
+.adm-action-btn.alg-action-manage{ color: var(--adm-red-bright); }
+.adm-action-btn.alg-action-manage:hover:not(:disabled){
+  color: var(--adm-red-bright);
+  border-color: var(--adm-red-bright);
+  background: color-mix(in srgb, var(--adm-red-bright) 7%, var(--adm-card));
+}
 .adm-action-btn.alg-action-reactivate{ color: #1E8E3E; }
 .adm-action-btn.alg-action-manage:disabled,
 .adm-action-btn.alg-action-reactivate:disabled{ opacity: .5; cursor: wait; }
