@@ -43,6 +43,7 @@ $patient = $queueStatus['patient'];
 $ongoingConsult = $queueStatus['ongoingConsult'];
 $ongoingPatient = $queueStatus['ongoingPatient'];
 $ongoingAwaitingLab = $queueStatus['ongoingAwaitingLab'];
+$ongoingList = $queueStatus['ongoingList'];
 $nextConsult = $queueStatus['nextConsult'];
 $nextPatient = $queueStatus['nextPatient'];
 
@@ -54,5 +55,7 @@ echo json_encode([
     'success' => true,
     'html' => $html,
     'nextId' => $nextConsult['id'] ?? '',
-    'ongoingId' => $ongoingConsult['id'] ?? '',
+    // every open consultation + its waiting/ready state, so the poll redraws
+    // when ANY of them changes, not only the newest one
+    'ongoingId' => $queueStatus['ongoingSignature'],
 ]);
