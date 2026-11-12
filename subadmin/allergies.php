@@ -117,6 +117,8 @@ $selectedVerification = $verificationStatusMeta[$selectedAllergy['verificationSt
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_profile.css') ?>">
 <!-- Allergies page styles (summary cards, table, details panel) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/allergies.css') ?>">
+<!-- View (eye) opens the allergy details in a modal — assets/js/allergy-details-modal.js -->
+<link rel="stylesheet" href="<?= asset_url('/assets/css/allergy_details.css') ?>">
 <link rel="stylesheet" href="<?= asset_url('/assets/css/view_details_modal.css') ?>">
 </head>
 <body class="adm-body">
@@ -536,5 +538,6 @@ $selectedVerification = $verificationStatusMeta[$selectedAllergy['verificationSt
 <script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/theme.js') ?>"></script>
 <script src="<?= asset_url('/assets/js/ajax-tab-nav.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/allergy-details-modal.js') ?>"></script>
 </body>
 </html>

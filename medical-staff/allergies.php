@@ -99,6 +99,8 @@ $staffNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/patient_profile.css') ?>">
 <!-- Allergies page styles (summary cards, table, details panel) — shared verbatim with subadmin/allergies.php -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/allergies.css') ?>">
+<!-- View (eye) opens the allergy details in a modal — assets/js/allergy-details-modal.js -->
+<link rel="stylesheet" href="<?= asset_url('/assets/css/allergy_details.css') ?>">
 <!-- Shared confirm/alert dialog (kept loaded for allergy-actions.js's shared helpers) -->
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 </head>
@@ -544,5 +546,6 @@ $staffNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-datepicker.css') ?>">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
 <script src="<?= asset_url('/assets/js/hc-datepicker.js') ?>"></script>
+<script src="<?= asset_url('/assets/js/allergy-details-modal.js') ?>"></script>
 </body>
 </html>

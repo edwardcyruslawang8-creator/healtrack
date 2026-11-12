@@ -320,7 +320,7 @@ $typeLabel = $selectedAllergy['type'] . ($selectedAllergy['subtype'] ? ' (' . $s
                 <div class="ald-field"><span class="ald-field-label">Type</span><span class="ald-field-value"><?= htmlspecialchars($typeLabel) ?></span></div>
                 <div class="ald-field"><span class="ald-field-label">Severity</span><span class="ald-badge" style="background:<?= htmlspecialchars($selectedSeverity['bg']) ?>; color:<?= htmlspecialchars($selectedSeverity['color']) ?>;"><?= htmlspecialchars($selectedSeverity['label']) ?></span></div>
                 <div class="ald-field"><span class="ald-field-label">Reaction</span><span class="ald-field-value"><?= htmlspecialchars($selectedAllergy['reaction']) ?></span></div>
-                <div class="ald-field ald-field-stacked"><span class="ald-field-label">Description</span><span class="ald-field-value"><?= htmlspecialchars($selectedAllergy['description']) ?></span></div>
+                <div class="ald-field ald-field-wide"><span class="ald-field-label">Description</span><span class="ald-field-value"><?= htmlspecialchars($selectedAllergy['description']) ?></span></div>
                 <div class="ald-field"><span class="ald-field-label">Onset Date</span><span class="ald-field-value"><?= htmlspecialchars($selectedAllergy['onsetDate']) ?></span></div>
                 <div class="ald-field"><span class="ald-field-label">Last Occurred</span><span class="ald-field-value"><?= htmlspecialchars($selectedAllergy['lastOccurred']) ?></span></div>
                 <div class="ald-field"><span class="ald-field-label">Status</span><span class="ald-badge" style="background:<?= htmlspecialchars($selectedStatus['bg']) ?>; color:<?= htmlspecialchars($selectedStatus['color']) ?>;"><?= htmlspecialchars($selectedStatus['label']) ?></span></div>
@@ -329,11 +329,15 @@ $typeLabel = $selectedAllergy['type'] . ($selectedAllergy['subtype'] ? ' (' . $s
 
             <div class="ald-symptoms-panel">
                 <h4>Common Symptoms</h4>
+                <?php if (empty($selectedAllergy['symptoms'])): ?>
+                <p class="ald-symptoms-empty">No common symptoms recorded.</p>
+                <?php else: ?>
                 <ul>
                     <?php foreach ($selectedAllergy['symptoms'] as $symptom): ?>
                     <li><?= htmlspecialchars($symptom) ?></li>
                     <?php endforeach; ?>
                 </ul>
+                <?php endif; ?>
             </div>
         </div>
     </div>
