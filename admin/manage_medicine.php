@@ -213,8 +213,8 @@ $isVaccine = $item['type'] === 'vaccine';
     </div>
 
     <!-- ============ BACK LINK ============ -->
-    <a href="medicine_vaccine_inventory.php" class="adm-back-link">
-        <i class="bi bi-arrow-left"></i> Back to Medicine Inventory
+    <a href="medicine_vaccine_inventory.php<?= $isVaccine ? '?tab=vaccines' : '' ?>" class="adm-back-link">
+        <i class="bi bi-arrow-left"></i> Back to <?= $isVaccine ? 'Vaccine' : 'Medicine' ?> Inventory
     </a>
 
     <!-- ============ ITEM HEADER (read-only — no Restock/Edit/Delete) ============ -->

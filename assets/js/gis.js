@@ -560,11 +560,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
             }).addTo(map);
 
-            // Extend the fit to include every facility marker too, so
-            // none of them are ever cropped out of the initial view even
-            // if one happens to sit right at the edge of the barangay
-            // shapes.
-            initialBounds = geoLayer.getBounds();
+            // Fit to each barangay's CENTROID (its house-icon marker
+            // position below), not geoLayer.getBounds()'s full polygon
+            // shapes — a real, large, elongated barangay (Talisay
+            // stretches far east toward Mount Dagatan) has a bounding box
+            // whose center sits well east of where the other 10
+            // barangays' markers actually cluster, so fitting the full
+            // shapes centered the view on mostly-empty space out past
+            // Talisay's own far edge instead of on the barangays
+            // themselves. Centroids (plus every facility marker, so none
+            // are ever cropped out) give a tight initial view of what a
+            // viewer actually looks at; Talisay's far reaches are still
+            // reachable by panning, up to the Lipa City max bounds above.
+            initialBounds = L.latLngBounds([]);
+            geojson.features.forEach(function (feature) {
+                const [lng, lat] = feature.properties.centroid;
+                initialBounds.extend([lat, lng]);
+            });
             facilityMarkers.forEach(function (marker) {
                 initialBounds.extend(marker.getLatLng());
             });

@@ -136,15 +136,6 @@
 .ann-tag.alert{   background: var(--red-bg);   color: var(--red); }
 .ann-tag.event{   background: var(--blue-bg);  color: var(--blue); }
 .ann-tag.important{ background: var(--red-bg); color: var(--red); }
-.ann-menu-btn{
-  background: none;
-  border: none;
-  color: var(--text-soft);
-  font-size: 16px;
-  padding: 4px;
-  flex-shrink: 0;
-}
-.ann-menu-btn:hover{ color: var(--text-dark); }
 
 .ann-empty{
   background: #fff;

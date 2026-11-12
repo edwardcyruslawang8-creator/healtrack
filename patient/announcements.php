@@ -90,9 +90,6 @@ require_once __DIR__ . '/../includes/shared/sidebar.php';
                         <?php endif; ?>
                     </div>
                 </div>
-                <button type="button" class="ann-menu-btn" aria-label="More options">
-                    <i class="bi bi-three-dots-vertical"></i>
-                </button>
             </div>
             <?php endforeach; ?>
 

@@ -159,7 +159,7 @@ $isVaccine = $item['type'] === 'vaccine';
             <nav class="mvi-breadcrumb" aria-label="Breadcrumb">
                 <a href="dashboard.php">Dashboard</a>
                 <span class="mvi-breadcrumb-sep">&gt;</span>
-                <a href="medicine_vaccine_inventory.php">Medicine &amp; Vaccine Inventory</a>
+                <a href="medicine_vaccine_inventory.php<?= $isVaccine ? '?tab=vaccines' : '' ?>">Medicine &amp; Vaccine Inventory</a>
                 <span class="mvi-breadcrumb-sep">&gt;</span>
                 <span class="mvi-breadcrumb-current"><?= htmlspecialchars($item['name']) ?></span>
             </nav>
@@ -198,8 +198,8 @@ $isVaccine = $item['type'] === 'vaccine';
     </div>
 
     <!-- ============ BACK LINK ============ -->
-    <a href="medicine_vaccine_inventory.php" class="adm-back-link">
-        <i class="bi bi-arrow-left"></i> Back to Medicine Inventory
+    <a href="medicine_vaccine_inventory.php<?= $isVaccine ? '?tab=vaccines' : '' ?>" class="adm-back-link">
+        <i class="bi bi-arrow-left"></i> Back to <?= $isVaccine ? 'Vaccine' : 'Medicine' ?> Inventory
     </a>
 
     <!-- ============ ITEM HEADER ============ -->

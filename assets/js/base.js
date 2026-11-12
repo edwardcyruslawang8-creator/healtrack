@@ -88,30 +88,35 @@ document.addEventListener('DOMContentLoaded', function () {
     /* ---------- Anchor-link nav items (About Us / Contact Us) ----------
        These point at a section on index.php rather than a page of their
        own (includes/public/data.php's own "#about-us"/"#site-footer"
-       hrefs). From a DIFFERENT page, clicking one is already a real
-       navigation to index.php — handled by the fade-out above, same as
-       any other nav link. But when already ON that page, a same-
-       document hash change never triggers a browser reload by itself —
-       it just scrolls — which reads as "this nav item does nothing"
-       next to every other item, which performs a real navigation.
-       Forcing a real (faded) reload here makes every nav item behave
-       the same way. */
+       hrefs) — excluded from the plain nav-link handler above (its own
+       ":not(.nav-link-anchor)" selector) so they always land here
+       instead, on EITHER page: from a different page this is a real
+       navigation to index.php (navigateWithFade() below, same fade
+       every other nav link already gets). From index.php itself, just a
+       smooth scroll to the target section — no page reload. A reload
+       was tried here before purely so this link's click "felt" the same
+       as every other nav item's full navigation, but that cost a full
+       re-fetch of the whole home page (dashboard stats, the GIS preview
+       map's own Firestore-backed API call, the medicine slider) just to
+       scroll down a page already on screen; a smooth scroll already
+       reads as its own real feedback without any of that. */
     document.querySelectorAll('.nav-link-anchor').forEach(function (link) {
         link.addEventListener('click', function (e) {
-            const url = new URL(link.getAttribute('href'), window.location.href);
-            if (url.pathname !== window.location.pathname) return; // a different page — already handled above
-            e.preventDefault();
+            if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+            if (link.target === '_blank' || !link.href) return;
 
-            if (!mainEl || prefersReducedMotion) {
-                window.location.hash = url.hash;
-                window.location.reload();
+            const url = new URL(link.getAttribute('href'), window.location.href);
+            if (url.pathname !== window.location.pathname) {
+                e.preventDefault();
+                navigateWithFade(link.href);
                 return;
             }
-            mainEl.classList.add('page-leaving');
-            setTimeout(function () {
-                window.location.hash = url.hash;
-                window.location.reload();
-            }, 140);
+            const target = document.querySelector(url.hash);
+            if (!target) return; // let the browser fall back to its own default handling
+
+            e.preventDefault();
+            history.pushState(null, '', url.hash);
+            target.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'start' });
         });
     });
 

@@ -286,4 +286,27 @@ require_once __DIR__ . '/includes/shared/sidebar.php';
     </div>
 </footer>
 
+<script>
+// Landing here with a #about-us/#site-footer hash — either a fresh
+// cross-page click on the sidebar's "About Us"/"Contact Us" (see
+// assets/js/base.js's own .nav-link-anchor handler) or that same
+// handler's same-page forced reload — the browser's own anchor-jump
+// runs once, right after the initial HTML parses. Poppins is a
+// self-hosted web font (assets/css/fonts-poppins.css) loaded async;
+// the fallback-to-real-font swap changes this page's real text
+// line-heights (hero copy, the medicine slider's names, nav labels),
+// which can shift #about-us/#site-footer below where that one-time
+// jump landed. Re-applying it once fonts are actually ready (and once
+// more on 'load', for images) catches that — cheap, and harmless even
+// if nothing actually shifted.
+(function () {
+    if (!window.location.hash) return;
+    const target = document.querySelector(window.location.hash);
+    if (!target) return;
+    const resnap = function () { target.scrollIntoView({ block: 'start' }); };
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(resnap);
+    window.addEventListener('load', resnap);
+})();
+</script>
+
 <?php require_once __DIR__ . '/includes/shared/footer.php'; ?>
