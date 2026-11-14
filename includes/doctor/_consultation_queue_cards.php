@@ -67,14 +67,27 @@
      is ever bypassed). It flips back to a real "Resume Consultation"
      link on its own the moment every ordered test is completed —
      nothing here needs to separately clear it. -->
-<?php if ($ongoingConsult !== null && $ongoingPatient !== null): ?>
+<?php
+// Every ongoing consultation, newest first (hc_get_doctor_queue_status()'s
+// ongoingList) — one card each, so an older one that's still open (e.g.
+// left mid-consultation, or waiting on results) is never hidden behind a
+// newer one. Falls back to the single $ongoingConsult for any includer
+// that doesn't pass $ongoingList.
+$ongoingCards = $ongoingList ?? (($ongoingConsult !== null && $ongoingPatient !== null)
+    ? [['consult' => $ongoingConsult, 'patient' => $ongoingPatient, 'awaiting' => $ongoingAwaitingLab, 'awaitingStatusLabel' => 'In Laboratory', 'awaitingButtonLabel' => 'Waiting for Laboratory Results']]
+    : []);
+foreach (array_values($ongoingCards) as $ongoingIndex => $ongoingCard):
+    $oc = $ongoingCard['consult'];
+    $op = $ongoingCard['patient'];
+    $ocAwaiting = $ongoingCard['awaiting'];
+?>
 <div class="cns-next-card">
     <div class="cns-next-identity">
-        <div class="cns-next-avatar"><i class="bi <?= $ongoingAwaitingLab ? 'bi-hourglass-split' : 'bi-play-circle-fill' ?>"></i></div>
+        <div class="cns-next-avatar"><i class="bi <?= $ocAwaiting ? 'bi-hourglass-split' : 'bi-play-circle-fill' ?>"></i></div>
         <div>
-            <div class="cns-next-label">Ongoing Consultation</div>
-            <div class="cns-next-name"><?= htmlspecialchars($ongoingPatient['name']) ?></div>
-            <div class="cns-next-meta"><?= (int) $ongoingPatient['age'] ?> years old (<?= htmlspecialchars($ongoingPatient['gender']) ?>)</div>
+            <div class="cns-next-label">Ongoing Consultation<?= count($ongoingCards) > 1 ? ' <span class="cns-ongoing-count">' . ($ongoingIndex + 1) . ' of ' . count($ongoingCards) . '</span>' : '' ?></div>
+            <div class="cns-next-name"><?= htmlspecialchars($op['name']) ?></div>
+            <div class="cns-next-meta"><?= (int) $op['age'] ?> years old (<?= htmlspecialchars($op['gender']) ?>)</div>
         </div>
     </div>
 
@@ -82,36 +95,36 @@
         <div class="cns-next-field">
             <span class="cns-next-field-label">Consultation Type</span>
             <span class="cns-next-field-value">
-                <?php $ongoingType = $consultationTypeMeta[$ongoingConsult['consultationType']] ?? $consultationTypeMeta['walk_in']; ?>
+                <?php $ongoingType = $consultationTypeMeta[$oc['consultationType']] ?? $consultationTypeMeta['walk_in']; ?>
                 <span class="cns-badge" style="background:<?= htmlspecialchars($ongoingType['bg']) ?>; color:<?= htmlspecialchars($ongoingType['color']) ?>;"><?= htmlspecialchars($ongoingType['label']) ?></span>
             </span>
         </div>
         <div class="cns-next-field">
             <span class="cns-next-field-label">Status</span>
             <span class="cns-next-field-value">
-                <?php $ongoingStatus = $consultationStatusMeta[$ongoingConsult['status']] ?? $consultationStatusMeta['ongoing']; ?>
-                <span class="cns-badge" style="background:<?= htmlspecialchars($ongoingStatus['bg']) ?>; color:<?= htmlspecialchars($ongoingStatus['color']) ?>;"><?= htmlspecialchars($ongoingAwaitingLab ? 'In Laboratory' : $ongoingStatus['label']) ?></span>
+                <?php $ongoingStatus = $consultationStatusMeta[$oc['status']] ?? $consultationStatusMeta['ongoing']; ?>
+                <span class="cns-badge" style="background:<?= htmlspecialchars($ongoingStatus['bg']) ?>; color:<?= htmlspecialchars($ongoingStatus['color']) ?>;"><?= htmlspecialchars($ocAwaiting ? $ongoingCard['awaitingStatusLabel'] : $ongoingStatus['label']) ?></span>
             </span>
         </div>
         <div class="cns-next-field">
             <span class="cns-next-field-label">Started</span>
-            <span class="cns-next-field-value"><?= $ongoingConsult['startedAt'] !== '' ? htmlspecialchars(date('g:i A', strtotime($ongoingConsult['startedAt']))) : '—' ?></span>
+            <span class="cns-next-field-value"><?= $oc['startedAt'] !== '' ? htmlspecialchars(date('M j, g:i A', strtotime($oc['startedAt']))) : '—' ?></span>
         </div>
         <div class="cns-next-field">
             <span class="cns-next-field-label">Reason for Visit</span>
-            <span class="cns-next-field-value"><?= htmlspecialchars($ongoingConsult['chiefComplaint']) ?></span>
+            <span class="cns-next-field-value"><?= htmlspecialchars($oc['chiefComplaint']) ?></span>
         </div>
     </div>
 
-    <?php if ($ongoingAwaitingLab): ?>
-    <div class="cns-btn-start cns-btn-waiting" aria-disabled="true" title="Waiting for the medical technologist to finish — this patient's results aren't back yet.">
-        <i class="bi bi-hourglass-split"></i> Waiting for Laboratory Results
+    <?php if ($ocAwaiting): ?>
+    <div class="cns-btn-start cns-btn-waiting" aria-disabled="true" title="Waiting for this patient's results — not back yet.">
+        <i class="bi bi-hourglass-split"></i> <?= htmlspecialchars($ongoingCard['awaitingButtonLabel']) ?>
     </div>
     <?php else: ?>
-    <a href="active_consultation.php?id=<?= urlencode($ongoingConsult['id']) ?>" class="cns-btn-start"><i class="bi bi-arrow-right-circle"></i> Resume Consultation</a>
+    <a href="active_consultation.php?id=<?= urlencode($oc['id']) ?>" class="cns-btn-start"><i class="bi bi-arrow-right-circle"></i> Resume Consultation</a>
     <?php endif; ?>
 </div>
-<?php endif; ?>
+<?php endforeach; ?>
 
 <!-- ============ NEXT TO CONSULT ============ -->
 <?php if ($nextConsult !== null && $nextPatient !== null): ?>

@@ -297,7 +297,7 @@ $staffNavItems = [
     <!-- ============ SPECIMEN ALERTS + RESULT REVIEW STATUS + TODAY'S PENDING TESTS + NOTIFICATIONS ============ -->
     <div class="mt-row-4">
 
-        <div class="adm-card mt-chart-card">
+        <div class="adm-card mt-chart-card mt-area-recent">
             <div class="mt-card-header">
                 <h2>Recently Ordered Tests</h2>
                 <a href="laboratory_xray.php" class="adm-card-footer-link" style="margin-top:0;">View All <i class="bi bi-arrow-right"></i></a>
@@ -319,7 +319,7 @@ $staffNavItems = [
             </div>
         </div>
 
-        <div class="adm-card mt-chart-card">
+        <div class="adm-card mt-chart-card mt-area-pending">
             <div class="mt-card-header"><h2>Pending Tests</h2></div>
             <div class="adm-table-wrap">
                 <table class="mt-schedule-table">
@@ -355,7 +355,7 @@ $staffNavItems = [
             </div>
         </div>
 
-        <div class="adm-card mt-chart-card">
+        <div class="adm-card mt-chart-card mt-area-notif">
             <div class="mt-card-header">
                 <h2>Recent Notifications</h2>
                 <a href="notifications.php" class="adm-card-footer-link" style="margin-top:0;">View All <i class="bi bi-arrow-right"></i></a>

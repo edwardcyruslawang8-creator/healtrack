@@ -74,6 +74,12 @@ $type = $text('type');
 $dose = $text('dose', 60);
 $dateRaw = $text('dateAdministered');
 $nextRaw = $text('nextDoseDue');
+// A Historical Vaccination (received before registration, copied from a
+// card/record) never carries a Next Dose Due — the form hides that field
+// for it, and any value sent anyway is ignored here.
+if ($recordType === 'historical') {
+    $nextRaw = '';
+}
 $dateAdministered = $ymd($dateRaw);
 $nextDoseDue = $ymd($nextRaw);
 $manufacturer = $text('manufacturer', 120);

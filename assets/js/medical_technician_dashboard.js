@@ -74,11 +74,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 datasets: [{
                     data: data.testsByType.values,
                     backgroundColor: '#1A73E8',
-                    borderRadius: 6,
-                    maxBarThickness: 34,
+                    borderRadius: 5,
+                    maxBarThickness: 18,
                 }],
             },
+            // Horizontal bars: long test names ("CBC (Complete Blood
+            // Count)") read straight across on the left instead of as
+            // slanted, cramped labels under a few very wide bars.
             options: {
+                indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: { duration: 700, easing: 'easeOutQuart' },
@@ -87,8 +91,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     tooltip: { callbacks: { title: function (items) { return items[0].label; } } },
                 },
                 scales: {
-                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
-                    x: { grid: { display: false }, ticks: { color: tickColor } },
+                    x: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
+                    y: { grid: { display: false }, ticks: { color: tickColor, autoSkip: false, font: { size: 11.5 } } },
                 },
             },
         });

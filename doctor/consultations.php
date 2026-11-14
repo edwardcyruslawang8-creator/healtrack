@@ -254,7 +254,7 @@ $doctorNavItems = [
          header comment — same partial either way, so a live refresh
          can never show something different than a real page load
          would have. -->
-    <div id="cnsQueueStatus" data-next-id="<?= htmlspecialchars($nextConsult['id'] ?? '') ?>" data-ongoing-id="<?= htmlspecialchars($ongoingConsult['id'] ?? '') ?>">
+    <div id="cnsQueueStatus" data-next-id="<?= htmlspecialchars($nextConsult['id'] ?? '') ?>" data-ongoing-id="<?= htmlspecialchars($ongoingSignature) ?>">
         <?php require __DIR__ . '/../includes/doctor/_consultation_queue_cards.php'; ?>
     </div>
 

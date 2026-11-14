@@ -99,13 +99,13 @@
           </div>
 
           <div class="row">
-            <div class="col-md-4 mb-3">
+            <div class="col-md-4 mb-3" id="avxDateCol">
               <label for="avxDateAdministered" class="form-label">Date Administered <span class="text-danger">*</span></label>
               <input type="date" data-hc-datepicker class="form-control" id="avxDateAdministered" min="<?= htmlspecialchars($avxBirthDateRaw) ?>" max="<?= date('Y-m-d') ?>" required>
               <div class="form-text" id="avxDateHelp">The actual date the vaccine was given.</div>
               <div class="invalid-feedback" id="avxDateFeedback">Please enter a valid date administered.</div>
             </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-md-4 mb-3" id="avxDoseCol">
               <label for="avxDose" class="form-label">Dose / Series <span class="text-danger">*</span></label>
               <select class="form-select" id="avxDose" required>
                 <option value="" selected disabled>Select dose</option>
@@ -118,7 +118,8 @@
               </select>
               <div class="invalid-feedback">Please select the dose.</div>
             </div>
-            <div class="col-md-4 mb-3">
+            <!-- Hidden for a Historical Vaccination (assets/js/add-vaccination.js applyRecordType()) — a dose received before registration has no next dose to schedule from this record. -->
+            <div class="col-md-4 mb-3" id="avxNextDoseCol">
               <label for="avxNextDoseDue" class="form-label">Next Dose Due <span class="text-muted fw-normal">(Optional)</span></label>
               <input type="date" data-hc-datepicker class="form-control" id="avxNextDoseDue">
               <div class="invalid-feedback">Must be after the date administered.</div>

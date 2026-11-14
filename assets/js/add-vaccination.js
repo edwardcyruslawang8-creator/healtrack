@@ -105,6 +105,23 @@
             el('avxFacilityHint').textContent = '(If known)';
             el('avxDateHelp').textContent = 'The actual date the vaccine was given — from the vaccination card or record, even if before registration.';
         }
+
+        // Historical Vaccination: no "Next Dose Due" — it's a past dose
+        // copied from a card/record, not something this facility is
+        // scheduling. Hide + clear it, and let Date Administered and
+        // Dose / Series share the row (col-md-6) instead of leaving a gap.
+        const historical = recordType() === 'historical';
+        const nextDose = el('avxNextDoseDue');
+        el('avxNextDoseCol').classList.toggle('d-none', historical);
+        ['avxDateCol', 'avxDoseCol'].forEach(function (id) {
+            el(id).classList.toggle('col-md-6', historical);
+            el(id).classList.toggle('col-md-4', !historical);
+        });
+        if (historical && nextDose.value !== '') {
+            if (nextDose._flatpickr) nextDose._flatpickr.clear(); // also clears the visible date box
+            else nextDose.value = '';
+        }
+        if (historical) nextDose.setCustomValidity('');
         syncDateBounds();
     }
 
@@ -201,7 +218,7 @@
             type: val('avxType'),
             dateAdministered: el('avxDateAdministered').value,
             dose: val('avxDose'),
-            nextDoseDue: el('avxNextDoseDue').value,
+            nextDoseDue: recordType() === 'historical' ? '' : el('avxNextDoseDue').value, // none for a historical record
             givenBy: val('avxGivenBy'),
             facility: val('avxFacility'),
             notes: val('avxNotes'),

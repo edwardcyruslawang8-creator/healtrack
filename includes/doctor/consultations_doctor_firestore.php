@@ -94,6 +94,8 @@ $nextPatient = $queueStatus['nextPatient'];
 $ongoingConsult = $queueStatus['ongoingConsult'];
 $ongoingPatient = $queueStatus['ongoingPatient'];
 $ongoingAwaitingLab = $queueStatus['ongoingAwaitingLab'];
+$ongoingList = $queueStatus['ongoingList']; // every open consultation (not just the newest)
+$ongoingSignature = $queueStatus['ongoingSignature'];
 $patient = $queueStatus['patient'];
 
 // ---------------------------------------------------------------------
