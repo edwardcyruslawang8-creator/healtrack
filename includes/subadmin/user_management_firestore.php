@@ -190,6 +190,15 @@ foreach ($rawUsers as $doc) {
         'email' => $f['email'] ?? '—',
         'phone' => $f['phone'] ?? '—',
         'jobTitle' => $f['jobTitle'] ?? ucfirst($f['role'] ?? 'Unknown'),
+        // Every self-registration now only ever reaches this "pending"
+        // status after its email was proven owned (a correct 6-digit
+        // OTP, or — "Sign up with Google" — a verified Google ID token;
+        // see includes/shared/registration.php's hc_finish_registration())
+        // — so this is effectively always true going forward. Kept as a
+        // real field check (not a hardcoded badge) so an account created
+        // before this feature shipped, which has no emailVerifiedAt at
+        // all, still shows accurately.
+        'emailVerified' => isset($f['emailVerifiedAt']),
         'roleBg' => $pendingRoleMeta['bg'],
         'roleColor' => $pendingRoleMeta['color'],
         'requestedAtRaw' => $f['createdAt'] ?? '',

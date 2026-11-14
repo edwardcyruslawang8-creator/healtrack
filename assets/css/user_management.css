@@ -157,6 +157,26 @@
 }
 .usm-manage-btn:hover{ background: var(--adm-red-bright); color: #fff; }
 
+/* -- "Verified" badge next to a Pending Approvals row's email — every
+      request there now only exists because its email was already
+      proven owned (email OTP, or a verified Google sign-in; see
+      includes/shared/registration.php), so this is just making that
+      real, already-true state visible rather than a new check. -- */
+.usm-email-verified-badge{
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: rgba(22, 163, 74, 0.12);
+  color: var(--adm-green);
+  font-size: 10.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
 /* -- Manage User modal's profile header — same avatar-circle look as
       the table's own .usm-avatar (colors carried over via
       data-user-avatar-bg/-color so it's the exact same one), plus the

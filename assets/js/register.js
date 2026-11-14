@@ -1,17 +1,22 @@
 /* =============================================================
    REGISTRATION PAGE JS (register.php)
    ---------------------------------------------------------------
-   Client-side validation (matching passwords, terms checkbox) then a
-   plain POST to api/register.php — account creation happens entirely
-   server-side (Firebase Admin SDK, same pattern as
-   api/create-subadmin.php), so a new pending account is never signed
-   in anywhere while awaiting approval. See register.php's header
-   comment for the full pending-approval security model, and for how
-   "Sign up with Google" fits into it (verifies identity client-side
-   via a real Firebase Auth popup, then collects a password through its
-   own #googlePasswordModal — see that section below — before
-   submitting through this SAME submit handler/api/register.php request
-   either way, just with googleIdToken also set).
+   Client-side validation (matching passwords, terms checkbox), then
+   the submit handler splits into two different account-creation paths:
+     - "Sign up with Google" (googleIdToken set — collects a password
+       through its own #googlePasswordModal first, see that section
+       below) still POSTs straight to api/register.php and finishes
+       immediately, since a real Firebase Auth popup + a server-side
+       verified ID token already proves the email is owned.
+     - The manual email+password path POSTs to
+       api/send-registration-otp.php instead, then opens
+       #registrationOtpModal (see further below) — account creation
+       only actually happens once api/verify-registration-otp.php
+       confirms the right 6-digit code.
+   Either way, account creation itself happens entirely server-side
+   (Firebase Admin SDK) — a new pending account is never signed in
+   anywhere while awaiting approval. See register.php's and
+   api/register.php's header comments for the full security model.
    ============================================================= */
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -337,14 +342,47 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Creating account...';
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> ' + (googleIdToken ? 'Creating account...' : 'Sending code...');
 
         const payload = { firstName: firstName, lastName: lastName, email: email, phone: phone, role: role, password: password, confirmPassword: confirmPassword, termsAccepted: termsAccepted };
+
+        // "Sign up with Google" already proved email ownership via a
+        // real Google popup + a server-side verified ID token
+        // (api/register.php) — that path finishes registration
+        // immediately, same as before. The manual path instead goes
+        // through the new email-OTP step below (api/send-registration-otp.php
+        // -> the #registrationOtpModal -> api/verify-registration-otp.php),
+        // which is the only thing that actually creates the account.
         if (googleIdToken) {
             payload.googleIdToken = googleIdToken;
+
+            fetch(BASE_URL + '/api/register.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            })
+                .then(function (res) {
+                    return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+                })
+                .then(function (result) {
+                    if (!result.ok || !result.data.success) {
+                        throw new Error(result.data.error || 'Something went wrong. Please try again.');
+                    }
+                    form.reset();
+                    form.classList.add('d-none');
+                    if (googleBtn) googleBtn.classList.add('d-none');
+                    successBox.textContent = 'Account request submitted! A sub-administrator will review it before you can sign in. You’ll be able to sign in as soon as it’s approved.';
+                    successBox.classList.remove('d-none');
+                })
+                .catch(function (err) {
+                    showError(err.message);
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = submitBtnDefaultHtml;
+                });
+            return;
         }
 
-        fetch(BASE_URL + '/api/register.php', {
+        fetch(BASE_URL + '/api/send-registration-otp.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -356,11 +394,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (!result.ok || !result.data.success) {
                     throw new Error(result.data.error || 'Something went wrong. Please try again.');
                 }
-                form.reset();
-                form.classList.add('d-none');
-                if (googleBtn) googleBtn.classList.add('d-none');
-                successBox.textContent = 'Account request submitted! A sub-administrator will review it before you can sign in. You’ll be able to sign in as soon as it’s approved.';
-                successBox.classList.remove('d-none');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = submitBtnDefaultHtml;
+                openOtpModal(result.data.maskedEmail, result.data.expiresInSeconds, result.data.resendAvailableInSeconds);
             })
             .catch(function (err) {
                 showError(err.message);
@@ -368,4 +404,223 @@ document.addEventListener('DOMContentLoaded', function () {
                 submitBtn.innerHTML = submitBtnDefaultHtml;
             });
     });
+
+    /* ---------- Verify Your Email Address (OTP) modal ----------
+       Shown only for the manual email+password path, right after
+       api/send-registration-otp.php emails a 6-digit code — see that
+       file's header comment. Entering the right code here
+       (api/verify-registration-otp.php) is the only thing that actually
+       creates the account/submits it for sub-admin approval. */
+    const otpModalEl = document.getElementById('registrationOtpModal');
+    const otpErrorBox = document.getElementById('regOtpError');
+    const otpMaskedEmailEl = document.getElementById('regOtpMaskedEmail');
+    const otpBoxesWrap = document.getElementById('regOtpBoxes');
+    const otpBoxes = otpBoxesWrap ? Array.prototype.slice.call(otpBoxesWrap.querySelectorAll('.reg-otp-box')) : [];
+    const otpExpiryEl = document.getElementById('regOtpExpiry');
+    const otpVerifyBtn = document.getElementById('regOtpVerifyBtn');
+    const otpVerifyBtnDefaultHtml = otpVerifyBtn ? otpVerifyBtn.innerHTML : '';
+    const otpResendBtn = document.getElementById('regOtpResendBtn');
+    const otpResendBtnDefaultHtml = otpResendBtn ? otpResendBtn.innerHTML : '';
+    const otpBackLink = document.getElementById('regOtpBackLink');
+
+    let otpExpiryTimer = null;
+    let otpResendTimer = null;
+
+    function showOtpError(message) {
+        if (!otpErrorBox) return;
+        otpErrorBox.textContent = message;
+        otpErrorBox.classList.remove('d-none');
+    }
+    function hideOtpError() {
+        if (otpErrorBox) otpErrorBox.classList.add('d-none');
+    }
+    function clearOtpBoxes() {
+        otpBoxes.forEach(function (box) { box.value = ''; box.classList.remove('is-invalid'); });
+        if (otpBoxes[0]) otpBoxes[0].focus();
+    }
+    function getOtpValue() {
+        return otpBoxes.map(function (box) { return box.value; }).join('');
+    }
+    function markOtpBoxesInvalid() {
+        otpBoxes.forEach(function (box) { box.classList.add('is-invalid'); });
+    }
+
+    function formatCountdown(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    function startOtpExpiryCountdown(seconds) {
+        if (otpExpiryTimer) clearInterval(otpExpiryTimer);
+        let remaining = seconds;
+        function tick() {
+            if (!otpExpiryEl) return;
+            if (remaining <= 0) {
+                otpExpiryEl.textContent = 'This code has expired. Please request a new one.';
+                otpExpiryEl.classList.add('is-expiring');
+                clearInterval(otpExpiryTimer);
+                return;
+            }
+            otpExpiryEl.classList.toggle('is-expiring', remaining <= 30);
+            otpExpiryEl.textContent = 'Code expires in ' + formatCountdown(remaining);
+            remaining -= 1;
+        }
+        tick();
+        otpExpiryTimer = setInterval(tick, 1000);
+    }
+
+    function startOtpResendCooldown(seconds) {
+        if (otpResendTimer) clearInterval(otpResendTimer);
+        if (!otpResendBtn) return;
+        let remaining = seconds;
+        otpResendBtn.disabled = true;
+        function tick() {
+            if (remaining <= 0) {
+                otpResendBtn.disabled = false;
+                otpResendBtn.textContent = 'Resend OTP';
+                clearInterval(otpResendTimer);
+                return;
+            }
+            otpResendBtn.textContent = 'Resend OTP (' + remaining + 's)';
+            remaining -= 1;
+        }
+        tick();
+        otpResendTimer = setInterval(tick, 1000);
+    }
+
+    function openOtpModal(maskedEmail, expiresInSeconds, resendAvailableInSeconds) {
+        hideOtpError();
+        clearOtpBoxes();
+        if (otpMaskedEmailEl) otpMaskedEmailEl.textContent = maskedEmail || '';
+        startOtpExpiryCountdown(expiresInSeconds || 300);
+        startOtpResendCooldown(resendAvailableInSeconds || 60);
+        if (otpModalEl && typeof bootstrap !== 'undefined') {
+            bootstrap.Modal.getOrCreateInstance(otpModalEl).show();
+        }
+    }
+    function closeOtpModal() {
+        if (otpExpiryTimer) clearInterval(otpExpiryTimer);
+        if (otpResendTimer) clearInterval(otpResendTimer);
+        if (otpModalEl && typeof bootstrap !== 'undefined') {
+            const instance = bootstrap.Modal.getInstance(otpModalEl);
+            if (instance) instance.hide();
+        }
+    }
+
+    /* Numeric-only, auto-advance focus, and full-code paste support
+       across the 6 single-digit boxes. */
+    otpBoxes.forEach(function (box, index) {
+        box.addEventListener('input', function () {
+            box.value = box.value.replace(/[^0-9]/g, '').slice(0, 1);
+            box.classList.remove('is-invalid');
+            if (box.value && index < otpBoxes.length - 1) {
+                otpBoxes[index + 1].focus();
+            }
+        });
+        box.addEventListener('keydown', function (e) {
+            if (e.key === 'Backspace' && !box.value && index > 0) {
+                otpBoxes[index - 1].focus();
+            }
+        });
+        box.addEventListener('paste', function (e) {
+            const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+            if (!pasted) return;
+            e.preventDefault();
+            for (let i = 0; i < otpBoxes.length; i++) {
+                otpBoxes[i].value = pasted[i] || '';
+            }
+            const nextEmpty = otpBoxes.findIndex(function (b) { return !b.value; });
+            (nextEmpty === -1 ? otpBoxes[otpBoxes.length - 1] : otpBoxes[nextEmpty]).focus();
+        });
+    });
+
+    function verifyOtp() {
+        const otp = getOtpValue();
+        if (otp.length !== 6) {
+            showOtpError('Please enter the full 6-digit code.');
+            markOtpBoxesInvalid();
+            return;
+        }
+        hideOtpError();
+        otpVerifyBtn.disabled = true;
+        otpVerifyBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Verifying...';
+
+        fetch(BASE_URL + '/api/verify-registration-otp.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ otp: otp }),
+        })
+            .then(function (res) {
+                return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+            })
+            .then(function (result) {
+                otpVerifyBtn.disabled = false;
+                otpVerifyBtn.innerHTML = otpVerifyBtnDefaultHtml;
+                if (!result.ok || !result.data.success) {
+                    markOtpBoxesInvalid();
+                    showOtpError(result.data.error || 'That code is incorrect. Please try again.');
+                    return;
+                }
+                closeOtpModal();
+                form.reset();
+                form.classList.add('d-none');
+                successBox.textContent = 'Email verified successfully! Your account registration has been submitted for approval. Please wait for the Sub-Administrator to review your request.';
+                successBox.classList.remove('d-none');
+            })
+            .catch(function () {
+                otpVerifyBtn.disabled = false;
+                otpVerifyBtn.innerHTML = otpVerifyBtnDefaultHtml;
+                showOtpError('Something went wrong verifying your code. Please try again.');
+            });
+    }
+    if (otpVerifyBtn) {
+        otpVerifyBtn.addEventListener('click', verifyOtp);
+    }
+
+    if (otpResendBtn) {
+        otpResendBtn.addEventListener('click', function () {
+            if (otpResendBtn.disabled) return;
+            hideOtpError();
+            otpResendBtn.disabled = true;
+            otpResendBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+            fetch(BASE_URL + '/api/resend-registration-otp.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}),
+            })
+                .then(function (res) {
+                    return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+                })
+                .then(function (result) {
+                    otpResendBtn.innerHTML = otpResendBtnDefaultHtml;
+                    if (!result.ok || !result.data.success) {
+                        showOtpError(result.data.error || 'Could not resend the code right now.');
+                        startOtpResendCooldown(result.data.resendAvailableInSeconds || 60);
+                        return;
+                    }
+                    clearOtpBoxes();
+                    startOtpExpiryCountdown(result.data.expiresInSeconds || 300);
+                    startOtpResendCooldown(result.data.resendAvailableInSeconds || 60);
+                })
+                .catch(function () {
+                    otpResendBtn.disabled = false;
+                    otpResendBtn.innerHTML = otpResendBtnDefaultHtml;
+                    showOtpError('Could not resend the code right now. Please try again.');
+                });
+        });
+    }
+
+    // "Edit your information" — goes back to the main form without
+    // calling any endpoint; the next Create Account submit simply
+    // overwrites this same browser session's pending registration (see
+    // api/send-registration-otp.php's header comment), so there is
+    // nothing here that needs to be explicitly cancelled server-side.
+    if (otpBackLink) {
+        otpBackLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            closeOtpModal();
+        });
+    }
 });

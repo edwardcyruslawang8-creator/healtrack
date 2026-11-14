@@ -477,6 +477,54 @@ require_once __DIR__ . '/config/constants.php'; // BASE_URL
     </div>
 </div>
 
+<!-- =========================================================
+     VERIFY YOUR EMAIL ADDRESS — shown after the manual (email+password)
+     Create Account submit passes validation, in place of the old
+     immediate "submitted for approval" message. "Sign up with Google"
+     never shows this modal — see api/register.php's header comment for
+     why that path's own identity proof is enough on its own.
+     Confirming the right code here is literally what creates the
+     account record at all (api/verify-registration-otp.php) — see that
+     file's header comment. Not dismissible by clicking outside/Esc, so
+     it isn't lost by an accidental click; the explicit "Edit your
+     information" link below is the deliberate way back to the form.
+     ========================================================= -->
+<div class="modal fade" id="registrationOtpModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="registrationOtpModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="registrationOtpModalLabel">Verify Your Email Address</h5>
+            </div>
+            <div class="modal-body reg-otp-body">
+                <div id="regOtpError" class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
+
+                <p class="login-card-subtitle" style="margin-bottom:4px;">We've sent a 6-digit verification code to your email address. Please enter the code below to verify your email.</p>
+                <p class="reg-otp-masked-email" id="regOtpMaskedEmail"></p>
+
+                <div class="reg-otp-boxes" id="regOtpBoxes">
+                    <input type="text" inputmode="numeric" maxlength="1" class="reg-otp-box" data-otp-index="0" autocomplete="one-time-code">
+                    <input type="text" inputmode="numeric" maxlength="1" class="reg-otp-box" data-otp-index="1">
+                    <input type="text" inputmode="numeric" maxlength="1" class="reg-otp-box" data-otp-index="2">
+                    <input type="text" inputmode="numeric" maxlength="1" class="reg-otp-box" data-otp-index="3">
+                    <input type="text" inputmode="numeric" maxlength="1" class="reg-otp-box" data-otp-index="4">
+                    <input type="text" inputmode="numeric" maxlength="1" class="reg-otp-box" data-otp-index="5">
+                </div>
+
+                <p class="reg-otp-expiry" id="regOtpExpiry"></p>
+
+                <button type="button" class="reg-legal-agree-btn" id="regOtpVerifyBtn" style="width:100%; margin-bottom:10px;">Verify OTP</button>
+
+                <div class="reg-otp-resend-row">
+                    <button type="button" class="reg-otp-resend-btn" id="regOtpResendBtn">Resend OTP</button>
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content:center; border-top:none;">
+                <a href="#" class="reg-otp-back-link" id="regOtpBackLink">Edit your information</a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 

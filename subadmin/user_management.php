@@ -342,7 +342,12 @@ $adminNavItems = [
                     <?php foreach ($pendingAccounts as $p): ?>
                     <tr data-uid="<?= htmlspecialchars($p['uid']) ?>">
                         <td><?= htmlspecialchars($p['name']) ?></td>
-                        <td><?= htmlspecialchars($p['email']) ?></td>
+                        <td>
+                            <?= htmlspecialchars($p['email']) ?>
+                            <?php if ($p['emailVerified']): ?>
+                            <span class="usm-email-verified-badge" title="This email address was verified before this request was submitted."><i class="bi bi-patch-check-fill"></i> Verified</span>
+                            <?php endif; ?>
+                        </td>
                         <td><?= htmlspecialchars($p['phone']) ?></td>
                         <td><?= htmlspecialchars($p['jobTitle']) ?></td>
                         <td><?= htmlspecialchars($p['requestedAt']) ?></td>
