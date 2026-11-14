@@ -41,6 +41,18 @@ if (!function_exists('hc_send_email')) {
             return false;
         }
 
+        // Several callers build $toEmail from a patient/account record
+        // that defaults a missing email to a display placeholder (e.g.
+        // '—') rather than an empty string, so a bare `?? ''` at the
+        // call site never actually catches "no real email on file" —
+        // PHPMailer then rejects the placeholder as an invalid address.
+        // Checked once here, for every caller, instead of trusting each
+        // call site to pre-validate its own address.
+        if (filter_var($toEmail, FILTER_VALIDATE_EMAIL) === false) {
+            error_log('[mailer] Skipped sending "' . $subject . '" — no valid email address on file (got "' . $toEmail . '").');
+            return false;
+        }
+
         $mail = new PHPMailer(true);
         try {
             // Without this, PHPMailer defaults to ISO-8859-1 — any
