@@ -404,7 +404,7 @@ function vaccine_coverage_badge(float $pct): array
     <!-- ============ VACCINE ADMINISTRATION SUMMARY + BY BARANGAY ============ -->
     <div class="vr-grid-split">
 
-        <div class="adm-card">
+        <div class="adm-card" id="vasCard" data-ajax-scope>
             <div class="adm-card-header"><h2>Vaccine Administration Summary</h2></div>
             <div class="adm-table-wrap">
                 <table class="adm-table vr-compact-table" style="min-width:0;" data-sortable="true">
@@ -455,7 +455,7 @@ function vaccine_coverage_badge(float $pct): array
             </div>
         </div>
 
-        <div class="adm-card">
+        <div class="adm-card" id="vbbCard" data-ajax-scope>
             <div class="adm-card-header"><h2>Vaccination by Barangay (Top 5)</h2></div>
             <div class="adm-table-wrap">
                 <table class="adm-table vr-compact-table" style="min-width:0;" data-sortable="true">

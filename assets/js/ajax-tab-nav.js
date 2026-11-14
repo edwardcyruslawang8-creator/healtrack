@@ -98,31 +98,64 @@
      * started on, whose scripts are all baseline), since that's what
      * every page script's init listens for.
      */
+    function runOneScript(oldScript) {
+        return new Promise(function (resolve) {
+            var fresh = document.createElement('script');
+            if (oldScript.hasAttribute('src')) {
+                fresh.src = oldScript.getAttribute('src');
+                fresh.onload = resolve;
+                fresh.onerror = resolve;
+            } else {
+                fresh.textContent = oldScript.textContent;
+                if (oldScript.id) fresh.id = oldScript.id;
+            }
+            var existing = fresh.id ? document.getElementById(fresh.id) : null;
+            if (existing) existing.replaceWith(fresh); else document.body.appendChild(fresh);
+            if (!fresh.src) resolve(); // inline scripts run synchronously on insert
+        });
+    }
+
     function rerunPageScripts(doc) {
-        var toRun = Array.prototype.slice.call(doc.querySelectorAll('script')).filter(function (s) {
-            if (s.closest(mainSelector)) return false;
+        var all = Array.prototype.slice.call(doc.querySelectorAll('script')).filter(function (s) {
+            // id="reportDataScript"/data-ajax-rerun scripts live INSIDE
+            // <main> for every Analytics & Reports page (see the comment
+            // above) — they must still be re-run even though <main> itself
+            // was just swapped in via replaceWith(), which never executes
+            // the script tags it brings along. Only an ordinary (unmarked)
+            // in-main script is skipped here, since <main>'s own swap
+            // already placed its markup; it was never relying on this
+            // function to run it.
+            if (s.closest(mainSelector)) return s.id === 'reportDataScript' || s.hasAttribute('data-ajax-rerun');
             if (s.hasAttribute('src')) return !baselineScriptSrcs.has(s.src);
             return s.id === 'reportDataScript' || s.hasAttribute('data-ajax-rerun');
         });
 
-        return toRun.reduce(function (chain, oldScript) {
-            return chain.then(function () {
-                return new Promise(function (resolve) {
-                    var fresh = document.createElement('script');
-                    if (oldScript.hasAttribute('src')) {
-                        fresh.src = oldScript.getAttribute('src');
-                        fresh.onload = resolve;
-                        fresh.onerror = resolve;
-                    } else {
-                        fresh.textContent = oldScript.textContent;
-                        if (oldScript.id) fresh.id = oldScript.id;
-                    }
-                    var existing = fresh.id ? document.getElementById(fresh.id) : null;
-                    if (existing) existing.replaceWith(fresh); else document.body.appendChild(fresh);
-                    if (!fresh.src) resolve(); // inline scripts run synchronously on insert
-                });
-            });
-        }, Promise.resolve()).then(function () {
+        // The library <script src> files a report page's own init code
+        // calls into (e.g. predictive_analytics.php's half-dozen small
+        // "assets/js/*-forecast.js"/"*-projection.js" helper files) don't
+        // depend on each other — only the data-ajax-rerun init code at the
+        // bottom actually reads from them, via a plain `if (window.HCXxx)`
+        // check. Fetching them one at a time (the original behavior here)
+        // serializes every one of their network round trips for no reason,
+        // which on a first visit to a tab with several such files is slow
+        // enough that a quick look (or a screenshot) right after the click
+        // can catch the card still showing its unfilled placeholder HTML —
+        // not actually broken, just not finished loading yet. Loading them
+        // in parallel cuts that window down to roughly the slowest single
+        // file instead of the sum of all of them. The inline data/init
+        // scripts (reportDataScript, data-ajax-rerun) keep their real
+        // "data script runs before the code that reads it" ordering
+        // requirement (see this function's own doc comment above) by
+        // running sequentially, same as before, only AFTER every external
+        // file has finished.
+        var externalScripts = all.filter(function (s) { return s.hasAttribute('src'); });
+        var inlineScripts = all.filter(function (s) { return !s.hasAttribute('src'); });
+
+        return Promise.all(externalScripts.map(runOneScript)).then(function () {
+            return inlineScripts.reduce(function (chain, oldScript) {
+                return chain.then(function () { return runOneScript(oldScript); });
+            }, Promise.resolve());
+        }).then(function () {
             document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true, cancelable: true }));
         });
     }

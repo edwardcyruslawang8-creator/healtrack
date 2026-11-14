@@ -353,6 +353,12 @@
       blank white frame a real browser navigation would show. -- */
 main.adm-main.adm-main-loading{ opacity: .55; pointer-events: none; transition: opacity .15s ease; }
 
+/* -- Scoped swap of just one card (e.g. Vaccine Reports' own
+      "Vaccine Administration Summary"/"Vaccination by Barangay" cards,
+      each marked data-ajax-scope) — same dimming, applied to the card
+      itself instead of all of <main>. -- */
+[data-ajax-scope].adm-main-loading{ opacity: .55; pointer-events: none; transition: opacity .15s ease; }
+
 /* -- Custom date-range mini form inside the date filter dropdown
       (includes/shared/date_range_filter_dropdown.php) -- */
 .dropdown-menu form .form-control-sm{ font-size: 12.5px; }

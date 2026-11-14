@@ -667,7 +667,7 @@ $adminNavItems = [
                 </div>
 
                 <div class="an-card">
-                    <div class="an-card-header"><h3>Recommendations</h3></div>
+                    <div class="an-card-header"><h3>Recommendations</h3><span class="an-ai-badge" title="Phrased by AI (Google Gemini, with Groq as a fallback) from this facility's own real data — falls back to standard rule-based guidance if AI is unavailable."><i class="bi bi-stars"></i> AI-Assisted</span></div>
                     <?php if ($recommendations === []): ?>
                     <div class="an-reco-empty">
                         <i class="bi bi-check-circle-fill"></i>
@@ -829,7 +829,7 @@ $adminNavItems = [
                         <div class="an-forecast-row">
                             <?php $riskCardRows = $pt1RiskRows; $riskCardGroup = 'disease'; include __DIR__ . '/../includes/shared/_risk_alert_card.php'; ?>
                             <div class="an-card">
-                                <div class="an-card-header"><h3>Recommendations</h3></div>
+                                <div class="an-card-header"><h3>Recommendations</h3><span class="an-ai-badge" title="Phrased by AI (Google Gemini, with Groq as a fallback) from this facility's own real data — falls back to standard rule-based guidance if AI is unavailable."><i class="bi bi-stars"></i> AI-Assisted</span></div>
                                 <?php if ($pt1Recommendations === []): ?>
                                 <div class="an-reco-empty"><i class="bi bi-check-circle-fill"></i><p>Nothing to flag right now — case trends look steady.</p></div>
                                 <?php else: ?>
@@ -996,7 +996,7 @@ $adminNavItems = [
                         <div class="an-forecast-row">
                             <?php $riskCardRows = $pt2RiskRows; $riskCardGroup = 'shortage'; include __DIR__ . '/../includes/shared/_risk_alert_card.php'; ?>
                             <div class="an-card">
-                                <div class="an-card-header"><h3>Recommendations</h3></div>
+                                <div class="an-card-header"><h3>Recommendations</h3><span class="an-ai-badge" title="Phrased by AI (Google Gemini, with Groq as a fallback) from this facility's own real data — falls back to standard rule-based guidance if AI is unavailable."><i class="bi bi-stars"></i> AI-Assisted</span></div>
                                 <?php if ($pt2Recommendations === []): ?>
                                 <div class="an-reco-empty"><i class="bi bi-check-circle-fill"></i><p>Nothing to flag right now — stock levels look steady.</p></div>
                                 <?php else: ?>
@@ -1055,7 +1055,7 @@ $adminNavItems = [
                         <div class="an-forecast-row">
                             <?php $riskCardRows = $pt3RiskRows; $riskCardGroup = 'replenishment'; include __DIR__ . '/../includes/shared/_risk_alert_card.php'; ?>
                             <div class="an-card">
-                                <div class="an-card-header"><h3>Recommendations</h3></div>
+                                <div class="an-card-header"><h3>Recommendations</h3><span class="an-ai-badge" title="Phrased by AI (Google Gemini, with Groq as a fallback) from this facility's own real data — falls back to standard rule-based guidance if AI is unavailable."><i class="bi bi-stars"></i> AI-Assisted</span></div>
                                 <?php if ($pt3Recommendations === []): ?>
                                 <div class="an-reco-empty"><i class="bi bi-check-circle-fill"></i><p>Nothing to flag right now — replenishment looks on track.</p></div>
                                 <?php else: ?>
@@ -1112,7 +1112,7 @@ $adminNavItems = [
                         <div class="an-forecast-row">
                             <?php $riskCardRows = $pt4RiskRows; $riskCardGroup = 'barangay'; include __DIR__ . '/../includes/shared/_risk_alert_card.php'; ?>
                             <div class="an-card">
-                                <div class="an-card-header"><h3>Recommendations</h3></div>
+                                <div class="an-card-header"><h3>Recommendations</h3><span class="an-ai-badge" title="Phrased by AI (Google Gemini, with Groq as a fallback) from this facility's own real data — falls back to standard rule-based guidance if AI is unavailable."><i class="bi bi-stars"></i> AI-Assisted</span></div>
                                 <?php if ($pt4Recommendations === []): ?>
                                 <div class="an-reco-empty"><i class="bi bi-check-circle-fill"></i><p>Nothing to flag right now — demand looks steady across covered barangays.</p></div>
                                 <?php else: ?>

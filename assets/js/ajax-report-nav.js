@@ -126,6 +126,47 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
+    // Scoped swap: a link inside an element marked data-ajax-scope (with
+    // its own real id — e.g. a report page's one card among several
+    // independently-paginated/sortable ones, like Vaccine Reports' own
+    // "Vaccine Administration Summary" and "Vaccination by Barangay"
+    // cards) re-fetches the SAME full page but only swaps that one
+    // element's own markup, instead of all of <main> — so paging/
+    // sorting one card never flashes/re-draws every other card's charts
+    // and tables too. Everything else about the fetch (filters/params in
+    // the URL, the real-navigation fallback on error) is identical to
+    // the whole-<main> swap above; only what gets replaced differs, and
+    // there's no page-level data script to refresh since charts outside
+    // the scoped element aren't touched.
+    function swapScopedTo(scopeEl, url, pushHistory) {
+        const scopeId = scopeEl.id;
+        scopeEl.classList.add('adm-main-loading');
+
+        return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (res) {
+                if (!res.ok) throw new Error('Request failed');
+                return res.text();
+            })
+            .then(function (html) {
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const newScope = doc.getElementById(scopeId);
+                if (!newScope) throw new Error('Unexpected response shape');
+
+                scopeEl.innerHTML = newScope.innerHTML;
+
+                if (typeof window.initSortableTables === 'function') window.initSortableTables();
+                if (window.HCDatepicker) window.HCDatepicker.init();
+
+                if (pushHistory) window.history.replaceState({}, '', url);
+            })
+            .catch(function () {
+                window.location.href = url; // fall back to a real navigation
+            })
+            .finally(function () {
+                scopeEl.classList.remove('adm-main-loading');
+            });
+    }
+
     // Exposed so a page's own script (e.g. audit-logs-search.js's user
     // autocomplete, which used to force a real navigation) can reuse
     // this exact same smooth-swap instead of duplicating it.
@@ -146,7 +187,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         e.preventDefault();
         if (!main.contains(link)) syncSidebarActiveState(link);
-        swapTo(href, true);
+
+        const scopeEl = isBareQuery ? link.closest('[data-ajax-scope]') : null;
+        if (scopeEl && scopeEl.id) {
+            swapScopedTo(scopeEl, href, true);
+        } else {
+            swapTo(href, true);
+        }
     });
 
     // The "Custom Range" mini date-picker form inside the date filter

@@ -247,7 +247,7 @@ if (!function_exists('hc_disease_outbreak_status_meta')) {
             'normal' => ['label' => 'Normal', 'color' => '#1E8E3E', 'bg' => '#E4F7EA'],
             'elevated' => ['label' => 'Elevated', 'color' => '#E8710A', 'bg' => '#FDECDD'],
             'potential_outbreak' => ['label' => 'Potential Outbreak', 'color' => '#D93025', 'bg' => '#FCE4E4'],
-            'insufficient_data' => ['label' => 'Insufficient Data', 'color' => '#6B7280', 'bg' => '#EEF0F3'],
+            'insufficient_data' => ['label' => 'Baseline Pending', 'color' => '#6B7280', 'bg' => '#EEF0F3'],
         ];
     }
 }

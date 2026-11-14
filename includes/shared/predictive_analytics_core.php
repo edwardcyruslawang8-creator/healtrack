@@ -1022,16 +1022,22 @@ if (!function_exists('hc_stock_projection_detail')) {
      *
      * Average daily consumption comes ONLY from real dispensed-quantity
      * data: pharmacy_orders docs for this item whose status is
-     * 'dispensed' AND whose 'quantity' field is a real number — NEVER
-     * from order/prescription event counts (hc_order_frequency_breakdown()
+     * 'dispensed' AND whose 'dispensedQuantity' field is a real number —
+     * NEVER from order/prescription event counts (hc_order_frequency_breakdown()
      * is a frequency signal, not a units-consumed one; conflating the
-     * two is exactly what this function is built to avoid). That
-     * quantity field is only reliably populated on a handful of real
-     * docs today (most historical/seeded orders never recorded it), so
-     * most items will honestly come back with insufficientData = true
-     * rather than a fabricated rate — the chart still renders (a flat
-     * line at the item's real current stock) but is clearly marked as
-     * not a real forecast.
+     * two is exactly what this function is built to avoid). 'dispensedQuantity'
+     * is the field both real dispensing endpoints
+     * (api/dispense-pharmacy-order.php, api/dispense-without-prescription.php)
+     * actually write on a 'dispensed' doc — a bare 'quantity' field is
+     * never written by either one, so reading that instead (as this
+     * function used to) meant every real dispense ever made through the
+     * app silently never counted here. Most pharmacy_orders docs today
+     * still have no recorded dispensed quantity at all though (this
+     * facility's pharmacy workflow has very little real history yet),
+     * so most items will still honestly come back with
+     * insufficientData = true rather than a fabricated rate — the chart
+     * still renders (a flat line at the item's real current stock) but
+     * is clearly marked as not a real forecast.
      *
      * pharmacy_orders has no itemId field, only itemName — so dispensed-
      * quantity matching is still necessarily name-based (hc_item_names_match()).
@@ -1061,7 +1067,7 @@ if (!function_exists('hc_stock_projection_detail')) {
             if (($f['status'] ?? '') !== 'dispensed') {
                 continue;
             }
-            $qty = $f['quantity'] ?? null;
+            $qty = $f['dispensedQuantity'] ?? null;
             if (!is_int($qty) && !(is_string($qty) && ctype_digit($qty))) {
                 continue; // not a real, usable number on this doc
             }
@@ -1120,6 +1126,30 @@ if (!function_exists('hc_stock_projection_detail')) {
             $projected[] = max(0, round($currentStock - $decline, 1));
         }
 
+        // Same deterministic template text assets/js/stock-projection.js's
+        // renderRecommendation() used to build client-side, now built
+        // here instead and rephrased by hc_ai_recommendation_text() (falls
+        // back to this exact template unchanged if AI is unavailable) —
+        // see includes/shared/ai_recommendations.php.
+        $templateBody = match ($stockStatus) {
+            'out_of_stock' => $item['name'] . ' is currently out of stock. Reorder immediately to avoid disruption.',
+            'critical' => $item['name'] . ' is projected to run out in about ' . $estimatedDaysRemaining . ' day(s) at its current usage pace. Reordering soon is recommended.',
+            'low' => 'Current stock of ' . $item['name'] . ' (' . $currentStock . ' ' . $item['unit'] . ') is at or below its reorder level (' . $minLevel . ' ' . $item['unit'] . '). Consider placing a reorder.',
+            'insufficient_data' => 'There isn\'t enough real dispensing data yet to estimate how fast ' . $item['name'] . ' is being used. Monitor its stock manually until more usage is recorded.',
+            default => $item['name'] . ' currently has sufficient stock. No action needed right now.',
+        };
+        require_once __DIR__ . '/ai_recommendations.php';
+        $recommendationText = hc_ai_recommendation_text('stock_projection', [
+            'item' => $item['name'],
+            'itemType' => $item['itemType'],
+            'stockStatus' => $stockStatus,
+            'currentStock' => $currentStock,
+            'minLevel' => $minLevel,
+            'unit' => $item['unit'],
+            'estimatedDaysRemaining' => $estimatedDaysRemaining,
+            'avgDailyConsumption' => $avgDailyConsumption,
+        ], $templateBody);
+
         return [
             'id' => $item['id'],
             'name' => $item['name'],
@@ -1136,6 +1166,7 @@ if (!function_exists('hc_stock_projection_detail')) {
             'forecastDays' => $forecastDays,
             'labels' => $labels,
             'projected' => $projected,
+            'recommendationText' => $recommendationText,
         ];
     }
 }

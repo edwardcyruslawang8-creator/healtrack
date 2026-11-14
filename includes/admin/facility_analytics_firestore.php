@@ -815,21 +815,25 @@ $forecastTrend = ['labels' => $forecastLabels, 'actual' => $forecastActual, 'for
 // threshold. An empty list below means genuinely "nothing to flag
 // right now" at this facility, not a missing feature.
 // ---------------------------------------------------------------------
+require_once __DIR__ . '/../shared/ai_recommendations.php'; // hc_ai_recommendation_text() — rephrases every templated body below, same real facts in, real AI text out (or the template unchanged if AI is unavailable)
+
 $recommendations = [];
 
 if ($patientFit['hasSignal'] && $patientPast7Total > 0) {
     $patientChangePct = (int) round((($patientForecastTotal - $patientPast7Total) / $patientPast7Total) * 100);
     if ($patientChangePct >= 20) {
+        $body = "Projected new patients next week ({$patientForecastTotal}) are {$patientChangePct}% above the past week ({$patientPast7Total}) at {$facilityName}. Consider preparing extra walk-in capacity and front-desk coverage.";
         $recommendations[] = [
             'type' => 'opportunity', 'icon' => 'bi-graph-up-arrow',
             'title' => 'Patient volume is trending up',
-            'body' => "Projected new patients next week ({$patientForecastTotal}) are {$patientChangePct}% above the past week ({$patientPast7Total}) at {$facilityName}. Consider preparing extra walk-in capacity and front-desk coverage.",
+            'body' => hc_ai_recommendation_text('overview_patient_trend', ['facility' => $facilityName, 'direction' => 'up', 'forecastTotal' => $patientForecastTotal, 'past7Total' => $patientPast7Total, 'changePct' => $patientChangePct], $body),
         ];
     } elseif ($patientChangePct <= -20) {
+        $body = 'Projected new patients next week (' . $patientForecastTotal . ') are ' . abs($patientChangePct) . "% below the past week ({$patientPast7Total}) at {$facilityName}. Worth reviewing outreach or scheduling.";
         $recommendations[] = [
             'type' => 'warning', 'icon' => 'bi-graph-down-arrow',
             'title' => 'Patient volume is trending down',
-            'body' => 'Projected new patients next week (' . $patientForecastTotal . ') are ' . abs($patientChangePct) . "% below the past week ({$patientPast7Total}) at {$facilityName}. Worth reviewing outreach or scheduling.",
+            'body' => hc_ai_recommendation_text('overview_patient_trend', ['facility' => $facilityName, 'direction' => 'down', 'forecastTotal' => $patientForecastTotal, 'past7Total' => $patientPast7Total, 'changePct' => $patientChangePct], $body),
         ];
     }
 }
@@ -837,10 +841,11 @@ if ($patientFit['hasSignal'] && $patientPast7Total > 0) {
 if ($consultFit['hasSignal'] && $consultForecastTotal > 0 && $facilityStaffCount > 0) {
     $projectedPerStaff = $consultForecastTotal / $facilityStaffCount;
     if ($projectedPerStaff >= 15) { // sustained 2+ consultations/day/staff member
+        $body = "Projected consultations next week ({$consultForecastTotal}) average " . round($projectedPerStaff, 1) . " per staff member across {$facilityStaffCount} staff at {$facilityName} — worth evaluating whether coverage needs adjusting.";
         $recommendations[] = [
             'type' => 'warning', 'icon' => 'bi-people-fill',
             'title' => 'Consultation load may outpace current staffing',
-            'body' => "Projected consultations next week ({$consultForecastTotal}) average " . round($projectedPerStaff, 1) . " per staff member across {$facilityStaffCount} staff at {$facilityName} — worth evaluating whether coverage needs adjusting.",
+            'body' => hc_ai_recommendation_text('overview_staffing_load', ['facility' => $facilityName, 'forecastTotal' => $consultForecastTotal, 'staffCount' => $facilityStaffCount, 'perStaff' => round($projectedPerStaff, 1)], $body),
         ];
     }
 }
@@ -848,10 +853,11 @@ if ($consultFit['hasSignal'] && $consultForecastTotal > 0 && $facilityStaffCount
 if ($immunizationsLastMonth >= 5) {
     $immunizationChangePct = hc_facility_growth_pct($immunizationsThisMonth, $immunizationsLastMonth);
     if ($immunizationChangePct <= -30) {
+        $body = 'Completed immunizations are down ' . abs($immunizationChangePct) . "% vs last month ({$immunizationsThisMonth} vs {$immunizationsLastMonth}) at {$facilityName}. A local vaccination drive may help close the gap.";
         $recommendations[] = [
             'type' => 'warning', 'icon' => 'bi-droplet-half', // "bi-syringe" isn't a real Bootstrap Icons 1.11.3 class
             'title' => 'Immunizations have dropped this month',
-            'body' => 'Completed immunizations are down ' . abs($immunizationChangePct) . "% vs last month ({$immunizationsThisMonth} vs {$immunizationsLastMonth}) at {$facilityName}. A local vaccination drive may help close the gap.",
+            'body' => hc_ai_recommendation_text('overview_immunization_drop', ['facility' => $facilityName, 'thisMonth' => $immunizationsThisMonth, 'lastMonth' => $immunizationsLastMonth, 'changePct' => $immunizationChangePct], $body),
         ];
     }
 }
@@ -859,32 +865,35 @@ if ($immunizationsLastMonth >= 5) {
 if ($demographicsTotal >= 10) {
     foreach ($demographics as $bucket) {
         if ($bucket['label'] === '55 years and above' && $bucket['pct'] >= 40) {
+            $body = round($bucket['pct']) . "% of {$facilityName}'s patients are 55 or older — prioritizing senior-friendly scheduling and stocking senior-relevant medicines may improve care here.";
             $recommendations[] = [
                 'type' => 'insight', 'icon' => 'bi-person-heart',
                 'title' => 'A large share of patients are senior citizens',
-                'body' => round($bucket['pct']) . "% of {$facilityName}'s patients are 55 or older — prioritizing senior-friendly scheduling and stocking senior-relevant medicines may improve care here.",
+                'body' => hc_ai_recommendation_text('overview_demographic_skew', ['facility' => $facilityName, 'bucket' => 'seniors', 'pct' => round($bucket['pct'])], $body),
             ];
         }
         if ($bucket['label'] === '0 - 17 years' && $bucket['pct'] >= 40) {
+            $body = round($bucket['pct']) . "% of {$facilityName}'s patients are under 18 — ensuring pediatric vaccine and medicine stock stays adequate is worth prioritizing.";
             $recommendations[] = [
                 'type' => 'insight', 'icon' => 'bi-person-heart',
                 'title' => 'A large share of patients are children',
-                'body' => round($bucket['pct']) . "% of {$facilityName}'s patients are under 18 — ensuring pediatric vaccine and medicine stock stays adequate is worth prioritizing.",
+                'body' => hc_ai_recommendation_text('overview_demographic_skew', ['facility' => $facilityName, 'bucket' => 'children', 'pct' => round($bucket['pct'])], $body),
             ];
         }
     }
 }
 
 if ($medicineInventory['lowStock'] + $medicineInventory['outOfStock'] > 0) {
+    // Medicine inventory is system-wide, not per-facility (see this
+    // file's header comment) — worded accordingly rather than
+    // implying these specific items belong only to this facility.
+    $body = ($medicineInventory['lowStock'] + $medicineInventory['outOfStock']) . ' medicine(s) are low or out of stock system-wide, including ' .
+        implode(', ', array_slice(array_column($topLowStockMedicines, 'name'), 0, 3)) .
+        '. Review Stock Requests to reorder before this facility runs out.';
     $recommendations[] = [
         'type' => 'warning', 'icon' => 'bi-capsule',
         'title' => 'Medicines need reordering',
-        // Medicine inventory is system-wide, not per-facility (see this
-        // file's header comment) — worded accordingly rather than
-        // implying these specific items belong only to this facility.
-        'body' => ($medicineInventory['lowStock'] + $medicineInventory['outOfStock']) . ' medicine(s) are low or out of stock system-wide, including ' .
-            implode(', ', array_slice(array_column($topLowStockMedicines, 'name'), 0, 3)) .
-            '. Review Stock Requests to reorder before this facility runs out.',
+        'body' => hc_ai_recommendation_text('overview_medicine_reorder', ['lowOrOutCount' => $medicineInventory['lowStock'] + $medicineInventory['outOfStock'], 'examples' => array_slice(array_column($topLowStockMedicines, 'name'), 0, 3), 'scope' => 'system-wide, not facility-specific'], $body),
     ];
 }
 

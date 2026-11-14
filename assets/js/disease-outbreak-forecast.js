@@ -260,7 +260,7 @@ window.HCDiseaseOutbreakForecast = (function () {
                         : r.trend === 'decreasing' ? 'bi-arrow-down-short dof-trend-down'
                         : 'bi-dash dof-trend-flat';
                     const trendLabel = r.trend === 'increasing' ? 'Increasing' : r.trend === 'decreasing' ? 'Decreasing' : 'Stable';
-                    const meta = r.statusMeta || { label: r.status || 'Insufficient Data', bg: '#EEF0F3', color: '#6B7280' };
+                    const meta = r.statusMeta || { label: r.status || 'Baseline Pending', bg: '#EEF0F3', color: '#6B7280' };
                     html.push('<tr>'
                         + '<td>' + escapeHtml(r.disease) + '</td>'
                         + '<td>' + safeNumber(Number(r.currentCases)) + '</td>'

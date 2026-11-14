@@ -96,7 +96,13 @@ $todaysConsultationsCount = count(array_filter($crFacilityConsultationsAll, fn (
 $consultTypeMeta = hc_consultation_type_meta();
 $consultStatusMeta = hc_consultation_status_meta();
 
-$consultationTypeFilterOptions = array_merge(['All Consultation Types'], array_column($consultTypeMeta, 'label'));
+// This facility's medical staff only ever handle Walk-in/Follow-up/
+// Emergency consultations (see medical-staff/consultations.php's own
+// "Consultation Type" field comment) — "Scheduled"/"Teleconsultation"
+// stay in hc_consultation_type_meta() itself for badge lookups
+// elsewhere, just not offered as a filter choice here.
+$crFilterableTypeKeys = ['walk_in', 'follow_up', 'emergency'];
+$consultationTypeFilterOptions = array_merge(['All Consultation Types'], array_column(array_intersect_key($consultTypeMeta, array_flip($crFilterableTypeKeys)), 'label'));
 $statusFilterOptions = array_merge(['All Status'], array_column($consultStatusMeta, 'label'));
 
 $crDateFilter = hc_resolve_date_range_filter();

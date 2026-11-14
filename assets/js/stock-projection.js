@@ -208,6 +208,25 @@ window.HCStockProjection = (function () {
                 : '';
         }
 
+        // Past 32 real days, a bare day count ("1736 days") reads as
+        // noise rather than something useful at a glance — switched to
+        // whole months once it crosses that threshold. Counts real
+        // calendar months from today to today+days (via the Date
+        // object's own month/day fields), not days/30 — a flat divisor
+        // either over- or under-counts depending on which actual months
+        // (28–31 real days each) the stretch happens to run through.
+        function formatDaysRemaining(days) {
+            if (days <= 32) {
+                return days + ' day' + (days === 1 ? '' : 's');
+            }
+            const today = new Date();
+            const future = new Date(today.getTime() + days * 86400000);
+            let months = (future.getFullYear() - today.getFullYear()) * 12 + (future.getMonth() - today.getMonth());
+            if (future.getDate() < today.getDate()) months--; // that final month isn't complete yet
+            months = Math.max(1, months);
+            return months + ' month' + (months === 1 ? '' : 's');
+        }
+
         function renderSummary(detail) {
             if (!summaryBox) return;
             const meta = STATUS_META[detail.stockStatus] || STATUS_META.insufficient_data;
@@ -215,7 +234,7 @@ window.HCStockProjection = (function () {
                 ? detail.avgDailyConsumption + ' ' + detail.unit + '/day'
                 : 'Insufficient Data';
             const daysText = detail.estimatedDaysRemaining !== null
-                ? detail.estimatedDaysRemaining + ' day' + (detail.estimatedDaysRemaining === 1 ? '' : 's')
+                ? formatDaysRemaining(detail.estimatedDaysRemaining)
                 : 'Insufficient Data';
 
             summaryBox.innerHTML =
@@ -329,27 +348,35 @@ window.HCStockProjection = (function () {
         function renderRecommendation(detail) {
             if (!recommendationBox) return;
             const needsReplenishment = ['out_of_stock', 'critical', 'low'].indexOf(detail.stockStatus) !== -1;
-            let text;
-            switch (detail.stockStatus) {
-                case 'out_of_stock':
-                    text = '<strong>' + escapeHtml(detail.name) + '</strong> is currently out of stock. Reorder immediately to avoid disruption.';
-                    break;
-                case 'critical':
-                    text = '<strong>' + escapeHtml(detail.name) + '</strong> is projected to run out in about ' + detail.estimatedDaysRemaining + ' day(s) at its current usage pace. Reordering soon is recommended.';
-                    break;
-                case 'low':
-                    text = 'Current stock of <strong>' + escapeHtml(detail.name) + '</strong> (' + detail.currentStock + ' ' + detail.unit + ') is at or below its reorder level (' + detail.minLevel + ' ' + detail.unit + '). Consider placing a reorder.';
-                    break;
-                case 'insufficient_data':
-                    text = 'There isn\'t enough real dispensing data yet to estimate how fast <strong>' + escapeHtml(detail.name) + '</strong> is being used. Monitor its stock manually until more usage is recorded.';
-                    break;
-                default:
-                    text = '<strong>' + escapeHtml(detail.name) + '</strong> currently has sufficient stock. No action needed right now.';
+            // The server (hc_stock_projection_detail(), via ai_recommendations.php)
+            // already builds this text itself — AI-phrased from the exact
+            // same real facts the switch below used to hardcode, falling
+            // back to that same template unchanged if AI is unavailable.
+            // The switch stays only as a defensive fallback for the
+            // unlikely case the field is ever missing from the response.
+            let text = detail.recommendationText;
+            if (!text) {
+                switch (detail.stockStatus) {
+                    case 'out_of_stock':
+                        text = detail.name + ' is currently out of stock. Reorder immediately to avoid disruption.';
+                        break;
+                    case 'critical':
+                        text = detail.name + ' is projected to run out in about ' + detail.estimatedDaysRemaining + ' day(s) at its current usage pace. Reordering soon is recommended.';
+                        break;
+                    case 'low':
+                        text = 'Current stock of ' + detail.name + ' (' + detail.currentStock + ' ' + detail.unit + ') is at or below its reorder level (' + detail.minLevel + ' ' + detail.unit + '). Consider placing a reorder.';
+                        break;
+                    case 'insufficient_data':
+                        text = 'There isn\'t enough real dispensing data yet to estimate how fast ' + detail.name + ' is being used. Monitor its stock manually until more usage is recorded.';
+                        break;
+                    default:
+                        text = detail.name + ' currently has sufficient stock. No action needed right now.';
+                }
             }
 
             const href = inventoryUrl + '?q=' + encodeURIComponent(detail.name) + '&vq=' + encodeURIComponent(detail.name);
             recommendationBox.innerHTML =
-                '<p class="psd-recommendation-text">' + text + '</p>' +
+                '<p class="psd-recommendation-text"><span class="an-ai-badge" title="Phrased by AI (Google Gemini, with Groq as a fallback) from this item\'s own real stock data — falls back to standard rule-based guidance if AI is unavailable."><i class="bi bi-stars"></i> AI-Assisted</span> ' + escapeHtml(text) + '</p>' +
                 (needsReplenishment
                     ? '<a class="psd-recommendation-btn" href="' + href + '"><i class="bi bi-box-seam"></i> View in Inventory</a>'
                     : '<a class="psd-recommendation-btn" href="' + href + '" style="background:var(--adm-bg);color:var(--adm-text);"><i class="bi bi-box-seam"></i> View in Inventory</a>');

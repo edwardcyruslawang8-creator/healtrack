@@ -48,6 +48,7 @@
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/predictive_analytics_core.php'; // hc_predictive_severity_meta(), HC_COVERED_BARANGAYS, the 4 predictive categories
+require_once __DIR__ . '/ai_recommendations.php'; // hc_ai_recommendation_text() — rephrases recommendation.body for every ACTIVE alert this function creates/updates
 
 const HC_RISK_ALERTS_COLLECTION = 'risk_alerts';
 const HC_RISK_RUNS_COLLECTION = 'risk_alert_runs';
@@ -584,9 +585,18 @@ if (!function_exists('hc_risk_evaluate')) {
 
         // Ignoring timestamps, is $new any different from what's stored?
         // Live (inventory) re-checks run on every dashboard load — an
-        // unchanged alert must not cost a Firestore write each time.
+        // unchanged alert must not cost a Firestore write (or an AI
+        // recommendation-phrasing call) each time. recommendation.body
+        // is excluded from the comparison since it's AI-phrased text —
+        // the same real facts can come back phrased slightly differently
+        // call to call, which must never by itself look like "a change"
+        // (see recommendation.templateBody, the deterministic field this
+        // comparison relies on instead).
         $strip = function (array $f): string {
             unset($f['lastEvaluatedAt']);
+            if (isset($f['recommendation']) && is_array($f['recommendation'])) {
+                unset($f['recommendation']['body']);
+            }
             $f['events'] = array_map(function ($e) { unset($e['at']); return $e; }, $f['events'] ?? []);
 
             return json_encode($f);
@@ -595,6 +605,28 @@ if (!function_exists('hc_risk_evaluate')) {
         $save = function (string $id, array $fields) use ($firestore, &$stats, &$docs, $strip): void {
             if (isset($docs[$id]) && $strip(json_decode(json_encode($fields), true)) === $strip($docs[$id])) {
                 return; // nothing changed
+            }
+            // Only reached when this alert is genuinely new or its real
+            // facts changed — so the AI is called at most once per real
+            // change, never once per dashboard view. The deterministic
+            // template (what used to be shown verbatim) is kept
+            // alongside it as templateBody for the same traceability
+            // this app's synthetic data has relied on all session: a
+            // panelist can always see exactly which real facts the AI
+            // was given and compare them against its phrasing.
+            if (!empty($fields['recommendation']) && is_array($fields['recommendation']) && !empty($fields['recommendation']['body'])) {
+                $templateBody = $fields['recommendation']['body'];
+                $facts = [
+                    'title' => $fields['recommendation']['title'] ?? '',
+                    'subject' => $fields['subject'] ?? '',
+                    'barangay' => $fields['barangayName'] ?? '',
+                    'severity' => $fields['severity'] ?? '',
+                    'description' => $fields['desc'] ?? '',
+                    'monitoringPeriod' => $fields['monitoringPeriod'] ?? '',
+                    'details' => $fields['details'] ?? [],
+                ];
+                $fields['recommendation']['templateBody'] = $templateBody;
+                $fields['recommendation']['body'] = hc_ai_recommendation_text($fields['riskType'] ?? 'risk_alert', $facts, $templateBody);
             }
             if ($firestore->setDocument(HC_RISK_ALERTS_COLLECTION, $id, $fields)) {
                 $docs[$id] = $fields;
