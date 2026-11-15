@@ -212,9 +212,23 @@
   gap: 14px;
   padding: 16px 0;
   border-bottom: 1px solid var(--adm-border);
+  overflow: hidden;
+  transition: opacity .35s ease, max-height .35s ease, padding .35s ease, border-color .35s ease;
 }
 .prf-security-row:last-child{ border-bottom: none; padding-bottom: 0; }
 .prf-security-row:first-child{ padding-top: 0; }
+/* -- Smooth removal once "Email Verification" is confirmed verified
+      (assets/js/email-verification.js) — max-height is set to a real
+      pixel value via JS right before this class is added, so the
+      transition has an actual starting height to animate from instead
+      of jumping straight to 0. -- */
+.prf-security-row.prf-security-row--leaving{
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-bottom-color: transparent;
+  pointer-events: none;
+}
 .prf-security-icon{
   width: 42px;
   height: 42px;
