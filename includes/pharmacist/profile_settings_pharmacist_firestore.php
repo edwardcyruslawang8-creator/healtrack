@@ -88,17 +88,16 @@ if (!($_SESSION['emailVerified'] ?? false)) {
 // ---------------------------------------------------------------------
 // Notification Preferences card — defaults to "on" for a first-time
 // visit (nothing saved yet), matching the checked state every toggle
-// started with in the reference design. Same 5 keys as the Sub-Admin
-// and Medical Staff versions — api/update-profile-settings.php's
-// allowed-key list is shared, not role-specific.
+// started with in the reference design. No "Consent Alerts" toggle here
+// — that preference only gates the Sub-Admin's own pending-access-
+// request notifications (includes/subadmin/notifications_firestore.php),
+// nothing on this role's side reads it.
 // ---------------------------------------------------------------------
 $savedNotifications = $myDoc['notifications'] ?? [];
 $notificationPreferences = [
     ['key' => 'email',        'title' => 'Email Notifications',   'desc' => 'Receive updates and alerts via email',              'checked' => $savedNotifications['email'] ?? true],
     ['key' => 'system',       'title' => 'System Notifications',  'desc' => 'Receive in-app notifications',                       'checked' => $savedNotifications['system'] ?? true],
-    ['key' => 'consent',      'title' => 'Consent Alerts',        'desc' => 'Get notified for new consent requests',              'checked' => $savedNotifications['consent'] ?? true],
     ['key' => 'inventory',    'title' => 'Inventory Alerts',      'desc' => 'Get notified for low stock and expiry alerts',       'checked' => $savedNotifications['inventory'] ?? true],
-    ['key' => 'consultation', 'title' => 'Consultation Alerts',   'desc' => 'Get notified for important consultation updates',    'checked' => $savedNotifications['consultation'] ?? true],
 ];
 
 // ---------------------------------------------------------------------

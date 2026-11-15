@@ -33,6 +33,7 @@ session_start();
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/firestore/medicines.php'; // hc_find_inventory_item_by_name()
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
+require_once __DIR__ . '/../includes/shared/mailer.php'; // hc_send_email(), hc_account_email_shell() — sub-admin notification below
 
 header('Content-Type: application/json');
 
@@ -95,6 +96,8 @@ if (count($items) === 0) {
 $myUid = $_SESSION['uid'] ?? '';
 $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
 
+$myFacility = $myDoc['facility'] ?? 'North Super Health Center';
+
 $newId = $firestore->addDocument('stock_requests', [
     'pharmacistName' => $_SESSION['name'] ?? 'Pharmacist',
     'pharmacistUid' => $myUid,
@@ -105,7 +108,7 @@ $newId = $firestore->addDocument('stock_requests', [
     // which showed as a real but misleading "—" on this request's own
     // Facility field forever after, even though every other page
     // quietly treats a blank facility as this clinic's own default.
-    'facility' => $myDoc['facility'] ?? 'North Super Health Center',
+    'facility' => $myFacility,
     'status' => 'pending',
     'type' => $type,
     'items' => $items,
@@ -121,5 +124,25 @@ if ($newId === null) {
 }
 
 write_audit_log('created', 'Stock Requests', 'Submitted a ' . $type . ' stock request (' . count($items) . ' item(s)).');
+
+// Email this facility's sub-admin(s) — same real-time "someone needs
+// your attention" reasoning as every other new-request email in this
+// app (new consultation, new lab/x-ray order, new account request).
+$requestItemNames = array_map(fn ($i) => $i['name'], $items);
+foreach ($firestore->listDocuments('users') as $userDoc) {
+    $uf = $userDoc['fields'];
+    if (($uf['role'] ?? '') !== 'subadmin' || ($uf['status'] ?? 'active') !== 'active' || ($uf['facility'] ?? '') !== $myFacility) {
+        continue;
+    }
+    $subadminEmail = trim((string) ($uf['email'] ?? ''));
+    if ($subadminEmail === '') {
+        continue;
+    }
+    hc_send_email($subadminEmail, (string) ($uf['name'] ?? 'Sub-Administrator'), 'New stock request awaiting approval', hc_account_email_shell(
+        'A new stock request needs your review',
+        '<p style="margin:0 0 12px; font-size:14px; line-height:1.6;"><strong>' . htmlspecialchars($_SESSION['name'] ?? 'A pharmacist') . '</strong> requested ' . count($items) . ' ' . htmlspecialchars($type) . ' item(s): ' . htmlspecialchars(implode(', ', $requestItemNames)) . '.</p>'
+        . '<p style="margin:0; font-size:14px; line-height:1.6;">Sign in to HEALTrack to review this request from Stock Requests.</p>'
+    ));
+}
 
 echo json_encode(['success' => true, 'id' => $newId]);

@@ -34,6 +34,7 @@ require_once __DIR__ . '/../includes/firestore/medicines.php'; // hc_qty_unit()
 require_once __DIR__ . '/../includes/firestore/medicine_batches.php'; // hc_decrement_medicine_stock_fefo()
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
+require_once __DIR__ . '/../includes/shared/mailer.php'; // hc_send_email(), hc_account_email_shell() — prescribing-doctor email below
 
 header('Content-Type: application/json');
 
@@ -166,5 +167,31 @@ $auditMessage .= $dispensedItemName !== null
 write_audit_log('updated', 'Prescription Queue', $auditMessage);
 hc_record_patient_history($existing['patientId'] ?? '', 'medication', 'updated', 'Dispensed "' . ($existing['itemName'] ?? 'item') . '".');
 hc_record_patient_activity($existing['patientId'] ?? '', 'Prescription dispensed: "' . ($existing['itemName'] ?? 'item') . '".');
+
+// Email the prescribing doctor — same "tell them even while signed out"
+// reasoning as the Laboratory/X-ray assignment emails in
+// api/complete-consultation.php. Resolved by name match against active
+// doctor accounts, same pattern api/create-consultation.php already
+// uses (pharmacy_orders has no prescribedByUid field to look up directly).
+$prescribedBy = trim((string) ($existing['prescribedBy'] ?? ''));
+if ($prescribedBy !== '' && $prescribedBy !== 'Not specified') {
+    foreach ($firestore->listDocuments('users') as $userDoc) {
+        $uf = $userDoc['fields'];
+        if (($uf['role'] ?? '') !== 'doctor' || ($uf['name'] ?? '') !== $prescribedBy) {
+            continue;
+        }
+        $doctorEmail = trim((string) ($uf['email'] ?? ''));
+        if ($doctorEmail !== '') {
+            hc_send_email($doctorEmail, $prescribedBy, 'Prescription dispensed — ' . ($existing['patientName'] ?? 'a patient'), hc_account_email_shell(
+                'Your prescription order was dispensed',
+                '<p style="margin:0 0 12px; font-size:14px; line-height:1.6;">Hi ' . htmlspecialchars($prescribedBy) . ', ' . htmlspecialchars($_SESSION['name'] ?? 'the pharmacist') . ' just dispensed a prescription you ordered.</p>'
+                . '<p style="margin:0 0 12px; font-size:14px; line-height:1.6;"><strong>Patient:</strong> ' . htmlspecialchars($existing['patientName'] ?? '') . '<br>'
+                . '<strong>Item:</strong> ' . htmlspecialchars($existing['itemName'] ?? '') . '</p>'
+                . '<p style="margin:0; font-size:14px; line-height:1.6;">Sign in to HEALTrack to view the full details.</p>'
+            ));
+        }
+        break;
+    }
+}
 
 echo json_encode(['success' => true]);
