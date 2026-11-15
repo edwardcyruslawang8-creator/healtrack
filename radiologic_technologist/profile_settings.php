@@ -378,10 +378,10 @@ $staffNavItems = [
 <link rel="stylesheet" href="<?= asset_url('/assets/css/hc-dialogs.css') ?>">
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="<?= asset_url('/assets/js/firebase-config.js') ?>"></script>
+<!-- "Resend Email" (Security Settings' Email Verification row) —
+     api/send-email-verification.php sends HEALTrack's own branded
+     verification email server-side now (includes/shared/email_verification_mailer.php),
+     no client-side Firebase session needed any more. -->
 <script src="<?= asset_url('/assets/js/email-verification.js') ?>"></script><script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script>window.HC_HAS_PASSWORD = <?= $hasPassword ? 'true' : 'false' ?>;</script>
 <script src="<?= asset_url('/assets/js/subadmin-profile-settings.js') ?>"></script>

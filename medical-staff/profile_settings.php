@@ -427,18 +427,10 @@ $staffNavItems = [
 <script src="<?= asset_url('/assets/js/hc-dialogs.js') ?>"></script>
 <!-- Renders the "Enable 2FA" QR code client-side (includes/shared/two_fa_setup_modal.php, assets/js/two-fa.js) -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-<!-- Firebase — only for "Resend Email" (Security Settings' Email
-     Verification row): firebase.auth().currentUser.sendEmailVerification()
-     is the only way to actually SEND that email without our own SMTP
-     infra (Firebase hosts it, same as forgot-password.php) — see
-     assets/js/email-verification.js. Relies on the client-side Firebase
-     session still being alive from login (its own persistence, separate
-     from this page's PHP session) — that script falls back to a plain
-     "please log out and back in" message if it isn't. -->
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="<?= asset_url('/assets/js/firebase-config.js') ?>"></script>
+<!-- "Resend Email" (Security Settings' Email Verification row) —
+     api/send-email-verification.php sends HEALTrack's own branded
+     verification email server-side now (includes/shared/email_verification_mailer.php),
+     no client-side Firebase session needed any more. -->
 <script src="<?= asset_url('/assets/js/email-verification.js') ?>"></script><script src="<?= asset_url('/assets/js/admin-sidebar-toggle.js') ?>"></script>
 <script>window.HC_HAS_PASSWORD = <?= $hasPassword ? 'true' : 'false' ?>;</script>
 <script src="<?= asset_url('/assets/js/subadmin-profile-settings.js') ?>"></script>
