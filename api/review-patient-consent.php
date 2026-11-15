@@ -18,6 +18,9 @@
  * from them (patients have no login/portal in this app). SMS was
  * decided against for now (email only); includes/shared/sms.php's
  * hc_send_sms() still exists as a safe no-op stub if that changes.
+ * The requesting staff member (Medical Staff/Doctor/Sub-Admin) is
+ * emailed too, resolved via requestedByUid — previously they only had
+ * the in-app notification (hc_get_consent_decision_notifications()).
  *
  * Same facility-ownership pattern as api/update-stock-request-status.php:
  * never trusts the client-supplied consentId alone — the consent's own
@@ -131,6 +134,33 @@ $firestore->setDocument('consent_records', $consentId, array_merge(
         'emailSentAt' => $emailSent ? $now : null,
     ]
 ));
+
+// Email the REQUESTER too (Medical Staff/Doctor/Sub-Admin, whoever
+// asked) — previously they only got an in-app notification
+// (hc_get_consent_decision_notifications()), no email at all, even
+// though the patient's own copy above has existed since this feature
+// shipped.
+$requesterUid = $existing['requestedByUid'] ?? '';
+if ($requesterUid !== '') {
+    $requesterDoc = $firestore->getDocument('users', $requesterUid);
+    $requesterEmail = trim((string) ($requesterDoc['email'] ?? ''));
+    if ($requesterEmail !== '') {
+        if ($decision === 'accepted') {
+            $requesterSubject = 'Access request approved — ' . $patientName;
+            $requesterBody = hc_account_email_shell(
+                'Your access request was approved',
+                '<p style="margin:0; font-size:14px; line-height:1.6;">Hi ' . htmlspecialchars($requesterName) . ', your request to view <strong>' . htmlspecialchars($patientName) . '</strong>\'s details was approved by ' . htmlspecialchars($_SESSION['name'] ?? 'the sub-administrator') . '. You can now open their profile in HEALTrack.</p>'
+            );
+        } else {
+            $requesterSubject = 'Access request declined — ' . $patientName;
+            $requesterBody = hc_account_email_shell(
+                'Your access request was declined',
+                '<p style="margin:0; font-size:14px; line-height:1.6;">Hi ' . htmlspecialchars($requesterName) . ', your request to view <strong>' . htmlspecialchars($patientName) . '</strong>\'s details was declined by ' . htmlspecialchars($_SESSION['name'] ?? 'the sub-administrator') . '.</p>'
+            );
+        }
+        hc_send_email($requesterEmail, $requesterName, $requesterSubject, $requesterBody);
+    }
+}
 
 write_audit_log(
     $decision === 'accepted' ? 'approved' : 'rejected',

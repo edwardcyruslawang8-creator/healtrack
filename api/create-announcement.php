@@ -28,6 +28,7 @@ session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
+require_once __DIR__ . '/../includes/shared/mailer.php'; // hc_send_email(), hc_account_email_shell() — admin notification below
 
 header('Content-Type: application/json');
 
@@ -90,5 +91,24 @@ if ($newId === null) {
 }
 
 write_audit_log('created', 'Announcements', 'Submitted announcement "' . $title . '" (' . $category . ') for admin approval.');
+
+// Email every active System Administrator — admin manages every
+// facility, not just one, so this isn't facility-scoped the way the
+// sub-admin notifications elsewhere in this app are.
+foreach ($firestore->listDocuments('users') as $userDoc) {
+    $uf = $userDoc['fields'];
+    if (($uf['role'] ?? '') !== 'admin' || ($uf['status'] ?? 'active') !== 'active') {
+        continue;
+    }
+    $adminEmail = trim((string) ($uf['email'] ?? ''));
+    if ($adminEmail === '') {
+        continue;
+    }
+    hc_send_email($adminEmail, (string) ($uf['name'] ?? 'Administrator'), 'New announcement awaiting approval — ' . $title, hc_account_email_shell(
+        'A new announcement needs your review',
+        '<p style="margin:0 0 12px; font-size:14px; line-height:1.6;"><strong>' . htmlspecialchars($_SESSION['name'] ?? 'A sub-administrator') . '</strong> submitted a new announcement: <strong>' . htmlspecialchars($title) . '</strong> (' . htmlspecialchars(ucfirst($category)) . ').</p>'
+        . '<p style="margin:0; font-size:14px; line-height:1.6;">Sign in to HEALTrack to approve or decline it from Announcements.</p>'
+    ));
+}
 
 echo json_encode(['success' => true, 'id' => $newId]);

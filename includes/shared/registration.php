@@ -5,8 +5,10 @@
  * ---------------------------------------------------------------------
  * The one place that actually creates a self-registered account record
  * (Firebase Auth user/password + the Firestore users/{uid} profile,
- * status="pending", plus the audit log line and "request received"
- * email) — extracted out of api/register.php so there is exactly one
+ * status="pending", plus the audit log line, the "request received"
+ * email to the registrant, and a real "please review this" email to
+ * the facility's sub-admin(s)) — extracted out of api/register.php so
+ * there is exactly one
  * implementation, called from two places:
  *   - api/register.php's "Sign up with Google" branch (identity already
  *     proven by a real Firebase Auth popup + verified ID token, so no
@@ -185,6 +187,27 @@ if (!function_exists('hc_finish_registration')) {
             '<p style="margin:0 0 12px; font-size:14px; line-height:1.6;">Thanks for signing up for HEALTrack as a <strong>' . htmlspecialchars($jobTitle) . '</strong>.</p>'
             . '<p style="margin:0 0 12px; font-size:14px; line-height:1.6;">Your request is now pending review by a sub-administrator. You\'ll get another email as soon as a decision is made — there\'s nothing else you need to do right now.</p>'
         ));
+
+        // Tell this facility's sub-admin(s) too — same facility this
+        // account was just assigned above, same real-time "someone needs
+        // your attention" reasoning as every other new-request email in
+        // this app (new consultation, new lab/x-ray order, new stock
+        // request, new consent request below).
+        foreach ($firestore->listDocuments('users') as $userDoc) {
+            $uf = $userDoc['fields'];
+            if (($uf['role'] ?? '') !== 'subadmin' || ($uf['status'] ?? 'active') !== 'active' || ($uf['facility'] ?? '') !== 'North Super Health Center') {
+                continue;
+            }
+            $subadminEmail = trim((string) ($uf['email'] ?? ''));
+            if ($subadminEmail === '') {
+                continue;
+            }
+            hc_send_email($subadminEmail, (string) ($uf['name'] ?? 'Sub-Administrator'), 'New account request awaiting approval — ' . $fullName, hc_account_email_shell(
+                'A new account request needs your review',
+                '<p style="margin:0 0 12px; font-size:14px; line-height:1.6;"><strong>' . htmlspecialchars($fullName) . '</strong> (' . htmlspecialchars($email) . ') has requested to join HEALTrack as a <strong>' . htmlspecialchars($jobTitle) . '</strong>.</p>'
+                . '<p style="margin:0; font-size:14px; line-height:1.6;">Sign in to HEALTrack to approve or decline this request from User Management &gt; Pending Approvals.</p>'
+            ));
+        }
 
         return ['success' => true, 'error' => null, 'uid' => $uid];
     }

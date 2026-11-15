@@ -685,6 +685,29 @@ if ($nextRouting === 'pharmacy' && count($medications) > 0) {
             'notes' => 'Prescribed during consultation ' . ($existing['consultationCode'] ?? $id) . '.',
         ]);
     }
+
+    // Email every active pharmacist at this facility — a pharmacy order
+    // isn't assigned to one specific pharmacist the way Laboratory/X-ray
+    // orders above are (any pharmacist can pick it up from the shared
+    // prescription_queue.php), so everyone who could act on it is told.
+    $pharmacyItemNames = array_map(fn ($m) => $m['name'], $medications);
+    foreach ($firestore->listDocuments('users') as $userDoc) {
+        $uf = $userDoc['fields'];
+        if (($uf['role'] ?? '') !== 'pharmacist' || ($uf['status'] ?? 'active') !== 'active' || ($uf['facility'] ?? '') !== $doctorFacility) {
+            continue;
+        }
+        $pharmacistEmail = trim((string) ($uf['email'] ?? ''));
+        if ($pharmacistEmail === '') {
+            continue;
+        }
+        hc_send_email($pharmacistEmail, (string) ($uf['name'] ?? 'Pharmacist'), 'New prescription order — ' . ($existing['patientName'] ?? 'a patient'), hc_account_email_shell(
+            'You have a new prescription to dispense',
+            '<p style="margin:0 0 12px; font-size:14px; line-height:1.6;">Hi ' . htmlspecialchars((string) ($uf['name'] ?? '')) . ', ' . htmlspecialchars($_SESSION['name'] ?? 'a doctor') . ' just sent a new prescription to the pharmacy.</p>'
+            . '<p style="margin:0 0 12px; font-size:14px; line-height:1.6;"><strong>Patient:</strong> ' . htmlspecialchars($existing['patientName'] ?? '') . '<br>'
+            . '<strong>Item(s):</strong> ' . htmlspecialchars(implode(', ', $pharmacyItemNames)) . '</p>'
+            . '<p style="margin:0; font-size:14px; line-height:1.6;">Sign in to HEALTrack to view and dispense this order.</p>'
+        ));
+    }
 }
 
 $historyPatientId = $existing['patientId'] ?? '';

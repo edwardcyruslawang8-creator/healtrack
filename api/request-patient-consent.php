@@ -26,6 +26,7 @@ session_start();
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/firestore/patients.php'; // hc_get_patient_profile()
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
+require_once __DIR__ . '/../includes/shared/mailer.php'; // hc_send_email(), hc_account_email_shell() — sub-admin notification below
 
 header('Content-Type: application/json');
 
@@ -115,5 +116,32 @@ if ($newId === null) {
 }
 
 write_audit_log('created', 'Consent Management', 'Requested access to ' . ($patient['name'] ?? 'a patient') . "'s details.");
+
+// Email the deciding sub-admin(s) — scoped to the PATIENT's own
+// facility (same facility hc_get_pending_consent_request_notifications()
+// matches against), not the requester's, since a cross-facility request
+// (consentShareInfo) is still decided by the patient's home facility.
+$requesterRoleLabel = match ($_SESSION['role']) {
+    'doctor' => 'Doctor',
+    'healthcare_staff' => 'Medical Staff',
+    'subadmin' => 'Sub-Administrator',
+    default => 'Staff',
+};
+foreach ($firestore->listDocuments('users') as $userDoc) {
+    $uf = $userDoc['fields'];
+    if (($uf['role'] ?? '') !== 'subadmin' || ($uf['status'] ?? 'active') !== 'active' || ($uf['facility'] ?? '') !== ($patient['facility'] ?? '')) {
+        continue;
+    }
+    $subadminEmail = trim((string) ($uf['email'] ?? ''));
+    if ($subadminEmail === '') {
+        continue;
+    }
+    hc_send_email($subadminEmail, (string) ($uf['name'] ?? 'Sub-Administrator'), 'New patient access request awaiting approval', hc_account_email_shell(
+        'A new access request needs your review',
+        '<p style="margin:0 0 12px; font-size:14px; line-height:1.6;"><strong>' . htmlspecialchars($_SESSION['name'] ?? 'A staff member') . '</strong> (' . htmlspecialchars($requesterRoleLabel) . ') is asking to view <strong>' . htmlspecialchars($patient['name'] ?? 'a patient') . '</strong>\'s details.</p>'
+        . '<p style="margin:0 0 12px; font-size:14px; line-height:1.6;"><strong>Reason given:</strong> ' . htmlspecialchars($reason) . '</p>'
+        . '<p style="margin:0; font-size:14px; line-height:1.6;">Sign in to HEALTrack to approve or decline this request from Consent Management.</p>'
+    ));
+}
 
 echo json_encode(['success' => true]);

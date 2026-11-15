@@ -36,6 +36,7 @@ session_start();
 
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
+require_once __DIR__ . '/../includes/shared/mailer.php'; // hc_send_email(), hc_account_email_shell() — requester notification below
 
 header('Content-Type: application/json');
 
@@ -126,5 +127,32 @@ $requester = $existing['pharmacistName'] ?? 'Unknown';
 $auditDetails = ucfirst($newStatus) . ' stock request from ' . $requester . ' (' . (int) ($existing['itemsCount'] ?? 0) . ' item(s)).';
 
 write_audit_log($newStatus, 'Stock Requests', $auditDetails);
+
+// Email the requesting pharmacist — approve/decline is final either
+// way, and until now the only place they'd learn about it was their
+// own in-app notification
+// (hc_get_decided_stock_request_notifications_for_pharmacist()).
+$pharmacistUid = $existing['pharmacistUid'] ?? '';
+if ($pharmacistUid !== '') {
+    $pharmacistDoc = $firestore->getDocument('users', $pharmacistUid);
+    $pharmacistEmail = trim((string) ($pharmacistDoc['email'] ?? ''));
+    if ($pharmacistEmail !== '') {
+        $itemsCount = (int) ($existing['itemsCount'] ?? 0);
+        if ($newStatus === 'approved') {
+            $requesterSubject = 'Your stock request was approved';
+            $requesterBody = hc_account_email_shell(
+                'Stock request approved',
+                '<p style="margin:0; font-size:14px; line-height:1.6;">Hi ' . htmlspecialchars($requester) . ', your stock request for ' . $itemsCount . ' item(s) was approved by ' . htmlspecialchars($_SESSION['name'] ?? 'the sub-administrator') . '.</p>'
+            );
+        } else {
+            $requesterSubject = 'Your stock request was declined';
+            $requesterBody = hc_account_email_shell(
+                'Stock request declined',
+                '<p style="margin:0; font-size:14px; line-height:1.6;">Hi ' . htmlspecialchars($requester) . ', your stock request for ' . $itemsCount . ' item(s) was declined by ' . htmlspecialchars($_SESSION['name'] ?? 'the sub-administrator') . '.</p>'
+            );
+        }
+        hc_send_email($pharmacistEmail, $requester, $requesterSubject, $requesterBody);
+    }
+}
 
 echo json_encode(['success' => true, 'docId' => $docId, 'status' => $newStatus]);

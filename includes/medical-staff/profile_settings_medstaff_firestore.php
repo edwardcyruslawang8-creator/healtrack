@@ -87,16 +87,16 @@ if (!($_SESSION['emailVerified'] ?? false)) {
 // ---------------------------------------------------------------------
 // Notification Preferences card — defaults to "on" for a first-time
 // visit (nothing saved yet), matching the checked state every toggle
-// started with in the reference design. Same 5 keys as the Sub-Admin
-// version — api/update-profile-settings.php's allowed-key list is
-// shared, not role-specific.
+// started with in the reference design. No "Consent Alerts" or
+// "Inventory Alerts" toggle here — those preferences only gate the
+// Sub-Admin's pending-access-request notifications and the
+// Pharmacist's stock/expiry notifications respectively; nothing on
+// this role's side reads either.
 // ---------------------------------------------------------------------
 $savedNotifications = $myDoc['notifications'] ?? [];
 $notificationPreferences = [
     ['key' => 'email',        'title' => 'Email Notifications',   'desc' => 'Receive updates and alerts via email',              'checked' => $savedNotifications['email'] ?? true],
     ['key' => 'system',       'title' => 'System Notifications',  'desc' => 'Receive in-app notifications',                       'checked' => $savedNotifications['system'] ?? true],
-    ['key' => 'consent',      'title' => 'Consent Alerts',        'desc' => 'Get notified for new consent requests',              'checked' => $savedNotifications['consent'] ?? true],
-    ['key' => 'inventory',    'title' => 'Inventory Alerts',      'desc' => 'Get notified for low stock and expiry alerts',       'checked' => $savedNotifications['inventory'] ?? true],
     ['key' => 'consultation', 'title' => 'Consultation Alerts',   'desc' => 'Get notified for important consultation updates',    'checked' => $savedNotifications['consultation'] ?? true],
 ];
 
