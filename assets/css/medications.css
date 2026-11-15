@@ -115,9 +115,86 @@
   box-shadow: 0 0 0 3px rgba(91, 10, 10, .12);
 }
 
+/* -- Treatment Period column + status pill (automatic Current/Past
+      classification — includes/firestore/medications.php) -- */
+.mdc-period-cell{ display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 150px; }
+.mdc-period-dates{ font-size: 12.5px; color: var(--adm-text); white-space: nowrap; }
+.mdc-status-pill{
+  --mdc-tone: #6B7280;
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--mdc-tone);
+  background: color-mix(in srgb, var(--mdc-tone) 13%, transparent);
+  white-space: nowrap;
+}
+.mdc-tone-green{ --mdc-tone: #1E8E3E; }
+.mdc-tone-blue{  --mdc-tone: #1A73E8; }
+.mdc-tone-amber{ --mdc-tone: #B26A00; }
+.mdc-tone-red{   --mdc-tone: #C5221F; }
+.mdc-tone-gray{  --mdc-tone: #6B7280; }
+
+/* -- Current Medications table (no Indication / Reason column — that
+      text lives in View Details). Widths keep each column readable
+      without the medication name or notes squeezing into slivers. -- */
+.mdc-table-current th, .mdc-table-current td{ vertical-align: middle; }
+.mdc-table-current th:nth-child(1), .mdc-table-current td:nth-child(1){ min-width: 190px; }               /* Medication */
+.mdc-table-current th:nth-child(2), .mdc-table-current td:nth-child(2){ min-width: 80px; white-space: nowrap; }  /* Dosage */
+.mdc-table-current th:nth-child(3), .mdc-table-current td:nth-child(3){ min-width: 110px; }               /* Frequency */
+.mdc-table-current th:nth-child(4), .mdc-table-current td:nth-child(4){ min-width: 70px; }                /* Route */
+.mdc-table-current th:nth-child(5), .mdc-table-current td:nth-child(5){ min-width: 200px; }               /* Treatment Period */
+.mdc-table-current th:nth-child(6), .mdc-table-current td:nth-child(6){ min-width: 140px; }               /* Prescribed By */
+.mdc-table-current th:nth-child(7), .mdc-table-current td:nth-child(7){ min-width: 200px; max-width: 280px; } /* Notes */
+.mdc-table-current th:last-child, .mdc-table-current td:last-child{ width: 1%; white-space: nowrap; }      /* Actions */
+
+/* -- View Details modal: long free text (Indication / Reason, Notes)
+      stacks under its label and wraps in full, never truncated. -- */
+.am-detail-row.mdc-detail-block{ flex-direction: column; gap: 4px; }
+.am-detail-row.mdc-detail-block dd{
+  text-align: left;
+  font-weight: 500;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* -- View Details modal: extension log, hint, doctor-only actions -- */
+.mdc-extension-list{ margin: 0; padding-left: 16px; font-size: 13px; }
+.mdc-ended-hint{ margin: 12px 0 0; font-size: 12.5px; color: var(--adm-text-muted); }
+.mdc-manage-form{
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+}
+.mdc-manage-form .form-label{ font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.mdc-manage-title{ font-size: 14px; font-weight: 700; margin: 0 0 10px; color: var(--adm-text); }
+.mdc-manage-hint{ font-size: 12.5px; color: var(--adm-text-muted); margin: -4px 0 10px; }
+.mdc-manage-error{ margin-top: 10px; font-size: 13px; color: #C5221F; }
+.mdc-manage-actions{ display: flex; flex-wrap: wrap; gap: 8px; }
+.mdc-manage-btn{
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--adm-border);
+  background: var(--adm-card);
+  color: var(--adm-red-bright);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.mdc-manage-btn:hover{ border-color: var(--adm-red-bright); }
+.mdc-manage-btn-danger{ color: #C5221F; }
+
 /* =============================================================
    RESPONSIVE
    ============================================================= */
 @media (max-width: 991.98px){
   .mdc-summary-row{ grid-template-columns: 1fr; }
+}
+@media (max-width: 575.98px){
+  #medDetailsModal .modal-footer{ flex-wrap: wrap; }
+  .mdc-manage-actions{ width: 100%; }
 }

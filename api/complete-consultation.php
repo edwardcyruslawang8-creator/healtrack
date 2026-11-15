@@ -75,6 +75,7 @@ session_start();
 require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/firestore/medicines.php'; // hc_get_inventory_items() — medication category below
 require_once __DIR__ . '/../includes/shared/inventory_match.php'; // hc_inventory_category_for()
+require_once __DIR__ . '/../includes/firestore/medications.php'; // hc_build_prescribed_medication_fields(), hc_record_medication_history()
 require_once __DIR__ . '/../includes/shared/lab_test_names.php'; // hc_lab_test_display_name() — official lab test names
 require_once __DIR__ . '/../includes/firestore/consultations.php';
 require_once __DIR__ . '/../includes/firestore/lab_results.php'; // hc_lab_test_catalog()
@@ -334,15 +335,40 @@ if (!$saved) {
 // in the exact shape api/create-patient.php:287-301 already writes —
 // so it shows up on this patient's ongoing Medications list right
 // away, not just inside this one consultation's own record.
+//
+// Each doc carries the prescribed Duration, its computed end date
+// (startDate + duration, inclusive) and this consultation's id, so
+// includes/firestore/medications.php's hc_medication_classify() can move
+// it from Current to Past automatically once that end date passes.
+//
+// Idempotent per consultation: a Laboratory/X-ray save keeps this
+// consultation "ongoing", so this endpoint can run several times for
+// the same visit. Rows already written for THIS consultation are
+// updated in place (matched by medicine name) instead of duplicated —
+// keeping their original startDate, so re-saving never restarts a
+// course — and a row the doctor has since removed is marked
+// discontinued (kept as history, never deleted).
 $indication = $diagnosis !== '' ? $diagnosis : (($existing['chiefComplaint'] ?? '') !== '' ? $existing['chiefComplaint'] : 'Not specified');
+$medPatientId = $existing['patientId'] ?? '';
+$consultationCode = $existing['consultationCode'] ?? $id;
+$todayManila = hc_medication_today();
 $medicineInventoryItems = null; // loaded once, only if there's a medication row
+$priorRxDocs = [];
+foreach ($firestore->listDocumentsWhere('medications', 'consultationId', $id) as $doc) {
+    $priorRxDocs[mb_strtolower(trim((string) ($doc['fields']['name'] ?? '')))] = $doc;
+}
 foreach ($medications as $m) {
     if ($m['type'] !== 'medication') {
         continue;
     }
+    $key = mb_strtolower($m['name']);
+    $prior = $priorRxDocs[$key] ?? null;
+    unset($priorRxDocs[$key]);
+
+    $startDate = $prior['fields']['startDate'] ?? $todayManila;
     $medicineInventoryItems ??= hc_get_inventory_items('medicine');
-    $firestore->addDocument('medications', [
-        'patientId' => $existing['patientId'] ?? '',
+    $rxFields = [
+        'patientId' => $medPatientId,
         'name' => $m['name'],
         // The medicine's real inventory category (e.g. Analgesic), not a
         // fixed "General" — see hc_inventory_category_for().
@@ -352,13 +378,53 @@ foreach ($medications as $m) {
         'frequency' => $m['frequency'] !== '' ? $m['frequency'] : 'Not specified',
         'route' => $m['route'] !== '' ? $m['route'] : 'Not specified',
         'indication' => $indication,
-        'startDate' => date('Y-m-d'),
-        'endDate' => null,
+        'startDate' => $startDate,
         'endDateNote' => null,
         'prescribedBy' => $_SESSION['name'] ?? 'Not specified',
-        'notes' => 'Prescribed during consultation ' . ($existing['consultationCode'] ?? $id) . ' on ' . date('M j, Y') . '.',
-        'status' => 'active',
-    ]);
+        'notes' => $prior['fields']['notes'] ?? ('Prescribed during consultation ' . $consultationCode . ' on ' . date('M j, Y', strtotime($startDate)) . '.'),
+        'consultationId' => $id,
+        'consultationCode' => $consultationCode,
+    ] + hc_build_prescribed_medication_fields($startDate, $m['duration']);
+
+    if ($prior !== null) {
+        // Keep anything a doctor did to it since (discontinue, extend,
+        // confirm) — except the automatic "removed from the prescription"
+        // discontinuation below, which re-adding the row undoes.
+        $priorFields = $prior['fields'];
+        if (str_starts_with((string) ($priorFields['discontinueReason'] ?? ''), 'Removed from the prescription')) {
+            unset($priorFields['discontinuedDate'], $priorFields['discontinuedBy'], $priorFields['discontinueReason']);
+            $priorFields['status'] = 'active';
+        }
+        $firestore->setDocument('medications', $prior['id'], $rxFields + $priorFields + ['status' => 'active']);
+        continue;
+    }
+
+    $rxFields['status'] = 'active';
+    $newMedId = $firestore->addDocument('medications', $rxFields);
+    $periodText = $rxFields['endDate'] !== null
+        ? ' for ' . $rxFields['durationDays'] . ' day' . ($rxFields['durationDays'] == 1 ? '' : 's') . ', until ' . date('M j, Y', strtotime($rxFields['endDate']))
+        : ($rxFields['isMaintenance'] ? ' as a maintenance / as-needed medication' : ' with no duration specified');
+    hc_record_medication_history(
+        $medPatientId,
+        'Medication prescribed',
+        'Prescribed ' . $m['name'] . ' (' . $rxFields['dosage'] . ', ' . $rxFields['frequency'] . ')' . $periodText . ' — consultation ' . $consultationCode . '.',
+        'green',
+        $newMedId
+    );
+}
+// Rows written by an earlier save of this same consultation that the
+// doctor has since removed from the prescription.
+foreach ($priorRxDocs as $doc) {
+    if (($doc['fields']['status'] ?? 'active') !== 'active') {
+        continue;
+    }
+    $firestore->setDocument('medications', $doc['id'], [
+        'status' => 'discontinued',
+        'discontinuedDate' => $todayManila,
+        'discontinuedBy' => $_SESSION['name'] ?? 'Not specified',
+        'discontinueReason' => 'Removed from the prescription before consultation ' . $consultationCode . ' was completed.',
+    ] + $doc['fields']);
+    hc_record_medication_history($medPatientId, 'Medication discontinued', ($doc['fields']['name'] ?? 'A medication') . ' was removed from the prescription for consultation ' . $consultationCode . '.', 'gray', $doc['id']);
 }
 
 // "Laboratory" routing -> one real pending lab_results doc PER

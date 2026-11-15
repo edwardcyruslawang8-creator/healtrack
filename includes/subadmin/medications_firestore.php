@@ -31,11 +31,11 @@ unset($tab);
 $medications = hc_get_medications_for_patient($patient['id']);
 $medicationsTotal = count($medications);
 
-// Current vs Past — hc_medication_is_current() (includes/firestore/medications.php)
-// is the single real rule: 'active' status alone isn't enough, since
-// nothing in this app ever updates a medication's status after it's
-// created, so a medication also lapses into Past on its own once ~3
-// months have passed since its startDate with no newer prescription.
+// Current vs Past — hc_medication_classify() (includes/firestore/medications.php)
+// is the single rule, recalculated from each prescription's own dates on
+// every view: a course moves to Past by itself the day after its end
+// date; discontinued/completed ones are Past; maintenance medications
+// with no end date stay Current.
 $currentMedications = array_values(array_filter($medications, fn ($m) => $m['isCurrent']));
 $pastMedications = array_values(array_filter($medications, fn ($m) => !$m['isCurrent']));
 
@@ -51,4 +51,4 @@ $medicationsSummary = hc_medications_summary($medications, $hasAllergies);
 // is stored per-entry in Firestore rather than derived, since it
 // reflects an editorial choice made at seed time, not a computable fact.
 // ---------------------------------------------------------------------
-$medicationHistory = hc_get_medication_history_for_patient($patient['id']);
+$medicationHistory = hc_get_medication_history_for_patient($patient['id'], $medications);

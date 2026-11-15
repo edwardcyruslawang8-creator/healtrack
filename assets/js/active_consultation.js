@@ -318,7 +318,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         [
             ['frequency', 'acv-med-frequency', 'Frequency'],
-            ['duration', 'acv-med-duration', 'Duration'],
+            // The Duration drives when this medication automatically moves
+            // from Current to Past Medications — see
+            // includes/firestore/medications.php's hc_parse_medication_duration().
+            ['duration', 'acv-med-duration', 'Duration (e.g. 7 days, maintenance)'],
             ['route', 'acv-med-route', 'Route'],
         ].forEach(appendTextCell);
 
