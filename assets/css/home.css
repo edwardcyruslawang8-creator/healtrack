@@ -10,20 +10,23 @@
 /* Home dashboard layout. The column wrappers (.col-main / .col-side)
    are layout-transparent (display: contents), so each section is placed
    on this grid directly:
-     desktop  hero  hero      ← hero banner across the full width
-              stats gis       ← GIS starts level with the summary cards
-              meds  gis       ← Medicine & Vaccine beside the GIS map
-              ann   ann       ← Latest Announcements across the full width
-   GIS and Medicine stretch to the same height, so there's no leftover
-   empty area beside either. Tablet/phone: one column (see below). */
+     desktop  hero     hero  ← hero banner across the full width
+              stats    gis   ← GIS starts level with the summary cards
+              services gis   ← Services Offered beside the GIS map
+              meds     gis   ← Medicine & Vaccine beside the GIS map
+              ann      ann   ← Latest Announcements across the full width
+   GIS now spans all 3 of those middle rows (stats/services/meds), so it
+   still grows to match the left column's combined height with no
+   leftover empty area beside it. Tablet/phone: one column (see below). */
 .dashboard-grid{
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 1.1fr);
   grid-template-areas:
-    "hero  hero"
-    "stats gis"
-    "meds  gis"
-    "ann   ann";
+    "hero     hero"
+    "stats    gis"
+    "services gis"
+    "meds     gis"
+    "ann      ann";
   column-gap: 24px;
   row-gap: 24px;
   align-items: start;
@@ -33,11 +36,13 @@
 .dashboard-grid .home-spacer{ display: none; } /* old spacer — the grid's row-gap does this now */
 .home-area-hero{ grid-area: hero; }
 .home-area-stats{ grid-area: stats; }
+.home-area-services{ grid-area: services; }
 .home-area-meds{ grid-area: meds; }
 .home-area-ann{ grid-area: ann; }
 .home-area-gis{ grid-area: gis; }
 /* Spacing comes from the grid gap, not each card's own bottom margin. */
 .dashboard-grid .home-area-hero,
+.dashboard-grid .home-area-services,
 .dashboard-grid .home-area-meds,
 .dashboard-grid .home-area-ann,
 .dashboard-grid .home-area-gis{ margin-bottom: 0; }
@@ -508,6 +513,34 @@
 .chatbot-avatar.user-avatar{ background: var(--dark-bg); }
 .chatbot-avatar.user-avatar i{ color: var(--text-dark); }
 
+/* -- Services Offered widget (home only) — same tile shape AND same
+      single-maroon-tint icon style as .med-item right below it, so
+      both widgets read as one consistent set rather than mixing in a
+      separate per-service color palette. No status badge/description
+      here — just the icon and name. -- */
+.service-item{
+  text-align: center;
+  padding: 18px 10px;
+  border-radius: var(--radius-md);
+  transition: background .15s ease;
+}
+.service-item:hover{ background: var(--bg-light); }
+.service-item .icon-circle{
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--maroon-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+}
+.service-item .icon-circle i{ font-size: 22px; color: var(--maroon); }
+/* Bigger than the 22px bi- icons beside it on purpose — its own detail
+   (corner brackets, ribs, spine) gets lost/cluttered at that size. */
+.service-item .icon-circle .service-xray-svg{ width: 36px; height: 36px; }
+.service-item .service-name{ font-size: 13.5px; font-weight: 600; color: var(--text-dark); }
+
 /* -- Medicine & Vaccine Availability widget (home only; the full
       searchable list lives on patient/medicine.php) -- */
 .med-item{
@@ -614,7 +647,7 @@
      (GIS preview last, with the full width to itself). */
   .dashboard-grid{
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "hero" "stats" "meds" "ann" "gis";
+    grid-template-areas: "hero" "stats" "services" "meds" "ann" "gis";
   }
   .home-area-gis{ align-self: start; }
   .home-area-gis .gis-map-area{ flex: none; height: 340px; min-height: 0; }
@@ -659,6 +692,10 @@
   .med-item{ padding: 14px 6px; }
   .med-item .icon-circle{ width: 48px; height: 48px; }
   .med-item .med-name{ font-size: 12.5px; }
+  .service-item{ padding: 14px 6px; }
+  .service-item .icon-circle{ width: 48px; height: 48px; }
+  .service-item .icon-circle .service-xray-svg{ width: 30px; height: 30px; }
+  .service-item .service-name{ font-size: 12.5px; }
 }
 
 /* =============================================================

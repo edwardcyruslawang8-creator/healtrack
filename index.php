@@ -97,6 +97,29 @@ require_once __DIR__ . '/includes/shared/sidebar.php';
         </div>
         <div class="mb-3 home-spacer"></div>
 
+        <!-- SERVICES OFFERED -->
+        <div class="panel home-area-services">
+            <div class="card-header-bar">
+                <h2 class="section-title"><i class="bi bi-grid-fill"></i> Services Offered</h2>
+            </div>
+            <div class="row g-0 px-2 pt-3 pb-1">
+                <?php foreach ($servicesOffered as $svc): ?>
+                <div class="col-6 col-md-3">
+                    <div class="service-item">
+                        <div class="icon-circle">
+                            <?php if ($svc['icon'] === 'xray-custom'): ?>
+                                <?php require __DIR__ . '/includes/shared/xray_icon_svg.php'; ?>
+                            <?php else: ?>
+                                <i class="bi <?= htmlspecialchars($svc['icon']) ?>"></i>
+                            <?php endif; ?>
+                        </div>
+                        <div class="service-name"><?= htmlspecialchars($svc['name']) ?></div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
         <!-- MEDICINE & VACCINE AVAILABILITY -->
         <div class="panel home-area-meds">
             <div class="card-header-bar">
