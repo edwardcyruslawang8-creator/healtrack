@@ -712,8 +712,25 @@ document.addEventListener('DOMContentLoaded', function () {
         const needsFollowUp = document.getElementById('acvNeedsFollowUp').checked;
         const medications = collectMedications();
 
+        // Every field on every medicine/vaccine row is required once a row
+        // exists — an incomplete row (e.g. a dosage/frequency left blank)
+        // would otherwise save straight through to this patient's
+        // Medications list and Patient Profile with real gaps in it. A
+        // medication row's Quantity is required here too (vaccine rows
+        // never show that column at all, so they're exempt); its own
+        // whole-number check stays separate so the two failure messages
+        // stay specific instead of one vague "something's wrong" alert.
+        if (medications.some(function (m) { return m.type === 'medication' && m.quantity === ''; })) {
+            await HCDialog.alert('Please enter a Quantity for each medication.');
+            return;
+        }
         if (medications.some(function (m) { return m.quantity !== '' && !/^[1-9]\d*$/.test(m.quantity); })) {
             await HCDialog.alert('Please enter a whole number of 1 or more for each medication\'s Quantity.');
+            return;
+        }
+        if (medications.some(function (m) { return m.dosage === '' || m.frequency === '' || m.duration === '' || m.route === '' || m.instructions === ''; })) {
+            await HCDialog.alert('Please fill in Dosage, Frequency, Duration, Route, and Instructions for every medicine/vaccine row before saving.');
+            showMedVaccinePanel();
             return;
         }
 
@@ -739,6 +756,15 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // A prescription/treatment plan is the whole reason a patient
+        // gets routed to the Pharmacy — rteEditor.textContent (not
+        // .innerHTML) so an editor the doctor never actually typed into
+        // but that still holds a stray "<br>"/empty "<p>" tag from the
+        // browser doesn't read as "has content".
+        if (nextRouting === 'pharmacy' && rteEditor.textContent.trim() === '') {
+            await HCDialog.alert('Please enter a prescription or treatment plan before sending this patient to the Pharmacy.');
+            return;
+        }
         if (nextRouting === 'pharmacy' && medications.length === 0) {
             await HCDialog.alert('Please add at least one medicine or vaccine before sending this patient to the Pharmacy.');
             showMedVaccinePanel();

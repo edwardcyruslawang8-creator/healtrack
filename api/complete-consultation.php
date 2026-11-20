@@ -192,6 +192,18 @@ if ($nextRouting !== '' && !in_array($nextRouting, $validRouting, true)) {
     exit;
 }
 
+// A prescription/treatment plan is the whole reason a patient gets
+// routed to the Pharmacy — checked against the real text content
+// (strip_tags), same reasoning as active_consultation.js's own
+// rteEditor.textContent check, so a stray "<p><br></p>" the browser
+// left behind in an editor the doctor never actually typed into
+// doesn't count as "has content" here either.
+if ($nextRouting === 'pharmacy' && trim(strip_tags($prescriptionHtml)) === '') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please enter a prescription or treatment plan before sending this patient to the Pharmacy.']);
+    exit;
+}
+
 // Lab test names are validated against the real catalog (not trusted
 // as free text) — a flat testName -> category map, so each test's real
 // category can be looked up below rather than trusting a
@@ -261,7 +273,12 @@ if ($vitalsError !== null) {
 
 // Medications & Vaccines — skip blank-name rows (a stray empty row
 // left over from the table UI, same tolerance
-// api/create-stock-request.php's item rows already have).
+// api/create-stock-request.php's item rows already have). Every OTHER
+// field on a row that does have a name is required — this is what
+// this patient's own Medications list and Patient Profile read back
+// verbatim, so a row saved with real gaps in it shows those same gaps
+// there, same reasoning active_consultation.js's own client-side copy
+// of this check already applies before the request is even sent.
 $rawMedications = is_array($body['medications'] ?? null) ? $body['medications'] : [];
 $medications = [];
 foreach ($rawMedications as $m) {
@@ -270,23 +287,38 @@ foreach ($rawMedications as $m) {
         continue;
     }
     $type = ($m['type'] ?? '') === 'vaccine' ? 'vaccine' : 'medication';
-    // Quantity to dispense — Medications rows only, a whole number >= 1
-    // or left blank (null).
+    // Quantity to dispense — required for Medications rows (vaccine
+    // rows never show this column at all), a whole number >= 1.
     $quantityRaw = $type === 'medication' ? trim((string) ($m['quantity'] ?? '')) : '';
+    if ($type === 'medication' && $quantityRaw === '') {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => 'Please enter a Quantity for "' . $name . '".']);
+        exit;
+    }
     if ($quantityRaw !== '' && !preg_match('/^[1-9]\d*$/', $quantityRaw)) {
         http_response_code(422);
         echo json_encode(['success' => false, 'error' => 'Quantity for "' . $name . '" must be a whole number of 1 or more.']);
         exit;
     }
+    $dosage = trim((string) ($m['dosage'] ?? ''));
+    $frequency = trim((string) ($m['frequency'] ?? ''));
+    $duration = trim((string) ($m['duration'] ?? ''));
+    $route = trim((string) ($m['route'] ?? ''));
+    $instructions = trim((string) ($m['instructions'] ?? ''));
+    if ($dosage === '' || $frequency === '' || $duration === '' || $route === '' || $instructions === '') {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => 'Please fill in Dosage, Frequency, Duration, Route, and Instructions for "' . $name . '".']);
+        exit;
+    }
     $medications[] = [
         'type' => $type,
         'name' => $name,
-        'dosage' => trim((string) ($m['dosage'] ?? '')),
+        'dosage' => $dosage,
         'quantity' => $quantityRaw !== '' ? (int) $quantityRaw : null,
-        'frequency' => trim((string) ($m['frequency'] ?? '')),
-        'duration' => trim((string) ($m['duration'] ?? '')),
-        'route' => trim((string) ($m['route'] ?? '')),
-        'instructions' => trim((string) ($m['instructions'] ?? '')),
+        'frequency' => $frequency,
+        'duration' => $duration,
+        'route' => $route,
+        'instructions' => $instructions,
     ];
 }
 

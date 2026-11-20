@@ -451,9 +451,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     dispenseBtn.addEventListener('click', async function () {
         const selected = itemSelect.options[itemSelect.selectedIndex];
-        const message = selectedLooksWrong()
-            ? 'The order is for “' + orderedItemName + '”, but you selected “' + selected.dataset.name + '” from inventory — “' + selected.dataset.name + '” stock will be reduced. Dispense anyway?'
-            : 'Mark this prescription as dispensed?';
+        // Three distinct cases, each worth its own wording — a blank
+        // selection in particular used to fall through to the same
+        // generic "Mark this prescription as dispensed?" text as a
+        // normal dispense, so a pharmacist who hadn't touched the combo
+        // (no suggested match found, or just missed it) had nothing
+        // telling them this click skips the stock deduction entirely.
+        const message = (!selected || selected.value === '')
+            ? 'No inventory item is selected, so this will NOT deduct any stock. Dispense anyway?'
+            : selectedLooksWrong()
+                ? 'The order is for “' + orderedItemName + '”, but you selected “' + selected.dataset.name + '” from inventory — “' + selected.dataset.name + '” stock will be reduced. Dispense anyway?'
+                : 'Mark this prescription as dispensed?';
         const confirmed = await HCDialog.confirm(message);
         if (!confirmed) return;
         dispenseOrder(dispenseBtn.dataset.orderId, dispenseBtn);

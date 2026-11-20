@@ -213,7 +213,7 @@ $savedRemarks = $docFields['remarks'] ?? '';
                 <?php if ($requiredSpecimen !== null && $isEditable): ?>
                 <div><strong><?= htmlspecialchars($requiredSpecimen) ?></strong></div>
                 <?php elseif ($isEditable): ?>
-                <input type="text" class="form-control" id="f_specimen" name="specimen" value="<?= htmlspecialchars($savedSpecimen) ?>" placeholder="e.g. Whole Blood, Serum, Urine" style="max-width:420px;">
+                <input type="text" class="form-control" id="f_specimen" name="specimen" value="<?= htmlspecialchars($savedSpecimen) ?>" placeholder="e.g. Whole Blood, Serum, Urine" style="max-width:420px;" required>
                 <?php else: ?>
                 <div><strong><?= htmlspecialchars($savedSpecimen ?: '—') ?></strong></div>
                 <?php endif; ?>
@@ -229,25 +229,25 @@ $savedRemarks = $docFields['remarks'] ?? '';
                     <?php endif; ?>
                 </div>
                 <div>
-                    <label for="f_unit" style="display:block; font-size:12.5px; font-weight:600; color:var(--adm-text-muted); margin-bottom:6px;">Unit <span class="text-muted fw-normal">(Optional)</span></label>
+                    <label for="f_unit" style="display:block; font-size:12.5px; font-weight:600; color:var(--adm-text-muted); margin-bottom:6px;">Unit<span class="text-danger">*</span></label>
                     <?php if ($isEditable): ?>
-                    <input type="text" class="form-control" id="f_unit" name="unit" value="<?= htmlspecialchars($savedUnit) ?>" placeholder="e.g. mg/dL">
+                    <input type="text" class="form-control" id="f_unit" name="unit" value="<?= htmlspecialchars($savedUnit) ?>" placeholder="e.g. mg/dL, or N/A if not applicable" required>
                     <?php else: ?>
                     <div><strong><?= htmlspecialchars($savedUnit ?: '—') ?></strong></div>
                     <?php endif; ?>
                 </div>
                 <div>
-                    <label for="f_range" style="display:block; font-size:12.5px; font-weight:600; color:var(--adm-text-muted); margin-bottom:6px;">Reference Range <span class="text-muted fw-normal">(Optional)</span></label>
+                    <label for="f_range" style="display:block; font-size:12.5px; font-weight:600; color:var(--adm-text-muted); margin-bottom:6px;">Reference Range<span class="text-danger">*</span></label>
                     <?php if ($isEditable): ?>
-                    <input type="text" class="form-control" id="f_range" name="range" value="<?= htmlspecialchars($savedRange) ?>" placeholder="e.g. 70 - 100">
+                    <input type="text" class="form-control" id="f_range" name="range" value="<?= htmlspecialchars($savedRange) ?>" placeholder="e.g. 70 - 100, or N/A if not applicable" required>
                     <?php else: ?>
                     <div><strong><?= htmlspecialchars($savedRange ?: '—') ?></strong></div>
                     <?php endif; ?>
                 </div>
                 <div>
-                    <label for="f_interpretation" style="display:block; font-size:12.5px; font-weight:600; color:var(--adm-text-muted); margin-bottom:6px;">Interpretation <span class="text-muted fw-normal">(Optional)</span></label>
+                    <label for="f_interpretation" style="display:block; font-size:12.5px; font-weight:600; color:var(--adm-text-muted); margin-bottom:6px;">Interpretation<span class="text-danger">*</span></label>
                     <?php if ($isEditable): ?>
-                    <input type="text" class="form-control" id="f_interpretation" name="interpretation" value="<?= htmlspecialchars($savedInterpretation) ?>" placeholder="e.g. Normal, High">
+                    <input type="text" class="form-control" id="f_interpretation" name="interpretation" value="<?= htmlspecialchars($savedInterpretation) ?>" placeholder="e.g. Normal, High" required>
                     <?php else: ?>
                     <div><strong><?= htmlspecialchars($savedInterpretation ?: '—') ?></strong></div>
                     <?php endif; ?>
@@ -299,10 +299,26 @@ $savedRemarks = $docFields['remarks'] ?? '';
             e.preventDefault();
 
             var result = form.querySelector('input[name="result"]').value.trim();
-            if (result === '') {
+            var specimenEl = form.querySelector('input[name="specimen"]');
+            var specimen = specimenEl ? specimenEl.value.trim() : '';
+            var unit = form.querySelector('input[name="unit"]').value.trim();
+            var range = form.querySelector('input[name="range"]').value.trim();
+            var interpretation = form.querySelector('input[name="interpretation"]').value.trim();
+
+            // specimenEl is only present when this test has no single
+            // fixed specimen (a free-text case) — a fixed-specimen test
+            // shows a plain <div>, not an input, so there's nothing to
+            // require there.
+            var missing = (specimenEl && specimen === '') ? 'Specimen'
+                : result === '' ? 'Result'
+                : unit === '' ? 'Unit'
+                : range === '' ? 'Reference Range'
+                : interpretation === '' ? 'Interpretation'
+                : null;
+            if (missing) {
                 msg.style.display = 'block';
                 msg.className = 'adm-page-subtitle';
-                msg.textContent = 'Please fill in the Result before saving.';
+                msg.textContent = 'Please fill in "' + missing + '" before saving.';
                 return;
             }
 
@@ -315,11 +331,11 @@ $savedRemarks = $docFields['remarks'] ?? '';
                 body: JSON.stringify({
                     patientId: patientId,
                     recordId: recordId,
-                    specimen: (function () { var el = form.querySelector('input[name="specimen"]'); return el ? el.value.trim() : ''; })(),
+                    specimen: specimen,
                     result: result,
-                    unit: form.querySelector('input[name="unit"]').value.trim(),
-                    range: form.querySelector('input[name="range"]').value.trim(),
-                    interpretation: form.querySelector('input[name="interpretation"]').value.trim(),
+                    unit: unit,
+                    range: range,
+                    interpretation: interpretation,
                     remarks: form.querySelector('textarea[name="remarks"]').value.trim(),
                 })
             })

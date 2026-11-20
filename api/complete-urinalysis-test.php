@@ -102,6 +102,20 @@ if ($pendingDoc === null) {
 $physicalFields = hc_urinalysis_physical_fields();
 $microscopicFields = hc_urinalysis_microscopic_fields();
 
+// Every one of the 14 Physical/Microscopic Examination fields is
+// required — this is what this patient's Laboratory Result Details
+// (structured table) and Patient Profile read back row for row, so a
+// row left blank here shows as a real gap there. "None"/"Not seen" is
+// a genuine, complete answer for a microscopic field with nothing
+// notable; a blank value is not the same thing.
+foreach (array_merge($physicalFields, $microscopicFields) as $key => $label) {
+    if (trim((string) ($rawValues[$key] ?? '')) === '') {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => 'Please fill in "' . $label . '" before saving.']);
+        exit;
+    }
+}
+
 /** @param array<string,string> $fieldLabels */
 $buildRows = function (array $fieldLabels) use ($rawValues): array {
     $rows = [];

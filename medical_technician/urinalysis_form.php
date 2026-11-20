@@ -298,9 +298,19 @@ $currentOverall = $currentDoc['fields']['resultBadgeLabel'] ?? '';
             }
 
             var values = {};
+            var missingField = null;
             form.querySelectorAll('input[type="text"]').forEach(function (input) {
                 values[input.name] = input.value;
+                if (input.value.trim() === '' && !missingField) {
+                    missingField = input.closest('.urn-field').querySelector('label').textContent;
+                }
             });
+            if (missingField) {
+                msg.style.display = 'block';
+                msg.className = 'adm-page-subtitle';
+                msg.textContent = 'Please fill in "' + missingField + '" before saving.';
+                return;
+            }
 
             var btn = document.getElementById('btnSaveUrinalysis');
             btn.disabled = true;

@@ -113,7 +113,31 @@ $testName = hc_lab_test_display_name($existing['testName'] ?? 'Lab Test');
 // test added beyond the official 23 falls back to what was actually
 // submitted.
 $requiredSpecimen = hc_lab_test_required_specimen($testName);
-$specimenType = $requiredSpecimen ?? ($specimen !== '' ? $specimen : 'Not specified');
+// A free-text Specimen box only even exists on the form when this test
+// has no single fixed answer (Wet Mount, or a custom test added beyond
+// the official 23) — required in that case, same as every other field
+// here, so this patient's result never shows a blank Specimen either.
+if ($requiredSpecimen === null && $specimen === '') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Specimen is required.']);
+    exit;
+}
+if ($unit === '') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Unit is required.']);
+    exit;
+}
+if ($range === '') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Reference Range is required.']);
+    exit;
+}
+if ($interpretation === '') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Interpretation is required.']);
+    exit;
+}
+$specimenType = $requiredSpecimen ?? $specimen;
 
 $badgeLabel = $interpretation !== '' ? $interpretation : 'Completed';
 $badgeColor = ($interpretation === '' || in_array(strtolower($interpretation), ['normal', 'negative'], true))
