@@ -178,7 +178,8 @@
   align-items: center;
   margin-bottom: 8px;
 }
-.nsr-item-row .nsr-item-name{ flex: 1 1 auto; min-width: 0; }
+.nsr-item-row .nsr-combo{ flex: 1 1 auto; min-width: 0; position: relative; }
+.nsr-item-row .nsr-combo .nsr-item-name{ width: 100%; }
 .nsr-item-row .nsr-item-qty{ flex: 0 0 90px; }
 .nsr-item-row .nsr-item-unit{ flex: 0 0 120px; }
 .nsr-item-row .nsr-remove-item-btn{
@@ -195,6 +196,70 @@
 }
 .nsr-item-row .nsr-remove-item-btn:hover{ background: var(--adm-red-bg, #FCE4E4); color: var(--adm-red-bright, #A32A22); border-color: transparent; }
 .nsr-item-row .nsr-remove-item-btn:disabled{ opacity: .4; cursor: not-allowed; }
+
+/* Item name's suggestion dropdown (assets/js/new-stock-request.js's
+   attachItemCombo()) — floats under just that row's own input, doesn't
+   affect row height/layout. position: fixed (left/top/width set inline,
+   computed from the input's real on-screen rect by placePanel()) rather
+   than absolute — Bootstrap's .modal-content clips any descendant that
+   extends past the modal's own rounded-corner box, which otherwise cut
+   this panel off after only 1-2 suggestion rows; fixed positioning is
+   immune to that (and to any other ancestor's overflow), same fix
+   assets/js/styled-select.js's own dropdown already uses. */
+.nsr-combo-panel{
+  position: fixed;
+  z-index: 1065; /* above Bootstrap's own .modal backdrop/dialog stacking (1055/1060) */
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .12);
+  overflow: hidden;
+}
+.nsr-combo-panel[hidden]{ display: none; }
+.nsr-combo-list{
+  max-height: min(240px, 40vh);
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+.nsr-combo-option{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px 8px 12px;
+  font-size: 13px;
+  color: var(--adm-text);
+  cursor: pointer;
+}
+.nsr-combo-option:hover,
+.nsr-combo-option.is-active{ background: var(--adm-hover-bg); }
+.nsr-combo-name{ flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.nsr-combo-stock{
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--adm-text-muted);
+  white-space: nowrap;
+}
+.nsr-combo-badge{
+  flex-shrink: 0;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.nsr-combo-badge-red{ background: #FCE4E4; color: #D93025; }
+.nsr-combo-badge-amber{ background: #FDF3DC; color: #B7791F; }
+.nsr-combo-empty{
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--adm-text-muted);
+}
 
 /* View Request modal's item list (name + qty). */
 .am-detail-items-table{ font-size: 13px; margin-bottom: 0; }

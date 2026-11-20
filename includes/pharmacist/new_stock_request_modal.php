@@ -15,13 +15,21 @@
      Each row's item name is a free-text <input> (not a locked <select>)
      for flexibility — a pharmacist can request anything, not only
      items that already exist in inventory (e.g. a brand-new medicine
-     never stocked before) — paired with a <datalist> of real
-     medicine/vaccine names ($medicineNames/$vaccineNames,
-     includes/pharmacist/stock_requests_pharmacist_firestore.php) for
-     autocomplete convenience only; typing something not in the list is
-     still perfectly valid. assets/js/new-stock-request.js points each
-     row's input at #nsrMedicineList or #nsrVaccineList depending on
-     the current Request Type.
+     never stocked before) — paired with a custom suggestion dropdown
+     (assets/js/new-stock-request.js, built from window.NSR_ITEMS below)
+     for autocomplete convenience only; typing something not in the
+     list is still perfectly valid. A real <datalist> can't show
+     anything but plain option text, so this is a hand-built panel
+     instead, specifically so it CAN show why an item is suggested — a
+     Low Stock/Out of Stock/Expiring Soon/Expired badge next to its
+     name, sorted most-urgent-to-restock first
+     ($medicineItemsForPicker/$vaccineItemsForPicker,
+     includes/pharmacist/stock_requests_pharmacist_firestore.php's
+     hc_sort_inventory_by_restock_priority()). Each row gets its own
+     independent dropdown instance (unlike prescription-queue.js's
+     single #rxqItemCombo, this modal can have several item rows at
+     once); switching Request Type repoints every row's dropdown at the
+     other type's item list.
 
      api/create-stock-request.php re-resolves each typed name against
      real inventory server-side anyway (hc_find_inventory_item_by_name()),
@@ -46,20 +54,42 @@ $nsrItemUnits = [];
 foreach (array_merge(hc_get_inventory_items('medicine'), hc_get_inventory_items('vaccine')) as $nsrItem) {
     $nsrItemUnits[strtolower(trim($nsrItem['name']))] = array_values(array_filter([$nsrItem['piecesPerBox'] > 0 ? 'Box' : null, $nsrItem['unit']]));
 }
+
+// The custom suggestion dropdown's real data (assets/js/new-stock-
+// request.js's item combo), sorted most-urgent-to-restock first
+// (hc_sort_inventory_by_restock_priority()) and carrying enough per
+// item for the dropdown to actually SHOW why each one is suggested (a
+// Low Stock/Out of Stock/Expiring Soon/Expired badge) instead of just
+// its name — a native <datalist> option can't render anything but
+// plain text, so this replaces it entirely. Computed independently
+// here (same self-contained reasoning as $nsrItemUnits just above,
+// not read from the including page's own variables) since this
+// partial is require()'d from TWO different pages with two different
+// data files — subadmin/stock_requests.php (which has no real "New
+// Stock Request" trigger but still requires this file; see its own
+// header comment) never computed a $medicineItemsForPicker/
+// $vaccineItemsForPicker of its own, which previously crashed this
+// page outright the moment this partial assumed it would.
+$nsrItemRow = fn (array $item) => [
+    'name' => $item['name'],
+    'status' => $item['status'],
+    'expiryStatus' => $item['expiryStatus'],
+    'currentStock' => $item['currentStock'],
+    'unit' => $item['unit'],
+];
+$nsrMedicineItems = hc_get_inventory_items('medicine');
+$nsrVaccineItems = hc_get_inventory_items('vaccine');
+hc_sort_inventory_by_restock_priority($nsrMedicineItems);
+hc_sort_inventory_by_restock_priority($nsrVaccineItems);
+$nsrItems = [
+    'medicine' => array_map($nsrItemRow, $nsrMedicineItems),
+    'vaccine' => array_map($nsrItemRow, $nsrVaccineItems),
+];
 ?>
 <script>
 window.NSR_ITEM_UNITS = <?= json_encode((object) $nsrItemUnits, JSON_HEX_TAG | JSON_HEX_AMP) ?>;
+window.NSR_ITEMS = <?= json_encode($nsrItems, JSON_HEX_TAG | JSON_HEX_AMP) ?>;
 </script>
-<datalist id="nsrMedicineList">
-    <?php foreach ($medicineNames as $name): ?>
-    <option value="<?= htmlspecialchars($name) ?>">
-    <?php endforeach; ?>
-</datalist>
-<datalist id="nsrVaccineList">
-    <?php foreach ($vaccineNames as $name): ?>
-    <option value="<?= htmlspecialchars($name) ?>">
-    <?php endforeach; ?>
-</datalist>
 
 <div class="modal fade am-modal" id="newStockRequestModal" tabindex="-1" aria-labelledby="newStockRequestModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">

@@ -16,14 +16,13 @@
    handed off in prescription_queue.php), pre-selected from the
    order's server-computed data-suggested-item-id (a STRICT match on
    name + dosage form + strength — hc_find_inventory_match() in
-   includes/shared/inventory_match.php). "Not in inventory" stays a
-   real, valid choice — this order's item isn't guaranteed to match
-   a tracked inventory record, and dispensing shouldn't be blocked
-   when it doesn't. Quantity is required only when a real item is
-   selected; the shown "in stock" count is a convenience — the
-   authoritative check happens server-side in
-   api/dispense-pharmacy-order.php, same principle as every other
-   client-side check in this app.
+   includes/shared/inventory_match.php). A real inventory item AND a
+   valid quantity are both REQUIRED to dispense — every dispense must
+   deduct real stock, no exceptions; a prescribed item with no match
+   here has to be added to Medicine & Vaccine Inventory first. The
+   shown "in stock" count is a convenience — the authoritative check
+   happens server-side in api/dispense-pharmacy-order.php, same
+   principle as every other client-side check in this app.
    ============================================================= */
 
 /** "500 Tablets", "1 Bottle" — same rule as includes/firestore/medicines.php's hc_qty_unit(). */
@@ -61,14 +60,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const comboPanel = combo.querySelector('.rxq-combo-panel');
     const comboSearch = document.getElementById('rxqItemComboSearch');
     const comboList = document.getElementById('rxqItemComboList');
-    const NONE_LABEL = 'Not in inventory — don’t adjust stock';
+    const PLACEHOLDER_LABEL = 'Select an inventory item…';
     let comboItems = [];      // [{ id, name, stock, unit }]
     let activeIndex = -1;     // keyboard highlight within the visible <li>s
 
     function syncComboLabel() {
         const selected = itemSelect.options[itemSelect.selectedIndex];
         if (!selected || selected.value === '') {
-            comboLabel.textContent = NONE_LABEL;
+            comboLabel.textContent = PLACEHOLDER_LABEL;
             comboLabel.classList.add('rxq-combo-placeholder');
         } else {
             comboLabel.textContent = selected.dataset.name + ' (' + qtyUnit(selected.dataset.stock, selected.dataset.unit) + ' in stock)';
@@ -89,16 +88,17 @@ document.addEventListener('DOMContentLoaded', function () {
         comboList.innerHTML = '';
         activeIndex = -1;
 
-        const rows = [{ id: '', name: NONE_LABEL, none: true }].concat(
-            comboItems.filter(function (i) { return term === '' || i.name.toLowerCase().indexOf(term) !== -1; })
-        );
+        // No "not in inventory" row anymore — a real item is required to
+        // dispense at all (see this file's header comment), so there's
+        // nothing valid for that option to lead to.
+        const rows = comboItems.filter(function (i) { return term === '' || i.name.toLowerCase().indexOf(term) !== -1; });
 
         rows.forEach(function (row) {
             const li = document.createElement('li');
             li.className = 'rxq-combo-option';
             li.setAttribute('role', 'option');
             li.dataset.id = row.id;
-            li.id = 'rxqComboOpt-' + (row.id || 'none');
+            li.id = 'rxqComboOpt-' + row.id;
             const selected = itemSelect.value === row.id;
             li.setAttribute('aria-selected', selected ? 'true' : 'false');
             if (selected) li.classList.add('is-selected');
@@ -108,27 +108,25 @@ document.addEventListener('DOMContentLoaded', function () {
             name.textContent = row.name;
             li.appendChild(name);
 
-            if (row.none) {
-                li.classList.add('rxq-combo-option-none');
+            const stock = document.createElement('span');
+            stock.className = 'rxq-combo-stock';
+            if (row.stock > 0) {
+                stock.textContent = qtyUnit(row.stock, row.unit);
             } else {
-                const stock = document.createElement('span');
-                stock.className = 'rxq-combo-stock';
-                if (row.stock > 0) {
-                    stock.textContent = qtyUnit(row.stock, row.unit);
-                } else {
-                    stock.textContent = 'Out of stock';
-                    li.classList.add('is-disabled');
-                    li.setAttribute('aria-disabled', 'true');
-                }
-                li.appendChild(stock);
+                stock.textContent = 'Out of stock';
+                li.classList.add('is-disabled');
+                li.setAttribute('aria-disabled', 'true');
             }
+            li.appendChild(stock);
             comboList.appendChild(li);
         });
 
-        if (rows.length === 1 && term !== '') {
+        if (rows.length === 0) {
             const empty = document.createElement('li');
             empty.className = 'rxq-combo-empty';
-            empty.textContent = 'No inventory items match “' + comboSearch.value.trim() + '”.';
+            empty.textContent = term === ''
+                ? 'No inventory items of this type exist yet.'
+                : 'No inventory items match “' + comboSearch.value.trim() + '”.';
             comboList.appendChild(empty);
         }
     }
@@ -183,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function () {
         renderComboList();
         comboList.scrollTop = 0;
         const sel = comboList.querySelector('.is-selected');
-        if (sel && !sel.classList.contains('rxq-combo-option-none')) scrollOptionIntoList(sel, true);
+        if (sel) scrollOptionIntoList(sel, true);
         revealPanel();
         comboSearch.focus({ preventScroll: true });
     }
@@ -279,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const noneOpt = document.createElement('option');
         noneOpt.value = '';
-        noneOpt.textContent = NONE_LABEL;
+        noneOpt.textContent = PLACEHOLDER_LABEL;
         itemSelect.appendChild(noneOpt);
 
         items.forEach(function (item) {
@@ -318,14 +316,17 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateStockNote() {
         const selected = itemSelect.options[itemSelect.selectedIndex];
         if (!selected || selected.value === '') {
+            // An inventory item is REQUIRED to dispense at all now — see
+            // this file's header comment — so every branch here is some
+            // flavor of "pick one", not "this is fine as-is".
             if (matchState.status === 'unavailable') {
-                stockNote.textContent = 'Matched “' + matchState.name + '” in inventory, but it has no usable (non-expired) stock. Stock will not be adjusted for this dispense.';
+                stockNote.textContent = 'Matched “' + matchState.name + '” in inventory, but it has no usable (non-expired) stock — this can\'t be dispensed until that\'s restocked.';
             } else if (matchState.status === 'none') {
-                stockNote.textContent = 'No matching inventory item found. Stock will not be adjusted for this dispense — search the list to pick one manually.';
+                stockNote.textContent = 'No matching inventory item found. Search the list to pick the real item this should come from, or add it to inventory first.';
             } else {
-                stockNote.textContent = 'Stock will not be adjusted for this dispense.';
+                stockNote.textContent = 'Please select the inventory item this should be dispensed from.';
             }
-            stockNote.style.color = '';
+            stockNote.style.color = 'var(--adm-red)';
             qtyInput.required = false;
             if (qtyLabel) qtyLabel.textContent = 'Quantity';
             qtyInput.removeAttribute('max');
@@ -347,19 +348,25 @@ document.addEventListener('DOMContentLoaded', function () {
     function dispenseOrder(orderId, btn) {
         const selected = itemSelect.options[itemSelect.selectedIndex];
         const inventoryItemId = selected ? selected.value : '';
-        let quantity = null;
 
-        if (inventoryItemId !== '') {
-            quantity = parseInt(qtyInput.value, 10);
-            if (!Number.isInteger(quantity) || quantity < 1) {
-                HCDialog.alert('Please enter a valid quantity dispensed.');
-                return;
-            }
-            const stockAvailable = parseInt(selected.dataset.stock, 10);
-            if (quantity > stockAvailable) {
-                HCDialog.alert('Only ' + qtyUnit(stockAvailable, selected.dataset.unit) + ' in stock — cannot dispense ' + qtyUnit(quantity, selected.dataset.unit) + '.');
-                return;
-            }
+        // A real inventory item + quantity are both required to dispense
+        // at all now (see this file's header comment) — this is checked
+        // again in dispenseBtn's own click handler before it even shows a
+        // confirm dialog, so this is really just the same gate re-checked
+        // in case dispenseOrder() is ever called some other way.
+        if (inventoryItemId === '') {
+            HCDialog.alert('Please select the inventory item this should be dispensed from before dispensing.');
+            return;
+        }
+        const quantity = parseInt(qtyInput.value, 10);
+        if (!Number.isInteger(quantity) || quantity < 1) {
+            HCDialog.alert('Please enter a valid quantity dispensed.');
+            return;
+        }
+        const stockAvailable = parseInt(selected.dataset.stock, 10);
+        if (quantity > stockAvailable) {
+            HCDialog.alert('Only ' + qtyUnit(stockAvailable, selected.dataset.unit) + ' in stock — cannot dispense ' + qtyUnit(quantity, selected.dataset.unit) + '.');
+            return;
         }
 
         const defaultHtml = btn.innerHTML;
@@ -451,17 +458,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     dispenseBtn.addEventListener('click', async function () {
         const selected = itemSelect.options[itemSelect.selectedIndex];
-        // Three distinct cases, each worth its own wording — a blank
-        // selection in particular used to fall through to the same
-        // generic "Mark this prescription as dispensed?" text as a
-        // normal dispense, so a pharmacist who hadn't touched the combo
-        // (no suggested match found, or just missed it) had nothing
-        // telling them this click skips the stock deduction entirely.
-        const message = (!selected || selected.value === '')
-            ? 'No inventory item is selected, so this will NOT deduct any stock. Dispense anyway?'
-            : selectedLooksWrong()
-                ? 'The order is for “' + orderedItemName + '”, but you selected “' + selected.dataset.name + '” from inventory — “' + selected.dataset.name + '” stock will be reduced. Dispense anyway?'
-                : 'Mark this prescription as dispensed?';
+
+        // A real inventory item is required to dispense at all — blocked
+        // outright here, before any confirm dialog, rather than warned
+        // and allowed through (this used to be a deliberate, allowed
+        // choice; it no longer is — every dispense must deduct real
+        // stock, so an item with no inventory match has to be added to
+        // Medicine & Vaccine Inventory first).
+        if (!selected || selected.value === '') {
+            await HCDialog.alert('Please select the inventory item this should be dispensed from before dispensing.');
+            itemSelect.focus();
+            openCombo();
+            return;
+        }
+
+        const message = selectedLooksWrong()
+            ? 'The order is for “' + orderedItemName + '”, but you selected “' + selected.dataset.name + '” from inventory — “' + selected.dataset.name + '” stock will be reduced. Dispense anyway?'
+            : 'Mark this prescription as dispensed?';
         const confirmed = await HCDialog.confirm(message);
         if (!confirmed) return;
         dispenseOrder(dispenseBtn.dataset.orderId, dispenseBtn);

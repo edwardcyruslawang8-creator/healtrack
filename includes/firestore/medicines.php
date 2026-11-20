@@ -269,6 +269,45 @@ if (!function_exists('hc_sort_inventory_by_last_updated')) {
     }
 }
 
+if (!function_exists('hc_sort_inventory_by_restock_priority')) {
+    /**
+     * Sorts inventory rows so whatever most urgently needs restocking
+     * surfaces first — near-expired/expired, then out of stock, then
+     * low stock, then everything else — used by the "New Stock
+     * Request" item picker (includes/pharmacist/new_stock_request_modal.php)
+     * so a pharmacist opening it to restock sees the items that
+     * actually need it before scrolling/typing further, rather than
+     * hc_query_inventory_items()'s default FEFO-then-name order (which
+     * still applies as the tiebreak within each tier here, so the
+     * result reads the same within a tier as everywhere else).
+     *
+     * @param array<int, array> $items hc_map_medicine_doc_to_item() shape — reads 'status'/'expiryStatus'.
+     */
+    function hc_sort_inventory_by_restock_priority(array &$items): void
+    {
+        $tier = function (array $row): int {
+            $expiry = (string) ($row['expiryStatus'] ?? 'ok');
+            if ($expiry === 'expired' || $expiry === 'soon') {
+                return 0;
+            }
+            $status = (string) ($row['status'] ?? 'available');
+            if ($status === 'unavailable') {
+                return 1;
+            }
+            if ($status === 'low') {
+                return 2;
+            }
+            return 3;
+        };
+
+        usort($items, function ($a, $b) use ($tier) {
+            return $tier($a) <=> $tier($b)
+                ?: ((string) ($a['expiryDateRaw'] ?? '') ?: '9999-99-99') <=> ((string) ($b['expiryDateRaw'] ?? '') ?: '9999-99-99')
+                ?: strcasecmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? ''));
+        });
+    }
+}
+
 if (!function_exists('hc_get_inventory_items')) {
     /** Every NON-archived medicines/{id} doc matching $type — see hc_query_inventory_items(). */
     function hc_get_inventory_items(string $type): array

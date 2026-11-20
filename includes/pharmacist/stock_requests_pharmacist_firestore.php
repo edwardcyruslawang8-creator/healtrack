@@ -52,9 +52,11 @@ $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'We
 $requestTypeMeta = hc_stock_request_type_meta();
 $requestStatusMeta = hc_stock_request_status_meta();
 
-// Real medicine/vaccine names for the "+ New Stock Request"/"Edit
-// Request" modal's item picker — only the name is needed there (not
-// full stock levels).
+// Real medicine/vaccine names — no longer used by the "+ New Stock
+// Request" modal itself (includes/pharmacist/new_stock_request_modal.php
+// computes its own prioritized, richer item list independently now,
+// since that partial is shared with subadmin/stock_requests.php too);
+// kept here only in case another part of this page still reads them.
 $medicineNames = array_column(hc_get_inventory_items('medicine'), 'name');
 $vaccineNames = array_column(hc_get_inventory_items('vaccine'), 'name');
 

@@ -12,14 +12,16 @@
  * so double-clicking or two pharmacists racing the same order can't
  * double-count it.
  *
- * Optionally also decrements real medicines/{id} stock — $inventoryItemId/
+ * Always decrements real medicines/{id} stock too — $inventoryItemId/
  * $quantity, chosen by the pharmacist in the Dispense modal (pre-filled
- * from a fuzzy name match, but editable — a prescribed item's free-text
- * name isn't guaranteed to match a real tracked inventory record, so
- * "don't adjust stock" is a genuine, allowed choice, not an error).
- * Every check here is re-done server-side against the real doc. The
- * actual decrement draws down the item's real batches soonest-expiry
- * first (hc_decrement_medicine_stock_fefo(), FEFO —
+ * from a fuzzy name match, but editable). Both are REQUIRED: every
+ * dispense must deduct real stock, no exceptions — a prescribed item
+ * with no inventory match has to be added to Medicine & Vaccine
+ * Inventory before it can be dispensed at all. Every check here is
+ * re-done server-side against the real doc, never trusting that the
+ * client already validated it. The actual decrement draws down the
+ * item's real batches soonest-expiry first
+ * (hc_decrement_medicine_stock_fefo(), FEFO —
  * includes/firestore/medicine_batches.php) rather than one shared
  * currentStock number, same "never trust the client's own math"
  * principle api/adjust-medicine-stock.php's own +/- stock modal
@@ -73,58 +75,55 @@ if (($existing['status'] ?? '') !== 'pending') {
     exit;
 }
 
-// "Not in inventory" (blank $inventoryItemId) is a valid, deliberate
-// choice — the order dispenses with no stock adjustment. Only when a
-// real item was chosen does a quantity need validating.
-$dispensedQuantity = null;
-$dispensedItemName = null;
-$medicineDoc = null;
-if ($inventoryItemId !== '') {
-    if (!is_numeric($quantity) || (int) $quantity < 1) {
-        http_response_code(422);
-        echo json_encode(['success' => false, 'error' => 'Please enter a valid quantity dispensed.']);
-        exit;
-    }
-    $quantity = (int) $quantity;
-
-    $medicineDoc = $firestore->getDocument('medicines', $inventoryItemId);
-    if ($medicineDoc === null) {
-        http_response_code(404);
-        echo json_encode(['success' => false, 'error' => 'This inventory item no longer exists.']);
-        exit;
-    }
-    // An item with no real non-expired stock left can never be
-    // dispensed — re-checked here server-side.
-    // hc_medicine_has_dispensable_stock() checks every real batch
-    // individually, not medicines/{id}'s own expiryDate rollup field —
-    // that field is only the SOONEST expiry among batches with stock,
-    // so it reads "expired" the moment that one particular batch's
-    // date passes even while a separate, later batch still has real
-    // usable stock (confirmed from a live report: one expired batch
-    // wrongly blocked dispensing a second, valid one). A blank/not-
-    // linked $inventoryItemId (dispensing with no stock adjustment)
-    // skips this entirely — there's no real inventory record to check
-    // against in that case, same as it already has no stock to check.
-    if (!hc_medicine_has_dispensable_stock($inventoryItemId)) {
-        http_response_code(422);
-        echo json_encode(['success' => false, 'error' => ($medicineDoc['name'] ?? 'This item') . ' has no non-expired stock left and can no longer be dispensed.']);
-        exit;
-    }
-
-    // Usable stock, computed live from the real batches — only
-    // non-expired stock counts, exactly what FEFO below can actually
-    // draw from (not the stored currentStock rollup, which can lag
-    // behind a batch that expired just by the date passing).
-    $oldStock = hc_stock_rollup_from_batches(hc_get_batches_for_medicine($inventoryItemId))['usable'];
-    if ($quantity > $oldStock) {
-        http_response_code(422);
-        echo json_encode(['success' => false, 'error' => 'Only ' . hc_qty_unit((int) $oldStock, (string) ($medicineDoc['unit'] ?? 'unit')) . ' in stock — cannot dispense ' . hc_qty_unit((int) $quantity, (string) ($medicineDoc['unit'] ?? 'unit')) . '.']);
-        exit;
-    }
-
-    $dispensedQuantity = $quantity;
-    $dispensedItemName = $medicineDoc['name'] ?? '(unnamed)';
+// An inventory item + quantity are both REQUIRED now — no "dispense
+// with no stock adjustment" path anymore (every dispense must deduct
+// real stock). Re-validated here regardless of what the client already
+// checked, same as every other write endpoint in this app.
+if ($inventoryItemId === '') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please select the inventory item this should be dispensed from.']);
+    exit;
 }
+if (!is_numeric($quantity) || (int) $quantity < 1) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please enter a valid quantity dispensed.']);
+    exit;
+}
+$quantity = (int) $quantity;
+
+$medicineDoc = $firestore->getDocument('medicines', $inventoryItemId);
+if ($medicineDoc === null) {
+    http_response_code(404);
+    echo json_encode(['success' => false, 'error' => 'This inventory item no longer exists.']);
+    exit;
+}
+// An item with no real non-expired stock left can never be dispensed —
+// re-checked here server-side. hc_medicine_has_dispensable_stock()
+// checks every real batch individually, not medicines/{id}'s own
+// expiryDate rollup field — that field is only the SOONEST expiry
+// among batches with stock, so it reads "expired" the moment that one
+// particular batch's date passes even while a separate, later batch
+// still has real usable stock (confirmed from a live report: one
+// expired batch wrongly blocked dispensing a second, valid one).
+if (!hc_medicine_has_dispensable_stock($inventoryItemId)) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => ($medicineDoc['name'] ?? 'This item') . ' has no non-expired stock left and can no longer be dispensed.']);
+    exit;
+}
+
+// Usable stock, computed live from the real batches — only non-expired
+// stock counts, exactly what FEFO below can actually draw from (not
+// the stored currentStock rollup, which can lag behind a batch that
+// expired just by the date passing).
+$oldStock = hc_stock_rollup_from_batches(hc_get_batches_for_medicine($inventoryItemId))['usable'];
+if ($quantity > $oldStock) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Only ' . hc_qty_unit((int) $oldStock, (string) ($medicineDoc['unit'] ?? 'unit')) . ' in stock — cannot dispense ' . hc_qty_unit((int) $quantity, (string) ($medicineDoc['unit'] ?? 'unit')) . '.']);
+    exit;
+}
+
+$dispensedQuantity = $quantity;
+$dispensedItemName = $medicineDoc['name'] ?? '(unnamed)';
 
 $saved = $firestore->setDocument('pharmacy_orders', $orderId, array_merge($existing, [
     'status' => 'dispensed',
@@ -133,7 +132,7 @@ $saved = $firestore->setDocument('pharmacy_orders', $orderId, array_merge($exist
     'dispensedBy' => $_SESSION['name'] ?? 'Not specified',
     'dispensedQuantity' => $dispensedQuantity,
     'dispensedItemName' => $dispensedItemName,
-    'dispensedInventoryId' => $inventoryItemId !== '' ? $inventoryItemId : null,
+    'dispensedInventoryId' => $inventoryItemId,
 ]));
 
 if (!$saved) {
@@ -149,7 +148,7 @@ if (!$saved) {
 // soonest-expiring real batch(es) first (FEFO) rather than a single
 // shared number — see includes/firestore/medicine_batches.php's
 // header comment.
-if ($medicineDoc !== null && !hc_decrement_medicine_stock_fefo($inventoryItemId, $dispensedQuantity)) {
+if (!hc_decrement_medicine_stock_fefo($inventoryItemId, $dispensedQuantity)) {
     // FEFO refused (e.g. another dispense used the stock in between the
     // check above and now) — it makes no writes in that case, so put the
     // order back to pending rather than leave it "dispensed" with no
@@ -160,10 +159,8 @@ if ($medicineDoc !== null && !hc_decrement_medicine_stock_fefo($inventoryItemId,
     exit;
 }
 
-$auditMessage = 'Dispensed ' . ($existing['itemName'] ?? 'item') . ' for ' . ($existing['patientName'] ?? '');
-$auditMessage .= $dispensedItemName !== null
-    ? ' — ' . $dispensedQuantity . ' unit(s) of "' . $dispensedItemName . '" deducted from inventory.'
-    : ' (not linked to a tracked inventory item — stock unchanged).';
+$auditMessage = 'Dispensed ' . ($existing['itemName'] ?? 'item') . ' for ' . ($existing['patientName'] ?? '')
+    . ' — ' . $dispensedQuantity . ' unit(s) of "' . $dispensedItemName . '" deducted from inventory.';
 write_audit_log('updated', 'Prescription Queue', $auditMessage);
 hc_record_patient_history($existing['patientId'] ?? '', 'medication', 'updated', 'Dispensed "' . ($existing['itemName'] ?? 'item') . '".');
 hc_record_patient_activity($existing['patientId'] ?? '', 'Prescription dispensed: "' . ($existing['itemName'] ?? 'item') . '".');
