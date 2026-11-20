@@ -51,7 +51,7 @@ $savedResult = hc_cd4_saved_result($currentDoc);
 // blank with the right row label/fixed range while still pending.
 $labFieldsForPrint = [
     'testName' => 'CD4 Count',
-    'interpretation' => $savedResult !== '' ? $savedResult . ' c/uL (reference ' . $referenceRange['label'] . ')' : '',
+    'interpretation' => $currentDoc['fields']['interpretation'] ?? '',
     'resultGroups' => [
         'group1_name' => 'CD4 Count',
         'group1_rows' => [[
@@ -59,7 +59,7 @@ $labFieldsForPrint = [
             'result' => $savedResult,
             'unit' => 'c/uL',
             'range' => $referenceRange['label'],
-            'interpretation' => '',
+            'interpretation' => $currentDoc['fields']['resultBadgeLabel'] ?? '',
         ]],
         'group2_name' => null,
         'group2_rows' => [],

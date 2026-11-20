@@ -19,6 +19,7 @@ require_once __DIR__ . '/../config/firebase.php';
 require_once __DIR__ . '/../includes/shared/document_storage.php'; // hc_user_can_access_patient_document() — same real patient-access rule (doctor ownership/approved request, or matching facility for subadmin/medical-staff), reused here beyond just documents
 require_once __DIR__ . '/../includes/shared/audit_log_writer.php'; // write_audit_log()
 require_once __DIR__ . '/../includes/firestore/patient_history.php'; // hc_record_patient_history(), hc_record_patient_activity()
+require_once __DIR__ . '/../includes/firestore/consultations.php'; // hc_most_recent_consultation_end_date()
 
 header('Content-Type: application/json');
 
@@ -44,14 +45,9 @@ $details = trim((string) ($body['details'] ?? '')) ?: null;
 $status = trim((string) ($body['status'] ?? ''));
 $status = in_array($status, ['Active', 'Controlled', 'Resolved'], true) ? $status : 'Active';
 
-if ($patientId === '' || $label === '' || $diagnosedOn === '') {
+if ($patientId === '' || $label === '') {
     http_response_code(422);
-    echo json_encode(['success' => false, 'error' => 'Please enter the condition and date diagnosed.']);
-    exit;
-}
-if (strtotime($diagnosedOn) === false) {
-    http_response_code(422);
-    echo json_encode(['success' => false, 'error' => 'Please enter a valid date diagnosed.']);
+    echo json_encode(['success' => false, 'error' => 'Please enter the condition.']);
     exit;
 }
 
@@ -68,12 +64,26 @@ if (!hc_user_can_access_patient_document($patient)) {
     exit;
 }
 
+// Date Diagnosed is optional (the exact date isn't always known/on
+// hand). Left blank, this is more honestly dated to this patient's own
+// most recently ENDED consultation (the real visit a condition noticed
+// here most likely came from) than to today — "today" is just whatever
+// day someone happened to type this in, which can genuinely be later
+// than the actual visit. Falls back to today only when this patient has
+// no completed consultation on record at all.
+$diagnosedOnTs = $diagnosedOn !== '' ? strtotime($diagnosedOn) : false;
+if ($diagnosedOnTs !== false && $diagnosedOnTs <= time()) {
+    $diagnosedOnDate = date('Y-m-d', $diagnosedOnTs);
+} else {
+    $diagnosedOnDate = hc_most_recent_consultation_end_date($patientId) ?? date('Y-m-d');
+}
+
 $newId = $firestore->addDocument('medical_conditions', [
     'patientId' => $patientId,
     'label' => $label,
     'details' => $details,
     'status' => $status,
-    'diagnosedOn' => date('Y-m-d', strtotime($diagnosedOn)),
+    'diagnosedOn' => $diagnosedOnDate,
 ]);
 
 if ($newId === null) {

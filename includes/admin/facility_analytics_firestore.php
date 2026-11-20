@@ -917,7 +917,10 @@ $patientBarangayById = [];
 $patientAgeById = [];
 foreach ($firestore->listDocuments('patients') as $doc) {
     $patientBarangayById[$doc['id']] = trim((string) ($doc['fields']['barangay'] ?? ''));
-    $patientAgeById[$doc['id']] = (int) ($doc['fields']['age'] ?? 0);
+    // Live from birthDate (hc_calculate_age()), not the stale 'age'
+    // field — that's only ever written once, at registration, and
+    // never refreshed as real time passes.
+    $patientAgeById[$doc['id']] = hc_calculate_age((string) ($doc['fields']['birthDate'] ?? ''));
 }
 $facilityConsultationRecordDocs = array_values(array_filter($facilityRecordDocs, fn ($d) => ($d['fields']['type'] ?? '') === 'consultation'));
 $facilityStockRequests = array_values(array_filter(hc_get_all_stock_requests(), fn ($r) => $r['facility'] === $facilityName));

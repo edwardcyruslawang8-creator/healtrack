@@ -63,6 +63,12 @@ foreach ($rowLabels as $key => $label) {
         exit;
     }
 }
+$interpretation = trim((string) ($body['interpretation'] ?? ''));
+if ($interpretation === '') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please enter your clinical interpretation of these results.']);
+    exit;
+}
 
 $patient = hc_get_patient_profile($patientId);
 if ($patient === null) {
@@ -98,12 +104,10 @@ if ($pendingDoc === null) {
 }
 
 $rows = [];
-$summaryParts = [];
 $anyReactive = false;
 foreach ($rowLabels as $key => $label) {
     $value = trim((string) $rawValues[$key]);
     $rows[] = ['test' => $label, 'result' => $value, 'unit' => '', 'range' => 'Non-Reactive', 'interpretation' => ''];
-    $summaryParts[] = $label . ': ' . $value;
     if ($value === 'Reactive') {
         $anyReactive = true;
     }
@@ -115,7 +119,7 @@ $mergedFields = array_merge($existing, [
     'completedDate' => date('Y-m-d'),
     'completedTime' => date('g:i A'),
     'specimenType' => hc_lab_test_required_specimen('Dengue Test'),
-    'interpretation' => implode('; ', $summaryParts) . '.',
+    'interpretation' => $interpretation,
     'resultBadgeLabel' => $anyReactive ? 'Reactive' : 'Non-Reactive',
     'resultBadgeColor' => $anyReactive ? '#D93025' : '#1E8E3E',
     'resultGroups' => [

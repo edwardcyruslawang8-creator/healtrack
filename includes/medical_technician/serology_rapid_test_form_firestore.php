@@ -74,6 +74,7 @@ if ($patient !== null) {
             'state' => ($f['status'] ?? '') === 'completed' ? 'completed' : 'pending',
             'docId' => $doc['id'],
             'result' => ($f['status'] ?? '') === 'completed' ? ($f['resultBadgeLabel'] ?? '') : null,
+            'interpretation' => ($f['status'] ?? '') === 'completed' ? ($f['interpretation'] ?? '') : null,
             'labTemplate' => $labTemplate,
             // Who this specific test is assigned to — print_serology_rapid_test.php's
             // own copy of this comment: used as the printed report's

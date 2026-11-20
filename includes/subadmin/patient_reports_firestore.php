@@ -48,6 +48,7 @@
 require_once __DIR__ . '/../shared/query_helpers.php';
 require_once __DIR__ . '/../shared/pagination_helpers.php';
 require_once __DIR__ . '/../shared/date_range_filter.php';
+require_once __DIR__ . '/../firestore/patients.php'; // hc_calculate_age()
 require_once __DIR__ . '/predictive_analytics_firestore.php'; // $facility, $facilityName — locked to THIS sub-admin's own real facility
 // (also pulls in the full admin predictive pipeline transitively, unused
 // here beyond $facilityName — same "reuse the real facility resolution,
@@ -96,8 +97,17 @@ function patient_reports_age_bucket(int $age): string
     };
 }
 
+// 'age' is overwritten with a live value computed from birthDate right
+// here — not the stale one api/create-patient.php only ever wrote once,
+// at registration — so every consumer below (and report_export.php's
+// own hc_rx_patient(), which reads these same rows) gets the real
+// current age for free, with no separate fix needed per call site.
 $facilityReportPatients = array_values(array_filter(
-    array_map(fn ($doc) => $doc['fields'], $firestore->listDocuments('patients')),
+    array_map(function ($doc) {
+        $f = $doc['fields'];
+        $f['age'] = hc_calculate_age((string) ($f['birthDate'] ?? ''));
+        return $f;
+    }, $firestore->listDocuments('patients')),
     fn ($p) => ($p['facility'] ?? '') === $facilityName
 ));
 
@@ -240,7 +250,7 @@ foreach ($firestore->listDocuments('patients') as $doc) {
     if (!hc_date_in_range($f['dateRegistered'] ?? null, $prDateFilter)) {
         continue;
     }
-    if ($prAgeGroupFilter !== '' && patient_reports_age_bucket((int) ($f['age'] ?? 0)) !== $prAgeGroupFilter) {
+    if ($prAgeGroupFilter !== '' && patient_reports_age_bucket(hc_calculate_age((string) ($f['birthDate'] ?? ''))) !== $prAgeGroupFilter) {
         continue;
     }
     if ($prGenderFilter !== '' && ($f['gender'] ?? '') !== $prGenderFilter) {

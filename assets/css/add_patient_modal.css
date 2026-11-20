@@ -214,11 +214,26 @@
   grid-template-columns: 1fr 1fr 1fr 32px;
 }
 
+/* Each repeatable table's own head+rows share one scrollable track —
+   every column below has a real MINIMUM width (via minmax()) instead
+   of a bare fr share, so a field never gets squeezed illegibly narrow
+   on a smaller screen; once the row's natural width needs more room
+   than the modal has, this scrolls horizontally instead (same idea as
+   a real spreadsheet/data table), rather than the inputs themselves
+   shrinking to the point of being unusable. */
+.apm-table-scroll{ overflow-x: auto; }
+
 /* ---------------- History / Allergies tables (Medical History, Surgical
    History, Allergies — Step 3) ---------------- */
-.apm-hist-row{ grid-template-columns: 30px 1fr 1fr 32px; }
-.apm-allergy-row{ grid-template-columns: 30px 1fr 130px 1fr 32px; }
-.apm-med-row{ grid-template-columns: 30px 1.3fr 0.85fr 1.1fr 1fr 1fr 32px; }
+.apm-hist-row{ grid-template-columns: 30px minmax(160px, 1fr) minmax(160px, 1fr) 32px; }
+/* Medical History only — same shape as .apm-hist-row, plus one extra
+   column for Date Diagnosed (so it has a real, correctable date
+   instead of always defaulting to today — see api/create-patient.php's
+   own 'diagnosedOn' field). Surgical History/Family History keep
+   .apm-hist-row unchanged. */
+.apm-cond-row{ grid-template-columns: 30px minmax(160px, 1fr) 150px minmax(160px, 1fr) 32px; }
+.apm-allergy-row{ grid-template-columns: 30px minmax(150px, 1fr) 130px minmax(160px, 1fr) 32px; }
+.apm-med-row{ grid-template-columns: 30px minmax(150px, 1.3fr) minmax(90px, 0.85fr) minmax(130px, 1.1fr) minmax(100px, 0.8fr) minmax(150px, 1fr) minmax(130px, 0.9fr) minmax(120px, 0.9fr) 32px; }
 
 .apm-table-head{
   display: grid;
@@ -351,6 +366,6 @@
 @media (max-width: 767.98px){
   .apm-grid-2, .apm-grid-3{ grid-template-columns: 1fr; }
   .apm-repeat-row, .apm-repeat-row.apm-repeat-row-2col,
-  .apm-hist-row, .apm-allergy-row, .apm-med-row{ grid-template-columns: 1fr; }
+  .apm-hist-row, .apm-cond-row, .apm-allergy-row, .apm-med-row{ grid-template-columns: 1fr; }
   .apm-table-head{ display: none; }
 }

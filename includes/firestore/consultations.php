@@ -116,6 +116,32 @@ if (!function_exists('hc_get_consultations_for_patient')) {
     }
 }
 
+if (!function_exists('hc_most_recent_consultation_end_date')) {
+    /**
+     * This patient's own most recently ENDED consultation's real date
+     * (just the Y-m-d part of its 'endedAt' timestamp) — null when they
+     * have no completed consultation on record at all. Used by
+     * api/add-condition.php: a chronic condition added with no Date
+     * Diagnosed given is more honestly dated to the patient's last real
+     * visit than to "today" (the day someone happened to type it in,
+     * which can genuinely be later than the actual visit).
+     */
+    function hc_most_recent_consultation_end_date(string $patientId): ?string
+    {
+        $latest = null;
+        foreach (hc_get_consultations_for_patient($patientId) as $c) {
+            if ($c['status'] !== 'completed' || $c['endedAt'] === '') {
+                continue;
+            }
+            if ($latest === null || $c['endedAt'] > $latest) {
+                $latest = $c['endedAt'];
+            }
+        }
+
+        return $latest !== null ? date('Y-m-d', strtotime($latest)) : null;
+    }
+}
+
 if (!function_exists('hc_get_consultation_by_id')) {
     /**
      * One consultations/{id} doc in the same shape as

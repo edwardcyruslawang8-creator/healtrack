@@ -36,6 +36,7 @@
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/date_range_filter.php';     // hc_resolve_date_range_filter(), hc_date_in_range()
+require_once __DIR__ . '/../firestore/patients.php'; // hc_calculate_age()
 
 if (!function_exists('hc_mh_categories')) {
     function hc_mh_categories(): array
@@ -139,7 +140,7 @@ if (!function_exists('hc_medical_history_summary')) {
             if ($filters['barangay'] !== '' && trim((string) ($p['barangay'] ?? '')) !== $filters['barangay']) {
                 continue;
             }
-            if ($filters['ageGroup'] !== '' && hc_mh_age_bucket((int) ($p['age'] ?? 0)) !== $filters['ageGroup']) {
+            if ($filters['ageGroup'] !== '' && hc_mh_age_bucket(hc_calculate_age((string) ($p['birthDate'] ?? ''))) !== $filters['ageGroup']) {
                 continue;
             }
             if ($filters['gender'] !== '' && ($p['gender'] ?? '') !== $filters['gender']) {

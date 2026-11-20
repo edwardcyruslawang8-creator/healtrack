@@ -116,18 +116,31 @@
         // list's height is capped to the space actually left in the
         // visible area (scrolls past that), and it's right-aligned to the
         // button when left-aligning would run off the screen's edge.
+        // position: fixed (see styled-select.css's own comment on
+        // .hc-select-menu) means every coordinate here is viewport-
+        // relative and set directly as inline styles, not left to a CSS
+        // top/bottom/left/right rule relative to the trigger.
         function place() {
             const rect = trigger.getBoundingClientRect();
             const bounds = visibleBounds();
             const below = bounds.bottom - rect.bottom - 12;
             const above = rect.top - bounds.top - 12;
             const openUp = below < 200 && above > below;
-            wrap.classList.toggle('opens-up', openUp);
-            menu.style.maxHeight = Math.max(140, Math.min(300, openUp ? above : below)) + 'px';
+            const maxHeight = Math.max(140, Math.min(300, openUp ? above : below));
+            menu.style.maxHeight = maxHeight + 'px';
+            menu.style.minWidth = rect.width + 'px';
 
-            wrap.classList.remove('align-right');
-            if (menu.getBoundingClientRect().right > document.documentElement.clientWidth - 8) {
-                wrap.classList.add('align-right');
+            // Tentative left-aligned position first — menu.offsetWidth
+            // below needs the menu actually laid out (it is: open()
+            // calls place() after adding .is-open, which is what makes
+            // display:block apply) to know its real rendered width for
+            // the edge-overflow check that follows.
+            menu.style.left = rect.left + 'px';
+            menu.style.top = openUp ? '' : (rect.bottom + 6) + 'px';
+            menu.style.bottom = openUp ? (window.innerHeight - rect.top + 6) + 'px' : '';
+
+            if (rect.left + menu.offsetWidth > document.documentElement.clientWidth - 8) {
+                menu.style.left = Math.max(8, rect.right - menu.offsetWidth) + 'px';
             }
         }
 
@@ -234,5 +247,18 @@
         window.addEventListener('resize', function () {
             if (openDropdown) openDropdown.place();
         });
+        // The menu is position: fixed now (viewport-relative, set by
+        // place()) so it does NOT scroll along with whatever ancestor
+        // just scrolled (the modal body, a horizontally-scrolling table
+        // row, the page itself, ...) — closing it is simpler and safer
+        // than re-placing on every scroll tick, and matches clicking
+        // outside. Capture: true since 'scroll' doesn't bubble, but DOES
+        // fire on ancestors during capture. Scrolling the menu's own
+        // option list (long lists, overflow-y: auto) must NOT close it.
+        document.addEventListener('scroll', function (e) {
+            if (openDropdown && e.target !== openDropdown.wrap.querySelector('.hc-select-menu')) {
+                openDropdown.close(false);
+            }
+        }, true);
     });
 })();

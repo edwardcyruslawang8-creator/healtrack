@@ -37,6 +37,34 @@ $staffProfile = [
 $dashboardDateLabel = date('F j, Y');
 $facilityOptions = ['North Super Health Center', 'East Super Health Center', 'West Super Health Center'];
 
+if (!function_exists('hc_rxq_query')) {
+    /**
+     * Builds a ?query string carrying every current filter except the
+     * ones in $overrides — used by this page's own tab/pagination
+     * links AND by includes/pharmacist/_prescription_queue_table.php
+     * (shared verbatim with api/pharmacist-prescription-queue-status.php,
+     * so the live-polled table fragment's pagination links match
+     * exactly what a real page load would have rendered). Moved here
+     * from pharmacist/prescription_queue.php itself (same reasoning as
+     * includes/medical_technician/lab_xray_consultation_firestore.php's
+     * hc_medtech_lxc_query()) so the polling endpoint — which only
+     * requires this data file, never the page — can call it too.
+     */
+    function hc_rxq_query(array $overrides = []): string
+    {
+        $params = array_merge([
+            'tab' => $_GET['tab'] ?? 'pending',
+            'q' => $_GET['q'] ?? '',
+            'type' => $_GET['type'] ?? 'all',
+            'from' => $_GET['from'] ?? '',
+            'to' => $_GET['to'] ?? '',
+            'page' => $_GET['page'] ?? 1,
+        ], $overrides);
+
+        return http_build_query(array_filter($params, fn ($v) => $v !== '' && $v !== null));
+    }
+}
+
 // ---------------------------------------------------------------------
 // Build the queue — real pharmacy_orders docs across every patient.
 // ---------------------------------------------------------------------
@@ -201,3 +229,17 @@ if ($ordersTotalPages <= 5) {
 } else {
     $ordersPaginationWindow = [1, 2, 3, '...', $ordersTotalPages];
 }
+
+// Cheap "did anything actually change" signals for the inline live-poll
+// script on pharmacist/prescription_queue.php
+// (api/pharmacist-prescription-queue-status.php, assets/js/queue-poll.js)
+// — kept as two SEPARATE signatures (not one combined value), same
+// reasoning as $referralsStatsSignature/$referralsTableSignature in
+// includes/medical_technician/lab_xray_consultation_firestore.php: the
+// stat cards (unaffected by the current tab/type/search/date filter, so
+// a brand new order that doesn't even match the current filter still
+// trips this one) and the table (the current page's own visible row
+// ids — a row's status flipping pending->dispensed always changes which
+// ids are visible on either tab, so no extra hash is needed here).
+$ordersStatsSignature = $ordersSummary['pending'] . ':' . $ordersSummary['medicines'] . ':' . $ordersSummary['vaccines'];
+$ordersTableSignature = $ordersTotal . ':' . implode(',', array_column($orders, 'id'));

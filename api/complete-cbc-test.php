@@ -74,6 +74,12 @@ foreach ($differentialFields as $key => $f) {
         exit;
     }
 }
+$interpretation = trim((string) ($rawValues['interpretation'] ?? ''));
+if ($interpretation === '') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please enter your clinical interpretation of these results.']);
+    exit;
+}
 if (!in_array($rawValues['bloodType'] ?? '', $validBloodTypes, true)) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'A valid Blood Type is required.']);
@@ -142,7 +148,7 @@ $mergedFields = array_merge($existing, [
     'completedDate' => date('Y-m-d'),
     'completedTime' => date('g:i A'),
     'specimenType' => hc_lab_test_required_specimen('CBC'),
-    'interpretation' => 'CBC result: ' . ($anyAbnormal ? 'Abnormal' : 'Normal') . '. Blood Type ' . $rawValues['bloodType'] . ' ' . $rawValues['rh'] . '.',
+    'interpretation' => $interpretation,
     'resultBadgeLabel' => $anyAbnormal ? 'Abnormal' : 'Normal',
     'resultBadgeColor' => $anyAbnormal ? '#D93025' : '#1E8E3E',
     'resultGroups' => [

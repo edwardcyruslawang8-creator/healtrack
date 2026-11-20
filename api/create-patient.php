@@ -77,6 +77,7 @@ $sex = trim((string) ($body['sex'] ?? ''));
 $civilStatus = trim((string) ($body['civilStatus'] ?? ''));
 $occupation = trim((string) ($body['occupation'] ?? ''));
 $phone = trim((string) ($body['phone'] ?? ''));
+$guardianPhone = trim((string) ($body['guardianPhone'] ?? ''));
 $email = trim((string) ($body['email'] ?? ''));
 $address = trim((string) ($body['address'] ?? ''));
 $barangay = trim((string) ($body['barangay'] ?? ''));
@@ -139,6 +140,15 @@ if ($reasonForVisit === '') {
 $age = (int) date_diff(date_create('@' . $birthTimestamp), date_create('@' . time()))->y;
 $fullName = trim(preg_replace('/\s+/', ' ', $firstName . ' ' . $middleName . ' ' . $lastName));
 
+// Guardian's Phone Number — required for a minor (under 18), re-checked
+// here since the wizard's own show/hide-and-require toggle
+// (assets/js/add-patient.js) is trivially bypassable client-side.
+if ($age < 18 && $guardianPhone === '') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => "Please enter the patient's guardian's phone number — required for patients under 18 years old."]);
+    exit;
+}
+
 // Vital Signs — all six core fields are required by the wizard's Step
 // 2, with the same value ranges enforced client-side (see
 // assets/js/add-patient.js / includes/medical-staff/add_patient_modal.php).
@@ -191,6 +201,7 @@ $patientFields = [
     'occupation' => $occupation !== '' ? $occupation : null,
     'philhealthPin' => $philhealthPin !== '' ? $philhealthPin : null,
     'contact' => $phone,
+    'guardianPhone' => $guardianPhone !== '' ? $guardianPhone : null,
     'email' => $email !== '' ? $email : null,
     'address' => $address,
     'barangay' => $barangay,
@@ -219,10 +230,16 @@ if ($patientId === null) {
 // ---------------------------------------------------------------------
 // Medical History -> real "medical_conditions" docs, in the exact
 // shape includes/firestore/medical_records.php's
-// hc_get_medical_conditions_for_patient() reads back ("status" and
-// "diagnosedOn" aren't collected by this step of the wizard anymore,
-// so they get sensible defaults; "details" is stored alongside for
-// future use even though that read function doesn't surface it yet).
+// hc_get_medical_conditions_for_patient() reads back ("status" gets a
+// sensible default; "details" is stored alongside for future use even
+// though that read function doesn't surface it yet). "diagnosedOn" is
+// a real wizard field now (Step 3's "Date Diagnosed" calendar) — left
+// blank/invalid/future, it's stored as null ("Not specified" on
+// display, see that read function's own null-safe handling) rather
+// than defaulting to today: registration day is when this patient's
+// CHART was created, not necessarily when a pre-existing condition was
+// actually diagnosed, so guessing today would misrepresent real
+// clinical history instead of just honestly saying it isn't known.
 // A row is only kept if its Medical Condition is filled in — the
 // wizard already enforces "condition required if details are filled",
 // so any row that reaches here with a blank label had a blank
@@ -235,12 +252,16 @@ foreach ($conditions as $c) {
         continue;
     }
 
+    $diagnosedOnRaw = trim((string) ($c['diagnosedDate'] ?? ''));
+    $diagnosedOnTs = $diagnosedOnRaw !== '' ? strtotime($diagnosedOnRaw) : false;
+    $diagnosedOn = ($diagnosedOnTs !== false && $diagnosedOnTs <= time()) ? date('Y-m-d', $diagnosedOnTs) : null;
+
     $firestore->addDocument('medical_conditions', [
         'patientId' => $patientId,
         'label' => $label,
         'details' => trim((string) ($c['details'] ?? '')) ?: null,
         'status' => 'Active',
-        'diagnosedOn' => date('Y-m-d'),
+        'diagnosedOn' => $diagnosedOn,
     ]);
 }
 
@@ -354,8 +375,8 @@ foreach ($medications as $m) {
         'category' => hc_inventory_category_for($name, $medicineInventoryItems),
         'dosage' => trim((string) ($m['dosage'] ?? '')) ?: 'Not specified',
         'frequency' => trim((string) ($m['frequency'] ?? '')) ?: 'Not specified',
-        'route' => 'Oral',
-        'indication' => 'Not specified',
+        'route' => trim((string) ($m['route'] ?? '')) ?: 'Not specified',
+        'indication' => trim((string) ($m['indication'] ?? '')) ?: 'Not specified',
         'startDate' => (strtotime($startDate) !== false && $startDate !== '') ? $startDate : date('Y-m-d'),
         'endDate' => null,
         'endDateNote' => null,

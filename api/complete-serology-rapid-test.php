@@ -47,10 +47,16 @@ $myDoc = $myUid !== '' ? $firestore->getDocument('users', $myUid) : null;
 $body = json_decode(file_get_contents('php://input'), true) ?? [];
 $patientId = trim((string) ($body['patientId'] ?? ''));
 $rawResults = is_array($body['results'] ?? null) ? $body['results'] : [];
+$interpretation = trim((string) ($body['interpretation'] ?? ''));
 
 if ($patientId === '') {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Missing patient id.']);
+    exit;
+}
+if ($interpretation === '') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please enter your clinical interpretation of these results.']);
     exit;
 }
 
@@ -99,7 +105,7 @@ foreach ($rawResults as $testName => $value) {
         'completedDate' => date('Y-m-d'),
         'completedTime' => date('g:i A'),
         'specimenType' => hc_lab_test_required_specimen($testName),
-        'interpretation' => $displayLabel . ': ' . $value,
+        'interpretation' => $interpretation,
         'resultBadgeLabel' => $value,
         'resultBadgeColor' => $value === 'Reactive' ? '#D93025' : '#1E8E3E',
         'resultGroups' => [

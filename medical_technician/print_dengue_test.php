@@ -44,18 +44,14 @@ $isEmbedded = ($_GET['embed'] ?? '') === '1';
 $dengueRows = hc_dengue_test_rows();
 
 $resultRows = [];
-$summaryParts = [];
 foreach ($dengueRows as $rowKey => $label) {
     $value = hc_dengue_test_saved_value($currentDoc, $rowKey);
     $resultRows[] = ['test' => $label, 'result' => $value, 'unit' => '', 'range' => 'Non-Reactive', 'interpretation' => ''];
-    if ($value !== '') {
-        $summaryParts[] = $label . ': ' . $value;
-    }
 }
 
 $labFieldsForPrint = [
     'testName' => 'Dengue Test',
-    'interpretation' => implode('; ', $summaryParts),
+    'interpretation' => $currentDoc['fields']['interpretation'] ?? '',
     'resultGroups' => [
         'group1_name' => 'Dengue Test',
         'group1_rows' => $resultRows,

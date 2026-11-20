@@ -182,7 +182,8 @@ $staffNavItems = [
                     <tr>
                         <th>Test</th>
                         <th>Status</th>
-                        <th style="width:260px;">Result</th>
+                        <th style="width:220px;">Result</th>
+                        <th>Interpretation</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -216,10 +217,25 @@ $staffNavItems = [
                             <span class="adm-page-subtitle">&mdash;</span>
                             <?php endif; ?>
                         </td>
+                        <td>
+                            <?php if ($row['state'] === 'completed'): ?>
+                            <?= nl2br(htmlspecialchars($row['interpretation'] ?: '—')) ?>
+                            <?php else: ?>
+                            <span class="adm-page-subtitle">&mdash;</span>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
+
+            <?php if ($hasEditableRow): ?>
+            <div style="margin-bottom:18px;">
+                <label for="f_interpretation" style="display:block; font-size:12.5px; font-weight:600; color:var(--adm-text-muted); margin-bottom:6px;">Interpretation</label>
+                <textarea class="form-control" id="f_interpretation" rows="4" placeholder="Your clinical interpretation of the result(s) selected above, e.g. &quot;Non-reactive for all tests performed; no serologic evidence of current infection.&quot;"></textarea>
+                <p class="adm-page-subtitle" style="margin-top:6px;">Applies to whichever test(s) you're saving a result for right now.</p>
+            </div>
+            <?php endif; ?>
 
             <div id="serologyFormMsg" style="display:none; margin-bottom:14px;"></div>
 
@@ -277,13 +293,22 @@ $staffNavItems = [
                 return;
             }
 
+            var interpretationInput = form.querySelector('#f_interpretation');
+            var interpretation = interpretationInput ? interpretationInput.value.trim() : '';
+            if (interpretation === '') {
+                msg.style.display = 'block';
+                msg.className = 'adm-page-subtitle';
+                msg.textContent = 'Please enter your clinical interpretation of these results.';
+                return;
+            }
+
             var btn = document.getElementById('btnSaveSerology');
             btn.disabled = true;
 
             fetch('<?= BASE_URL ?>/api/complete-serology-rapid-test.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ patientId: patientId, results: results })
+                body: JSON.stringify({ patientId: patientId, results: results, interpretation: interpretation })
             })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {

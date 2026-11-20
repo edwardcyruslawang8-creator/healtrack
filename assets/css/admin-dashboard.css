@@ -1100,6 +1100,43 @@ body.adm-body{
   color: var(--adm-text-muted);
   margin-bottom: 6px;
 }
+
+/* Generic live-refresh flash — assets/js/queue-poll.js adds this class
+   briefly to a section whose innerHTML a background poll just swapped
+   in place, so the silent DOM update doesn't go unnoticed. A page with
+   its own bespoke version of this (e.g. consultations.css's
+   .cns-queue-updated) keeps using that instead; this is the default
+   for any new live-refresh section that doesn't need one. */
+.hc-queue-updated{
+  animation: hcQueueFlash 1.5s ease-out;
+  border-radius: var(--adm-radius-lg, 10px);
+}
+@keyframes hcQueueFlash{
+  0%{ outline: 3px solid var(--adm-blue, #1A73E8); outline-offset: 2px; }
+  100%{ outline: 3px solid transparent; outline-offset: 2px; }
+}
+
+/* Native "Choose File" button on every <input type="file">, app-wide —
+   brand maroon instead of the browser's default gray, matching every
+   other button in the system. The text field around it stays the
+   normal Bootstrap .form-control box. */
+input[type="file"].form-control::file-selector-button,
+input[type="file"].form-control::-webkit-file-upload-button{
+  background: var(--adm-red-bright);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  margin: -8px 14px -8px -14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+input[type="file"].form-control:hover::file-selector-button,
+input[type="file"].form-control:hover::-webkit-file-upload-button{
+  background: var(--adm-red-bright-hover);
+}
 .adm-modal .form-control,
 .adm-modal .form-select{
   border: 1px solid var(--adm-border);

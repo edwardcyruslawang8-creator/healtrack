@@ -73,7 +73,6 @@ $hcMedListSections = [
                         <td>
                             <div class="mdc-period-cell">
                                 <span class="mdc-period-dates"><?= htmlspecialchars($med['startDate']) ?> &ndash; <?= htmlspecialchars($med['endLabel']) ?></span>
-                                <span class="mdc-status-pill mdc-tone-<?= htmlspecialchars($med['statusTone']) ?>"><?= htmlspecialchars($med['statusLabel']) ?></span>
                             </div>
                         </td>
                         <td class="mdc-strong"><?= htmlspecialchars($med['prescribedBy']) ?></td>

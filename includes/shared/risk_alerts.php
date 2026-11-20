@@ -854,7 +854,9 @@ if (!function_exists('hc_risk_load_facility_inputs')) {
         $ageById = [];
         foreach ($firestore->listDocuments('patients') as $doc) {
             $barangayById[$doc['id']] = trim((string) ($doc['fields']['barangay'] ?? ''));
-            $ageById[$doc['id']] = (int) ($doc['fields']['age'] ?? 0);
+            // Live from birthDate, not the stale 'age' field — see
+            // includes/firestore/patients.php's hc_calculate_age().
+            $ageById[$doc['id']] = hc_calculate_age((string) ($doc['fields']['birthDate'] ?? ''));
         }
 
         $consultations = array_values(array_filter(hc_get_all_consultations(), fn ($c) => isset($patientIdSet[$c['patientId']])));

@@ -17,6 +17,7 @@
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
 require_once __DIR__ . '/fuzzy_search.php'; // hc_fuzzy_match()
+require_once __DIR__ . '/../firestore/patients.php'; // hc_calculate_age()
 
 if (!function_exists('hc_query_patient_registrations')) {
     /**
@@ -61,7 +62,7 @@ if (!function_exists('hc_query_patient_registrations')) {
             $patients[] = [
                 'id' => $doc['id'],
                 'name' => $f['name'] ?? '(no name)',
-                'age' => (int) ($f['age'] ?? 0),
+                'age' => hc_calculate_age((string) ($f['birthDate'] ?? '')),
                 'gender' => $f['gender'] ?? '—',
                 'barangay' => $f['barangay'] ?? '—',
                 'dateRegisteredRaw' => $dateRegisteredRaw,

@@ -115,14 +115,28 @@ if (!function_exists('hc_get_medical_conditions_for_patient')) {
         $rows = array_values($firestore->listDocumentsWhere('medical_conditions', 'patientId', $patientId));
         usort($rows, fn ($a, $b) => strcmp($b['fields']['diagnosedOn'] ?? '', $a['fields']['diagnosedOn'] ?? ''));
 
-        return array_map(fn ($doc) => [
-            'id' => $doc['id'],
-            'label' => $doc['fields']['label'],
-            'diagnosedOn' => date('M j, Y', strtotime($doc['fields']['diagnosedOn'])),
-            'diagnosedOnRaw' => date('Y-m-d', strtotime($doc['fields']['diagnosedOn'])),
-            'status' => $doc['fields']['status'],
-            'details' => $doc['fields']['details'] ?? null,
-        ], $rows);
+        return array_map(function ($doc) {
+            // diagnosedOn is a real, honest null now for a condition
+            // recorded with no known date (api/create-patient.php /
+            // api/add-condition.php) — shown as "Not specified" rather
+            // than silently guessing a date (which used to default to
+            // whatever day the record happened to be typed in, not when
+            // the condition was actually diagnosed). 'diagnosedOnRaw'
+            // stays '' in that case too, so the Edit modal's datepicker
+            // (assets/js/medical-history.js's setFieldValue()) correctly
+            // clears instead of pre-filling a bogus date.
+            $diagnosedOnRaw = trim((string) ($doc['fields']['diagnosedOn'] ?? ''));
+            $diagnosedOnTs = $diagnosedOnRaw !== '' ? strtotime($diagnosedOnRaw) : false;
+
+            return [
+                'id' => $doc['id'],
+                'label' => $doc['fields']['label'],
+                'diagnosedOn' => $diagnosedOnTs !== false ? date('M j, Y', $diagnosedOnTs) : 'Not specified',
+                'diagnosedOnRaw' => $diagnosedOnTs !== false ? date('Y-m-d', $diagnosedOnTs) : '',
+                'status' => $doc['fields']['status'],
+                'details' => $doc['fields']['details'] ?? null,
+            ];
+        }, $rows);
     }
 }
 

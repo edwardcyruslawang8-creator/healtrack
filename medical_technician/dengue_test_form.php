@@ -210,6 +210,15 @@ $hasCompletedRow = $currentStatus === 'completed';
                 </tbody>
             </table>
 
+            <div style="margin-bottom:18px;">
+                <label for="f_interpretation" style="display:block; font-size:12.5px; font-weight:600; color:var(--adm-text-muted); margin-bottom:6px;">Interpretation</label>
+                <?php if ($isEditable): ?>
+                <textarea class="form-control" id="f_interpretation" rows="4" placeholder="Your clinical interpretation of these results, e.g. &quot;NS1 and IgM reactive, consistent with acute primary dengue infection.&quot;"><?= htmlspecialchars($currentDoc['fields']['interpretation'] ?? '') ?></textarea>
+                <?php else: ?>
+                <div><strong><?= nl2br(htmlspecialchars($currentDoc['fields']['interpretation'] ?? '—')) ?></strong></div>
+                <?php endif; ?>
+            </div>
+
             <div id="dengueFormMsg" style="display:none; margin-bottom:14px;"></div>
 
             <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
@@ -268,13 +277,22 @@ $hasCompletedRow = $currentStatus === 'completed';
                 return;
             }
 
+            var interpretationInput = form.querySelector('#f_interpretation');
+            var interpretation = interpretationInput ? interpretationInput.value.trim() : '';
+            if (interpretation === '') {
+                msg.style.display = 'block';
+                msg.className = 'adm-page-subtitle';
+                msg.textContent = 'Please enter your clinical interpretation of these results.';
+                return;
+            }
+
             var btn = document.getElementById('btnSaveDengue');
             btn.disabled = true;
 
             fetch('<?= BASE_URL ?>/api/complete-dengue-test.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ patientId: patientId, values: values })
+                body: JSON.stringify({ patientId: patientId, values: values, interpretation: interpretation })
             })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {

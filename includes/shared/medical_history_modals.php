@@ -32,8 +32,8 @@
             <input type="text" class="form-control" id="mhxConditionLabel" placeholder="e.g. Hypertension" required>
           </div>
           <div class="mb-3">
-            <label for="mhxConditionDiagnosedOn" class="form-label">Date Diagnosed</label>
-            <input type="date" data-hc-datepicker class="form-control" id="mhxConditionDiagnosedOn" max="<?= date('Y-m-d') ?>" required>
+            <label for="mhxConditionDiagnosedOn" class="form-label">Date Diagnosed <span class="text-muted fw-normal">(Optional)</span></label>
+            <input type="date" data-hc-datepicker class="form-control" id="mhxConditionDiagnosedOn" max="<?= date('Y-m-d') ?>">
           </div>
           <div class="mb-3">
             <label for="mhxConditionStatus" class="form-label">Status</label>

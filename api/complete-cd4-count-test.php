@@ -56,6 +56,12 @@ if ($rawResult === '' || !is_numeric($rawResult) || (float) $rawResult < 0) {
     echo json_encode(['success' => false, 'error' => 'Result must be a valid non-negative number.']);
     exit;
 }
+$interpretation = trim((string) ($body['interpretation'] ?? ''));
+if ($interpretation === '') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please enter your clinical interpretation of this result.']);
+    exit;
+}
 
 $patient = hc_get_patient_profile($patientId);
 if ($patient === null) {
@@ -92,8 +98,8 @@ if ($pendingDoc === null) {
 
 $value = (float) $rawResult;
 $range = hc_cd4_reference_range();
-$interpretation = $value < $range['low'] ? 'Low' : ($value > $range['high'] ? 'High' : 'Normal');
-$badgeColor = match ($interpretation) {
+$classification = $value < $range['low'] ? 'Low' : ($value > $range['high'] ? 'High' : 'Normal');
+$badgeColor = match ($classification) {
     'Low' => '#D93025',
     'High' => '#E8710A',
     default => '#1E8E3E',
@@ -105,8 +111,8 @@ $mergedFields = array_merge($existing, [
     'completedDate' => date('Y-m-d'),
     'completedTime' => date('g:i A'),
     'specimenType' => hc_cd4_specimen_label(),
-    'interpretation' => 'CD4 Count: ' . $rawResult . ' c/uL (' . $interpretation . ', reference ' . $range['label'] . ').',
-    'resultBadgeLabel' => $interpretation,
+    'interpretation' => $interpretation,
+    'resultBadgeLabel' => $classification,
     'resultBadgeColor' => $badgeColor,
     'resultGroups' => [
         'group1_name' => 'CD4 Count',
@@ -115,7 +121,7 @@ $mergedFields = array_merge($existing, [
             'result' => $rawResult,
             'unit' => 'c/uL',
             'range' => $range['label'],
-            'interpretation' => $interpretation,
+            'interpretation' => $classification,
         ]],
         'group2_name' => null,
         'group2_rows' => [],
@@ -149,9 +155,9 @@ $firestore->addDocument('medical_records', [
 write_audit_log(
     'updated',
     'Laboratory & X-ray',
-    'Entered CD4 Count result (' . $rawResult . ' c/uL, ' . $interpretation . ') for ' . $patient['name'] . '.'
+    'Entered CD4 Count result (' . $rawResult . ' c/uL, ' . $classification . ') for ' . $patient['name'] . '.'
 );
-hc_record_patient_history($patientId, 'laboratory_result', 'added', 'Entered CD4 Count result (' . $rawResult . ' c/uL, ' . $interpretation . ').');
+hc_record_patient_history($patientId, 'laboratory_result', 'added', 'Entered CD4 Count result (' . $rawResult . ' c/uL, ' . $classification . ').');
 hc_record_patient_activity($patientId, 'CD4 Count result entered.');
 
 echo json_encode(['success' => true]);

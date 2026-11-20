@@ -28,6 +28,7 @@
  */
 
 require_once __DIR__ . '/../../config/firebase.php'; // $firestore
+require_once __DIR__ . '/../firestore/patients.php'; // hc_calculate_age()
 require_once __DIR__ . '/../firestore/medical_records.php';
 require_once __DIR__ . '/../firestore/consultations.php';
 require_once __DIR__ . '/../shared/predictive_analytics_core.php'; // hc_disease_demand_forecast(), HC_COVERED_BARANGAYS
@@ -132,7 +133,9 @@ if (!function_exists('hc_gis_disease_overview')) {
         $patientAgeById = [];
         foreach ($firestore->listDocuments('patients') as $doc) {
             $patientBarangayById[$doc['id']] = trim((string) ($doc['fields']['barangay'] ?? ''));
-            $patientAgeById[$doc['id']] = (int) ($doc['fields']['age'] ?? 0);
+            // Live from birthDate, not the stale 'age' field — see
+            // includes/firestore/patients.php's hc_calculate_age().
+            $patientAgeById[$doc['id']] = hc_calculate_age((string) ($doc['fields']['birthDate'] ?? ''));
         }
 
         $forecast = hc_disease_demand_forecast($medicalRecordDocs, $consultations, $patientBarangayById, $patientAgeById);

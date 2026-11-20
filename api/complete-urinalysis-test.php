@@ -59,6 +59,12 @@ if (!in_array($overallResult, ['Normal', 'Abnormal'], true)) {
     echo json_encode(['success' => false, 'error' => 'Invalid overall result.']);
     exit;
 }
+$interpretation = trim((string) ($body['interpretation'] ?? ''));
+if ($interpretation === '') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => 'Please enter your clinical interpretation of these results.']);
+    exit;
+}
 
 $patient = hc_get_patient_profile($patientId);
 if ($patient === null) {
@@ -112,7 +118,7 @@ $mergedFields = array_merge($existing, [
     'completedDate' => date('Y-m-d'),
     'completedTime' => date('g:i A'),
     'specimenType' => hc_lab_test_required_specimen('Urinalysis'),
-    'interpretation' => 'Urinalysis result: ' . $overallResult . '.',
+    'interpretation' => $interpretation,
     'resultBadgeLabel' => $overallResult,
     'resultBadgeColor' => $overallResult === 'Normal' ? '#1E8E3E' : '#D93025',
     'resultGroups' => [

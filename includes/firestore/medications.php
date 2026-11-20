@@ -297,8 +297,8 @@ if (!function_exists('hc_map_medication_doc')) {
         $endLabel = match (true) {
             $c['state'] === 'discontinued' && !empty($f['discontinuedDate']) => 'Stopped ' . hc_medication_fmt_date(hc_medication_normalize_date($f['discontinuedDate'])),
             $c['endDate'] !== null => hc_medication_fmt_date($c['endDate']),
-            $c['isMaintenance'] => 'No end date (maintenance)',
-            default => 'No end date recorded',
+            $c['isMaintenance'] => 'Ongoing (maintenance)',
+            default => 'Not recorded',
         };
 
         return [

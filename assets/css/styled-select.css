@@ -72,12 +72,21 @@
 
 .hc-select-menu{
   display: none;
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
+  /* position: fixed (viewport-relative, top/left set per-open by
+     styled-select.js's place()) — NOT position: absolute. An absolute
+     menu gets silently clipped/mangled by ANY scrolling ancestor
+     between it and the viewport, not just an intentionally "contains
+     this dropdown" one — e.g. a row inside a horizontally-scrollable
+     table (assets/css/add_patient_modal.css's .apm-table-scroll):
+     setting overflow-x: auto on an element forces its own overflow-y
+     to compute as auto too (a real CSS rule, not a bug to work around
+     differently), which then clips an absolutely-positioned dropdown
+     to that one table ROW's own tiny height instead of the real
+     available space. position: fixed is immune to this since it's
+     never clipped by an ancestor's overflow at all. */
+  position: fixed;
   z-index: 1020; /* under the mobile sidebar (1030) and chatbot (1050) */
   width: max-content;
-  min-width: 100%;
   max-width: min(340px, calc(100vw - 32px));
   max-height: 300px; /* tightened to the space actually left in the viewport by styled-select.js */
   margin: 0;
@@ -91,8 +100,6 @@
   box-shadow: 0 10px 28px rgba(43, 34, 35, 0.14);
 }
 .hc-select.is-open .hc-select-menu{ display: block; }
-.hc-select.opens-up .hc-select-menu{ top: auto; bottom: calc(100% + 6px); }
-.hc-select.align-right .hc-select-menu{ left: auto; right: 0; }
 
 .hc-select-option{
   position: relative;

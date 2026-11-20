@@ -200,8 +200,17 @@ $currentBadge = $currentDoc['fields']['resultBadgeLabel'] ?? '';
             </div>
 
             <?php if (!$isEditable && $currentBadge !== ''): ?>
-            <p class="adm-page-subtitle" style="margin-bottom:18px;">Interpretation: <strong><?= htmlspecialchars($currentBadge) ?></strong></p>
+            <p class="adm-page-subtitle" style="margin-bottom:18px;">Classification: <strong><?= htmlspecialchars($currentBadge) ?></strong></p>
             <?php endif; ?>
+
+            <div style="margin-bottom:18px;">
+                <label for="f_interpretation" style="display:block; font-size:12.5px; font-weight:600; color:var(--adm-text-muted); margin-bottom:6px;">Interpretation</label>
+                <?php if ($isEditable): ?>
+                <textarea class="form-control" id="f_interpretation" rows="4" placeholder="Your clinical interpretation of this result, e.g. &quot;CD4 count within normal range; no evidence of immune suppression.&quot;"><?= htmlspecialchars($currentDoc['fields']['interpretation'] ?? '') ?></textarea>
+                <?php else: ?>
+                <div><strong><?= nl2br(htmlspecialchars($currentDoc['fields']['interpretation'] ?? '—')) ?></strong></div>
+                <?php endif; ?>
+            </div>
 
             <div id="cd4FormMsg" style="display:none; margin-bottom:14px;"></div>
 
@@ -255,13 +264,22 @@ $currentBadge = $currentDoc['fields']['resultBadgeLabel'] ?? '';
                 return;
             }
 
+            var interpretationInput = form.querySelector('#f_interpretation');
+            var interpretation = interpretationInput ? interpretationInput.value.trim() : '';
+            if (interpretation === '') {
+                msg.style.display = 'block';
+                msg.className = 'adm-page-subtitle';
+                msg.textContent = 'Please enter your clinical interpretation of this result.';
+                return;
+            }
+
             var btn = document.getElementById('btnSaveCd4');
             btn.disabled = true;
 
             fetch('<?= BASE_URL ?>/api/complete-cd4-count-test.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ patientId: patientId, result: result })
+                body: JSON.stringify({ patientId: patientId, result: result, interpretation: interpretation })
             })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {

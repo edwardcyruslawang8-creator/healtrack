@@ -45,20 +45,9 @@ $staffNavItems = [
     ['icon' => 'bi-gear-fill',              'label' => 'Profile / Settings',           'href' => 'profile_settings.php'],
 ];
 
-/** Builds a ?query string carrying every current filter except the ones in $overrides. */
-function hc_rxq_query(array $overrides = []): string
-{
-    $params = array_merge([
-        'tab' => $_GET['tab'] ?? 'pending',
-        'q' => $_GET['q'] ?? '',
-        'type' => $_GET['type'] ?? 'all',
-        'from' => $_GET['from'] ?? '',
-        'to' => $_GET['to'] ?? '',
-        'page' => $_GET['page'] ?? 1,
-    ], $overrides);
-
-    return http_build_query(array_filter($params, fn ($v) => $v !== '' && $v !== null));
-}
+// hc_rxq_query() now lives in includes/pharmacist/prescription_queue_pharmacist_firestore.php
+// (required above) so api/pharmacist-prescription-queue-status.php can
+// call it too when it re-requires that same data file.
 ?>
 <!DOCTYPE html>
 <html lang="en">

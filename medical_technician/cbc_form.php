@@ -259,6 +259,15 @@ $hasCompletedRow = ($currentDoc['fields']['status'] ?? null) === 'completed';
                 </div>
             </div>
 
+            <div style="margin-bottom:18px;">
+                <label for="f_interpretation" style="display:block; font-size:12.5px; font-weight:600; color:var(--adm-text-muted); margin-bottom:6px;">Interpretation</label>
+                <?php if ($isEditable): ?>
+                <textarea class="form-control" id="f_interpretation" name="val_interpretation" data-field="interpretation" rows="4" placeholder="Your clinical interpretation of these results, e.g. &quot;Findings consistent with acute viral infection; thrombocytopenia and leukopenia noted, correlate clinically.&quot;"><?= htmlspecialchars($currentDoc['fields']['interpretation'] ?? '') ?></textarea>
+                <?php else: ?>
+                <div><strong><?= nl2br(htmlspecialchars($currentDoc['fields']['interpretation'] ?? '—')) ?></strong></div>
+                <?php endif; ?>
+            </div>
+
             <div id="cbcFormMsg" style="display:none; margin-bottom:14px;"></div>
 
             <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">

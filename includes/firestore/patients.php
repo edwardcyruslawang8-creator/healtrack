@@ -39,6 +39,28 @@ if (!function_exists('hc_format_patient_address')) {
     }
 }
 
+if (!function_exists('hc_calculate_age')) {
+    /**
+     * Live age in whole years from a real 'Y-m-d' birthDate — computed
+     * fresh every time this is called, not trusted from a stored 'age'
+     * field. api/create-patient.php only ever wrote that field ONCE, at
+     * registration — nothing refreshed it afterward, so a patient
+     * registered at 17 would silently keep showing "17" years later.
+     * Every real age read in this app goes through this now. Blank/
+     * unparseable birthDate returns 0, the same honest-default
+     * fallback the old stored field already used.
+     */
+    function hc_calculate_age(string $birthDateRaw): int
+    {
+        $ts = $birthDateRaw !== '' ? strtotime($birthDateRaw) : false;
+        if ($ts === false) {
+            return 0;
+        }
+
+        return (int) date_diff(date_create('@' . $ts), date_create('@' . time()))->y;
+    }
+}
+
 if (!function_exists('hc_map_patient_summary_doc')) {
     /**
      * One raw patients/{id} doc -> the list-row shape Patient Management
@@ -53,7 +75,7 @@ if (!function_exists('hc_map_patient_summary_doc')) {
         return [
             'id' => $doc['id'],
             'name' => $f['name'] ?? '(no name)',
-            'age' => (int) ($f['age'] ?? 0),
+            'age' => hc_calculate_age((string) ($f['birthDate'] ?? '')),
             'gender' => $f['gender'] ?? '—',
             'contact' => $f['contact'] ?? '—',
             'address' => hc_format_patient_address($f),
@@ -147,9 +169,14 @@ if (!function_exists('hc_get_patient_profile')) {
             'id' => $id,
             'name' => $doc['name'] ?? '(no name)',
             'gender' => $doc['gender'] ?? '—',
-            'age' => (int) ($doc['age'] ?? 0),
+            'age' => hc_calculate_age((string) ($doc['birthDate'] ?? '')),
             'birthDate' => isset($doc['birthDate']) ? date('M j, Y', strtotime($doc['birthDate'])) : '—',
             'phone' => $doc['contact'] ?? '—',
+            // Only ever set for a patient registered as a minor (under
+            // 18) — api/create-patient.php requires it in that case,
+            // '' otherwise, same "blank hides the row" convention as
+            // philhealthPin below.
+            'guardianPhone' => (string) ($doc['guardianPhone'] ?? ''),
             'email' => $doc['email'] ?? '—',
             'address' => hc_format_patient_address($doc),
             'bloodType' => $doc['bloodType'] ?? '—',

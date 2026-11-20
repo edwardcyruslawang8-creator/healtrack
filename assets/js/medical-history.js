@@ -34,8 +34,44 @@ document.addEventListener('DOMContentLoaded', function () {
         function setLocked(locked) {
             (opts.editLockedIds || []).forEach(function (elId) {
                 const el = document.getElementById(elId);
-                if (el) el.readOnly = locked;
+                if (!el) return;
+                el.readOnly = locked;
+                // A plain readOnly input[type=date] still opens its
+                // native calendar on click, and a data-hc-datepicker
+                // field (assets/js/hc-datepicker.js, flatpickr) opens
+                // its own styled one regardless of readOnly too — both
+                // need telling separately not to respond to clicks
+                // while locked, or a "read-only" Date Diagnosed would
+                // still visibly pop a calendar open when clicked.
+                if (el._flatpickr) {
+                    el._flatpickr.set('clickOpens', !locked);
+                    if (locked) el._flatpickr.close();
+                }
             });
+        }
+
+        // Styled dropdowns (assets/js/styled-select.js) only refresh
+        // their button on a 'change' event — fire one after setting a
+        // select's value from here.
+        function syncSelect(el) {
+            el.dispatchEvent(new Event('change'));
+        }
+
+        // A plain `el.value = x` on a data-hc-datepicker field (assets/js/
+        // hc-datepicker.js, flatpickr) only ever updates the real hidden
+        // input — flatpickr keeps its OWN separate visible text box
+        // (altInput) in sync only through its own API, never by noticing
+        // a direct .value assignment. Every date field here goes through
+        // this instead, or resetForm()/fillForm() would silently leave
+        // that visible box blank (or a stale leftover value) even though
+        // the real underlying value is set correctly.
+        function setFieldValue(el, value) {
+            if (el._flatpickr) {
+                if (value) el._flatpickr.setDate(value, true);
+                else el._flatpickr.clear();
+            } else {
+                el.value = value;
+            }
         }
 
         function resetForm() {
@@ -51,16 +87,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     el.selectedIndex = 0; // a select has no blank option — back to its first one
                     syncSelect(el);
                 } else {
-                    el.value = '';
+                    setFieldValue(el, '');
                 }
             });
-        }
-
-        // Styled dropdowns (assets/js/styled-select.js) only refresh
-        // their button on a 'change' event — fire one after setting a
-        // select's value from here.
-        function syncSelect(el) {
-            el.dispatchEvent(new Event('change'));
         }
 
         function fillForm(row) {
@@ -68,10 +97,12 @@ document.addEventListener('DOMContentLoaded', function () {
             opts.fields.forEach(function (f) {
                 const el = document.getElementById(f.elId);
                 if (!el) return;
-                el.value = row[f.rowKey] || '';
                 if (el.tagName === 'SELECT') {
+                    el.value = row[f.rowKey] || '';
                     if (el.selectedIndex === -1) el.selectedIndex = 0;
                     syncSelect(el);
+                } else {
+                    setFieldValue(el, row[f.rowKey] || '');
                 }
             });
         }

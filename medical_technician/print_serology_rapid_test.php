@@ -45,20 +45,20 @@ require_once __DIR__ . '/../includes/shared/lab_result_report.php';
 $isEmbedded = ($_GET['embed'] ?? '') === '1';
 
 $resultRows = [];
-$summaryParts = [];
+$interpretationParts = [];
 $assignedToName = null;
 foreach ($serologyRows as $row) {
     $value = $row['state'] === 'completed' ? (string) $row['result'] : '';
-    $resultRows[] = ['test' => $row['displayLabel'], 'result' => $value, 'unit' => '', 'range' => 'Non-Reactive', 'interpretation' => ''];
-    if ($value !== '') {
-        $summaryParts[] = $row['displayLabel'] . ': ' . $value;
+    $resultRows[] = ['test' => $row['displayLabel'], 'result' => $value, 'unit' => '', 'range' => 'Non-Reactive', 'interpretation' => $value];
+    if ($row['state'] === 'completed' && !empty($row['interpretation'])) {
+        $interpretationParts[] = $row['displayLabel'] . ': ' . $row['interpretation'];
     }
     $assignedToName ??= $row['assignedToName'] ?? null;
 }
 
 $labFieldsForPrint = [
     'testName' => 'Serology / Rapid Immunochromatographic Tests',
-    'interpretation' => implode('; ', $summaryParts),
+    'interpretation' => implode(' | ', $interpretationParts),
     'resultGroups' => [
         'group1_name' => 'Serology',
         'group1_rows' => $resultRows,

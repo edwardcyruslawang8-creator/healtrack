@@ -164,13 +164,25 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
                   <div class="invalid-feedback">Please enter a valid email address.</div>
                 </div>
               </div>
+              <!-- Minor patients only (Date of Birth < 18 years ago) —
+                   shown/required dynamically by assets/js/add-patient.js's
+                   same live Date of Birth -> Age calc already powering
+                   the read-only Age field above. Hidden (and its
+                   "required" dropped) entirely for an adult patient. -->
+              <div class="apm-field mt-3 d-none" id="apmGuardianPhoneField">
+                <label for="apmGuardianPhone">Guardian's Phone Number<span class="req">*</span></label>
+                <input type="text" class="form-control" id="apmGuardianPhone" placeholder="Enter guardian's phone number">
+                <div class="apm-field-help">Required for patients under 18 years old.</div>
+                <div class="invalid-feedback">Required for a patient under 18 years old.</div>
+              </div>
             </div>
 
             <div class="apm-section">
               <h6 class="apm-section-title">Address Information</h6>
               <div class="apm-field mb-3">
                 <label for="apmAddress">Address<span class="req">*</span></label>
-                <textarea class="form-control" id="apmAddress" rows="2" placeholder="Enter complete address" required></textarea>
+                <textarea class="form-control" id="apmAddress" rows="2" placeholder="e.g. 123 Rizal St., Purok 4" required></textarea>
+                <div class="apm-field-help">House/building number, street, and purok/subdivision only — Barangay and City/Municipality are entered separately below, don't repeat them here.</div>
                 <div class="invalid-feedback">Required.</div>
               </div>
               <div class="apm-grid apm-grid-2">
@@ -291,37 +303,45 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
 
             <div class="apm-section">
               <h6 class="apm-section-title">Medical History</h6>
-              <div class="apm-table-head apm-hist-row">
-                <span>#</span><span>Medical Condition</span><span>Details / Others</span><span></span>
+              <div class="apm-table-scroll">
+                <div class="apm-table-head apm-cond-row">
+                  <span>#</span><span>Medical Condition</span><span>Date Diagnosed</span><span>Details / Others</span><span></span>
+                </div>
+                <div id="apmConditionList"></div>
               </div>
-              <div id="apmConditionList"></div>
               <button type="button" class="apm-add-row-btn" id="apmAddCondition"><i class="bi bi-plus-lg"></i> Add Medical History</button>
             </div>
 
             <div class="apm-section">
               <h6 class="apm-section-title">Surgical History</h6>
-              <div class="apm-table-head apm-hist-row">
-                <span>#</span><span>Surgical Procedure</span><span>Details / Others</span><span></span>
+              <div class="apm-table-scroll">
+                <div class="apm-table-head apm-hist-row">
+                  <span>#</span><span>Surgical Procedure</span><span>Details / Others</span><span></span>
+                </div>
+                <div id="apmSurgeryList"></div>
               </div>
-              <div id="apmSurgeryList"></div>
               <button type="button" class="apm-add-row-btn" id="apmAddSurgery"><i class="bi bi-plus-lg"></i> Add Surgical History</button>
             </div>
 
             <div class="apm-section">
               <h6 class="apm-section-title">Family History</h6>
-              <div class="apm-table-head apm-hist-row">
-                <span>#</span><span>Condition</span><span>Relation</span><span></span>
+              <div class="apm-table-scroll">
+                <div class="apm-table-head apm-hist-row">
+                  <span>#</span><span>Condition</span><span>Relation</span><span></span>
+                </div>
+                <div id="apmFamilyList"></div>
               </div>
-              <div id="apmFamilyList"></div>
               <button type="button" class="apm-add-row-btn" id="apmAddFamily"><i class="bi bi-plus-lg"></i> Add Family History</button>
             </div>
 
             <div class="apm-section">
               <h6 class="apm-section-title">Allergies</h6>
-              <div class="apm-table-head apm-allergy-row">
-                <span>#</span><span>Allergen</span><span>Severity</span><span>Reaction / Details</span><span></span>
+              <div class="apm-table-scroll">
+                <div class="apm-table-head apm-allergy-row">
+                  <span>#</span><span>Allergen</span><span>Severity</span><span>Reaction / Details</span><span></span>
+                </div>
+                <div id="apmAllergyList"></div>
               </div>
-              <div id="apmAllergyList"></div>
               <button type="button" class="apm-add-row-btn" id="apmAddAllergy"><i class="bi bi-plus-lg"></i> Add Allergy</button>
             </div>
 
@@ -332,10 +352,12 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
             <div class="apm-section">
               <h6 class="apm-section-title">Current Medications <span class="text-muted fw-normal">(Optional)</span></h6>
               <p class="apm-section-subtitle">Add all current medications the patient is taking, if any.</p>
-              <div class="apm-table-head apm-med-row">
-                <span>#</span><span>Medication Name</span><span>Dosage</span><span>Frequency</span><span>Start Date</span><span>Prescribed By</span><span></span>
+              <div class="apm-table-scroll">
+                <div class="apm-table-head apm-med-row">
+                  <span>#</span><span>Medication Name</span><span>Dosage</span><span>Frequency</span><span>Route</span><span>Indication / Reason</span><span>Start Date</span><span>Prescribed By</span><span></span>
+                </div>
+                <div id="apmMedicationList"></div>
               </div>
-              <div id="apmMedicationList"></div>
               <button type="button" class="apm-add-row-btn apm-add-row-btn-block" id="apmAddMedication"><i class="bi bi-plus-lg"></i> Add Medication</button>
             </div>
 
@@ -382,11 +404,14 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
 
 <!-- Row templates for repeatable History / Allergies / Medications tables — cloned by assets/js/add-patient.js. Each field row carries its own .invalid-feedback so a row that's partially filled in can point at exactly which cell is missing. -->
 <template id="apmConditionRowTemplate">
-  <div class="apm-repeat-row apm-hist-row" data-row="condition">
+  <div class="apm-repeat-row apm-cond-row" data-row="condition">
     <span class="apm-row-num">1</span>
     <div class="apm-cell">
       <input type="text" class="form-control" placeholder="Enter medical condition" data-field="label">
       <div class="invalid-feedback">Required if details are filled in.</div>
+    </div>
+    <div class="apm-cell">
+      <input type="date" data-hc-datepicker class="form-control" data-field="diagnosedDate" max="<?= date('Y-m-d') ?>">
     </div>
     <div class="apm-cell">
       <input type="text" class="form-control" placeholder="Enter details" data-field="details">
@@ -467,6 +492,12 @@ sort($apmMedicineNames, SORT_STRING | SORT_FLAG_CASE);
         <option value="As needed">As needed</option>
         <option value="Other">Other</option>
       </select>
+    </div>
+    <div class="apm-cell">
+      <input type="text" class="form-control" placeholder="e.g. Oral" data-field="route">
+    </div>
+    <div class="apm-cell">
+      <input type="text" class="form-control" placeholder="e.g. Hypertension" data-field="indication">
     </div>
     <div class="apm-cell">
       <input type="date" data-hc-datepicker class="form-control" data-field="startDate" max="<?= date('Y-m-d') ?>">

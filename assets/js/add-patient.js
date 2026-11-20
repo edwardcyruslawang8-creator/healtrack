@@ -174,14 +174,46 @@ document.addEventListener('DOMContentLoaded', function () {
     // -----------------------------------------------------------
     const birthDateInput = document.getElementById('apmBirthDate');
     const ageInput = document.getElementById('apmAge');
+    const guardianPhoneField = document.getElementById('apmGuardianPhoneField');
+    const guardianPhoneInput = document.getElementById('apmGuardianPhone');
+
+    function setGuardianPhoneRequired(required) {
+        guardianPhoneField.classList.toggle('d-none', !required);
+        guardianPhoneInput.required = required;
+        if (!required) {
+            guardianPhoneInput.classList.remove('is-invalid');
+            const feedback = guardianPhoneField.querySelector('.invalid-feedback');
+            if (feedback) feedback.style.display = 'none';
+        }
+    }
+
     birthDateInput.addEventListener('change', function () {
-        if (!birthDateInput.value) { ageInput.value = ''; return; }
+        if (!birthDateInput.value) { ageInput.value = ''; setGuardianPhoneRequired(false); return; }
         const dob = new Date(birthDateInput.value);
         const today = new Date();
-        let age = today.getFullYear() - dob.getFullYear();
-        const m = today.getMonth() - dob.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-        ageInput.value = age >= 0 ? age : '';
+
+        let years = today.getFullYear() - dob.getFullYear();
+        let months = today.getMonth() - dob.getMonth();
+        if (today.getDate() < dob.getDate()) months--;
+        if (months < 0) { years--; months += 12; }
+
+        if (years < 0) { ageInput.value = ''; setGuardianPhoneRequired(false); return; }
+        // Whole years stays the normal display; a baby under 1 year old
+        // shows in months instead — "0" on its own doesn't tell staff
+        // anything useful about a newborn vs. an 11-month-old. The real
+        // submitted age (api/create-patient.php's own 'age' field) is
+        // computed independently, server-side, from birthDate — this is
+        // display-only and doesn't change what gets saved.
+        if (years === 0) {
+            ageInput.value = months <= 0 ? 'Newborn' : months + (months === 1 ? ' month' : ' months');
+        } else {
+            ageInput.value = years;
+        }
+
+        // A guardian's phone number is only required for a minor
+        // (under 18) — shown/hidden live off the same Date of Birth,
+        // re-checked server-side in api/create-patient.php.
+        setGuardianPhoneRequired(years < 18);
     });
 
     // -----------------------------------------------------------
@@ -258,6 +290,11 @@ document.addEventListener('DOMContentLoaded', function () {
         // Style this row's dropdowns (Severity / Frequency) like the rest
         // of the form — assets/js/styled-select.js.
         if (window.HCStyledSelect) window.HCStyledSelect.enhance(node);
+        // Same for any date input this row just added (Date Diagnosed /
+        // Medication Start Date) — assets/js/hc-datepicker.js only scans
+        // the page once on load, so a row cloned afterward needs its own
+        // call or it'd be stuck with the browser's plain unstyled picker.
+        if (window.HCDatepicker) window.HCDatepicker.init();
         renumberRows(listId);
     }
 
@@ -368,6 +405,7 @@ document.addEventListener('DOMContentLoaded', function () {
             occupation: document.getElementById('apmOccupation').value.trim(),
             philhealthPin: document.getElementById('apmPhilhealthPin').value.trim(),
             phone: document.getElementById('apmPhone').value.trim(),
+            guardianPhone: document.getElementById('apmGuardianPhone').value.trim(),
             email: document.getElementById('apmEmail').value.trim(),
             address: document.getElementById('apmAddress').value.trim(),
             barangay: document.getElementById('apmBarangay').value,
@@ -386,11 +424,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 bmi: bmiInput.value.trim(),
             },
 
-            conditions: collectRows('apmConditionList', ['label', 'details']),
+            conditions: collectRows('apmConditionList', ['label', 'diagnosedDate', 'details']),
             surgeries: collectRows('apmSurgeryList', ['procedure', 'details']),
             familyHistory: collectRows('apmFamilyList', ['condition', 'relation']),
             allergies: collectRows('apmAllergyList', ['allergen', 'severity', 'reaction']),
-            medications: collectRows('apmMedicationList', ['name', 'dosage', 'frequency', 'startDate', 'prescribedBy']),
+            medications: collectRows('apmMedicationList', ['name', 'dosage', 'frequency', 'route', 'indication', 'startDate', 'prescribedBy']),
             medicationNotes: medNotesInput.value.trim(),
 
             reasonForVisit: document.getElementById('apmReasonForVisit').value.trim(),
