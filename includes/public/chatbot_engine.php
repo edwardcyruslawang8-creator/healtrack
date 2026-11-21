@@ -923,7 +923,7 @@ if (!function_exists('hc_chatbot_harm_reply')) {
      */
     function hc_chatbot_harm_reply(): string
     {
-        return 'I\'m not able to help with that — this assistant is only here for real patient care questions (medicine/vaccine availability, services, appointments). '
+        return 'I\'m not able to help with that — this assistant is only here for real patient care questions (medicine/vaccine availability, services, walk-in visits). '
             . 'If you\'re having thoughts of hurting yourself, please reach out right now: the National Center for Mental Health Crisis Hotline (Philippines) at 1553 (toll-free landline), '
             . '0966-351-4518 or 0917-899-8727 (Globe/TM), or 0908-639-2672 (Smart/TNT) — someone is available to talk, any time. '
             . 'If this is about keeping someone else safe, please contact your local authorities or emergency hotline directly.';
@@ -1103,6 +1103,78 @@ if (!function_exists('hc_chatbot_accreditation_reply')) {
     function hc_chatbot_accreditation_reply(): string
     {
         return 'Yes! North Super Health Center is accredited by both YAKAP and PhilHealth, so patients can get their medicine right here at the health center under these programs.';
+    }
+}
+
+if (!function_exists('hc_chatbot_is_disease_statistics_request')) {
+    /**
+     * Safety/accuracy-critical, checked at the SAME top priority as the
+     * emergency/harm/confidential/security-bypass gates — before
+     * Dialogflow, the decision tree, the legacy engine, or Gemini/Groq
+     * ever see the message (see api/chatbot-ask.php). This engine has
+     * NO code path anywhere that queries real disease case counts for a
+     * chat reply (confirmed — only medicine/vaccine stock, announcements,
+     * and doctor NAMES are ever looked up; see
+     * hc_chatbot_is_confidential_request()'s own header comment for the
+     * same confirmation re: patient data). So without this gate, a
+     * question like "how many HIV cases this month?" falls straight
+     * through to Gemini's open-domain fallback, which — even though it's
+     * instructed not to guess real-time data — can still answer from its
+     * OWN general knowledge (national/global figures, or an invented
+     * number) in a way that reads as if it came from this facility. This
+     * gate closes that regardless of what either LLM would have done:
+     * any disease-case-count question gets the same fixed, honest
+     * redirect to this site's real GIS Mapping page (the one place this
+     * app actually surfaces real, facility-level disease data) instead.
+     *
+     * Two conditions, both required: (1) the question is asking for a
+     * COUNT/statistic/number, not just mentioning a disease by name (so
+     * "what are dengue symptoms?" still reaches the real health-topic
+     * answer above, unaffected); (2) it's actually about disease/illness
+     * case data, not an unrelated count ("how many doctors do you have?").
+     */
+    function hc_chatbot_is_disease_statistics_request(string $lowerQuestion): bool
+    {
+        // "how many" ... "cases" allows up to 4 words in between (not
+        // just immediately adjacent) — a real example this fixes: "how
+        // many DENGUE cases" / "how many HIV cases" both name the
+        // disease BETWEEN "how many" and "cases", which an adjacent-only
+        // pattern would miss entirely. The required disease-word check
+        // right below is what keeps this from over-matching an unrelated
+        // "how many ... people/patients ..." question.
+        $asksForCount = preg_match(
+            '/\bhow many\b(?:\s+\S+){0,4}?\s+(cases?|people|patients|residents)\b'
+            . '|\b(number|count|total) of (cases|people|patients)\b'
+            . '|\bcase count\b|\bcases? (count|total|number)s?\b'
+            . '|\b(disease )?statistics?\b|\bdata on (cases|outbreaks?)\b'
+            . '|\boutbreak (numbers?|count|size|data)\b'
+            . '|\bhow many (have|had|got|contracted|were (diagnosed|infected))\b/i',
+            $lowerQuestion
+        ) === 1;
+        if (!$asksForCount) {
+            return false;
+        }
+
+        return preg_match(
+            '/\b(case|cases|disease|diseases|illness|outbreak|infect(ion|ed)?|diagnos(is|ed)'
+            . '|hiv|aids|dengue|covid|coronavirus|tuberculosis|\btb\b|measles|flu|influenza'
+            . '|cholera|typhoid|leptospirosis|rabies|chickenpox|mumps|hepatitis|malaria'
+            . '|pertussis|whooping cough|hfmd|hand.foot.mouth)\b/i',
+            $lowerQuestion
+        ) === 1;
+    }
+}
+
+if (!function_exists('hc_chatbot_disease_statistics_reply')) {
+    /**
+     * Deliberately names only the one real, public source this app
+     * actually has for disease data (the GIS Mapping page) — never the
+     * admin-only Disease Registry (admin/disease_registry.php), which
+     * isn't something a public patient can open at all.
+     */
+    function hc_chatbot_disease_statistics_reply(): string
+    {
+        return 'I don\'t share disease case numbers or statistics through this chat. For this facility\'s own public disease data, please check our GIS Mapping page on this site, or ask our staff directly. For official regional or national statistics, the Department of Health (DOH) is the authoritative source.';
     }
 }
 
@@ -1446,11 +1518,13 @@ if (!function_exists('hc_chatbot_answer')) {
             return hc_chatbot_announcement_reply($list[0]);
         }
 
-        // 4c. Appointment booking — honest about what this system can
-        // and can't do online rather than guessing (there's no patient
-        // login/booking flow anywhere in this app).
-        if (preg_match('/\bappointment(s)?\b|\bbook(ing)?\b/i', $lower) === 1) {
-            return 'We don\'t currently support booking appointments online — walk-ins are welcome during our operating hours, or you can call us at ' . hc_chatbot_contact_settings()['contactPhone'] . ' to ask about scheduling a visit.';
+        // 4c. Appointment booking — this facility is walk-in only by
+        // policy, so this is NOT just "no online booking yet" (which
+        // would imply calling in to book one instead); never mention
+        // scheduling/booking by phone either, only that walk-ins are
+        // welcome during operating hours.
+        if (preg_match('/\bappointment(s)?\b|\bbook(ing)?\b|\bschedule a visit\b/i', $lower) === 1) {
+            return 'We don\'t take appointments or bookings — NSHC is walk-in only, so please just visit us during our operating hours. ' . hc_chatbot_hours_sentence(hc_chatbot_contact_settings()['operatingHours']);
         }
 
         // 4d. Insurance/PhilHealth — honest deflect; this system has no

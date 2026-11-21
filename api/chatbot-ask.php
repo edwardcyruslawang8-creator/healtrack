@@ -42,6 +42,14 @@
  *      refusing to pretend to disable auth, delete audit logs, grant
  *      admin rights, roleplay as staff, or obey an in-message
  *      instruction to override this chatbot's own rules.
+ *   0d2. Disease case statistics request ("how many HIV cases this
+ *      month?") — same unconditional top priority, for the same reason
+ *      as #0c: this engine has no real code path into disease case-count
+ *      data at all, so this stops Gemini/Groq's open-domain fallback
+ *      from ever answering with a number from its own general knowledge
+ *      that could be mistaken for this facility's real data — always
+ *      redirected to the real GIS Mapping page instead. See
+ *      hc_chatbot_is_disease_statistics_request()'s own header comment.
  *   0e. Short follow-up reference ("how many are there", "is it
  *      available") — resolved against the ONE most-recently-discussed
  *      subject, stashed in $_SESSION by whichever path (Dialogflow/
@@ -157,6 +165,7 @@ $answer ??= $rbacRole !== '' ? hc_chatbot_rbac_reply($rbacRole) : null;
 $answer ??= hc_chatbot_is_confidential_request($lowerMessage) ? hc_chatbot_confidential_reply() : null;
 $answer ??= hc_chatbot_is_security_bypass_request($lowerMessage) ? hc_chatbot_security_bypass_reply() : null;
 $answer ??= hc_chatbot_is_accreditation_request($lowerMessage) ? hc_chatbot_accreditation_reply() : null;
+$answer ??= hc_chatbot_is_disease_statistics_request($lowerMessage) ? hc_chatbot_disease_statistics_reply() : null;
 // 0e. Short follow-up reference to whatever subject was just discussed
 // — a medicine, a doctor, a health topic, the vaccination
 // announcement, a scoped contact answer ("how many are there", "is he

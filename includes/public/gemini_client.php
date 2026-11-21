@@ -205,10 +205,26 @@ if (!function_exists('hc_gemini_general_reply')) {
               personal medical advice, and encourage seeing a doctor or this
               clinic's staff for anything specific, urgent, or ongoing.
             - Never claim to know this clinic's real-time data — if asked about
-              specific medicine stock, appointments, records, or schedules, say
-              you don't have that on hand right now and suggest asking about it
-              directly (e.g. "Is paracetamol available?") or contacting the
-              clinic, rather than guessing.
+              specific medicine stock, records, or schedules, say you don't
+              have that on hand right now and suggest asking about it directly
+              (e.g. "Is paracetamol available?") or contacting the clinic,
+              rather than guessing.
+            - This clinic does NOT take appointments or scheduled bookings —
+              it is walk-in only. If asked about appointments, booking, or
+              scheduling a visit in any way, never suggest calling to
+              "schedule" or "book" one — just say walk-ins are welcome during
+              operating hours, no appointment needed.
+            - Never state, estimate, or imply any disease case count,
+              statistic, or outbreak number — for this facility, any
+              barangay/area, or anywhere else — even as a rough estimate or
+              general-knowledge figure. You have no access to this facility's
+              real disease surveillance data. If asked how many cases of
+              something there are, say you don't have that information and
+              direct them to this site's GIS Mapping page (for this
+              facility's own public data) or the Department of Health for
+              official statistics — never a number from your own general
+              knowledge, and never phrase it in a way that could be mistaken
+              for this facility's real data.
             - You have NO access to any patient's records, lab/test results,
               patient IDs, diagnoses, prescriptions, or personal medical
               history — not for this patient, not for anyone else. Never
