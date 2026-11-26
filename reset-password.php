@@ -5,11 +5,11 @@
  * Reset Password (reset-password.php)
  * ---------------------------------------------------------------------
  * Where forgot-password.php's real reset-link emails now land (see
- * assets/js/forgot-password.js's sendPasswordResetEmail() call —
- * actionCodeSettings.handleCodeInApp: true routes the email link HERE
- * instead of to Firebase's own default hosted reset page, specifically
- * so this app gets a real moment to react once a password is actually
- * reset). assets/js/reset-password.js does the real work client-side:
+ * api/send-password-reset-email.php's header comment — the reset link
+ * is generated server-side with the Kreait Admin SDK and emailed
+ * through this app's own branded mailer, built to point HERE instead
+ * of to Firebase's own default hosted reset page). assets/js/reset-password.js
+ * does the real work client-side:
  * verifyPasswordResetCode() to validate the real ?oobCode= and learn
  * which email it's for, then confirmPasswordReset() to actually set the
  * new password (both straight against Firebase Auth — no api/*.php
@@ -93,26 +93,42 @@ require_once __DIR__ . '/config/constants.php'; // BASE_URL
 
             <!-- Shown once the real ?oobCode= is confirmed valid (assets/js/reset-password.js) -->
             <div id="rpFormState">
-                <h2>Choose a new password</h2>
+                <h2>Reset Your Password</h2>
                 <p class="login-card-subtitle" id="rpSubtitle">Verifying your reset link&hellip;</p>
 
                 <div id="rpError" class="alert alert-danger py-2 px-3 d-none" style="font-size:13px;"></div>
+                <p id="rpRequestNewLink" class="login-footer-text d-none" style="margin-top:-8px;">
+                    <a href="<?= BASE_URL ?>/forgot-password.php"><i class="bi bi-arrow-repeat"></i> Request a new reset link</a>
+                </p>
 
                 <form autocomplete="off" id="resetPasswordForm" class="d-none">
                     <div class="login-field">
                         <label for="rpNewPassword">New Password</label>
                         <div class="login-input-wrap">
                             <i class="bi bi-lock-fill field-icon"></i>
-                            <input type="password" id="rpNewPassword" name="newPassword" placeholder="Enter a new password" required minlength="6">
+                            <input type="password" id="rpNewPassword" name="newPassword" class="has-toggle" placeholder="Enter a new password" required minlength="6">
+                            <button type="button" class="login-toggle-btn" id="toggleRpNewPassword" aria-label="Show or hide password">
+                                <i class="bi bi-eye"></i>
+                            </button>
                         </div>
+                        <div class="pw-strength-bar" id="rpStrengthBar"><span></span><span></span><span></span></div>
+                        <p class="pw-strength-label" id="rpStrengthLabel"></p>
                     </div>
                     <div class="login-field">
                         <label for="rpConfirmPassword">Confirm New Password</label>
                         <div class="login-input-wrap">
                             <i class="bi bi-lock-fill field-icon"></i>
-                            <input type="password" id="rpConfirmPassword" name="confirmPassword" placeholder="Re-enter the new password" required minlength="6">
+                            <input type="password" id="rpConfirmPassword" name="confirmPassword" class="has-toggle" placeholder="Re-enter the new password" required minlength="6">
+                            <button type="button" class="login-toggle-btn" id="toggleRpConfirmPassword" aria-label="Show or hide password">
+                                <i class="bi bi-eye"></i>
+                            </button>
                         </div>
                     </div>
+
+                    <ul class="pw-requirements" id="rpRequirements">
+                        <li id="rpReqLength"><i class="bi bi-circle"></i> At least 6 characters</li>
+                        <li id="rpReqMatch"><i class="bi bi-circle"></i> Passwords match</li>
+                    </ul>
 
                     <button type="submit" class="btn-sign-in" id="rpSubmitBtn">
                         <i class="bi bi-check-circle-fill"></i> Reset Password

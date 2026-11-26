@@ -226,6 +226,47 @@ html, body{ height: 100%; }
 }
 .login-toggle-btn:hover{ color: var(--text-dark); }
 
+/* -- Password strength bar (reset-password.php) -- */
+.pw-strength-bar{
+  display: flex;
+  gap: 5px;
+  margin-top: 8px;
+}
+.pw-strength-bar span{
+  flex: 1 1 0;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-soft);
+  transition: background .15s ease;
+}
+.pw-strength-bar.is-weak span:nth-child(1){ background: #D64545; }
+.pw-strength-bar.is-fair span:nth-child(1),
+.pw-strength-bar.is-fair span:nth-child(2){ background: #E0A838; }
+.pw-strength-bar.is-strong span{ background: #3C9A5F; }
+.pw-strength-label{
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  color: var(--text-soft);
+}
+
+/* -- Password requirements checklist (reset-password.php) -- */
+.pw-requirements{
+  list-style: none;
+  margin: -6px 0 20px;
+  padding: 0;
+}
+.pw-requirements li{
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.pw-requirements li i{ font-size: 13px; color: var(--text-soft); }
+.pw-requirements li.is-met{ color: #3C9A5F; }
+.pw-requirements li.is-met i{ color: #3C9A5F; }
+
 /* -- Forgot password row -- */
 .login-forgot-row{
   display: flex;

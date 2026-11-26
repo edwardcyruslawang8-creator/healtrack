@@ -111,3 +111,32 @@ if (!function_exists('hc_account_email_shell')) {
             . '</div>';
     }
 }
+
+if (!function_exists('hc_password_reset_email_shell')) {
+    /**
+     * Same look as hc_account_email_shell() (left untouched — it's
+     * shared by approve/reject/registration emails) but with the real
+     * HEALTrack logo in the header and a "Reset Password" button
+     * instead of a raw link, for api/send-password-reset-email.php only.
+     */
+    function hc_password_reset_email_shell(string $logoUrl, string $accountEmail, string $resetUrl): string
+    {
+        return '<div style="font-family: Arial, Helvetica, sans-serif; max-width: 480px; margin: 0 auto; color: #1f2328;">'
+            . '<div style="background: #5B0A0A; padding: 20px 24px; border-radius: 10px 10px 0 0; text-align: center;">'
+            . '<img src="' . htmlspecialchars($logoUrl) . '" alt="HEALTrack" width="44" height="44" style="display: block; margin: 0 auto 8px; border-radius: 10px;">'
+            . '<span style="color: #fff; font-size: 18px; font-weight: 700;">HEALTrack</span><br>'
+            . '<span style="color: #f0d8d8; font-size: 12px;">North Super Health Center</span>'
+            . '</div>'
+            . '<div style="border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px; padding: 24px;">'
+            . '<h2 style="margin: 0 0 14px; font-size: 17px; color: #1f2328;">Reset your password</h2>'
+            . '<p style="margin: 0 0 12px; font-size: 14px; line-height: 1.6;">We received a request to reset the password for the HEALTrack account registered to <strong>' . htmlspecialchars($accountEmail) . '</strong>.</p>'
+            . '<p style="margin: 0 0 20px; font-size: 14px; line-height: 1.6;">Click the button below to choose a new password. This link is valid for a limited time and can only be used once.</p>'
+            . '<p style="margin: 0 0 20px; text-align: center;">'
+            . '<a href="' . htmlspecialchars($resetUrl) . '" style="display:inline-block; background:#5B0A0A; color:#fff; text-decoration:none; padding:12px 28px; border-radius:8px; font-size:14px; font-weight:600;">Reset Password</a>'
+            . '</p>'
+            . '<p style="margin: 0; font-size: 13px; line-height: 1.6; color: #7A7478;">If you didn\'t request a password reset, you can safely ignore this email — your password will not be changed.</p>'
+            . '<p style="margin: 20px 0 0; font-size: 11.5px; color: #9aa0ac;">This is an automated message from HEALTrack — please don\'t reply to this email.</p>'
+            . '</div>'
+            . '</div>';
+    }
+}

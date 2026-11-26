@@ -1,25 +1,23 @@
 /* =============================================================
    FORGOT PASSWORD PAGE JS (forgot-password.php)
    ---------------------------------------------------------------
-   Loaded after firebase-app-compat.js, firebase-auth-compat.js,
-   firebase-firestore-compat.js, and firebase-config.js — same loading
-   order login.php uses. firebase.auth().sendPasswordResetEmail(email,
-   actionCodeSettings) generates the reset link and emails it — the
-   actual "choose a new password" step now happens on THIS app's own
-   reset-password.php (actionCodeSettings.handleCodeInApp: true routes
-   the email link there instead of to Firebase's default hosted page),
-   so there's a real moment to record an audit log entry once a
-   password genuinely gets reset — see reset-password.php's own header
-   comment and api/report-password-reset-completed.php.
+   Posts to api/send-password-reset-email.php, which generates the real
+   Firebase password-reset link server-side (Kreait Admin SDK) and
+   emails it through this app's own branded mailer instead of letting
+   Firebase's client SDK send its own generic email — see that file's
+   header comment for why. The link it emails points straight at this
+   app's own reset-password.php, where the actual "choose a new
+   password" step happens (verifyPasswordResetCode()/
+   confirmPasswordReset() in assets/js/reset-password.js) — see that
+   file's header comment and api/report-password-reset-completed.php.
 
    Deliberately shows the SAME "check your email" success message
-   whether sendPasswordResetEmail() succeeds OR fails with
-   'auth/user-not-found' — surfacing that specific failure would let
-   this form be used to check which emails have real accounts
-   (enumeration), so it's treated as a success case instead. Every
-   OTHER error (bad email format, network failure, rate limit) still
-   shows its own real message, since none of those reveal whether the
-   account exists.
+   whether the email belongs to a real account or not — surfacing that
+   distinction would let this form be used to check which emails have
+   real accounts (enumeration), so api/send-password-reset-email.php
+   always returns the same generic success response. Only genuine
+   client-side problems (bad email format, network failure) show their
+   own real message, since neither reveals whether the account exists.
    ============================================================= */
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('forgotPasswordForm');
@@ -28,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const successBox = document.getElementById('fpSuccess');
     const submitBtn = document.getElementById('fpSubmitBtn');
 
-    if (!form || typeof firebase === 'undefined') return;
+    if (!form) return;
 
     function hideMessages() {
         errorBox.classList.add('d-none');
@@ -53,19 +51,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const CHECK_EMAIL_MESSAGE = 'If an account exists for that email, a password reset link has been sent. Please check your inbox (and spam folder).';
 
-    // Fire-and-forget — api/report-password-reset-request.php (the only
-    // backend touchpoint this otherwise pure-client-side Firebase flow
-    // has) writes a real audit log entry when the email belongs to a
-    // real account, silently no-ops otherwise. Never awaited/read, so
-    // it can't change or delay what the visitor sees either way.
-    function reportResetRequest(email) {
-        fetch('api/report-password-reset-request.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email }),
-        }).catch(function () { /* best-effort only */ });
-    }
-
     form.addEventListener('submit', function (e) {
         e.preventDefault();
         hideMessages();
@@ -75,46 +60,29 @@ document.addEventListener('DOMContentLoaded', function () {
             showError('Please enter your email address.');
             return;
         }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            showError('That email address doesn\'t look right.');
+            return;
+        }
 
         setLoading(true);
 
-        const actionCodeSettings = {
-            url: window.location.origin + (window.APP_BASE_URL || '') + '/reset-password.php',
-            handleCodeInApp: true,
-        };
-
-        firebase.auth().sendPasswordResetEmail(email, actionCodeSettings)
+        fetch('api/send-password-reset-email.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email }),
+        })
+            .then(function (res) { return res.json(); })
             .then(function () {
+                // Always the same message, success or unknown-email alike —
+                // see this file's header comment.
                 setLoading(false);
                 showSuccess(CHECK_EMAIL_MESSAGE);
-                reportResetRequest(email);
                 form.reset();
             })
-            .catch(function (error) {
+            .catch(function () {
                 setLoading(false);
-                if (error.code === 'auth/user-not-found') {
-                    // Same message as success — see this file's header comment.
-                    // Still reported: report-password-reset-request.php applies
-                    // its own identical no-op-for-unknown-email rule, so this
-                    // can't be used to confirm the account doesn't exist either.
-                    showSuccess(CHECK_EMAIL_MESSAGE);
-                    reportResetRequest(email);
-                    form.reset();
-                    return;
-                }
-                if (error.code === 'auth/invalid-email') {
-                    showError('That email address doesn\'t look right.');
-                    return;
-                }
-                if (error.code === 'auth/too-many-requests') {
-                    showError('Too many attempts. Please wait a moment and try again.');
-                    return;
-                }
-                if (error.code === 'auth/network-request-failed') {
-                    showError('Network error — please check your connection and try again.');
-                    return;
-                }
-                showError('Something went wrong sending the reset link. Please try again.');
+                showError('Network error — please check your connection and try again.');
             });
     });
 
